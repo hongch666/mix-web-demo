@@ -56,6 +56,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
     "spring.cloud.nacos.discovery.enabled=false",
     "spring.devtools.restart.enabled=false",
     "server.port=8081",
+    "springdoc.api-docs.version=openapi_3_1",
     "springdoc.api-docs.path=/v3/api-docs",
 })
 @AutoConfigureWebTestClient(timeout = "60s")
@@ -104,6 +105,7 @@ class OpenApiDocGenerator {
         // 网关才是真实入口，写死 localhost:8081 会让 Apifox 用错地址，Base URL 统一交给 Apifox 环境面板维护
         if (document instanceof ObjectNode objectNode) {
             objectNode.remove("servers");
+            normalizeVoidDataSchema(objectNode);
         }
         String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(document);
 
@@ -118,6 +120,23 @@ class OpenApiDocGenerator {
         // 同时输出 YAML，便于人工查看与 diff
         Path yamlOutput = resolveYamlOutput(output);
         Files.writeString(yamlOutput, toYaml(document), StandardCharsets.UTF_8);
+    }
+
+    private static void normalizeVoidDataSchema(ObjectNode document) {
+        JsonNode schemas = document.path("components").path("schemas");
+        if (!schemas.isObject()) {
+            return;
+        }
+        schemas.fields().forEachRemaining(entry -> {
+            if (!entry.getKey().endsWith("Void")) {
+                return;
+            }
+            JsonNode data = entry.getValue().path("properties").path("data");
+            if (data instanceof ObjectNode dataSchema
+                && "返回数据".equals(dataSchema.path("description").asText())) {
+                dataSchema.put("type", "null");
+            }
+        });
     }
 
     /** 序列化为 YAML，并去掉 Jackson 默认写出的文档起始标记，与其余三个服务的产物保持一致 */

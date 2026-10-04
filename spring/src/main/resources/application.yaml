@@ -61,6 +61,7 @@ spring:
 # SpringDoc OpenAPI 配置
 springdoc:
   api-docs:
+    version: openapi_3_1
     path: /v3/api-docs # OpenAPI 规范 JSON 路径
   swagger-ui:
     path: /swagger-ui.html # Swagger UI 入口路径

@@ -1,5 +1,5 @@
 {
-  "openapi" : "3.0.1",
+  "openapi" : "3.1.0",
   "info" : {
     "title" : "Spring部分的Swagger文档",
     "description" : "这是项目的Spring部分的Swagger文档",
@@ -67,10 +67,9 @@
             "description" : "页码",
             "required" : false,
             "schema" : {
-              "minimum" : 1,
-              "type" : "string",
               "description" : "页码",
-              "example" : 1
+              "example" : 1,
+              "minimum" : 1
             },
             "example" : 1
           },
@@ -80,11 +79,10 @@
             "description" : "每页条数",
             "required" : false,
             "schema" : {
-              "maximum" : 100,
-              "minimum" : 1,
-              "type" : "string",
               "description" : "每页条数",
-              "example" : 10
+              "example" : 10,
+              "maximum" : 100,
+              "minimum" : 1
             },
             "example" : 10
           }
@@ -219,7 +217,6 @@
             "description" : "页码",
             "required" : false,
             "schema" : {
-              "type" : "string",
               "description" : "页码",
               "example" : 1
             },
@@ -231,7 +228,6 @@
             "description" : "每页条数",
             "required" : false,
             "schema" : {
-              "type" : "string",
               "description" : "每页条数",
               "example" : 10
             },
@@ -243,7 +239,6 @@
             "description" : "用户名（模糊匹配）",
             "required" : false,
             "schema" : {
-              "type" : "string",
               "description" : "用户名（模糊匹配）"
             }
           },
@@ -253,7 +248,6 @@
             "description" : "文章标题（模糊匹配）",
             "required" : false,
             "schema" : {
-              "type" : "string",
               "description" : "文章标题（模糊匹配）"
             }
           },
@@ -263,7 +257,6 @@
             "description" : "评论内容（模糊匹配）",
             "required" : false,
             "schema" : {
-              "type" : "string",
               "description" : "评论内容（模糊匹配）"
             }
           }
@@ -3162,7 +3155,6 @@
             "description" : "页码",
             "required" : false,
             "schema" : {
-              "type" : "string",
               "description" : "页码",
               "example" : 1
             },
@@ -3174,7 +3166,6 @@
             "description" : "每页条数",
             "required" : false,
             "schema" : {
-              "type" : "string",
               "description" : "每页条数",
               "example" : 10
             },
@@ -3186,7 +3177,6 @@
             "description" : "用户名（模糊匹配）",
             "required" : false,
             "schema" : {
-              "type" : "string",
               "description" : "用户名（模糊匹配）"
             }
           },
@@ -3196,7 +3186,6 @@
             "description" : "文章标题（模糊匹配）",
             "required" : false,
             "schema" : {
-              "type" : "string",
               "description" : "文章标题（模糊匹配）"
             }
           },
@@ -3206,7 +3195,6 @@
             "description" : "评论内容（模糊匹配）",
             "required" : false,
             "schema" : {
-              "type" : "string",
               "description" : "评论内容（模糊匹配）"
             }
           }
@@ -4400,157 +4388,145 @@
   "components" : {
     "schemas" : {
       "UserUpdateDTO" : {
-        "required" : [
-          "age",
-          "email",
-          "id",
-          "name"
-        ],
-        "type" : "object",
+        "description" : "更新用户请求",
         "properties" : {
           "password" : {
-            "pattern" : "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$",
             "type" : "string",
-            "description" : "登录密码，留空表示不修改"
+            "description" : "登录密码，留空表示不修改",
+            "pattern" : "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
           },
           "name" : {
             "type" : "string",
             "description" : "用户名"
           },
           "age" : {
-            "maximum" : 150,
-            "minimum" : 0,
             "type" : "integer",
+            "format" : "int32",
             "description" : "年龄",
-            "format" : "int32"
+            "maximum" : 150,
+            "minimum" : 0
           },
           "email" : {
             "type" : "string",
             "description" : "邮箱"
           },
           "img" : {
-            "maxLength" : 255,
-            "minLength" : 0,
             "type" : "string",
-            "description" : "头像地址"
+            "description" : "头像地址",
+            "maxLength" : 255,
+            "minLength" : 0
           },
           "signature" : {
-            "maxLength" : 255,
-            "minLength" : 0,
             "type" : "string",
-            "description" : "个性签名"
+            "description" : "个性签名",
+            "maxLength" : 255,
+            "minLength" : 0
           },
           "id" : {
-            "minimum" : 0,
             "type" : "integer",
+            "format" : "int32",
             "description" : "用户ID",
-            "format" : "int32"
+            "minimum" : 0
           },
           "role" : {
-            "pattern" : "admin|user",
             "type" : "string",
-            "description" : "角色，admin 或 user"
+            "description" : "角色，admin 或 user",
+            "pattern" : "admin|user"
           }
         },
-        "description" : "更新用户请求"
+        "required" : [
+          "age",
+          "email",
+          "id",
+          "name"
+        ]
       },
       "ResultVoid" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "type" : "null",
             "description" : "返回数据",
-            "nullable" : true
+            "type" : "null"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "CommentUpdateDTO" : {
+        "description" : "更新评论请求",
+        "properties" : {
+          "content" : {
+            "type" : "string",
+            "description" : "评论内容",
+            "maxLength" : 200,
+            "minLength" : 1
+          },
+          "star" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "星级评分，1到10",
+            "maximum" : 10,
+            "minimum" : 1
+          },
+          "article_title" : {
+            "type" : "string",
+            "description" : "文章标题",
+            "maxLength" : 2147483647,
+            "minLength" : 1
+          },
+          "username" : {
+            "type" : "string",
+            "description" : "评论用户名",
+            "maxLength" : 2147483647,
+            "minLength" : 1
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "评论ID",
+            "minimum" : 0
+          }
+        },
         "required" : [
           "article_title",
           "content",
           "id",
           "star",
           "username"
-        ],
-        "type" : "object",
-        "properties" : {
-          "content" : {
-            "maxLength" : 200,
-            "minLength" : 1,
-            "type" : "string",
-            "description" : "评论内容"
-          },
-          "star" : {
-            "maximum" : 10,
-            "exclusiveMaximum" : false,
-            "minimum" : 1,
-            "exclusiveMinimum" : false,
-            "type" : "number",
-            "description" : "星级评分，1到10",
-            "format" : "double"
-          },
-          "article_title" : {
-            "maxLength" : 2147483647,
-            "minLength" : 1,
-            "type" : "string",
-            "description" : "文章标题"
-          },
-          "username" : {
-            "maxLength" : 2147483647,
-            "minLength" : 1,
-            "type" : "string",
-            "description" : "评论用户名"
-          },
-          "id" : {
-            "minimum" : 0,
-            "type" : "integer",
-            "description" : "评论ID",
-            "format" : "int32"
-          }
-        },
-        "description" : "更新评论请求"
+        ]
       },
       "CategoryUpdateDTO" : {
-        "required" : [
-          "id",
-          "name"
-        ],
-        "type" : "object",
+        "description" : "更新分类请求",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "分类ID"
           },
           "name" : {
             "type" : "string",
             "description" : "分类名称"
           }
         },
-        "description" : "更新分类请求"
-      },
-      "SubCategoryUpdateDTO" : {
         "required" : [
-          "category_id",
           "id",
           "name"
-        ],
-        "type" : "object",
+        ]
+      },
+      "SubCategoryUpdateDTO" : {
+        "description" : "更新子分类请求",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "子分类ID"
           },
           "name" : {
             "type" : "string",
@@ -4558,45 +4534,92 @@
           },
           "category_id" : {
             "type" : "integer",
-            "description" : "父分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "父分类ID"
           }
         },
-        "description" : "更新子分类请求"
+        "required" : [
+          "category_id",
+          "id",
+          "name"
+        ]
       },
       "CategoryReferenceUpdateDTO" : {
-        "required" : [
-          "sub_category_id",
-          "type"
-        ],
-        "type" : "object",
+        "description" : "更新权威参考文本请求",
         "properties" : {
           "sub_category_id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "子分类ID"
           },
           "type" : {
-            "pattern" : "^(link|pdf)$",
             "type" : "string",
-            "description" : "类型，link 或 pdf"
+            "description" : "类型，link 或 pdf",
+            "pattern" : "^(link|pdf)$"
           },
           "link" : {
-            "maxLength" : 255,
-            "minLength" : 0,
             "type" : "string",
-            "description" : "官网链接，类型为 link 时必填"
+            "description" : "官网链接，类型为 link 时必填",
+            "maxLength" : 255,
+            "minLength" : 0
           },
           "pdf" : {
-            "maxLength" : 255,
-            "minLength" : 0,
             "type" : "string",
-            "description" : "PDF 链接，类型为 pdf 时必填"
+            "description" : "PDF 链接，类型为 pdf 时必填",
+            "maxLength" : 255,
+            "minLength" : 0
           }
         },
-        "description" : "更新权威参考文本请求"
+        "required" : [
+          "sub_category_id",
+          "type"
+        ]
       },
       "ArticleUpdateDTO" : {
+        "description" : "更新文章请求",
+        "properties" : {
+          "title" : {
+            "type" : "string",
+            "description" : "文章标题",
+            "maxLength" : 200,
+            "minLength" : 1
+          },
+          "content" : {
+            "type" : "string",
+            "description" : "文章内容"
+          },
+          "username" : {
+            "type" : "string",
+            "description" : "作者用户名",
+            "maxLength" : 50,
+            "minLength" : 1
+          },
+          "tags" : {
+            "type" : "string",
+            "description" : "标签，多个用英文逗号分隔",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "状态，0草稿 1已发布",
+            "maximum" : 1,
+            "minimum" : 0
+          },
+          "sub_category_id" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "子分类ID",
+            "minimum" : 1
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "文章ID",
+            "minimum" : 1
+          }
+        },
         "required" : [
           "content",
           "id",
@@ -4604,103 +4627,57 @@
           "sub_category_id",
           "title",
           "username"
-        ],
-        "type" : "object",
-        "properties" : {
-          "title" : {
-            "maxLength" : 200,
-            "minLength" : 1,
-            "type" : "string",
-            "description" : "文章标题"
-          },
-          "content" : {
-            "type" : "string",
-            "description" : "文章内容"
-          },
-          "username" : {
-            "maxLength" : 50,
-            "minLength" : 1,
-            "type" : "string",
-            "description" : "作者用户名"
-          },
-          "tags" : {
-            "maxLength" : 200,
-            "minLength" : 0,
-            "type" : "string",
-            "description" : "标签，多个用英文逗号分隔"
-          },
-          "status" : {
-            "maximum" : 1,
-            "minimum" : 0,
-            "type" : "integer",
-            "description" : "状态，0草稿 1已发布",
-            "format" : "int32"
-          },
-          "sub_category_id" : {
-            "minimum" : 1,
-            "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int32"
-          },
-          "id" : {
-            "minimum" : 1,
-            "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
-          }
-        },
-        "description" : "更新文章请求"
+        ]
       },
       "UserCreateDTO" : {
-        "required" : [
-          "age",
-          "email",
-          "name"
-        ],
-        "type" : "object",
+        "description" : "创建用户请求",
         "properties" : {
           "password" : {
-            "pattern" : "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$",
             "type" : "string",
-            "description" : "登录密码，留空表示不修改"
+            "description" : "登录密码，留空表示不修改",
+            "pattern" : "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
           },
           "name" : {
             "type" : "string",
             "description" : "用户名"
           },
           "age" : {
-            "maximum" : 150,
-            "minimum" : 0,
             "type" : "integer",
+            "format" : "int32",
             "description" : "年龄",
-            "format" : "int32"
+            "maximum" : 150,
+            "minimum" : 0
           },
           "email" : {
             "type" : "string",
             "description" : "邮箱"
           },
           "img" : {
-            "maxLength" : 255,
-            "minLength" : 0,
             "type" : "string",
-            "description" : "头像地址"
+            "description" : "头像地址",
+            "maxLength" : 255,
+            "minLength" : 0
           },
           "signature" : {
-            "maxLength" : 255,
-            "minLength" : 0,
             "type" : "string",
-            "description" : "个性签名"
+            "description" : "个性签名",
+            "maxLength" : 255,
+            "minLength" : 0
           }
         },
-        "description" : "创建用户请求"
+        "required" : [
+          "age",
+          "email",
+          "name"
+        ]
       },
       "ResultLong" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -4708,45 +4685,43 @@
           },
           "data" : {
             "type" : "integer",
-            "description" : "返回数据",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "RefreshTokenDTO" : {
-        "required" : [
-          "refresh_token"
-        ],
-        "type" : "object",
+        "description" : "刷新访问令牌请求",
         "properties" : {
           "refresh_token" : {
             "type" : "string",
             "description" : "刷新令牌"
           }
         },
-        "description" : "刷新访问令牌请求"
+        "required" : [
+          "refresh_token"
+        ]
       },
       "ResultTokenRefreshVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/TokenRefreshVO"
+            "$ref" : "#/components/schemas/TokenRefreshVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "TokenRefreshVO" : {
-        "type" : "object",
+        "description" : "刷新令牌结果",
         "properties" : {
           "access_token" : {
             "type" : "string",
@@ -4762,18 +4737,18 @@
           },
           "expires_in" : {
             "type" : "integer",
-            "description" : "访问令牌有效期，单位秒",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "访问令牌有效期，单位秒"
           },
           "refresh_expires_in" : {
             "type" : "integer",
-            "description" : "刷新令牌有效期，单位秒",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "刷新令牌有效期，单位秒"
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "用户ID"
           },
           "username" : {
             "type" : "string",
@@ -4783,138 +4758,134 @@
             "type" : "string",
             "description" : "会话ID"
           }
-        },
-        "description" : "刷新令牌结果"
+        }
       },
       "ResetPasswordDTO" : {
-        "required" : [
-          "email",
-          "new_password",
-          "verification_code"
-        ],
-        "type" : "object",
+        "description" : "重置密码请求",
         "properties" : {
           "email" : {
             "type" : "string",
             "description" : "邮箱"
           },
           "verification_code" : {
-            "maxLength" : 6,
-            "minLength" : 4,
             "type" : "string",
-            "description" : "邮箱验证码"
+            "description" : "邮箱验证码",
+            "maxLength" : 6,
+            "minLength" : 4
           },
           "new_password" : {
-            "pattern" : "^(?=.*[A-Za-z])(?=.*\\d).{8,20}$",
             "type" : "string",
-            "description" : "新密码"
+            "description" : "新密码",
+            "pattern" : "^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
           }
         },
-        "description" : "重置密码请求"
+        "required" : [
+          "email",
+          "new_password",
+          "verification_code"
+        ]
       },
       "UserRegisterDTO" : {
+        "description" : "用户注册请求",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "description" : "用户名"
+          },
+          "password" : {
+            "type" : "string",
+            "description" : "登录密码",
+            "pattern" : "^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
+          },
+          "email" : {
+            "type" : "string",
+            "description" : "邮箱"
+          },
+          "age" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "年龄",
+            "maximum" : 150,
+            "minimum" : 0
+          },
+          "img" : {
+            "type" : "string",
+            "description" : "头像地址"
+          },
+          "signature" : {
+            "type" : "string",
+            "description" : "个性签名",
+            "maxLength" : 255,
+            "minLength" : 0
+          },
+          "verification_code" : {
+            "type" : "string",
+            "description" : "邮箱验证码",
+            "maxLength" : 6,
+            "minLength" : 6
+          }
+        },
         "required" : [
           "age",
           "email",
           "name",
           "password",
           "verification_code"
-        ],
-        "type" : "object",
-        "properties" : {
-          "name" : {
-            "type" : "string",
-            "description" : "用户名"
-          },
-          "password" : {
-            "pattern" : "^(?=.*[A-Za-z])(?=.*\\d).{8,20}$",
-            "type" : "string",
-            "description" : "登录密码"
-          },
-          "email" : {
-            "type" : "string",
-            "description" : "邮箱"
-          },
-          "age" : {
-            "maximum" : 150,
-            "minimum" : 0,
-            "type" : "integer",
-            "description" : "年龄",
-            "format" : "int32"
-          },
-          "img" : {
-            "type" : "string",
-            "description" : "头像地址"
-          },
-          "signature" : {
-            "maxLength" : 255,
-            "minLength" : 0,
-            "type" : "string",
-            "description" : "个性签名"
-          },
-          "verification_code" : {
-            "maxLength" : 6,
-            "minLength" : 6,
-            "type" : "string",
-            "description" : "邮箱验证码"
-          }
-        },
-        "description" : "用户注册请求"
+        ]
       },
       "LoginDTO" : {
-        "required" : [
-          "captcha_id",
-          "captcha_text",
-          "name",
-          "password"
-        ],
-        "type" : "object",
+        "description" : "用户名密码登录请求",
         "properties" : {
           "password" : {
-            "maxLength" : 20,
-            "minLength" : 3,
             "type" : "string",
-            "description" : "登录密码"
+            "description" : "登录密码",
+            "maxLength" : 20,
+            "minLength" : 3
           },
           "name" : {
-            "maxLength" : 20,
-            "minLength" : 3,
             "type" : "string",
-            "description" : "用户名"
+            "description" : "用户名",
+            "maxLength" : 20,
+            "minLength" : 3
           },
           "captcha_id" : {
             "type" : "string",
             "description" : "图形验证码ID"
           },
           "captcha_text" : {
-            "maxLength" : 4,
-            "minLength" : 4,
             "type" : "string",
-            "description" : "图形验证码文本"
+            "description" : "图形验证码文本",
+            "maxLength" : 4,
+            "minLength" : 4
           }
         },
-        "description" : "用户名密码登录请求"
+        "required" : [
+          "captcha_id",
+          "captcha_text",
+          "name",
+          "password"
+        ]
       },
       "ResultUserLoginVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/UserLoginVO"
+            "$ref" : "#/components/schemas/UserLoginVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "UserLoginVO" : {
-        "type" : "object",
+        "description" : "登录结果",
         "properties" : {
           "access_token" : {
             "type" : "string",
@@ -4930,18 +4901,18 @@
           },
           "expires_in" : {
             "type" : "integer",
-            "description" : "访问令牌有效期，单位秒",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "访问令牌有效期，单位秒"
           },
           "refresh_expires_in" : {
             "type" : "integer",
-            "description" : "刷新令牌有效期，单位秒",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "刷新令牌有效期，单位秒"
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "用户ID"
           },
           "username" : {
             "type" : "string",
@@ -4953,85 +4924,81 @@
           },
           "online_device_count" : {
             "type" : "integer",
-            "description" : "在线设备数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "在线设备数"
           }
-        },
-        "description" : "登录结果"
+        }
       },
       "KickOtherDevicesVO" : {
-        "type" : "object",
+        "description" : "踢出其他设备结果",
         "properties" : {
           "user_id" : {
             "type" : "integer",
-            "description" : "用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "用户ID"
           },
           "removed_session_count" : {
             "type" : "integer",
-            "description" : "已移除会话数",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "已移除会话数"
           },
           "online_device_count" : {
             "type" : "integer",
-            "description" : "当前在线设备数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "当前在线设备数"
           }
-        },
-        "description" : "踢出其他设备结果"
+        }
       },
       "ResultKickOtherDevicesVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/KickOtherDevicesVO"
+            "$ref" : "#/components/schemas/KickOtherDevicesVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "GithubTokenExchangeDTO" : {
-        "required" : [
-          "ticket"
-        ],
-        "type" : "object",
+        "description" : "GitHub 登录票据换取令牌请求",
         "properties" : {
           "ticket" : {
             "type" : "string",
             "description" : "一次性登录票据"
           }
         },
-        "description" : "GitHub 登录票据换取令牌请求"
+        "required" : [
+          "ticket"
+        ]
       },
       "GithubTokenTicketCreateDTO" : {
-        "required" : [
-          "user_id",
-          "username"
-        ],
-        "type" : "object",
+        "description" : "创建 GitHub 登录票据请求",
         "properties" : {
           "user_id" : {
             "type" : "integer",
-            "description" : "用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "用户ID"
           },
           "username" : {
             "type" : "string",
             "description" : "用户名"
           }
         },
-        "description" : "创建 GitHub 登录票据请求"
+        "required" : [
+          "user_id",
+          "username"
+        ]
       },
       "GithubTokenTicketVO" : {
-        "type" : "object",
+        "description" : "GitHub 登录票据",
         "properties" : {
           "ticket" : {
             "type" : "string",
@@ -5039,36 +5006,31 @@
           },
           "expires_in" : {
             "type" : "integer",
-            "description" : "有效期，单位秒",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "有效期，单位秒"
           }
-        },
-        "description" : "GitHub 登录票据"
+        }
       },
       "ResultGithubTokenTicketVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/GithubTokenTicketVO"
+            "$ref" : "#/components/schemas/GithubTokenTicketVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "GithubUserInternalDTO" : {
-        "required" : [
-          "github_id",
-          "github_login"
-        ],
-        "type" : "object",
+        "description" : "GitHub 用户内部同步请求",
         "properties" : {
           "github_id" : {
             "type" : "string",
@@ -5095,38 +5057,41 @@
             "description" : "邮箱"
           }
         },
-        "description" : "GitHub 用户内部同步请求"
+        "required" : [
+          "github_id",
+          "github_login"
+        ]
       },
       "ResultUserVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/UserVO"
+            "$ref" : "#/components/schemas/UserVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "UserVO" : {
-        "type" : "object",
+        "description" : "用户视图",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "用户ID"
           },
           "github_id" : {
             "type" : "integer",
-            "description" : "GitHub 用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "GitHub 用户ID"
           },
           "github_login" : {
             "type" : "string",
@@ -5147,8 +5112,8 @@
           },
           "age" : {
             "type" : "integer",
-            "description" : "年龄",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "年龄"
           },
           "email" : {
             "type" : "string",
@@ -5172,24 +5137,23 @@
           },
           "last_login_at" : {
             "type" : "string",
-            "description" : "最近登录时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "最近登录时间"
           },
           "login_status" : {
             "type" : "integer",
-            "description" : "登录状态，1在线 0离线",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "登录状态，1在线 0离线"
           },
           "online_device_count" : {
             "type" : "integer",
-            "description" : "在线设备数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "在线设备数"
           }
-        },
-        "description" : "用户视图"
+        }
       },
       "EmailCodeSendDTO" : {
-        "type" : "object",
+        "description" : "发送邮箱验证码请求",
         "properties" : {
           "email" : {
             "type" : "string",
@@ -5199,66 +5163,62 @@
             "type" : "string",
             "description" : "验证码场景，register、login 或 reset"
           }
-        },
-        "description" : "发送邮箱验证码请求"
+        }
       },
       "EmailLoginDTO" : {
-        "required" : [
-          "captcha_id",
-          "captcha_text",
-          "email",
-          "verification_code"
-        ],
-        "type" : "object",
+        "description" : "邮箱验证码登录请求",
         "properties" : {
           "email" : {
             "type" : "string",
             "description" : "登录邮箱"
           },
           "verification_code" : {
-            "maxLength" : 6,
-            "minLength" : 4,
             "type" : "string",
-            "description" : "邮箱验证码"
+            "description" : "邮箱验证码",
+            "maxLength" : 6,
+            "minLength" : 4
           },
           "captcha_id" : {
             "type" : "string",
             "description" : "图形验证码ID"
           },
           "captcha_text" : {
-            "maxLength" : 4,
-            "minLength" : 4,
             "type" : "string",
-            "description" : "图形验证码文本"
+            "description" : "图形验证码文本",
+            "maxLength" : 4,
+            "minLength" : 4
           }
         },
-        "description" : "邮箱验证码登录请求"
+        "required" : [
+          "captcha_id",
+          "captcha_text",
+          "email",
+          "verification_code"
+        ]
       },
       "BatchIdsDTO" : {
-        "required" : [
-          "ids"
-        ],
-        "type" : "object",
+        "description" : "批量ID请求",
         "properties" : {
           "ids" : {
             "type" : "array",
             "description" : "ID列表",
             "items" : {
               "type" : "integer",
-              "description" : "ID列表",
               "format" : "int64"
             }
           }
         },
-        "description" : "批量ID请求"
+        "required" : [
+          "ids"
+        ]
       },
       "ResultListUserVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -5271,14 +5231,10 @@
               "$ref" : "#/components/schemas/UserVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "SqlQueryDTO" : {
-        "required" : [
-          "query"
-        ],
-        "type" : "object",
+        "description" : "只读 SQL 查询请求",
         "properties" : {
           "query" : {
             "type" : "string",
@@ -5286,42 +5242,40 @@
           },
           "params" : {
             "type" : "object",
-            "additionalProperties" : {
-              "type" : "object",
-              "description" : "命名参数"
-            },
+            "additionalProperties" : { },
             "description" : "命名参数"
           }
         },
-        "description" : "只读 SQL 查询请求"
+        "required" : [
+          "query"
+        ]
       },
       "ResultSqlQueryResultVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/SqlQueryResultVO"
+            "$ref" : "#/components/schemas/SqlQueryResultVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "SqlQueryResultVO" : {
-        "type" : "object",
+        "description" : "只读SQL查询结果",
         "properties" : {
           "columns" : {
             "type" : "array",
             "description" : "结果列名，顺序与每行值的顺序一致",
             "items" : {
-              "type" : "string",
-              "description" : "结果列名，顺序与每行值的顺序一致"
+              "type" : "string"
             }
           },
           "rows" : {
@@ -5329,43 +5283,37 @@
             "description" : "结果行，每行按列顺序排列",
             "items" : {
               "type" : "array",
-              "description" : "结果行，每行按列顺序排列",
-              "items" : {
-                "type" : "object",
-                "description" : "结果行，每行按列顺序排列"
-              }
+              "items" : { }
             }
           },
           "row_count" : {
             "type" : "integer",
-            "description" : "返回行数",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "返回行数"
           }
-        },
-        "description" : "只读SQL查询结果"
+        }
       },
       "ArticleLikeDTO" : {
-        "required" : [
-          "article_id",
-          "user_id"
-        ],
-        "type" : "object",
+        "description" : "文章点赞请求",
         "properties" : {
           "article_id" : {
             "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "文章ID"
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "用户ID"
           }
         },
-        "description" : "文章点赞请求"
+        "required" : [
+          "article_id",
+          "user_id"
+        ]
       },
       "BatchCountVO" : {
-        "type" : "object",
+        "description" : "批量计数结果",
         "properties" : {
           "counts" : {
             "type" : "array",
@@ -5374,109 +5322,103 @@
               "$ref" : "#/components/schemas/IdCountVO"
             }
           }
-        },
-        "description" : "批量计数结果"
+        }
       },
       "IdCountVO" : {
-        "type" : "object",
+        "description" : "ID 与数量",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "ID"
           },
           "count" : {
             "type" : "integer",
-            "description" : "数量",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "数量"
           }
-        },
-        "description" : "ID 与数量"
+        }
       },
       "ResultBatchCountVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/BatchCountVO"
+            "$ref" : "#/components/schemas/BatchCountVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "FocusDTO" : {
-        "required" : [
-          "focus_id",
-          "user_id"
-        ],
-        "type" : "object",
+        "description" : "用户关注请求",
         "properties" : {
           "user_id" : {
             "type" : "integer",
-            "description" : "发起关注的用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "发起关注的用户ID"
           },
           "focus_id" : {
             "type" : "integer",
-            "description" : "被关注用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "被关注用户ID"
           }
         },
-        "description" : "用户关注请求"
+        "required" : [
+          "focus_id",
+          "user_id"
+        ]
       },
       "CommentCreateDTO" : {
+        "description" : "创建评论请求",
+        "properties" : {
+          "content" : {
+            "type" : "string",
+            "description" : "评论内容",
+            "maxLength" : 200,
+            "minLength" : 1
+          },
+          "star" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "星级评分，1到10",
+            "maximum" : 10,
+            "minimum" : 1
+          },
+          "article_title" : {
+            "type" : "string",
+            "description" : "文章标题",
+            "maxLength" : 2147483647,
+            "minLength" : 1
+          },
+          "username" : {
+            "type" : "string",
+            "description" : "评论用户名",
+            "maxLength" : 2147483647,
+            "minLength" : 1
+          }
+        },
         "required" : [
           "article_title",
           "content",
           "star",
           "username"
-        ],
-        "type" : "object",
-        "properties" : {
-          "content" : {
-            "maxLength" : 200,
-            "minLength" : 1,
-            "type" : "string",
-            "description" : "评论内容"
-          },
-          "star" : {
-            "maximum" : 10,
-            "exclusiveMaximum" : false,
-            "minimum" : 1,
-            "exclusiveMinimum" : false,
-            "type" : "number",
-            "description" : "星级评分，1到10",
-            "format" : "double"
-          },
-          "article_title" : {
-            "maxLength" : 2147483647,
-            "minLength" : 1,
-            "type" : "string",
-            "description" : "文章标题"
-          },
-          "username" : {
-            "maxLength" : 2147483647,
-            "minLength" : 1,
-            "type" : "string",
-            "description" : "评论用户名"
-          }
-        },
-        "description" : "创建评论请求"
+        ]
       },
       "ArticleCommentScoresVO" : {
-        "type" : "object",
+        "description" : "文章评论评分",
         "properties" : {
           "article_id" : {
             "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "文章ID"
           },
           "role_scores" : {
             "type" : "object",
@@ -5485,32 +5427,30 @@
             },
             "description" : "按角色汇总的评分"
           }
-        },
-        "description" : "文章评论评分"
+        }
       },
       "CommentScoreDTO" : {
-        "type" : "object",
+        "description" : "评论评分统计",
         "properties" : {
           "average_score" : {
             "type" : "number",
-            "description" : "平均评分",
-            "format" : "double"
+            "format" : "double",
+            "description" : "平均评分"
           },
           "count" : {
             "type" : "integer",
-            "description" : "评论数量",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "评论数量"
           }
-        },
-        "description" : "评论评分统计"
+        }
       },
       "ResultListArticleCommentScoresVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -5523,16 +5463,15 @@
               "$ref" : "#/components/schemas/ArticleCommentScoresVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "Comments" : {
-        "type" : "object",
+        "description" : "评论",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "评论ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "评论ID"
           },
           "content" : {
             "type" : "string",
@@ -5540,75 +5479,73 @@
           },
           "star" : {
             "type" : "number",
-            "description" : "星级评分，1到10",
-            "format" : "double"
+            "format" : "double",
+            "description" : "星级评分，1到10"
           },
           "article_id" : {
             "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "文章ID"
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "用户ID"
           },
           "create_time" : {
             "type" : "string",
-            "description" : "创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "创建时间"
           },
           "update_time" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           }
-        },
-        "description" : "评论"
+        }
       },
       "CommentSyncVO" : {
-        "type" : "object",
+        "description" : "评论同步数据",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "评论ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "评论ID"
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "评论作者用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "评论作者用户ID"
           },
           "article_id" : {
             "type" : "integer",
-            "description" : "所属文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "所属文章ID"
           },
           "star" : {
             "type" : "number",
-            "description" : "评论评分，未评分时为空",
-            "format" : "double"
+            "format" : "double",
+            "description" : "评论评分，未评分时为空"
           },
           "create_time" : {
             "type" : "string",
-            "description" : "创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "创建时间"
           },
           "update_time" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           }
-        },
-        "description" : "评论同步数据"
+        }
       },
       "ResultListCommentSyncVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -5621,48 +5558,41 @@
               "$ref" : "#/components/schemas/CommentSyncVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ArticleCollectDTO" : {
-        "required" : [
-          "article_id",
-          "user_id"
-        ],
-        "type" : "object",
+        "description" : "文章收藏请求",
         "properties" : {
           "article_id" : {
             "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "文章ID"
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "用户ID"
           }
         },
-        "description" : "文章收藏请求"
+        "required" : [
+          "article_id",
+          "user_id"
+        ]
       },
       "CategoryCreateDTO" : {
-        "required" : [
-          "name"
-        ],
-        "type" : "object",
+        "description" : "创建分类请求",
         "properties" : {
           "name" : {
             "type" : "string",
             "description" : "分类名称"
           }
         },
-        "description" : "创建分类请求"
+        "required" : [
+          "name"
+        ]
       },
       "SubCategoryCreateDTO" : {
-        "required" : [
-          "category_id",
-          "name"
-        ],
-        "type" : "object",
+        "description" : "创建子分类请求",
         "properties" : {
           "name" : {
             "type" : "string",
@@ -5670,19 +5600,22 @@
           },
           "category_id" : {
             "type" : "integer",
-            "description" : "父分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "父分类ID"
           }
         },
-        "description" : "创建子分类请求"
+        "required" : [
+          "category_id",
+          "name"
+        ]
       },
       "ResultListSubCategoryVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -5695,16 +5628,15 @@
               "$ref" : "#/components/schemas/SubCategoryVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "SubCategoryVO" : {
-        "type" : "object",
+        "description" : "子分类",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "子分类ID"
           },
           "name" : {
             "type" : "string",
@@ -5712,61 +5644,59 @@
           },
           "category_id" : {
             "type" : "integer",
-            "description" : "父分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "父分类ID"
           },
           "create_time" : {
             "type" : "string",
-            "description" : "创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "创建时间"
           },
           "update_time" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           }
-        },
-        "description" : "子分类"
+        }
       },
       "CategoryReferenceCreateDTO" : {
-        "required" : [
-          "sub_category_id",
-          "type"
-        ],
-        "type" : "object",
+        "description" : "创建权威参考文本请求",
         "properties" : {
           "sub_category_id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "子分类ID"
           },
           "type" : {
-            "pattern" : "^(link|pdf)$",
             "type" : "string",
-            "description" : "类型，link 或 pdf"
+            "description" : "类型，link 或 pdf",
+            "pattern" : "^(link|pdf)$"
           },
           "link" : {
-            "maxLength" : 255,
-            "minLength" : 0,
             "type" : "string",
-            "description" : "官网链接，类型为 link 时必填"
+            "description" : "官网链接，类型为 link 时必填",
+            "maxLength" : 255,
+            "minLength" : 0
           },
           "pdf" : {
-            "maxLength" : 255,
-            "minLength" : 0,
             "type" : "string",
-            "description" : "PDF 链接，类型为 pdf 时必填"
+            "description" : "PDF 链接，类型为 pdf 时必填",
+            "maxLength" : 255,
+            "minLength" : 0
           }
         },
-        "description" : "创建权威参考文本请求"
+        "required" : [
+          "sub_category_id",
+          "type"
+        ]
       },
       "CategoryVO" : {
-        "type" : "object",
+        "description" : "分类",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "分类ID"
           },
           "name" : {
             "type" : "string",
@@ -5774,13 +5704,13 @@
           },
           "create_time" : {
             "type" : "string",
-            "description" : "创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "创建时间"
           },
           "update_time" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           },
           "sub_categories" : {
             "type" : "array",
@@ -5789,16 +5719,15 @@
               "$ref" : "#/components/schemas/SubCategoryVO"
             }
           }
-        },
-        "description" : "分类"
+        }
       },
       "ResultListCategoryVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -5811,64 +5740,62 @@
               "$ref" : "#/components/schemas/CategoryVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ArticleCreateDTO" : {
-        "required" : [
-          "content",
-          "status",
-          "sub_category_id",
-          "title",
-          "username"
-        ],
-        "type" : "object",
+        "description" : "创建文章请求",
         "properties" : {
           "title" : {
-            "maxLength" : 200,
-            "minLength" : 1,
             "type" : "string",
-            "description" : "文章标题"
+            "description" : "文章标题",
+            "maxLength" : 200,
+            "minLength" : 1
           },
           "content" : {
             "type" : "string",
             "description" : "文章内容"
           },
           "username" : {
-            "maxLength" : 50,
-            "minLength" : 1,
             "type" : "string",
-            "description" : "作者用户名"
+            "description" : "作者用户名",
+            "maxLength" : 50,
+            "minLength" : 1
           },
           "tags" : {
-            "maxLength" : 200,
-            "minLength" : 0,
             "type" : "string",
-            "description" : "标签，多个用英文逗号分隔"
+            "description" : "标签，多个用英文逗号分隔",
+            "maxLength" : 200,
+            "minLength" : 0
           },
           "status" : {
-            "maximum" : 1,
-            "minimum" : 0,
             "type" : "integer",
+            "format" : "int32",
             "description" : "状态，0草稿 1已发布",
-            "format" : "int32"
+            "maximum" : 1,
+            "minimum" : 0
           },
           "sub_category_id" : {
-            "minimum" : 1,
             "type" : "integer",
+            "format" : "int32",
             "description" : "子分类ID",
-            "format" : "int32"
+            "minimum" : 1
           }
         },
-        "description" : "创建文章请求"
+        "required" : [
+          "content",
+          "status",
+          "sub_category_id",
+          "title",
+          "username"
+        ]
       },
       "ResultListIdCountVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -5881,16 +5808,15 @@
               "$ref" : "#/components/schemas/IdCountVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ArticleWithCategoryVO" : {
-        "type" : "object",
+        "description" : "带分类的文章",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "文章ID"
           },
           "title" : {
             "type" : "string",
@@ -5902,8 +5828,8 @@
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "作者用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "作者用户ID"
           },
           "username" : {
             "type" : "string",
@@ -5915,18 +5841,18 @@
           },
           "status" : {
             "type" : "integer",
-            "description" : "状态，0草稿 1已发布",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "状态，0草稿 1已发布"
           },
           "views" : {
             "type" : "integer",
-            "description" : "浏览量",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "浏览量"
           },
           "sub_category_id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "子分类ID"
           },
           "sub_category_name" : {
             "type" : "string",
@@ -5934,8 +5860,8 @@
           },
           "category_id" : {
             "type" : "integer",
-            "description" : "父分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "父分类ID"
           },
           "category_name" : {
             "type" : "string",
@@ -5943,24 +5869,23 @@
           },
           "create_at" : {
             "type" : "string",
-            "description" : "创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "创建时间"
           },
           "update_at" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           }
-        },
-        "description" : "带分类的文章"
+        }
       },
       "ResultListArticleWithCategoryVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -5973,37 +5898,33 @@
               "$ref" : "#/components/schemas/ArticleWithCategoryVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ResultSyncPage" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/SyncPage"
+            "$ref" : "#/components/schemas/SyncPage",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "SyncPage" : {
-        "type" : "object",
         "properties" : {
           "list" : {
             "type" : "array",
             "items" : {
               "type" : "object",
-              "additionalProperties" : {
-                "type" : "object"
-              }
+              "additionalProperties" : { }
             }
           },
           "page" : {
@@ -6021,34 +5942,33 @@
             "type" : "string",
             "format" : "date-time"
           }
-        },
-        "description" : "返回数据"
+        }
       },
       "ResultUserListVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/UserListVO"
+            "$ref" : "#/components/schemas/UserListVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "UserListVO" : {
-        "type" : "object",
+        "description" : "用户分页结果",
         "properties" : {
           "total" : {
             "type" : "integer",
-            "description" : "总记录数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "总记录数"
           },
           "list" : {
             "type" : "array",
@@ -6057,16 +5977,15 @@
               "$ref" : "#/components/schemas/UserVO"
             }
           }
-        },
-        "description" : "用户分页结果"
+        }
       },
       "ResultBoolean" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -6076,16 +5995,15 @@
             "type" : "boolean",
             "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ResultListUserSyncVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -6098,16 +6016,15 @@
               "$ref" : "#/components/schemas/UserSyncVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "UserSyncVO" : {
-        "type" : "object",
+        "description" : "用户同步数据",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "用户ID"
           },
           "name" : {
             "type" : "string",
@@ -6131,19 +6048,18 @@
           },
           "created_at" : {
             "type" : "string",
-            "description" : "创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "创建时间"
           },
           "updated_at" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           }
-        },
-        "description" : "用户同步数据"
+        }
       },
       "ImageCaptchaVO" : {
-        "type" : "object",
+        "description" : "图形验证码",
         "properties" : {
           "captcha_id" : {
             "type" : "string",
@@ -6153,34 +6069,33 @@
             "type" : "string",
             "description" : "图形验证码 Base64"
           }
-        },
-        "description" : "图形验证码"
+        }
       },
       "ResultImageCaptchaVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/ImageCaptchaVO"
+            "$ref" : "#/components/schemas/ImageCaptchaVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ResultString" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -6190,16 +6105,15 @@
             "type" : "string",
             "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ResultListSqlTableSchemaVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -6212,11 +6126,10 @@
               "$ref" : "#/components/schemas/SqlTableSchemaVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "SqlColumnInfoVO" : {
-        "type" : "object",
+        "description" : "数据库列信息",
         "properties" : {
           "name" : {
             "type" : "string",
@@ -6234,11 +6147,10 @@
             "type" : "string",
             "description" : "列注释"
           }
-        },
-        "description" : "数据库列信息"
+        }
       },
       "SqlTableSchemaVO" : {
-        "type" : "object",
+        "description" : "数据库表结构",
         "properties" : {
           "table" : {
             "type" : "string",
@@ -6246,8 +6158,8 @@
           },
           "row_count" : {
             "type" : "integer",
-            "description" : "表行数，无法统计时为 -1，未查询时为空",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "表行数，无法统计时为 -1，未查询时为空"
           },
           "columns" : {
             "type" : "array",
@@ -6256,21 +6168,20 @@
               "$ref" : "#/components/schemas/SqlColumnInfoVO"
             }
           }
-        },
-        "description" : "数据库表结构"
+        }
       },
       "ArticleLikeVO" : {
-        "type" : "object",
+        "description" : "文章点赞视图",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "点赞ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "点赞ID"
           },
           "article_id" : {
             "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "文章ID"
           },
           "title" : {
             "type" : "string",
@@ -6282,8 +6193,8 @@
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "作者用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "作者用户ID"
           },
           "author_name" : {
             "type" : "string",
@@ -6295,18 +6206,18 @@
           },
           "status" : {
             "type" : "integer",
-            "description" : "状态，0草稿 1已发布",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "状态，0草稿 1已发布"
           },
           "views" : {
             "type" : "integer",
-            "description" : "浏览量",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "浏览量"
           },
           "sub_category_id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "子分类ID"
           },
           "category_name" : {
             "type" : "string",
@@ -6318,29 +6229,28 @@
           },
           "article_create_at" : {
             "type" : "string",
-            "description" : "文章创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "文章创建时间"
           },
           "article_update_at" : {
             "type" : "string",
-            "description" : "文章更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "文章更新时间"
           },
           "liked_time" : {
             "type" : "string",
-            "description" : "点赞时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "点赞时间"
           }
-        },
-        "description" : "文章点赞视图"
+        }
       },
       "PageVOArticleLikeVO" : {
-        "type" : "object",
+        "description" : "分页结果",
         "properties" : {
           "total" : {
             "type" : "integer",
-            "description" : "总记录数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "总记录数"
           },
           "list" : {
             "type" : "array",
@@ -6349,66 +6259,61 @@
               "$ref" : "#/components/schemas/ArticleLikeVO"
             }
           }
-        },
-        "description" : "分页结果"
+        }
       },
       "ResultPageVOArticleLikeVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/PageVOArticleLikeVO"
+            "$ref" : "#/components/schemas/PageVOArticleLikeVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "MapDataVO" : {
-        "type" : "object",
+        "description" : "键值数据",
         "properties" : {
           "data" : {
             "type" : "object",
-            "additionalProperties" : {
-              "type" : "object",
-              "description" : "动态键值对"
-            },
+            "additionalProperties" : { },
             "description" : "动态键值对"
           }
-        },
-        "description" : "键值数据"
+        }
       },
       "ResultMapDataVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/MapDataVO"
+            "$ref" : "#/components/schemas/MapDataVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ResultDouble" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -6416,40 +6321,38 @@
           },
           "data" : {
             "type" : "number",
-            "description" : "返回数据",
-            "format" : "double"
+            "format" : "double",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ArticleRelationSyncVO" : {
-        "type" : "object",
+        "description" : "用户文章关系同步数据",
         "properties" : {
           "user_id" : {
             "type" : "integer",
-            "description" : "用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "用户ID"
           },
           "article_id" : {
             "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "文章ID"
           },
           "created_time" : {
             "type" : "string",
-            "description" : "关系创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "关系创建时间"
           }
-        },
-        "description" : "用户文章关系同步数据"
+        }
       },
       "ResultListArticleRelationSyncVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -6462,94 +6365,90 @@
               "$ref" : "#/components/schemas/ArticleRelationSyncVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "LikeCountVO" : {
-        "type" : "object",
+        "description" : "点赞数量",
         "properties" : {
           "like_count" : {
             "type" : "integer",
-            "description" : "点赞数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "点赞数"
           }
-        },
-        "description" : "点赞数量"
+        }
       },
       "ResultLikeCountVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/LikeCountVO"
+            "$ref" : "#/components/schemas/LikeCountVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "LikeCheckVO" : {
-        "type" : "object",
+        "description" : "点赞状态",
         "properties" : {
           "liked" : {
             "type" : "boolean",
             "description" : "是否已点赞"
           }
-        },
-        "description" : "点赞状态"
+        }
       },
       "ResultLikeCheckVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/LikeCheckVO"
+            "$ref" : "#/components/schemas/LikeCheckVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "FocusSyncVO" : {
-        "type" : "object",
+        "description" : "用户关注关系同步数据",
         "properties" : {
           "user_id" : {
             "type" : "integer",
-            "description" : "关注发起用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "关注发起用户ID"
           },
           "focus_id" : {
             "type" : "integer",
-            "description" : "被关注用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "被关注用户ID"
           },
           "created_time" : {
             "type" : "string",
-            "description" : "关注时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "关注时间"
           }
-        },
-        "description" : "用户关注关系同步数据"
+        }
       },
       "ResultListFocusSyncVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -6562,16 +6461,15 @@
               "$ref" : "#/components/schemas/FocusSyncVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "FocusUserVO" : {
-        "type" : "object",
+        "description" : "关注用户",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "用户ID"
           },
           "name" : {
             "type" : "string",
@@ -6579,8 +6477,8 @@
           },
           "age" : {
             "type" : "integer",
-            "description" : "年龄",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "年龄"
           },
           "email" : {
             "type" : "string",
@@ -6600,19 +6498,18 @@
           },
           "focused_time" : {
             "type" : "string",
-            "description" : "关注时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "关注时间"
           }
-        },
-        "description" : "关注用户"
+        }
       },
       "PageVOFocusUserVO" : {
-        "type" : "object",
+        "description" : "分页结果",
         "properties" : {
           "total" : {
             "type" : "integer",
-            "description" : "总记录数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "总记录数"
           },
           "list" : {
             "type" : "array",
@@ -6621,91 +6518,88 @@
               "$ref" : "#/components/schemas/FocusUserVO"
             }
           }
-        },
-        "description" : "分页结果"
+        }
       },
       "ResultPageVOFocusUserVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/PageVOFocusUserVO"
+            "$ref" : "#/components/schemas/PageVOFocusUserVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "CountVO" : {
-        "type" : "object",
+        "description" : "数量结果",
         "properties" : {
           "count" : {
             "type" : "integer",
-            "description" : "数量",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "数量"
           }
-        },
-        "description" : "数量结果"
+        }
       },
       "ResultCountVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/CountVO"
+            "$ref" : "#/components/schemas/CountVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "FocusCheckVO" : {
-        "type" : "object",
+        "description" : "关注状态",
         "properties" : {
           "focused" : {
             "type" : "boolean",
             "description" : "是否已关注"
           }
-        },
-        "description" : "关注状态"
+        }
       },
       "ResultFocusCheckVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/FocusCheckVO"
+            "$ref" : "#/components/schemas/FocusCheckVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "CommentsVO" : {
-        "type" : "object",
+        "description" : "评论视图",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "评论ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "评论ID"
           },
           "content" : {
             "type" : "string",
@@ -6713,8 +6607,8 @@
           },
           "star" : {
             "type" : "number",
-            "description" : "星级评分",
-            "format" : "double"
+            "format" : "double",
+            "description" : "星级评分"
           },
           "username" : {
             "type" : "string",
@@ -6736,16 +6630,15 @@
             "type" : "string",
             "description" : "更新时间"
           }
-        },
-        "description" : "评论视图"
+        }
       },
       "PageVOCommentsVO" : {
-        "type" : "object",
+        "description" : "分页结果",
         "properties" : {
           "total" : {
             "type" : "integer",
-            "description" : "总记录数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "总记录数"
           },
           "list" : {
             "type" : "array",
@@ -6754,47 +6647,46 @@
               "$ref" : "#/components/schemas/CommentsVO"
             }
           }
-        },
-        "description" : "分页结果"
+        }
       },
       "ResultPageVOCommentsVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/PageVOCommentsVO"
+            "$ref" : "#/components/schemas/PageVOCommentsVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ResultCommentsVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/CommentsVO"
+            "$ref" : "#/components/schemas/CommentsVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "AICommentsVO" : {
-        "type" : "object",
+        "description" : "AI 评论",
         "properties" : {
           "content" : {
             "type" : "string",
@@ -6802,8 +6694,8 @@
           },
           "star" : {
             "type" : "number",
-            "description" : "星级评分",
-            "format" : "double"
+            "format" : "double",
+            "description" : "星级评分"
           },
           "ai_type" : {
             "type" : "string",
@@ -6813,16 +6705,15 @@
             "type" : "string",
             "description" : "头像地址"
           }
-        },
-        "description" : "AI 评论"
+        }
       },
       "ResultListAICommentsVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -6835,21 +6726,20 @@
               "$ref" : "#/components/schemas/AICommentsVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ArticleCollectVO" : {
-        "type" : "object",
+        "description" : "文章收藏视图",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "收藏ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "收藏ID"
           },
           "article_id" : {
             "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "文章ID"
           },
           "title" : {
             "type" : "string",
@@ -6861,8 +6751,8 @@
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "作者用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "作者用户ID"
           },
           "author_name" : {
             "type" : "string",
@@ -6874,18 +6764,18 @@
           },
           "status" : {
             "type" : "integer",
-            "description" : "状态，0草稿 1已发布",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "状态，0草稿 1已发布"
           },
           "views" : {
             "type" : "integer",
-            "description" : "浏览量",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "浏览量"
           },
           "sub_category_id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "子分类ID"
           },
           "category_name" : {
             "type" : "string",
@@ -6897,29 +6787,28 @@
           },
           "article_create_at" : {
             "type" : "string",
-            "description" : "文章创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "文章创建时间"
           },
           "article_update_at" : {
             "type" : "string",
-            "description" : "文章更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "文章更新时间"
           },
           "collected_time" : {
             "type" : "string",
-            "description" : "收藏时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "收藏时间"
           }
-        },
-        "description" : "文章收藏视图"
+        }
       },
       "PageVOArticleCollectVO" : {
-        "type" : "object",
+        "description" : "分页结果",
         "properties" : {
           "total" : {
             "type" : "integer",
-            "description" : "总记录数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "总记录数"
           },
           "list" : {
             "type" : "array",
@@ -6928,114 +6817,111 @@
               "$ref" : "#/components/schemas/ArticleCollectVO"
             }
           }
-        },
-        "description" : "分页结果"
+        }
       },
       "ResultPageVOArticleCollectVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/PageVOArticleCollectVO"
+            "$ref" : "#/components/schemas/PageVOArticleCollectVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "CollectCountVO" : {
-        "type" : "object",
+        "description" : "收藏数量",
         "properties" : {
           "collect_count" : {
             "type" : "integer",
-            "description" : "收藏数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "收藏数"
           }
-        },
-        "description" : "收藏数量"
+        }
       },
       "ResultCollectCountVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/CollectCountVO"
+            "$ref" : "#/components/schemas/CollectCountVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "CollectCheckVO" : {
-        "type" : "object",
+        "description" : "收藏状态",
         "properties" : {
           "collected" : {
             "type" : "boolean",
             "description" : "是否已收藏"
           }
-        },
-        "description" : "收藏状态"
+        }
       },
       "ResultCollectCheckVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/CollectCheckVO"
+            "$ref" : "#/components/schemas/CollectCheckVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ResultCategoryVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/CategoryVO"
+            "$ref" : "#/components/schemas/CategoryVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "CategoryReferenceVO" : {
-        "type" : "object",
+        "description" : "权威参考文本",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "参考ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "参考ID"
           },
           "sub_category_id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "子分类ID"
           },
           "type" : {
             "type" : "string",
@@ -7049,34 +6935,33 @@
             "type" : "string",
             "description" : "PDF 链接"
           }
-        },
-        "description" : "权威参考文本"
+        }
       },
       "ResultCategoryReferenceVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/CategoryReferenceVO"
+            "$ref" : "#/components/schemas/CategoryReferenceVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "PageVOCategoryVO" : {
-        "type" : "object",
+        "description" : "分页结果",
         "properties" : {
           "total" : {
             "type" : "integer",
-            "description" : "总记录数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "总记录数"
           },
           "list" : {
             "type" : "array",
@@ -7085,34 +6970,33 @@
               "$ref" : "#/components/schemas/CategoryVO"
             }
           }
-        },
-        "description" : "分页结果"
+        }
       },
       "ResultPageVOCategoryVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/PageVOCategoryVO"
+            "$ref" : "#/components/schemas/PageVOCategoryVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ResultListSubCategoryWithParentVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -7125,16 +7009,15 @@
               "$ref" : "#/components/schemas/SubCategoryWithParentVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "SubCategoryWithParentVO" : {
-        "type" : "object",
+        "description" : "子分类及父分类信息",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "子分类ID"
           },
           "name" : {
             "type" : "string",
@@ -7142,8 +7025,8 @@
           },
           "category_id" : {
             "type" : "integer",
-            "description" : "所属分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "所属分类ID"
           },
           "category_name" : {
             "type" : "string",
@@ -7151,24 +7034,23 @@
           },
           "create_time" : {
             "type" : "string",
-            "description" : "创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "创建时间"
           },
           "update_time" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           }
-        },
-        "description" : "子分类及父分类信息"
+        }
       },
       "ResultListSubCategorySyncVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -7181,16 +7063,15 @@
               "$ref" : "#/components/schemas/SubCategorySyncVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "SubCategorySyncVO" : {
-        "type" : "object",
+        "description" : "子分类同步数据",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "子分类ID"
           },
           "name" : {
             "type" : "string",
@@ -7198,24 +7079,23 @@
           },
           "category_id" : {
             "type" : "integer",
-            "description" : "所属分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "所属分类ID"
           },
           "update_time" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           }
-        },
-        "description" : "子分类同步数据"
+        }
       },
       "CategorySyncVO" : {
-        "type" : "object",
+        "description" : "分类同步数据",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "分类ID"
           },
           "name" : {
             "type" : "string",
@@ -7223,19 +7103,18 @@
           },
           "update_time" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           }
-        },
-        "description" : "分类同步数据"
+        }
       },
       "ResultListCategorySyncVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -7248,34 +7127,33 @@
               "$ref" : "#/components/schemas/CategorySyncVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ResultArticleWithCategoryVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/ArticleWithCategoryVO"
+            "$ref" : "#/components/schemas/ArticleWithCategoryVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "PageVOArticleWithCategoryVO" : {
-        "type" : "object",
+        "description" : "分页结果",
         "properties" : {
           "total" : {
             "type" : "integer",
-            "description" : "总记录数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "总记录数"
           },
           "list" : {
             "type" : "array",
@@ -7284,34 +7162,33 @@
               "$ref" : "#/components/schemas/ArticleWithCategoryVO"
             }
           }
-        },
-        "description" : "分页结果"
+        }
       },
       "ResultPageVOArticleWithCategoryVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/PageVOArticleWithCategoryVO"
+            "$ref" : "#/components/schemas/PageVOArticleWithCategoryVO",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ResultInteger" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -7319,19 +7196,18 @@
           },
           "data" : {
             "type" : "integer",
-            "description" : "返回数据",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ArticleSyncVO" : {
-        "type" : "object",
+        "description" : "文章同步数据",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "文章ID"
           },
           "title" : {
             "type" : "string",
@@ -7343,8 +7219,8 @@
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "作者用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "作者用户ID"
           },
           "tags" : {
             "type" : "string",
@@ -7352,39 +7228,38 @@
           },
           "status" : {
             "type" : "integer",
-            "description" : "文章状态，0 草稿，1 已发布",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "文章状态，0 草稿，1 已发布"
           },
           "views" : {
             "type" : "integer",
-            "description" : "浏览量",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "浏览量"
           },
           "sub_category_id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "子分类ID"
           },
           "create_at" : {
             "type" : "string",
-            "description" : "创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "创建时间"
           },
           "update_at" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           }
-        },
-        "description" : "文章同步数据"
+        }
       },
       "ResultListArticleSyncVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -7397,11 +7272,10 @@
               "$ref" : "#/components/schemas/ArticleSyncVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "MonthlyPublishCountVO" : {
-        "type" : "object",
+        "description" : "月度文章发布数量统计",
         "properties" : {
           "year_month" : {
             "type" : "string",
@@ -7409,19 +7283,18 @@
           },
           "count" : {
             "type" : "integer",
-            "description" : "该月发布文章数量",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "该月发布文章数量"
           }
-        },
-        "description" : "月度文章发布数量统计"
+        }
       },
       "ResultListMonthlyPublishCountVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -7434,16 +7307,15 @@
               "$ref" : "#/components/schemas/MonthlyPublishCountVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "ArticleExportVO" : {
-        "type" : "object",
+        "description" : "文章导出数据",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "文章ID"
           },
           "title" : {
             "type" : "string",
@@ -7455,8 +7327,8 @@
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "作者用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "作者用户ID"
           },
           "username" : {
             "type" : "string",
@@ -7468,28 +7340,28 @@
           },
           "status" : {
             "type" : "integer",
-            "description" : "文章状态，0 草稿，1 已发布",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "文章状态，0 草稿，1 已发布"
           },
           "create_at" : {
             "type" : "string",
-            "description" : "创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "创建时间"
           },
           "update_at" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           },
           "views" : {
             "type" : "integer",
-            "description" : "浏览量",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "浏览量"
           },
           "sub_category_id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "子分类ID"
           },
           "sub_category_name" : {
             "type" : "string",
@@ -7497,8 +7369,8 @@
           },
           "category_id" : {
             "type" : "integer",
-            "description" : "分类ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "分类ID"
           },
           "category_name" : {
             "type" : "string",
@@ -7506,24 +7378,23 @@
           },
           "like_count" : {
             "type" : "integer",
-            "description" : "点赞数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "点赞数"
           },
           "collect_count" : {
             "type" : "integer",
-            "description" : "收藏数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "收藏数"
           }
-        },
-        "description" : "文章导出数据"
+        }
       },
       "ResultListArticleExportVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -7536,32 +7407,30 @@
               "$ref" : "#/components/schemas/ArticleExportVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "CategoryArticleCountVO" : {
-        "type" : "object",
+        "description" : "子分类文章数量统计",
         "properties" : {
           "sub_category_id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "子分类ID"
           },
           "count" : {
             "type" : "integer",
-            "description" : "该子分类下的文章数量",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "该子分类下的文章数量"
           }
-        },
-        "description" : "子分类文章数量统计"
+        }
       },
       "ResultListCategoryArticleCountVO" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
@@ -7574,16 +7443,15 @@
               "$ref" : "#/components/schemas/CategoryArticleCountVO"
             }
           }
-        },
-        "description" : "统一响应"
+        }
       },
       "Article" : {
-        "type" : "object",
+        "description" : "文章",
         "properties" : {
           "id" : {
             "type" : "integer",
-            "description" : "文章ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "文章ID"
           },
           "title" : {
             "type" : "string",
@@ -7595,8 +7463,8 @@
           },
           "user_id" : {
             "type" : "integer",
-            "description" : "作者用户ID",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "作者用户ID"
           },
           "tags" : {
             "type" : "string",
@@ -7604,39 +7472,38 @@
           },
           "status" : {
             "type" : "integer",
-            "description" : "状态，0草稿 1已发布",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "状态，0草稿 1已发布"
           },
           "views" : {
             "type" : "integer",
-            "description" : "浏览量",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "浏览量"
           },
           "sub_category_id" : {
             "type" : "integer",
-            "description" : "子分类ID",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "子分类ID"
           },
           "create_at" : {
             "type" : "string",
-            "description" : "创建时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "创建时间"
           },
           "update_at" : {
             "type" : "string",
-            "description" : "更新时间",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "更新时间"
           }
-        },
-        "description" : "文章"
+        }
       },
       "PageVOArticle" : {
-        "type" : "object",
+        "description" : "分页结果",
         "properties" : {
           "total" : {
             "type" : "integer",
-            "description" : "总记录数",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "总记录数"
           },
           "list" : {
             "type" : "array",
@@ -7645,26 +7512,25 @@
               "$ref" : "#/components/schemas/Article"
             }
           }
-        },
-        "description" : "分页结果"
+        }
       },
       "ResultPageVOArticle" : {
-        "type" : "object",
+        "description" : "统一响应",
         "properties" : {
           "code" : {
             "type" : "integer",
-            "description" : "响应码",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "响应码"
           },
           "msg" : {
             "type" : "string",
             "description" : "响应信息"
           },
           "data" : {
-            "$ref" : "#/components/schemas/PageVOArticle"
+            "$ref" : "#/components/schemas/PageVOArticle",
+            "description" : "返回数据"
           }
-        },
-        "description" : "统一响应"
+        }
       }
     }
   }

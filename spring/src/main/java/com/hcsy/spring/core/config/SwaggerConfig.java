@@ -125,7 +125,6 @@ public class SwaggerConfig {
             Object dataProperty = schema.getProperties().get(UNIFIED_DATA_FIELD);
             if (dataProperty instanceof Schema<?> dataSchema && isEmptyObjectSchema(dataSchema)) {
                 dataSchema.setType(NULL_TYPE);
-                dataSchema.setNullable(true);
             }
         });
     }
