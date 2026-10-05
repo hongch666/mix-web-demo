@@ -58,6 +58,8 @@ show_usage() {
     echo "  --no-readme 只同步接口文档，不处理 README"
     echo "  --no-maintainer 不填充接口责任人"
     echo "  --create-readme 未配置 README 目标文档时先创建"
+    echo "  gozero 的 WebSocket 接口经 Apifox CLI 单独同步，只覆盖 description 与 tags，"
+    echo "  名称、参数与目录归属保留 Apifox 侧手工维护的内容；接口缺失时跳过并提示"
 }
 
 # ==================== 环境变量读取 ====================
@@ -376,6 +378,185 @@ post_import_openapi() {
     return 1
 }
 
+# ==================== WebSocket 接口同步 ====================
+# OpenAPI 规范表达不了 WebSocket：goctl 产物里的 /ws/chat 会被 fix.py 剔除，
+# 同时单独产出 docs/websocket.json。这里用 Apifox CLI 的 websocket 命令按 path 匹配后更新，
+# 与 HTTP 接口走的 import-openapi 是两条独立通道，互不影响
+# update 不是 JSON Patch，会把传入字段整体提交，所以先 get 完整资源、在完整结构上替换
+# description 与 tags 再提交；接口名称、参数、公共参数与目录归属由 Apifox 侧手工维护
+
+resolve_python() {
+    if command -v python3 >/dev/null 2>&1; then
+        printf '%s' "python3"
+        return 0
+    fi
+    if command -v python >/dev/null 2>&1; then
+        printf '%s' "python"
+        return 0
+    fi
+    return 1
+}
+
+# 从 websocket list 的结果里按 path 取接口 ID，不存在时输出空串
+lookup_websocket_id() {
+    local python_bin="$1"
+    local list_file="$2"
+    local path="$3"
+    "$python_bin" -c '
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    data = json.load(handle).get("data") or []
+match = next((item for item in data if item.get("path") == sys.argv[2]), None)
+print(match["id"] if match else "")
+' "$list_file" "$path"
+}
+
+# 用产物里的 description / tags 覆盖 get 到的完整资源
+# websocket-update 的 additionalProperties 为 false，必须剔除 id / projectId / createdAt
+# 这类只读字段，否则结构校验会失败
+merge_websocket_payload() {
+    local python_bin="$1"
+    local detail_file="$2"
+    local spec_file="$3"
+    local target_path="$4"
+    local output_file="$5"
+    "$python_bin" - "$detail_file" "$spec_file" "$target_path" "$output_file" <<'PY'
+import json
+import sys
+
+detail_file, spec_file, target_path, output_file = sys.argv[1:5]
+
+# websocket-update schema 允许写入的字段
+ALLOWED_FIELDS = (
+    "name",
+    "path",
+    "tags",
+    "status",
+    "folderId",
+    "serverId",
+    "requestBody",
+    "parameters",
+    "commonParameters",
+    "description",
+    "responsibleId",
+    "advancedSettings",
+    "moduleId",
+)
+
+with open(detail_file, encoding="utf-8") as handle:
+    detail = json.load(handle).get("data") or {}
+
+with open(spec_file, encoding="utf-8") as handle:
+    endpoints = json.load(handle).get("websockets") or []
+
+endpoint = next((item for item in endpoints if item.get("path") == target_path), None)
+if endpoint is None:
+    sys.exit(1)
+
+payload = {key: detail[key] for key in ALLOWED_FIELDS if key in detail}
+for key in ("description", "tags"):
+    if key in endpoint:
+        payload[key] = endpoint[key]
+
+with open(output_file, "w", encoding="utf-8", newline="\n") as handle:
+    json.dump(payload, handle, ensure_ascii=False, indent=2)
+    handle.write("\n")
+PY
+}
+
+sync_websocket_endpoints() {
+    local service="$1"
+    local is_dry_run="$2"
+
+    # 目前只有 GoZero 声明 WebSocket 路由
+    if [ "$service" != "gozero" ]; then
+        return 0
+    fi
+
+    local ws_spec="$WORKDIR/gozero/app/docs/websocket.json"
+    if [ ! -f "$ws_spec" ]; then
+        return 0
+    fi
+
+    if ! command -v apifox >/dev/null 2>&1; then
+        print_warn "[$service] 未安装 Apifox CLI，跳过 WebSocket 接口同步（npm install -g apifox-cli）"
+        return 0
+    fi
+
+    local python_bin
+    if ! python_bin=$(resolve_python); then
+        print_warn "[$service] 未检测到 python，跳过 WebSocket 接口同步"
+        return 0
+    fi
+
+    local paths
+    paths=$("$python_bin" -c '
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    endpoints = json.load(handle).get("websockets") or []
+print("\n".join(item["path"] for item in endpoints if item.get("path")))
+' "$ws_spec")
+
+    if [ -z "$paths" ]; then
+        return 0
+    fi
+
+    local list_file="$TMP_DIR/websocket-list.json"
+    if ! apifox websocket list --project "$project_id" --access-token "$token" >"$list_file" 2>/dev/null; then
+        print_error "[$service] 获取 WebSocket 接口列表失败"
+        return 1
+    fi
+
+    local path id synced=0 missing=0
+    while IFS= read -r path; do
+        [ -n "$path" ] || continue
+
+        id=$(lookup_websocket_id "$python_bin" "$list_file" "$path")
+        if [ -z "$id" ]; then
+            print_warn "[$service] Apifox 中不存在 WebSocket 接口 $path，跳过（首次需在 Apifox 手工创建）"
+            missing=$((missing + 1))
+            continue
+        fi
+
+        if [ "$is_dry_run" = "true" ]; then
+            print_info "[$service] dry-run：将用产物覆盖 WebSocket 接口 $path（id=$id）的 description 与 tags"
+            synced=$((synced + 1))
+            continue
+        fi
+
+        local detail_file="$TMP_DIR/websocket-detail.json"
+        local payload_file="$TMP_DIR/websocket-payload.json"
+        if ! apifox websocket get "$id" --project "$project_id" --access-token "$token" >"$detail_file" 2>/dev/null; then
+            print_error "[$service] 获取 WebSocket 接口 $path 详情失败"
+            return 1
+        fi
+
+        if ! merge_websocket_payload "$python_bin" "$detail_file" "$ws_spec" "$path" "$payload_file"; then
+            print_error "[$service] 构造 WebSocket 接口 $path 的更新内容失败"
+            return 1
+        fi
+
+        if ! apifox cli-schema validate websocket-update --file "$payload_file" >/dev/null 2>&1; then
+            print_error "[$service] WebSocket 接口 $path 的更新内容未通过 Apifox 结构校验"
+            return 1
+        fi
+
+        if ! apifox websocket update "$id" --project "$project_id" --access-token "$token" --file "$payload_file" >/dev/null 2>&1; then
+            print_error "[$service] 更新 WebSocket 接口 $path 失败"
+            return 1
+        fi
+
+        synced=$((synced + 1))
+    done <<< "$paths"
+
+    print_info "[$service] WebSocket 接口：更新 $synced，缺失跳过 $missing（仅同步 description 与 tags）"
+    return 0
+}
+
 # ==================== 主流程 ====================
 
 main() {
@@ -528,6 +709,11 @@ main() {
             if [ "$injected" != "$(count_operations "$spec_file")" ]; then
                 print_warn "[$service] 责任人注入数（$injected）与接口数不一致，部分接口可能未带上责任人"
             fi
+        fi
+
+        # WebSocket 接口无法用 OpenAPI 表达，走 Apifox CLI 的 websocket 命令单独同步
+        if ! sync_websocket_endpoints "$service" "$dry_run"; then
+            failed_services="$failed_services $service(websocket)"
         fi
 
         if [ "$dry_run" = "true" ]; then
