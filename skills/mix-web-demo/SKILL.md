@@ -234,14 +234,16 @@ app/internal/agents     LangChain Agent 与工具
 ### API-First 流程（强制）
 
 1. 先在 `gozero/api/` 修改 `.api` 文件：`main.api` 按业务分组 import（chat、search、sqlTools、task 等），路由写在分组文件中，`@server` 块声明 `group`、`prefix`、`middleware`
-2. 生成代码：`gozero/script/goctl/genApi.sh`（bash）或 `genApi.ps1`（PowerShell），两者等价，顶层入口 `scripts/goctl-api-init.sh`。核心动作是 `goctl api format -dir .` + `goctl api go -api main.api -dir ../app --style=goZero --home ../template`；脚本会自动备份并还原 `main.go` 与 `etc/`、删除生成的 `app.go`
-3. ORM：`gozero/script/goctl/genOrm.sh` / `genOrm.ps1`（`goctl model mysql ddl --style goZero --home ../template`），SQL DDL 放 `gozero/script/sql/`
-4. 模板在 `gozero/template/`（api、model、mongo、newapi 等），生成代码基于模板；禁止手写 handler/types 绕过生成流程，logic 文件头部有 `// Code scaffolded by goctl. Safe to edit.` 标记可编辑
-5. **生成后必须处理的四件事**：
-   - `goctl` 会把 `.api`、`types.go`、`routes.go` 的行尾统一转成 LF，仓库约定 CRLF，需逐文件转回
-   - import 路径若发生变更，import 块的字母序会失效（`gofmt -l` 会报未格式化），按「剥离 CRLF → gofmt 重排 → 还原 CRLF」处理
-   - 已存在的 handler / logic 会被跳过（`exists, ignored generation`），**模板改动不会回灌到已有文件**：`template/api/handler.tpl` 里的 `ApplyApiLog(..., "TODO: 添加接口描述")` 是占位字面量（存量 handler 都手工换成了 `constants.API_LOG_*`），所以「重新生成」只对**缺失**文件安全，改了 `handler.tpl` 必须手工同步存量 handler
-   - 生成后跑 `cd gozero/app && go build ./...` 确认模板不变量未被破坏
+2. 生成代码：`gozero/script/goctl/genApi.sh`（bash）或 `genApi.ps1`（PowerShell），两者等价，顶层入口 `scripts/goctl-api-init.sh`。核心动作是 `goctl api format -dir .` + `goctl api go -api main.api -dir ../app --style=goZero --home ../template`；脚本会自动备份并还原 `main.go` 与 `etc/`、删除生成的 `app.go`，随后清理 goctl 生成的小写中间件骨架并调用 `scripts/format.sh gozero` 收敛格式
+3. ORM：`gozero/script/goctl/genOrm.sh` / `genOrm.ps1`（`goctl model mysql ddl --style goZero --home ../template`），SQL DDL 放 `gozero/script/sql/`；实际执行生成时同样会调用 `scripts/format.sh gozero`
+4. 模板在 `gozero/template/`，只保留 `api/` 与 `model/` 两个目录（goctl 其它子命令的默认模板已删除），生成代码基于模板；禁止手写 handler/types 绕过生成流程，logic 文件头部有 `// Code scaffolded by goctl. Safe to edit.` 标记可编辑
+5. 生成脚本已自动处理、不需要手工介入的事项：
+   - **小写中间件骨架**：goctl 会把 `.api` 里声明的 `XxxMiddleware` 转成全小写开头的文件名（`userContextMiddleware` → `usercontextMiddleware.go`），与仓库手写的 camelCase 文件重名并造成中间件构造函数重复声明、编译失败。脚本只删除同时满足「位于 `app/internal/middleware`」「同目录存在忽略大小写后重名的另一个文件」「内容含 goctl 骨架占位注释」三个条件的文件，避免误删真实实现
+   - **格式与行尾**：脚本最后调用 `scripts/format.sh gozero`（即 `golangci-lint fmt`）。仓库行尾由根目录 `.gitattributes` 的 `* text=auto eol=lf` 统一为 LF，不再需要手工转换或还原
+6. 仍需人工确认的事项：
+   - 已存在的 handler / logic 会被跳过（`exists, ignored generation`），**模板改动不会回灌到已有文件**：`template/api/handler.tpl` 的 `ApplyApiLog` 描述参数如今是 `constants.API_LOG_PENDING_DESCRIPTION` 占位（存量 handler 都换成了具体的 `constants.API_LOG_*`），所以「重新生成」只对**缺失**文件安全，改了 `handler.tpl` 必须手工同步存量 handler
+   - `goctl model mysql ddl` 会**覆盖**已存在的 `<table>.go` 自定义文件，手工写在其中的业务方法会丢失（如 `app/model/chatMessages/chatMessagesModel.go` 的 6 个业务方法），执行 `genOrm.sh -s` 前先备份
+   - 生成后跑 `cd gozero/app && GOTOOLCHAIN=local go build ./... && go vet ./... && go test ./... -count=1` 确认模板不变量未被破坏
 
 ### 目录组织与硬性约定
 
@@ -272,13 +274,13 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - **定时任务调度器挂在 `RuntimeContext.TaskScheduler`**（从包级变量收口）：`internal/task` 提供 `NewTaskScheduler(svcCtx, lockFactory) *cron.Cron`，Redis 锁工厂由 `boot/server.go` 传入，任务每次运行通过工厂创建锁对象；返回值由 boot 赋给 `ctx.TaskScheduler`。停止统一由 `ServiceContext.Close()` 承担（先 `TaskScheduler.Stop()` 再 `Cancel()`），`boot/init.go` 的关闭入口调 `ctx.Close()` 而非直接操作调度器。**不要再引入包级调度器变量**（测试无法替换、生命周期不受 Close 管理）。cron 表达式用标准 5 字段（分 时 日 月 周），"每小时"是 `0 * * * *`，写成 `* * */1 * *` 会变成每分钟执行
 - 实时 Hub 由组合根创建：`newHubContext` 创建 `SSEHub` 和 `ChatHub`，`ChatHub` 持有自己的 `ChatQueue`；禁止恢复包级 Hub、队列或其他运行态单例。需要在连接生命周期中清理状态时，Client 必须持有所属 Hub 引用
 - `ServiceContext.Close()` 是唯一的关闭入口；新增需要释放的资源时把释放逻辑加进 `Close()`，不要另建包级 stop 函数
-- 日志：logic 结构体嵌入 `*utils.ZeroLogger`（构造时 `ZeroLogger: svcCtx.Logger.WithContext(ctx)`），调用 `l.Info/l.Errorf/l.Error`；logx 全局方法仅限启动阶段（logx 无 Warn/Warnf）；项目 ZeroLogger 提供 `Warningf`，警告级日志用它，异常一律 `l.Errorf`
+- 日志：logic 结构体嵌入 `*utils.ZeroLogger`（构造时 `ZeroLogger: svcCtx.Logger.WithContext(ctx)`），调用 `l.Info/l.Errorf/l.Error`；logx 全局方法仅限启动阶段（logx 无 Warn/Warnf）；项目 ZeroLogger 提供 `Warningf`，警告级日志用它，异常一律 `l.Errorf`。`template/api/logic.tpl` 已与这套写法对齐；模板里那行 `var _ = logx.Logger{}` 是为了消化 goctl 无条件注入的 `logx` 导包（不引用会编译报「导入但未使用」），不要当成无用代码清理
 - 并行：`mr.Finish`，每个任务为 `func() error`，结果写入闭包局部变量，任务内部吞错返回 nil（错误在任务外统一处理）
 - context：一切可能阻塞的函数第一个参数接收 `context.Context`，嵌套调用透传同一 ctx；logic 用 `l.ctx`
 - 中间件：`.api` 文件 `@server middleware:` 声明 + `routes.go` 的 `rest.WithMiddlewares`；内部服务接口必须挂 `InternalServiceMiddleware`（校验 `X-Internal-Token`）
 - 远程调用：统一走 `common/client` 的 `ServiceDiscovery.CallService(ctx, serviceName, path, RequestOptions)`，按目标服务在 `internal/client/` 封装 Client 结构体，logic 里禁止直接发 HTTP。发送层是 go-zero 的 `rest/httpc`，服务发现/负载均衡/重试/响应解析仍由自己实现，详见下面「远程调用（httpc）」小节
 - 常量：消息进 `app/common/constants/messages.go`，动态部分 `fmt.Sprintf(constants.XXX+": %v", err)` 拼接
-- 构建校验：`cd gozero/app && go build ./... && go vet ./... && go test ./... -count=1` 必须通过；**涉及依赖变动时加 `GOTOOLCHAIN=local` 复核**（对齐 Docker 的构建约束，避免 toolchain 自动升级掩盖版本漂移）；检查未使用导包与变量；产物命名与入口一致；格式用「剥离 CRLF → `gofmt -l`」复核，禁止直接 `gofmt -w`
+- 构建校验：`cd gozero/app && GOTOOLCHAIN=local go build ./... && go vet ./... && go test ./... -count=1` 必须通过；**必须带 `GOTOOLCHAIN=local`**（对齐 Docker 的构建约束，避免 toolchain 自动升级掩盖版本漂移）；检查未使用导包与变量；产物命名与入口一致；格式与静态检查统一走 `./mix lint gozero`，不要用裸 `gofmt -l`（对行尾差异会报大量假阳性），也不要直接 `gofmt -w` 做全量重排
 
 ### 请求参数校验
 
@@ -319,7 +321,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 - **帧结构的单一来源是 `.api`**：`ChatSSEMessage`、`ChatWsMessage` 声明在 `api/chat/stream.api`，接口的 `returns` 直接指向它们，**不要**再建空的 `XxxConnectResp` 占位类型。goctl 生成类型用 `Id / UserId / SenderId / ReceiverId / MessageId` 命名，与手写结构旧的 `ID / UserID / ...` 不同，跨用时需改字段名并把 `uint` 改 `uint64`
 - hub 与实时分发在 `internal/hub`（`chatHub`、`sseHub`、`chatRealtimeDispatcher`、`realtimeTypes`）：本机连接管理 + 跨 Pod 事件分发。内部信封 `ChatRealtimeEvent` 只在对内使用，**不进 `.api`**
-- **不要采用 `sse_handler.tpl` 的「每请求 chan + handler 内 flush 循环」单机模式**：跨实例广播依赖 `internal/hub` + `common/pubsub/redisPubSub.go` 的 Redis Pub/Sub，照模板改会丢掉多副本下的消息投递。连接接管（`HandleConnection` / `upgrader.Upgrade`）必须留在 handler，且接管前不得写 `w`
+- **不要采用 `sse_handler.tpl` 的「每请求 chan + handler 内 flush 循环」单机模式**：跨实例广播依赖 `internal/hub` + `common/pubsub/redisPubSub.go` 的 Redis Pub/Sub，照模板改会丢掉多副本下的消息投递。连接接管（`HandleConnection` / `upgrader.Upgrade`）必须留在 handler，且接管前不得写 `w`。该模板内已加警示注释；当前 `.api` 的 `/sse/chat` 与 `/ws/chat` 都是普通 `get` 路由，goctl 实际走 `handler.tpl` 生成，两个 handler 都已手工改为委托 hub
 - **`common/pubsub.RedisPubSub` 是「一个实例一个频道」**：频道在 `NewRedisPubSub(client, logger, channel)` 构造时绑定，`Publish` / `Start` 都不收频道参数。内部只持有单个 `*redis.PubSub` 引用，所以**同一个实例不能订阅第二个频道**（会覆盖前一个订阅的引用、造成连接泄漏与丢消息）。需要新频道就新建实例，频道常量统一放 `common/constants/redisKeys.go`
 - 心跳与初始帧属协议内容：SSE 连接建立时下发 `{"type":"connected"}`，WS 收到 `{"type":"ping"}` 回 `{"type":"pong"}`
 
@@ -348,12 +350,14 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
   3. `swagger2openapi -o openapi.json -p openapi.json` 转成 OpenAPI 3（未安装时自动 `npm install -g`，PATH 不可见则退化为 `npx -y`）
   4. `python fix.py openapi.json openapi.yaml` 做后处理（需要 PyYAML）
 - **不再使用 goctl 的 `--yaml`**：那份停留在 Swagger 2.0，而 JSON 已转成 OpenAPI 3，两边格式会分叉；现在 YAML 由处理后的 JSON 直接派生，两份产物内容完全等价。`fix.py` 写文件时显式 `newline="\n"`，避免 Windows 下写成 CRLF
-- `fix.py` 是生成后修补产物的固定环节，按顺序做四件事：
+- `fix.py` 是生成后修补产物的固定环节，按顺序做以下修补：
   - 补中文标签定义与 `info`（`tag_mapping`、`x-author`），并把每个 operation 的 `tags` 由英文替换为中文名
   - 移除 `swagger2openapi` 注入的全局 / path 级 / operation 级 `servers` 与 per-operation `schemes`（Swagger 2.0 文档没有 host，转换工具会默认补 `https://`，导致前端用错协议）
   - 剔除易变字段 `x-date`、`x-goctl-version`（`VOLATILE_FIELDS`），保证同一份 `.api` 在不同机器、不同 goctl 版本下生成结果可复现，不产生无意义 diff
-  - 剔除 WebSocket 路径 `/ws/chat`（`WEBSOCKET_PATHS`）：Apifox 的 WebSocket 是独立于 HTTP 的资源类型，OpenAPI 无法表达、也没有对应扩展，导入只会多出一条无法发起握手的 GET 接口，该接口在 Apifox 侧手工维护；同时把 `/sse/chat` 的 200 响应改为 `text/event-stream`（复用 goctl 生成的 inline schema）并补 `400`
-- GoZero 的 handler 模板会在运行时通过 `utils.Success/Error` 输出统一外壳 `{code,msg,data}`，而 `goctl api swagger` 只生成 `returns` 对应的 `data` schema；因此 `fix.py` 必须对 `application/json` 响应补齐该外壳，跳过 `text/event-stream`，并保持重复执行幂等。修改 `.api` 或响应模型后必须重新生成 JSON/YAML，检查响应 schema 的 `data` 是否仍为原始业务结构
+  - 修正 `/sse/chat` 的 200 响应（`fix_streaming_endpoints`）：帧 schema 复用 goctl 按 `returns` 生成的 inline 结构，**同时挂到 `text/event-stream` 与 `application/json` 两个媒体类型下**，JSON 视图额外加 `SSE_FRAME_SCHEMA_TITLE` 标题（Apifox 取 schema 的 `title` 作为「返回响应」下的节点名），再补 `400` 统一错误体。**Apifox 不会渲染只声明 `text/event-stream` 的响应**（「返回响应」里只显示空的 SSE 封装结构、No schema defined）；FastAPI 侧的流式聊天同样是靠帧 schema 的 JSON 视图才画出帧字段，两边必须保持一致
+  - 剔除 WebSocket 路径 `/ws/chat`（`WEBSOCKET_PATHS`）：OpenAPI 无法表达 WebSocket，留在产物里导入只会按 URL + method 多出一条无法发起握手的 GET 接口。剔除前由 `collect_websocket_endpoints` 摘出 `description` 与 `tags`，写成同级产物 `docs/websocket.json`，改由 `apifox-sync.sh` 经 Apifox CLI 的 `websocket` 命令同步（见「接口文档收尾流程」）
+- **`fix.py` 内的执行顺序有硬约束**：`fix_streaming_endpoints` 必须排在 `wrap_unified_responses` 之前 —— 前者从 200 响应的原始 `content` 里取第一个带 schema 的媒体类型当作帧结构，若后者先执行，取到的会是已被包装成 `{code,msg,data}` 的 schema，帧字段全部丢失。`drop_websocket_paths` 放最后
+- GoZero 的 handler 模板会在运行时通过 `utils.Success/Error` 输出统一外壳 `{code,msg,data}`，而 `goctl api swagger` 只生成 `returns` 对应的 `data` schema；因此 `fix.py` 必须对 `application/json` 响应补齐该外壳，并保持重复执行幂等。**跳过规则必须按内容类型显式判断：响应 `content` 里含 `text/event-stream` 就整条跳过**，不能依赖「没有 `application/json` 就自然跳过」——`/sse/chat` 的 200 现在同时声明两种媒体类型，沿用旧的隐式判断会把帧 schema 包进统一外壳。修改 `.api` 或响应模型后必须重新生成 JSON/YAML，检查响应 schema 的 `data` 是否仍为原始业务结构，以及 `/sse/chat` 的帧字段是否仍在
 - GoZero 的 `xxxResp` 按前端兼容规范保留业务 `Data` 字段并声明 `json:"data"`；handler 必须使用 `utils.Success(w, resp)`，由 `utils.Success` 识别并展开响应对象的 `Data` 字段，最终统一输出单层 `{code, msg, data}`，禁止产生 `data.data`。Swagger 后处理也必须同步展开该字段，保证文档与运行时响应一致。
 - **该文档的 schema 全部是 inline（`components` 下没有 `schemas`），不要改成 `$ref`**
 - 改完 `.api` 后按「接口文档收尾流程」重新生成并提交产物
@@ -374,7 +378,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 行尾由根目录 `.gitattributes`（`* text=auto eol=lf`）统一为 LF，仓库不再按 CRLF 维护；新建文件不需要手工转换行尾
 - 格式化统一走各服务的工具（`./mix format`）：Spring Spotless、GoZero golangci-lint、NestJS Prettier、FastAPI Ruff；不要再手工执行 `gofmt -w` 或 `prettier --write` 做全量重排
 - Go 的格式问题用 `./mix lint gozero` 判断（golangci-lint 的 gofmt formatter），不要用裸 `gofmt -l`：它对行尾差异会报大量假阳性
-- `goctl`（`api format` / `api go`）生成后跑 `./mix format gozero` 收敛格式即可，不需要再手工处理行尾
+- `goctl`（`api format` / `api go`）生成后由 `genApi.sh` / `genOrm.sh` 自动调用 `./mix format gozero` 收敛格式；手工执行 goctl 时兜底跑一次即可，不需要手工处理行尾
 - **goctl 版本**：仓库已生成的 34 个文件头部标记 `goctl 1.9.2`，本机安装的如果是其他版本，重新生成会把版本注释刷成 对应版本（`types.go`、`routes.go` 一并刷新）。
 - git 用于精确核对与回退：`git status --porcelain`、`git diff --ignore-cr-at-eol`（判断是否仅行尾差异）、`git checkout -- <文件>`
 - 本机环境参考：Go / gofmt 在 `C:\Program Files\Go\bin\`，goctl 在 `C:\Users\30708\go\bin\goctl.EXE`，git 在 `C:\Program Files\Git\cmd\git.EXE`（`usr\bin\` 下有 grep / tr / sed / basename 等，用完整路径调用），maven 在 `C:\apache-maven-3.9.11\bin\mvn.CMD`，javap 在 `C:\Program Files\Java\jdk-17\bin\javap.exe`
@@ -383,6 +387,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - `scripts/run.sh` 的运行工具默认值：`--java-build` 默认 `maven`、`--node-runtime` 默认 `bun`、`--python-runtime` 默认 `uv`
 - 两套容器编排的容器名不同：`./mix docker` 用 `mix-<service>-container`，`./mix compose` 用 `mix-<service>`（compose 的 `container_name`）
 - `README.md` 行尾由 `.gitattributes` 统一为 LF，批量改文档按「归一化 LF → 断言唯一性后替换」处理，不要逐处手工编辑
+- **数据库初始化脚本**统一放根目录 `db/<类型>/`（`mysql`、`postgresql`、`clickhouse`、`mongodb`、`es`、`neo4j`），只放表、扩展、索引、集合级别的脚本；`CREATE DATABASE` 与 `USE` 一律由使用方按需自行执行，**不在脚本中写死库名**，库名以各服务的数据库配置项为准（`DB_NAME`、`DB_MYSQL_DBNAME`、`DB_DATABASE`、`DB_MYSQL_DATABASE`、`DB_POSTGRES_DATABASE`、`DB_MONGODB_DATABASE`）。PostgreSQL 容器侧的初始库由 `scripts/docker-services.sh` 的 `POSTGRES_DB` 创建，需与 `DB_POSTGRES_DATABASE` 保持一致
 - 本技能包（`skills/mix-web-demo/`，目录名与 SKILL.md 的 `name` 一致）改完后用 `./mix skills` 同步到本机 Agent 技能目录：目标清单在 `scripts/skills-targets.conf`（只列用户级 `<home>` 技能目录，可自行追加工具，仓库内项目级目录不参与），只同步技能根目录已存在的目标，同步为镜像覆盖且内容一致时跳过；`--list` 看检测结果、`--dry-run` 预演，脚本为 `scripts/skills-sync.sh`（Windows 在 Git Bash 下执行）
 
 ## 接口文档收尾流程
@@ -420,7 +425,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 1. 新接口出现在产物里，路径、方法、参数与响应结构和实现一致
 2. `openapi.json` 与 `openapi.yaml` 成对更新，不要只提交其中一份
-3. GoZero 若改了 `.api`，确认产物里没有 `x-date` / `x-goctl-version`（出现即说明 `fix.py` 后处理没跑到）
+3. GoZero 若改了 `.api`，确认产物里没有 `x-date` / `x-goctl-version`（出现即说明 `fix.py` 后处理没跑到）；同时确认 `gozero/app/docs/websocket.json` 里的描述与 `.api` 的 `@doc` 一致，该文件与 `openapi.json` 一样属于要提交的产物
 
 ### 第二步：同步到 Apifox（配置了令牌时执行）
 
@@ -443,6 +448,9 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 该扩展会被 Apifox 保留在接口 `oasExtensions` 里并在文档页多渲染一行 `x-apifox-maintainer`，脚本导入后会再导入一次不带扩展的原文档把它清掉（`APIFOX_MAINTAINER_CLEAN_EXTENSION=false` 可保留），责任人字段不受影响
 - 令牌等同账号密码，脚本输出不回显令牌，根目录 `.env` 已被 `.gitignore` 忽略
 - `./mix apifox` 现在一次做完两件事：接口走开放 API 导入，README 走 Apifox CLI（`doc create` / `doc update`）写入 `APIFOX_README_DOC_ID` 指定的项目 Markdown 文档；README 目标未配置或未装 CLI 时该步骤跳过并提示，不影响接口导入。`--no-readme` 只同步接口，`--create-readme` 首次创建 README 文档，单独同步用 `./mix apifox-readme`
+- **WebSocket 接口走独立通道**：Apifox CLI 有 `websocket list/get/create/update/delete` 命令族（顶层 `--help` 不列出，由 `cli-schema list` 的 `websocket-create` / `websocket-update` 暴露），与 HTTP 接口的 `import-openapi` 互不影响。`apifox-sync.sh` 对 gozero 额外执行一步：读 `gozero/app/docs/websocket.json` → `websocket list` 按 `path` 匹配接口 ID → `websocket get` 取完整资源 → 只覆盖 `description` 与 `tags` → `cli-schema validate websocket-update` 校验 → `websocket update`
+- WebSocket 同步**不碰** `name`、`parameters`、`commonParameters`、`folderId`、`moduleId`：这些由 Apifox 侧手工维护（浏览器 WebSocket 无法自定义请求头，`token` 是以 query 参数手工补的）。`websocket-update` 的 `additionalProperties` 为 false 且不是 JSON Patch，必须提交完整结构，所以脚本先 `get` 再在完整结构上替换，并剔除 `id` / `projectId` / `createdAt` 等只读字段，否则结构校验失败
+- WebSocket 接口在 Apifox 中**不存在时只提示不创建**（首次仍需手工建一次，之后描述与标签变更会自动同步）；该步骤依赖 Apifox CLI 与 python，任一缺失时跳过并提示，不影响 HTTP 接口同步
 
 ### 接口描述写在代码声明处
 
@@ -452,7 +460,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - Spring：`@Operation(summary, description)`、`@Tag`
 - NestJS：`@ApiOperation({ summary, description })`、`@ApiTags`
 - FastAPI：`@router.get/post(..., summary=, description=)`
-- GoZero：`.api` 中的 `@doc(summary, description)`；handler 的 `ApplyApiLog` 描述不能留 `TODO: 添加接口描述` 占位
+- GoZero：`.api` 中的 `@doc(summary, description)`；handler 的 `ApplyApiLog` 描述不能留 `constants.API_LOG_PENDING_DESCRIPTION` 占位，必须换成 `app/common/constants/messages.go` 里具体的 `API_LOG_*` 文案
 
 ## 验证命令
 
