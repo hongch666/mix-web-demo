@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+
+# 提交前钩子：自动格式化 + 代码检查 + 编译校验 + 单元测试
+#
+# 行为：
+#   1. 从暂存区推断本次提交涉及的服务（spring / gozero / nestjs / fastapi）
+#   2. 对这些服务执行 ./mix format，并把格式化结果重新加入暂存区
+#   3. 执行 ./mix lint，未通过则阻止提交
+#   4. 执行 ./mix compile，未通过则阻止提交
+#   5. 执行 ./mix test，未通过则阻止提交
+#
+# 未涉及任何服务的提交（如仅改文档）直接放行
+# 临时跳过：SKIP_HOOKS=1 git commit ... 或 git commit --no-verify
+#
+# 安装方式：./mix hooks（等价于 git config core.hooksPath .githooks）
+#
+# 平台说明：
+#   - Windows 走 Git for Windows 自带的 Git Bash，Git 会用其内置 sh 执行本钩子，
+#     因此无需 PowerShell 版本；但前提是已安装 Git for Windows
+#   - 换行符由 .gitattributes 的 `* text=auto eol=lf` 统一为 LF，避免 CRLF 导致 shebang 失效
+
+set -euo pipefail
+
+if [ "${SKIP_HOOKS:-0}" = "1" ]; then
+    echo "[pre-commit] 检测到 SKIP_HOOKS=1，跳过格式化与检查"
+    exit 0
+fi
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+# 统一入口：显式用 bash 调用 mix，避免依赖文件可执行位
+# （Windows Git Bash 与 macOS 自带 bash 3.2 都无法保证 ./mix 的可执行位）
+MIX=(bash "$ROOT/mix")
+
+# 收集暂存区中涉及的服务名，按固定顺序输出
+# 用 while read 而非 mapfile：兼容 macOS 自带 bash 3.2 等不支持 mapfile 的环境
+collect_services() {
+    local staged
+    staged="$(git diff --cached --name-only --diff-filter=ACMR)"
+    local name
+    for name in spring gozero nestjs fastapi; do
+        if printf '%s\n' "$staged" | grep -q "^${name}/"; then
+            echo "$name"
+        fi
+    done
+}
+
+SERVICES=()
+while IFS= read -r service; do
+    [ -n "$service" ] && SERVICES+=("$service")
+done < <(collect_services)
+
+if [ "${#SERVICES[@]}" -eq 0 ]; then
+    echo "[pre-commit] 未检测到服务代码变更，跳过格式化与检查"
+    exit 0
+fi
+
+echo "[pre-commit] 本次涉及服务: ${SERVICES[*]}"
+
+echo "[pre-commit] 1/4 自动格式化..."
+"${MIX[@]}" format "${SERVICES[@]}"
+
+# 格式化可能改动工作区内容，重新加入暂存区，避免提交未格式化的版本
+if ! git diff --quiet; then
+    echo "[pre-commit] 同步格式化结果到暂存区..."
+    git add -u
+fi
+
+echo "[pre-commit] 2/4 代码检查..."
+"${MIX[@]}" lint "${SERVICES[@]}"
+
+echo "[pre-commit] 3/4 编译校验..."
+"${MIX[@]}" compile "${SERVICES[@]}"
+
+echo "[pre-commit] 4/4 单元测试..."
+"${MIX[@]}" test "${SERVICES[@]}"
+
+echo "[pre-commit] 全部通过"

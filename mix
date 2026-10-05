@@ -100,6 +100,15 @@ show_help() {
     echo "  lint [services...]       - Check code style (default: all services)"
     echo "  format [services...]     - Format code (default: all services)"
     echo "  test [services...]       - Run unit tests (default: all services)"
+    echo "  compile [services...]    - Verify compilation without packaging (default: all services)"
+    echo ""
+    echo "Git Hooks Commands (提交钩子):"
+    echo "  hooks [install|uninstall|status]"
+    echo "                           - 启用/停用版本化 Git 钩子(.githooks)"
+    echo "    install                - 指向 .githooks，提交时自动 format + lint + test"
+    echo "    uninstall              - 恢复默认 .git/hooks"
+    echo "    status                 - 查看当前钩子配置"
+    echo "  临时跳过: SKIP_HOOKS=1 git commit ... 或 git commit --no-verify"
     echo ""
     echo "Agent Skills Commands (项目技能包同步):"
     echo "  skills [options]         - 把 skills/mix-web-demo 同步到本机各 Agent 工具的用户级技能目录"
@@ -139,6 +148,11 @@ show_help() {
     echo "  ./mix format nestjs            # Format code of a specific service"
     echo "  ./mix test                     # Run unit tests for all services"
     echo "  ./mix test nestjs gozero       # Run unit tests for specific services"
+    echo "  ./mix compile                  # Verify compilation of all services"
+    echo "  ./mix compile spring fastapi   # Verify compilation of specific services"
+    echo "  ./mix hooks                    # Enable Git hooks (.githooks)"
+    echo "  ./mix hooks status             # Show current Git hooks config"
+    echo "  ./mix hooks uninstall          # Disable Git hooks"
     echo "  ./mix skills                   # 同步 skills/mix-web-demo 到本机已存在的用户级 Agent 技能目录"
     echo "  ./mix skills --list            # 只查看各 Agent 技能目录的检测结果"
     echo "  ./mix skills --dry-run         # 预览将要执行的动作"
@@ -322,6 +336,13 @@ case $COMMAND in
     test)
         echo "Running unit tests..."
         bash "$SCRIPTS_DIR/test.sh" "${@:2}"
+        ;;
+    compile)
+        echo "Checking compilation..."
+        bash "$SCRIPTS_DIR/compile.sh" "${@:2}"
+        ;;
+    hooks)
+        bash "$SCRIPTS_DIR/hooks-init.sh" "${@:2}"
         ;;
     skills)
         bash "$SCRIPTS_DIR/skills-sync.sh" "${@:2}"
