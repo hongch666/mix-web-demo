@@ -452,11 +452,15 @@ async def test_refresh_warehouse_orders_snapshots_around_partitions(
     assert order == ["snapshot", "partitions", "snapshot"]
     assert captured[0][0] == task.WarehouseScripts.UPSTREAM_SNAPSHOT_STEPS
     assert captured[1][0] == task.WarehouseScripts.DOWNSTREAM_SNAPSHOT_STEPS
-    assert captured[0][1] == captured[1][1] == {
-        "ads_platform_stats",
-        "ads_user_view_articles",
-        "ads_user_stats",
-    }
+    assert (
+        captured[0][1]
+        == captured[1][1]
+        == {
+            "ads_platform_stats",
+            "ads_user_view_articles",
+            "ads_user_stats",
+        }
+    )
 
 
 # 指定资源时只同步该源表，实现表粒度精确同步

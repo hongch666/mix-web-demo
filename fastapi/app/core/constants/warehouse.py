@@ -595,7 +595,13 @@ class WarehouseScripts:
     # 分区表 -> 直接依赖的上游节点，参与闭包推导（分区表本身按脏分区重建，不整表重刷）
     PARTITIONED_DEPENDENCIES: Final[dict[str, frozenset[str]]] = {
         "dwd_user_action": frozenset(
-            {"ods_article_log", "ods_likes", "ods_collects", "ods_comments", "ods_focus"}
+            {
+                "ods_article_log",
+                "ods_likes",
+                "ods_collects",
+                "ods_comments",
+                "ods_focus",
+            }
         ),
         "dwd_api_call": frozenset({"ods_api_log"}),
         "dws_article_day": frozenset({"dwd_user_action", "dwd_article_event"}),

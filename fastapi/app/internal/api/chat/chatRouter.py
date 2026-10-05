@@ -22,7 +22,7 @@ from app.core.base import (
     success,
 )
 from app.core.config import load_config
-from app.core.constants import Defaults, HttpCode, Messages
+from app.core.constants import Defaults, HttpCode, Messages, SwaggerConfig
 from app.core.db import get_db
 from app.dependencies import (
     AiHistoryServiceDep,
@@ -44,6 +44,7 @@ from app.internal.schemas import (
     ChatResponse,
     ChatResponseData,
     ChatStreamRequest,
+    OpenAIStreamChunk,
     StreamFormat,
 )
 
@@ -189,7 +190,7 @@ async def send_message(
 
 @router.post(
     "/stream",
-    response_model=ChatResponse,
+    response_model=ChatResponse | OpenAIStreamChunk,
     summary="流式聊天",
     description=(
         "流式发送聊天消息并返回逐帧响应。streamFormat 可选：native（默认，项目自定义帧，"
@@ -197,6 +198,7 @@ async def send_message(
         "openai（OpenAI Chat Completions 兼容分片，思考走 delta.reasoning_content，"
         "正文走 delta.content，末尾返回 [DONE]，便于 Apifox 等标准客户端实时自动合并）"
     ),
+    responses=SwaggerConfig.STREAM_CHAT_RESPONSES,
 )
 @log("流式聊天")
 async def stream_message(

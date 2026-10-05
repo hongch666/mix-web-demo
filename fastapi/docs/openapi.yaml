@@ -159,11 +159,19 @@ paths:
         required: true
       responses:
         '200':
-          description: Successful Response
+          description: SSE 流式响应：native 返回 ChatResponse，openai 返回 OpenAIStreamChunk
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatResponse'
+                anyOf:
+                - $ref: '#/components/schemas/ChatResponse'
+                - $ref: '#/components/schemas/OpenAIStreamChunk'
+                title: Response Stream Message Chat Stream Post
+            text/event-stream:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/ChatResponse'
+                - $ref: '#/components/schemas/OpenAIStreamChunk'
         '422':
           description: Validation Error
           content:
@@ -2019,12 +2027,140 @@ components:
       type: object
       title: Neo4jSyncDTO
       description: Neo4j 精确同步请求，携带一批变更事件
+    OpenAIStreamChoice:
+      properties:
+        index:
+          type: integer
+          title: Index
+          description: 选项序号
+          default: 0
+        delta:
+          $ref: '#/components/schemas/OpenAIStreamDelta'
+          description: 当前帧的增量内容
+        finish_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Finish Reason
+          description: 结束原因，结束帧为 stop，其余帧为空
+      type: object
+      required:
+      - delta
+      title: OpenAIStreamChoice
+      description: OpenAI 兼容流式分片中的单个选项
+    OpenAIStreamChunk:
+      properties:
+        id:
+          type: string
+          title: Id
+          description: 本次补全 ID
+        object:
+          type: string
+          title: Object
+          description: OpenAI 流式分片对象类型
+          default: chat.completion.chunk
+        created:
+          type: integer
+          title: Created
+          description: 分片创建时间戳
+        model:
+          type: string
+          title: Model
+          description: 实际使用的模型名称
+        conversation_id:
+          type: string
+          title: Conversation Id
+          description: 会话 ID
+        chat_id:
+          type: string
+          title: Chat Id
+          description: 本次聊天 ID
+        choices:
+          items:
+            $ref: '#/components/schemas/OpenAIStreamChoice'
+          type: array
+          title: Choices
+          description: 流式选项列表
+      type: object
+      required:
+      - id
+      - created
+      - model
+      - conversation_id
+      - chat_id
+      - choices
+      title: OpenAIStreamChunk
+      description: streamFormat=openai 时的单条 SSE JSON 分片
+    OpenAIStreamDelta:
+      properties:
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+          description: 首帧声明的 assistant 角色
+        content:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Content
+          description: 当前帧的正文增量
+        reasoning_content:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reasoning Content
+          description: 当前帧的思考过程增量
+      type: object
+      title: OpenAIStreamDelta
+      description: OpenAI 兼容流式分片的增量内容
+    ScoreWeightItem:
+      properties:
+        key:
+          type: string
+          title: Key
+          description: 权重键
+        value:
+          type: number
+          title: Value
+          description: 权重值
+        description:
+          type: string
+          title: Description
+          description: 权重说明
+          default: ''
+      type: object
+      required:
+      - key
+      - value
+      title: ScoreWeightItem
+      description: 单个搜索权重项
+    ScriptParamItem:
+      properties:
+        weight_key:
+          type: string
+          title: Weight Key
+          description: 权重键
+        param_name:
+          type: string
+          title: Param Name
+          description: 脚本参数名
+        description:
+          type: string
+          title: Description
+          description: 参数说明
+          default: ''
+      type: object
+      required:
+      - weight_key
+      - param_name
+      title: ScriptParamItem
+      description: 脚本参数名映射项 — 将权重 key 映射到 Painless 脚本中的实际参数名
     ScriptParamsResponse:
       properties:
         script_params:
           items:
-            additionalProperties: true
-            type: object
+            $ref: '#/components/schemas/ScriptParamItem'
           type: array
           title: Script Params
           description: 脚本参数映射
@@ -2046,8 +2182,7 @@ components:
       properties:
         weights:
           items:
-            additionalProperties: true
-            type: object
+            $ref: '#/components/schemas/ScoreWeightItem'
           type: array
           title: Weights
           description: 搜索权重列表

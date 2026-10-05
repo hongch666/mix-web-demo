@@ -1,9 +1,10 @@
 from enum import StrEnum
 from typing import Optional
 
-from app.core.constants import HttpCode
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core import PydanticCustomError
+
+from app.core.constants import HttpCode
 
 from .alias import Alias
 
@@ -100,3 +101,37 @@ class ChatResponse(BaseModel):
     code: int = Field(default=HttpCode.OK, description="响应码：3位HTTP状态码")
     data: Optional[ChatResponseData] = Field(default=None, description="响应数据")
     msg: str = Field(default="success", description="响应消息")
+
+
+class OpenAIStreamDelta(BaseModel):
+    """OpenAI 兼容流式分片的增量内容"""
+
+    role: Optional[str] = Field(default=None, description="首帧声明的 assistant 角色")
+    content: Optional[str] = Field(default=None, description="当前帧的正文增量")
+    reasoning_content: Optional[str] = Field(
+        default=None, description="当前帧的思考过程增量"
+    )
+
+
+class OpenAIStreamChoice(BaseModel):
+    """OpenAI 兼容流式分片中的单个选项"""
+
+    index: int = Field(default=0, description="选项序号")
+    delta: OpenAIStreamDelta = Field(description="当前帧的增量内容")
+    finish_reason: Optional[str] = Field(
+        default=None, description="结束原因，结束帧为 stop，其余帧为空"
+    )
+
+
+class OpenAIStreamChunk(BaseModel):
+    """streamFormat=openai 时的单条 SSE JSON 分片"""
+
+    id: str = Field(description="本次补全 ID")
+    object: str = Field(
+        default="chat.completion.chunk", description="OpenAI 流式分片对象类型"
+    )
+    created: int = Field(description="分片创建时间戳")
+    model: str = Field(description="实际使用的模型名称")
+    conversation_id: str = Field(description="会话 ID")
+    chat_id: str = Field(description="本次聊天 ID")
+    choices: list[OpenAIStreamChoice] = Field(description="流式选项列表")

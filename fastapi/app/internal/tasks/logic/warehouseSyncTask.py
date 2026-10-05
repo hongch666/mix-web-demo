@@ -41,6 +41,7 @@ REMOTE_MODELS: dict[str, type[Any]] = {
     "ods_focus": OdsFocus,
 }
 
+
 def _should_sync_log_sources(resources: Optional[set[str]]) -> bool:
     """
     日志表仅由全量同步刷新
@@ -425,7 +426,9 @@ async def _sync_warehouse(
     )
     dirty_partitions: set[str] = set()
     changed_sources: set[str] = set()
-    for (table_name, _, _), (changed, partitions) in zip(sources, source_results):
+    for (table_name, _, _), (changed, partitions) in zip(
+        sources, source_results, strict=False
+    ):
         if changed:
             changed_sources.add(table_name)
         dirty_partitions |= partitions

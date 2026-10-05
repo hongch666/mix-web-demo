@@ -5,6 +5,7 @@ from .chatDTO import (
     ChatResponse,
     ChatResponseData,
     ChatStreamRequest,
+    OpenAIStreamChunk,
     StreamFormat,
 )
 from .createHistoryDTO import CreateHistoryDTO
@@ -16,7 +17,6 @@ from .graphSearchDTO import (
     GraphSearchEnhanceResp,
 )
 from .listResponse import ListResponse
-from .syncEventDTO import ChangeEventDTO, Neo4jSyncDTO, VectorSyncDTO, WarehouseSyncDTO
 from .responseDTO import (
     ActionTrendResponse,
     AiHistoryResponse,
@@ -35,6 +35,7 @@ from .responseDTO import (
     UserFollowerResponse,
     UserProfileResponse,
 )
+from .syncEventDTO import ChangeEventDTO, Neo4jSyncDTO, VectorSyncDTO, WarehouseSyncDTO
 from .updateHistoryDTO import UpdateHistoryDTO
 from .vectorSearchDTO import (
     VectorMatchedChunkDTO,
@@ -48,6 +49,7 @@ __all__: list[str] = [
     "ChatStreamRequest",
     "ChatResponse",
     "ChatResponseData",
+    "OpenAIStreamChunk",
     "AIServiceType",
     "StreamFormat",
     "GenerateDTO",

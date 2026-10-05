@@ -7,6 +7,21 @@ class SwaggerConfig:
     SWAGGER_DESCRIPTION: str = "这是项目的FastAPI部分的Swagger文档"
     SWAGGER_VERSION: str = "1.0.0"
     OPENAPI_VERSION: str = "3.1.0"
+    STREAM_CHAT_RESPONSES: dict[str, object] = {
+        200: {
+            "description": "SSE 流式响应：native 返回 ChatResponse，openai 返回 OpenAIStreamChunk",
+            "content": {
+                "text/event-stream": {
+                    "schema": {
+                        "oneOf": [
+                            {"$ref": "#/components/schemas/ChatResponse"},
+                            {"$ref": "#/components/schemas/OpenAIStreamChunk"},
+                        ]
+                    }
+                }
+            },
+        }
+    }
     OPENAPI_TAGS = [
         {
             "name": "AI历史模块",
