@@ -38,6 +38,7 @@
 - [Apifox 文档同步](#apifox-文档同步)
 - [项目规范说明](#项目规范说明)
 - [代码规范与格式化工具](#代码规范与格式化工具)
+- [Git 提交钩子](#git-提交钩子)
 - [项目可用工具说明](#项目可用工具说明)
 - [其他说明](#其他说明)
 - [许可证](#许可证)
@@ -1452,6 +1453,12 @@ pytest tests/core/auth/test_internal_token.py
 # 运行指定服务的单元测试
 ./mix test spring gozero
 
+# 验证全部服务能否编译通过（只编译，不产出打包目录）
+./mix compile
+
+# 只验证指定服务的编译
+./mix compile spring fastapi
+
 # ===== Agent 技能包同步 =====
 # 把 skills/mix-web-demo 同步到本机已存在的用户级 Agent 技能目录
 ./mix skills
@@ -1697,6 +1704,8 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `lint.sh`                   | scripts/        | 检查四个服务的代码规范（Spotless/golangci-lint/ESLint/Prettier/Ruff）                          | Linux/macOS         |
 | `format.sh`                 | scripts/        | 格式化四个服务的代码（Spotless/golangci-lint/Prettier/Ruff）                                   | Linux/macOS         |
 | `test.sh`                   | scripts/        | 运行四个服务的单元测试（支持指定服务）                                                         | Linux/macOS         |
+| `compile.sh`                | scripts/        | 验证四个服务能否编译通过（只编译，不产出打包目录）                                             | Linux/macOS         |
+| `hooks-init.sh`             | scripts/        | 启用/停用/查看仓库的版本化 Git 提交钩子（`.githooks/`）                                        | Linux/macOS/Windows |
 | `skills-sync.sh`            | scripts/        | 把 skills/mix-web-demo 镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）     | Linux/macOS/Windows |
 | `run.ps1`                   | scripts/        | PowerShell 脚本，启动所有服务                                                                  | Windows             |
 
@@ -2623,9 +2632,41 @@ skills/
 
 # 运行指定服务的单元测试
 ./mix test nestjs fastapi
+
+# 验证全部服务能否编译通过（只编译，不产出打包目录）
+./mix compile
+
+# 只验证指定服务的编译
+./mix compile gozero nestjs
+
+# 启用 Git 提交钩子（提交时自动 format + lint + compile + test）
+./mix hooks
 ```
 
 > `gateway` 为 APISIX 配置，不参与代码检查与格式化；对应工具未安装时该服务会自动跳过并提示。
+
+### 编译校验（./mix compile）
+
+`./mix compile` 只验证四个服务能否编译通过，**不产出打包目录、不清理 dist**；需要真正的可运行产物时用 `./mix dist build`。两者职责分开，前者适合放在提交门禁里。
+
+```bash
+# 验证全部服务（spring、gozero、nestjs、fastapi）
+./mix compile
+
+# 只验证指定服务
+./mix compile spring fastapi
+```
+
+| 服务    | 校验命令                                                | 说明                             |
+| ------- | ------------------------------------------------------- | -------------------------------- |
+| Spring  | `mvn -q -DskipTests -Dspotless.check.skip=true compile` | 只编译主源码，跳过测试与格式门禁 |
+| GoZero  | `go build ./...`                                        | 全量编译，不落盘可执行文件       |
+| NestJS  | `tsc --noEmit -p tsconfig.build.json`                   | 只做类型检查，不输出 dist        |
+| FastAPI | 逐文件 `compile()` 字节码编译                           | 只报语法错误，不写 `__pycache__` |
+
+FastAPI 侧不使用 Pyright 作为门禁：仓库既有类型检查基线存在大量报错（主要是测试文件），不适合阻断提交；`pyright` 仍保留在 `fastapi/pyproject.toml` 供编辑器使用。
+
+脚本为 `scripts/compile.sh`，返回码约定与 `lint.sh` / `test.sh` 一致：`0` 通过、`2` 对应工具未安装（自动跳过并提示）、其它为失败。`gateway` 为 APISIX 配置，不参与编译。
 
 | 服务    | 工具                         | 配置文件                                                                | 说明                        |
 | ------- | ---------------------------- | ----------------------------------------------------------------------- | --------------------------- |
@@ -2692,7 +2733,32 @@ ruff check --fix .   # 自动修复
 ruff format .        # 格式化
 ```
 
-## 项目可用工具说明
+## Git 提交钩子
+
+仓库内置版本化钩子（`.githooks/`），启用后每次提交会自动执行「格式化 → 检查 → 编译校验 → 单元测试」，任一步失败即阻止提交：
+
+```bash
+./mix hooks              # 启用钩子（等价 git config core.hooksPath .githooks）
+./mix hooks status       # 查看当前钩子配置
+./mix hooks uninstall    # 停用钩子，恢复默认 .git/hooks
+```
+
+启用后提交时的流程：
+
+1. 从暂存区推断本次涉及的服务（`spring` / `gozero` / `nestjs` / `fastapi`）
+2. `./mix format` 自动格式化，并把结果重新加入暂存区
+3. `./mix lint` 代码检查
+4. `./mix compile` 编译校验（见上方「编译校验」小节）
+5. `./mix test` 单元测试
+
+未涉及上述四个服务目录的提交（如只改文档、`scripts/`、`gateway/`）会直接放行，不做检查。临时跳过单次提交：
+
+```bash
+SKIP_HOOKS=1 git commit -m "..."   # 保留钩子配置，仅本次跳过
+git commit --no-verify             # Git 原生跳过方式
+```
+
+平台说明：钩子是 bash 脚本，由 Git 自带的 `sh` 执行。Linux/macOS 直接可用；Windows 需通过 **Git for Windows 自带的 Git Bash** 提交（无需 PowerShell 版本）。换行符由根目录 `.gitattributes` 的 `* text=auto eol=lf` 统一为 LF，避免 CRLF 导致脚本执行失败。仓库克隆后需执行一次 `./mix hooks` 才会生效。
 
 ### 日志注解/中间件
 
