@@ -1531,6 +1531,10 @@ class Messages:
         return f"ClickHouse 数仓本次受影响分区: {partitions}"
 
     @staticmethod
+    def WAREHOUSE_AFFECTED_SNAPSHOTS(tables: list[str]) -> str:
+        return f"ClickHouse 数仓本次受影响快照表: {tables}"
+
+    @staticmethod
     def WAREHOUSE_PARTITION_DROP_SKIPPED(
         table_name: str, partition: str, error: Exception
     ) -> str:

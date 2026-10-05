@@ -233,8 +233,8 @@ class WarehouseScripts:
     # 数仓增量刷新说明
     # 派生表分两类维护方式：
     #   1) 分区表：按日期累积增长，仅重建本次有新数据涉及的月份分区，避免每轮同步全量重建
-    #   2) 快照表：维度表与全局聚合快照，数据量小且无日期分区，每次有新数据时全量重建
-    # 两类表的执行顺序与 SQL 见文件末尾的 REFRESH_SEQUENCE
+    #   2) 快照表：维度表与全局聚合快照，无日期分区，按依赖图只重建本次源表变更影响到的表
+    # 两类表的依赖关系与执行顺序见文件末尾的依赖图与 REFRESH 批次
 
     # ODS 源表 -> 用于推导脏分区的日期字段
     # 同步时按该字段取出行内日期，作为需要重建的月份分区
@@ -566,19 +566,65 @@ class WarehouseScripts:
         "ads_user_day",
     )
 
-    # 全量重建表：表名 -> INSERT SQL，按依赖顺序排列
-    # 依赖关系：dim_* -> dwd_article_event -> ads_*（用户累计指标依赖前面全部表）
-    FULL_REFRESH_STEPS: Final[tuple[tuple[str, str], ...]] = (
+    # ========== 快照表依赖关系 ==========
+    # 快照表 -> 直接依赖的上游节点（ODS 源表或上游派生表）
+    # 源表发生变更时沿该图推导闭包，只重建真正受影响的快照表
+    SNAPSHOT_DEPENDENCIES: Final[dict[str, frozenset[str]]] = {
+        "dim_user": frozenset({"ods_user"}),
+        "dim_category": frozenset({"ods_sub_category", "ods_category"}),
+        "dwd_article_event": frozenset({"ods_articles", "dim_category"}),
+        "ads_top10_articles": frozenset({"dwd_article_event", "dim_user"}),
+        "ads_category_stats": frozenset({"dwd_article_event"}),
+        "ads_monthly_publish": frozenset({"dwd_article_event"}),
+        "ads_search_keywords": frozenset({"ods_article_log"}),
+        "ads_platform_stats": frozenset({"dwd_article_event", "dwd_user_action"}),
+        "ads_user_view_articles": frozenset({"dwd_user_action", "dwd_article_event"}),
+        "ads_user_stats": frozenset(
+            {
+                "dim_user",
+                "dwd_user_action",
+                "dwd_article_event",
+                "ods_article_log",
+                "ods_focus",
+            }
+        ),
+        "ads_api_average_speed": frozenset({"dws_api_day"}),
+        "ads_api_called_count": frozenset({"dws_api_day"}),
+    }
+
+    # 分区表 -> 直接依赖的上游节点，参与闭包推导（分区表本身按脏分区重建，不整表重刷）
+    PARTITIONED_DEPENDENCIES: Final[dict[str, frozenset[str]]] = {
+        "dwd_user_action": frozenset(
+            {"ods_article_log", "ods_likes", "ods_collects", "ods_comments", "ods_focus"}
+        ),
+        "dwd_api_call": frozenset({"ods_api_log"}),
+        "dws_article_day": frozenset({"dwd_user_action", "dwd_article_event"}),
+        "dws_user_day": frozenset({"dwd_user_action"}),
+        "dws_api_day": frozenset({"dwd_api_call"}),
+        "ads_user_day": frozenset({"dwd_user_action"}),
+    }
+
+    # 上游快照批次：不依赖分区表结果，需在分区表重建之前执行
+    UPSTREAM_SNAPSHOT_STEPS: Final[tuple[tuple[str, str], ...]] = (
         ("dim_user", REFRESH_DIM_USER),
         ("dim_category", REFRESH_DIM_CATEGORY),
         ("dwd_article_event", REFRESH_DWD_ARTICLE),
         ("ads_top10_articles", REFRESH_ADS[0]),
         ("ads_category_stats", REFRESH_ADS[1]),
         ("ads_monthly_publish", REFRESH_ADS[2]),
+        ("ads_search_keywords", REFRESH_ADS_SEARCH_KEYWORDS),
+    )
+
+    # 下游快照批次：依赖分区表（dwd_user_action、dws_api_day）结果，需在分区表重建之后执行
+    DOWNSTREAM_SNAPSHOT_STEPS: Final[tuple[tuple[str, str], ...]] = (
         ("ads_platform_stats", REFRESH_ADS[3]),
         ("ads_user_view_articles", REFRESH_ADS_USER_VIEW_ARTICLES),
         ("ads_user_stats", REFRESH_ADS_USER_STATS),
         ("ads_api_average_speed", REFRESH_ADS_API[0]),
         ("ads_api_called_count", REFRESH_ADS_API[1]),
-        ("ads_search_keywords", REFRESH_ADS_SEARCH_KEYWORDS),
+    )
+
+    # 全部快照表：表名 -> INSERT SQL，按依赖顺序排列（上游批 + 下游批）
+    FULL_REFRESH_STEPS: Final[tuple[tuple[str, str], ...]] = (
+        UPSTREAM_SNAPSHOT_STEPS + DOWNSTREAM_SNAPSHOT_STEPS
     )

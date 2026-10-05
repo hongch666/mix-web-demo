@@ -297,8 +297,10 @@ async def test_sync_warehouse_skips_refresh_when_nothing_changed(
         task, "_sync_remote_source", AsyncMock(return_value=(False, set()))
     )
     monkeypatch.setattr(task, "create_warehouse_tables_async", AsyncMock())
-    monkeypatch.setattr(task, "_sync_article_logs", AsyncMock(return_value=set()))
-    monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=set()))
+    monkeypatch.setattr(
+        task, "_sync_article_logs", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=(False, set())))
     refresh = AsyncMock()
     monkeypatch.setattr(task, "_refresh_warehouse", refresh)
 
@@ -319,51 +321,142 @@ async def test_sync_warehouse_refreshes_when_dirty_partitions_exist(
         AsyncMock(return_value=(False, {"202609"})),
     )
     monkeypatch.setattr(task, "create_warehouse_tables_async", AsyncMock())
-    monkeypatch.setattr(task, "_sync_article_logs", AsyncMock(return_value=set()))
-    monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=set()))
+    monkeypatch.setattr(
+        task, "_sync_article_logs", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=(False, set())))
     refresh = AsyncMock()
     monkeypatch.setattr(task, "_refresh_warehouse", refresh)
 
     await task._sync_warehouse(spring_client, AsyncMock())
 
-    refresh.assert_awaited_once_with({"202609"}, False)
+    refresh.assert_awaited_once_with({"202609"}, set())
 
 
-# MySQL 源有变更时即使无脏分区也刷新快照表
+# MySQL 源有变更时即使无脏分区也按变更源表刷新快照表
 @pytest.mark.anyio
 async def test_sync_warehouse_refreshes_snapshots_when_mysql_source_changed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # MySQL 源表只影响快照表，没有脏分区也必须刷新
+    # MySQL 源表只影响快照表，没有脏分区也必须刷新，且只登记本次有增量的源表
     spring_client = AsyncMock()
-    monkeypatch.setattr(
-        task, "_sync_remote_source", AsyncMock(return_value=(True, set()))
-    )
+
+    async def fake_remote_source(
+        spring_client: object, table_name: str, resource: str, columns: tuple[str, ...]
+    ) -> tuple[bool, set[str]]:
+        return (table_name == "ods_user", set())
+
+    monkeypatch.setattr(task, "_sync_remote_source", fake_remote_source)
     monkeypatch.setattr(task, "create_warehouse_tables_async", AsyncMock())
-    monkeypatch.setattr(task, "_sync_article_logs", AsyncMock(return_value=set()))
-    monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=set()))
+    monkeypatch.setattr(
+        task, "_sync_article_logs", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=(False, set())))
     refresh = AsyncMock()
     monkeypatch.setattr(task, "_refresh_warehouse", refresh)
 
     await task._sync_warehouse(spring_client, AsyncMock())
 
-    refresh.assert_awaited_once_with(set(), True)
+    refresh.assert_awaited_once_with(set(), {"ods_user"})
 
 
-# 仅事件分区变更时只刷分区不刷全量快照表
+# 源表映射到快照表的闭包只保留受影响的表
+def test_resolve_affected_snapshots_filters_unrelated_tables() -> None:
+    assert task._resolve_affected_snapshots({"ods_user"}) == {
+        "dim_user",
+        "ads_top10_articles",
+        "ads_user_stats",
+    }
+
+
+# 变更经由分区表传导到依赖分区表结果的 ADS 快照表
+def test_resolve_affected_snapshots_propagates_through_partitioned_tables() -> None:
+    assert task._resolve_affected_snapshots({"ods_api_log"}) == {
+        "ads_api_average_speed",
+        "ads_api_called_count",
+    }
+
+
+# 无对应下游的源表不产生任何快照表重建
+def test_resolve_affected_snapshots_ignores_unknown_source() -> None:
+    assert task._resolve_affected_snapshots({"ods_unknown"}) == set()
+
+
+# 仅点赞变更时只重建依赖 dwd_user_action 的 ADS 快照表
 @pytest.mark.anyio
-async def test_refresh_warehouse_skips_snapshots_when_only_events_changed(
+async def test_refresh_warehouse_rebuilds_only_affected_snapshots(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    full = AsyncMock()
-    partitions = AsyncMock()
-    monkeypatch.setattr(task, "_refresh_full_tables", full)
-    monkeypatch.setattr(task, "_refresh_partitions", partitions)
+    executed: list[str] = []
 
-    await task._refresh_warehouse({"202609"}, False)
+    async def fake_execute(sql: str, parameters: dict | None = None) -> None:
+        executed.append(sql)
 
-    full.assert_not_awaited()
-    partitions.assert_awaited_once_with({"202609"})
+    monkeypatch.setattr(task, "execute_clickhouse_sql", fake_execute)
+
+    await task._refresh_warehouse(set(), {"ods_likes"})
+
+    assert [sql for sql in executed if sql.startswith("TRUNCATE")] == [
+        "TRUNCATE TABLE warehouse.ads_platform_stats",
+        "TRUNCATE TABLE warehouse.ads_user_view_articles",
+        "TRUNCATE TABLE warehouse.ads_user_stats",
+    ]
+
+
+# 上游维度变更沿依赖链级联重建，未受影响的快照表不动
+@pytest.mark.anyio
+async def test_refresh_warehouse_cascades_through_dependency_chain(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executed: list[str] = []
+
+    async def fake_execute(sql: str, parameters: dict | None = None) -> None:
+        executed.append(sql)
+
+    monkeypatch.setattr(task, "execute_clickhouse_sql", fake_execute)
+
+    await task._refresh_warehouse(set(), {"ods_sub_category"})
+
+    truncated = [sql for sql in executed if sql.startswith("TRUNCATE")]
+    assert "TRUNCATE TABLE warehouse.dim_category" in truncated
+    assert "TRUNCATE TABLE warehouse.dwd_article_event" in truncated
+    assert "TRUNCATE TABLE warehouse.ads_category_stats" in truncated
+    assert "TRUNCATE TABLE warehouse.ads_user_stats" in truncated
+    assert "TRUNCATE TABLE warehouse.dim_user" not in truncated
+    assert "TRUNCATE TABLE warehouse.ads_api_average_speed" not in truncated
+    assert "TRUNCATE TABLE warehouse.ads_search_keywords" not in truncated
+
+
+# 分区表刷新固定夹在上游与下游快照表之间
+@pytest.mark.anyio
+async def test_refresh_warehouse_orders_snapshots_around_partitions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+    captured: list[tuple[tuple[tuple[str, str], ...], set[str]]] = []
+
+    async def fake_snapshot(
+        steps: tuple[tuple[str, str], ...], affected: set[str]
+    ) -> None:
+        captured.append((steps, affected))
+        order.append("snapshot")
+
+    async def fake_partitions(dirty_partitions: set[str]) -> None:
+        order.append("partitions")
+
+    monkeypatch.setattr(task, "_refresh_snapshot_tables", fake_snapshot)
+    monkeypatch.setattr(task, "_refresh_partitions", fake_partitions)
+
+    await task._refresh_warehouse({"202609"}, {"ods_likes"})
+
+    assert order == ["snapshot", "partitions", "snapshot"]
+    assert captured[0][0] == task.WarehouseScripts.UPSTREAM_SNAPSHOT_STEPS
+    assert captured[1][0] == task.WarehouseScripts.DOWNSTREAM_SNAPSHOT_STEPS
+    assert captured[0][1] == captured[1][1] == {
+        "ads_platform_stats",
+        "ads_user_view_articles",
+        "ads_user_stats",
+    }
 
 
 # 指定资源时只同步该源表，实现表粒度精确同步
@@ -387,10 +480,11 @@ async def test_sync_warehouse_filters_sources_by_resources(
     assert synced == ["articles"]
 
 
-# 仅文章行为相关资源变更时才刷新日志表
+# 日志表只由全量同步刷新，实时事件触发时跳过
 def test_should_sync_log_sources() -> None:
     assert task._should_sync_log_sources(None) is True
-    assert task._should_sync_log_sources({"articles"}) is True
+    assert task._should_sync_log_sources({"articles"}) is False
+    assert task._should_sync_log_sources({"comments"}) is False
     assert task._should_sync_log_sources({"category"}) is False
 
 

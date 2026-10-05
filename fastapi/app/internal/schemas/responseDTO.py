@@ -4,6 +4,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from .algorithmDTO import ScoreWeightItem, ScriptParamItem
+
 
 class EmptyResponseData(BaseModel):
     """无业务数据的成功响应"""
@@ -112,7 +114,7 @@ class GenerateCommentTaskResponse(BaseModel):
 
 
 class SearchWeightsResponse(BaseModel):
-    weights: list[dict[str, Any]] = Field(description="搜索权重列表")
+    weights: list[ScoreWeightItem] = Field(description="搜索权重列表")
 
 
 class SearchScriptResponseData(BaseModel):
@@ -120,4 +122,4 @@ class SearchScriptResponseData(BaseModel):
 
 
 class ScriptParamsResponse(BaseModel):
-    script_params: list[dict[str, Any]] = Field(description="脚本参数映射")
+    script_params: list[ScriptParamItem] = Field(description="脚本参数映射")

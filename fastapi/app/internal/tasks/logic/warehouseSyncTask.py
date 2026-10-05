@@ -41,17 +41,15 @@ REMOTE_MODELS: dict[str, type[Any]] = {
     "ods_focus": OdsFocus,
 }
 
-# 影响文章行为日志（ods_article_log、ods_api_log）的源表资源
-ARTICLE_LOG_RESOURCES: frozenset[str] = frozenset(
-    {"articles", "likes", "collects", "comments", "focus"}
-)
-
-
 def _should_sync_log_sources(resources: Optional[set[str]]) -> bool:
-    """日志表仅在文章行为相关资源变更或全量同步时刷新"""
-    if not resources:
-        return True
-    return bool(resources & ARTICLE_LOG_RESOURCES)
+    """
+    日志表仅由全量同步刷新
+
+    ods_article_log 与 ods_api_log 的数据源头是 MQ 异步链路加 NestJS 攒批落库，
+    实时触发时新日志往往尚未落到 MongoDB，逐次拉取既拉不到最新数据又放大调用量，
+    因此统一交给定时任务（每 10 分钟）与手动全量触发处理
+    """
+    return not resources
 
 
 def _parse_watermark(value: Optional[str]) -> datetime:
@@ -209,8 +207,11 @@ async def _sync_remote_source(
     return total > 0, dirty_partitions
 
 
-async def _sync_api_logs(nestjs_client: NestjsClient) -> set[str]:
-    """按 MongoDB ID 游标增量同步 NestJS API 日志到 ClickHouse ODS 层，返回脏分区集合"""
+async def _sync_api_logs(nestjs_client: NestjsClient) -> tuple[bool, set[str]]:
+    """按 MongoDB ID 游标增量同步 NestJS API 日志到 ClickHouse ODS 层
+
+    返回 (本次是否有新数据, 受影响的分区值集合)
+    """
     stored_cursor = await _read_watermark_value(WarehouseScripts.ODS_API_LOG_TABLE)
     cursor = stored_cursor if _is_mongo_cursor(stored_cursor) else ""
     total = 0
@@ -262,13 +263,17 @@ async def _sync_api_logs(nestjs_client: NestjsClient) -> set[str]:
                 WarehouseScripts.ODS_API_LOG_TABLE, total
             )
         )
-    return dirty_partitions
+    return total > 0, dirty_partitions
 
 
-async def _sync_article_logs(nestjs_client: NestjsClient) -> set[str]:
-    """按 MongoDB ID 游标增量同步 NestJS 文章行为日志到 ODS 层，返回脏分区集合"""
+async def _sync_article_logs(nestjs_client: NestjsClient) -> tuple[bool, set[str]]:
+    """按 MongoDB ID 游标增量同步 NestJS 文章行为日志到 ODS 层
+
+    返回 (本次是否有新数据, 受影响的分区值集合)
+    """
     stored_cursor = await _read_watermark_value(WarehouseScripts.ODS_ARTICLE_LOG_TABLE)
     cursor = stored_cursor if _is_mongo_cursor(stored_cursor) else ""
+    total = 0
     dirty_partitions: set[str] = set()
     while True:
         page = await nestjs_client.sync_article_logs(
@@ -296,6 +301,7 @@ async def _sync_article_logs(nestjs_client: NestjsClient) -> set[str]:
         dirty_partitions |= _collect_dirty_partitions(
             WarehouseScripts.ODS_ARTICLE_LOG_TABLE, items
         )
+        total += len(rows)
         next_cursor = page.get("nextCursor") or page.get("next_cursor")
         if next_cursor:
             cursor = next_cursor
@@ -304,12 +310,46 @@ async def _sync_article_logs(nestjs_client: NestjsClient) -> set[str]:
             break
     if cursor:
         await _write_watermark_value(WarehouseScripts.ODS_ARTICLE_LOG_TABLE, cursor)
-    return dirty_partitions
+    if total:
+        Logger.info(
+            Messages.WAREHOUSE_API_LOG_SYNC_SUCCESS(
+                WarehouseScripts.ODS_ARTICLE_LOG_TABLE, total
+            )
+        )
+    return total > 0, dirty_partitions
 
 
-async def _refresh_full_tables() -> None:
-    """全量重建快照类派生表：清空后按依赖顺序插入"""
-    for table_name, refresh_sql in WarehouseScripts.FULL_REFRESH_STEPS:
+def _resolve_affected_snapshots(changed_sources: set[str]) -> set[str]:
+    """
+    按依赖图推导受影响的快照表集合
+
+    源表变更先传播到依赖它的分区表（如 ods_likes -> dwd_user_action），
+    再传播到依赖这些分区表的 ADS 快照表，因此需要做完整的闭包推导
+    """
+    affected: set[str] = set(changed_sources)
+    dependencies_by_table: dict[str, frozenset[str]] = {
+        **WarehouseScripts.PARTITIONED_DEPENDENCIES,
+        **WarehouseScripts.SNAPSHOT_DEPENDENCIES,
+    }
+    changed = True
+    while changed:
+        changed = False
+        for table_name, dependencies in dependencies_by_table.items():
+            if table_name in affected:
+                continue
+            if dependencies & affected:
+                affected.add(table_name)
+                changed = True
+    return affected & set(WarehouseScripts.SNAPSHOT_DEPENDENCIES)
+
+
+async def _refresh_snapshot_tables(
+    steps: Sequence[tuple[str, str]], affected: set[str]
+) -> None:
+    """重建受影响的快照表：清空后重新插入，未受影响的表直接跳过"""
+    for table_name, refresh_sql in steps:
+        if table_name not in affected:
+            continue
         await execute_clickhouse_sql(WarehouseScripts.TRUNCATE_TEMPLATE % table_name)
         await execute_clickhouse_sql(refresh_sql)
 
@@ -346,18 +386,26 @@ async def _refresh_partitions(dirty_partitions: set[str]) -> None:
 
 
 async def _refresh_warehouse(
-    dirty_partitions: set[str], snapshot_changed: bool
+    dirty_partitions: set[str], changed_sources: set[str]
 ) -> None:
     """
     刷新派生层
 
-    分区表按脏分区增量重建，快照表在全量快照源（MySQL 业务表）有变更时全量重建；
-    分区表依赖 dim/dwd_article_event，因此先重建快照表再重建分区表
+    执行顺序为「上游快照表 -> 分区表 -> 下游快照表」：
+    分区表依赖 dim_*、dwd_article_event，而 ads_platform_stats、ads_user_stats 等
+    又依赖分区表结果，因此上游快照表必须先重建，依赖分区表的下游快照表必须最后重建
     """
-    if snapshot_changed:
-        await _refresh_full_tables()
+    affected_snapshots = _resolve_affected_snapshots(changed_sources)
+    if affected_snapshots:
+        Logger.info(Messages.WAREHOUSE_AFFECTED_SNAPSHOTS(sorted(affected_snapshots)))
+    await _refresh_snapshot_tables(
+        WarehouseScripts.UPSTREAM_SNAPSHOT_STEPS, affected_snapshots
+    )
     if dirty_partitions:
         await _refresh_partitions(dirty_partitions)
+    await _refresh_snapshot_tables(
+        WarehouseScripts.DOWNSTREAM_SNAPSHOT_STEPS, affected_snapshots
+    )
 
 
 async def _sync_warehouse(
@@ -376,25 +424,31 @@ async def _sync_warehouse(
         *(_sync_remote_source(spring_client, *source) for source in sources)
     )
     dirty_partitions: set[str] = set()
-    snapshot_changed = False
-    for changed, partitions in source_results:
-        snapshot_changed = snapshot_changed or changed
+    changed_sources: set[str] = set()
+    for (table_name, _, _), (changed, partitions) in zip(sources, source_results):
+        if changed:
+            changed_sources.add(table_name)
         dirty_partitions |= partitions
     try:
         if nestjs_client and _should_sync_log_sources(resources):
-            event_partitions = await _sync_article_logs(nestjs_client)
-            api_partitions = await _sync_api_logs(nestjs_client)
+            article_log_result, api_log_result = await asyncio.gather(
+                _sync_article_logs(nestjs_client),
+                _sync_api_logs(nestjs_client),
+            )
+            event_changed, event_partitions = article_log_result
+            api_changed, api_partitions = api_log_result
+            if event_changed:
+                changed_sources.add(WarehouseScripts.ODS_ARTICLE_LOG_TABLE)
+            if api_changed:
+                changed_sources.add(WarehouseScripts.ODS_API_LOG_TABLE)
             dirty_partitions |= event_partitions
             dirty_partitions |= api_partitions
-            snapshot_changed = snapshot_changed or bool(
-                event_partitions or api_partitions
-            )
-        if dirty_partitions or snapshot_changed:
+        if dirty_partitions or changed_sources:
             if dirty_partitions:
                 Logger.info(
                     Messages.WAREHOUSE_DIRTY_PARTITIONS(sorted(dirty_partitions))
                 )
-            await _refresh_warehouse(dirty_partitions, snapshot_changed)
+            await _refresh_warehouse(dirty_partitions, changed_sources)
         else:
             Logger.info(Messages.WAREHOUSE_REFRESH_SKIPPED)
         Logger.info(Messages.WAREHOUSE_REFRESH_SUCCESS)
