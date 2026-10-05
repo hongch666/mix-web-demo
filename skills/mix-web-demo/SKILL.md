@@ -68,7 +68,8 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
 2. 不主动生成任何文档，除非明确要求
 3. SQL 一律参数化，禁止字符串拼接用户值。各服务占位风格：Spring R2DBC 用 `:param`；FastAPI ClickHouse 用 `%(name)s`；GoZero sqlx 用 `?`；NestJS 走 ORM 方法 API
 4. **每次生成或修改代码后必须执行代码格式化与格式检查**：先跑 `./mix format <service>` 自动格式化，再跑 `./mix lint <service>` 确认检查通过，不允许把未格式化的代码交付；省略服务名时处理 spring、gozero、nestjs、fastapi 全部，`gateway` 为配置驱动不参与
-5. 常量抽取：四个服务均有常量类，消息类字符串必须进常量类引用
+5. **交付前必须验证编译通过**：格式与 lint 之后跑 `./mix compile <service>`（只编译校验，不产出打包目录），未通过不得交付；该步骤与「验证命令」章节里各服务的编译命令等价，省略服务名时处理四个服务全部。`./mix compile` 与打包命令 `./mix dist build` 职责不同，不要用后者替代前者（后者会清理 dist 并产出可运行产物）。对应工具未安装时该服务返回码 2 自动跳过，不允许据此判定通过
+6. 常量抽取：四个服务均有常量类，消息类字符串必须进常量类引用
    - Spring：`common/constants/Messages.java`、`HttpCode.java`
    - NestJS：`common/constants/`（`Messages`、`HttpCode`、`Defaults`、`ErrorIds`）
    - FastAPI：`core/constants/`（`Messages`、`HttpCode`、`RedisKeys`、`Scripts`、`WarehouseScripts`）
@@ -80,29 +81,33 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
      - NestJS：`@ApiOperation({ summary, description })`、`@ApiTags`
      - FastAPI：`@router.get/post(..., summary=, description=)`
      - GoZero 无注解机制，不适用本条
-6. 相互独立的 IO 调用（RPC/HTTP/DB/Redis/ES/MQ）必须并行化，禁止串行等待；各服务并行原语见对应章节
-7. 日志遵循各服务现有封装（见各服务章节），禁止绕过封装直接 print/console/logx 散用
-8. 远程调用统一走各服务封装的客户端，自动透传用户上下文头：`X-User-Id`、`X-Username`、`X-Session-Id`、`Authorization`、`X-Internal-Token`；无登录用户时内部令牌 `userId=-1` 表示系统调用。禁止在新代码里裸用 httpx/axios/WebClient/http.Client 直连其他服务。各服务的唯一入口与底层 HTTP 客户端：
+7. 相互独立的 IO 调用（RPC/HTTP/DB/Redis/ES/MQ）必须并行化，禁止串行等待；各服务并行原语见对应章节
+8. 日志遵循各服务现有封装（见各服务章节），禁止绕过封装直接 print/console/logx 散用
+9. 远程调用统一走各服务封装的客户端，自动透传用户上下文头：`X-User-Id`、`X-Username`、`X-Session-Id`、`Authorization`、`X-Internal-Token`；无登录用户时内部令牌 `userId=-1` 表示系统调用。禁止在新代码里裸用 httpx/axios/WebClient/http.Client 直连其他服务。各服务的唯一入口与底层 HTTP 客户端：
    - Spring：`infra/client/ServiceWebClient`（**WebClient** + `@LoadBalanced` 按服务名寻址 + Resilience4j 熔断/重试），按目标服务加方法
    - GoZero：`app/common/client` 的 `ServiceDiscovery.CallService`（**go-zero `rest/httpc`** + Nacos 轮询 + 退避重试），按目标服务在 `internal/client/` 封装
    - NestJS：`module/common/nacos/nacos.service.ts` 的 `call(opts)`（**axios** + axios-retry + opossum），按目标服务在调用方封装 Client 类
    - FastAPI：`app/core/client/client.py` 的 `call_remote_service`（**httpx** 共享连接池 + SimpleCircuitBreaker + tenacity），按服务在 `internal/clients/` 封装
-9. **HTTP 连接池必须随服务生命周期释放**，不能指望进程退出收尾。现状与要求：
-   - FastAPI 已规范：两个 `httpx.AsyncClient`（内网 `trust_env=False` 与外部抓取各一个）由 `lifespan` 创建、`yield` 之后 `aclose()`，**新增长连接客户端必须走同一处创建与释放**
-   - Spring 由容器管理 reactor-netty 全局连接池，无需手工关闭；但禁止在请求路径上反复 `WebClient.builder().build()`，应注入 `WebClient.Builder` 并缓存实例
-   - GoZero 已收口为单条链路：`ServiceDiscovery.Close()` → 三个业务 Client 的 `Close()` → `ClientContext.Close()` → `ServiceContext.Close()`，新增客户端必须接进来
-   - NestJS 已收口：`NacosService` 实现 `OnModuleDestroy`，注销 Nacos 实例 + `shutdown()` 熔断器 + `destroy()` 专用 agent；新增持有的连接资源挂同一处，不要另建包级 stop 函数
-10. 服务发现基于 Nacos；新服务接入需注册实例并在 metadata 声明能力
+10. **HTTP 连接池必须随服务生命周期释放**，不能指望进程退出收尾。现状与要求：
+
+- FastAPI 已规范：两个 `httpx.AsyncClient`（内网 `trust_env=False` 与外部抓取各一个）由 `lifespan` 创建、`yield` 之后 `aclose()`，**新增长连接客户端必须走同一处创建与释放**
+- Spring 由容器管理 reactor-netty 全局连接池，无需手工关闭；但禁止在请求路径上反复 `WebClient.builder().build()`，应注入 `WebClient.Builder` 并缓存实例
+- GoZero 已收口为单条链路：`ServiceDiscovery.Close()` → 三个业务 Client 的 `Close()` → `ClientContext.Close()` → `ServiceContext.Close()`，新增客户端必须接进来
+- NestJS 已收口：`NacosService` 实现 `OnModuleDestroy`，注销 Nacos 实例 + `shutdown()` 熔断器 + `destroy()` 专用 agent；新增持有的连接资源挂同一处，不要另建包级 stop 函数
+
+11. 服务发现基于 Nacos；新服务接入需注册实例并在 metadata 声明能力
     - **注册地址必须是网关容器能回连的本机 IP**：显式配置 `SERVER_IP`（Spring 为 `SERVER_ADDRESS`）时以它为准，未指定（空、`127.0.0.1`、`0.0.0.0`）则自动探测本机 IP；**禁止在 dev 模式下固定注册 `127.0.0.1`**。`./mix dev` 的网关跑在 Docker 里，容器内的 `127.0.0.1` 是容器自身，会让网关 `connect() failed (111: Connection refused)` 返回 502，且下游服务一条日志都没有（请求根本没到）
     - 同理，服务监听地址也不能只绑 `127.0.0.1`，dev 下的 `SERVER_IP` 应为 `0.0.0.0`，否则容器无论如何都连不上
-11. 生成代码时参考目标服务同类文件的命名与组织方式；已有成熟风格优先
-12. 注释说明：注释的结束不能包含中文句号，直接留空，如果注释过长，使用多行注释形式，而不是多条单行注释，短注释使用1行的单行注释即可
-   - 新增或修改的代码注释、装饰器说明和文档说明均不得以中文句号 `。` 结尾，统一以无句号文本或其他必要标点结束
-13. **日志采集必须排除敏感字段**：请求体进入日志后会被投递到 `api-log-queue`，最终落在 MongoDB `apilogs` 与 ClickHouse `ods_api_log`，因此凡是携带密码、验证码、令牌、授权码的接口都要显式排除。各服务能力：Spring `@ApiLog(excludeFields = {...})`、NestJS `@ApiLog({ excludeFields: [...] })`、FastAPI `@logWithConfig(exclude_fields = [...])`（`@log` 不支持）；**GoZero 的 `ApplyApiLog` 没有任何排除能力**，涉及凭据的接口不要挂它，或先给中间件补过滤参数
-14. **新增接口必须带参数校验**，任何接收请求参数的接口都要声明校验规则，不得只靠业务层兜底。各服务写法见对应章节；**GoZero 的校验标签写在 `.api` 文件里**（随 goctl 生成进 `types.go`），漏写标签等于该参数没有校验，不会报错也不会告警
-15. **新增、修改或删除对外接口后，必须重新生成静态 OpenAPI 文档并同步 Apifox**：先 `./mix swag <service>`，产物（`openapi.json` + `openapi.yaml`）与服务代码同一次提交；再 `./mix apifox <service>` 同步到 Apifox，未配置令牌时跳过并说明。完整流程见「接口文档收尾流程」章节
-16. **业务配置统一经 YAML 导入环境变量**：服务配置值在对应 `application.yaml` 中声明 `${ENV_NAME:default}`，业务代码通过项目配置加载器或框架配置服务读取；禁止在业务模块直接调用 `os.getenv`、`process.env`、`System.getenv`、`os.LookupEnv` 等绕过 YAML。环境变量直接读取仅保留在配置加载器/启动引导，以及第三方库必须从标准进程环境读取且 YAML 无法替代的场景（如 HTTP 代理变量），新增例外需说明原因。可选变量当前不启用时，在 `.env`、`.env.example`、`.env.docker` 中注释变量行，并注明未配置时的默认行为；不要用空值赋值伪装成已配置
-17. **接口响应必须使用具名结构，禁止匿名 Map**：控制器/路由的返回类型要有明确的结构定义并携带字段说明，便于 Swagger 呈现与下游解析。各服务落地：Spring 用 `entity/vo/` 下的 VO（字段加 `@Schema`）、NestJS 用 `common/utils/swaggerResponse.ts` 的 `SchemaObject` 加响应 DTO、FastAPI 用 `internal/schemas/` 的 Pydantic 模型、GoZero 用 `.api` 里的具名 `type`。**Spring 额外硬性要求**：禁止 `Map<String, Object>`（含 `java.util.Map`）作为控制器返回类型，`./mix lint spring` 会检测；用于替换匿名 Map 的 VO 必须保持原有下划线字段名（类上加 `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)`），否则下游 FastAPI/GoZero 会解析不到字段；确实只能使用 Map 的场景（如列由运行时决定的动态查询结果）必须显式豁免：方法或其注解上方写 `// vo-exempt: 原因`，整个控制器写 `// vo-exempt-class: 原因`
+12. 生成代码时参考目标服务同类文件的命名与组织方式；已有成熟风格优先
+13. 注释说明：注释的结束不能包含中文句号，直接留空，如果注释过长，使用多行注释形式，而不是多条单行注释，短注释使用1行的单行注释即可
+
+- 新增或修改的代码注释、装饰器说明和文档说明均不得以中文句号 `。` 结尾，统一以无句号文本或其他必要标点结束
+
+14. **日志采集必须排除敏感字段**：请求体进入日志后会被投递到 `api-log-queue`，最终落在 MongoDB `apilogs` 与 ClickHouse `ods_api_log`，因此凡是携带密码、验证码、令牌、授权码的接口都要显式排除。各服务能力：Spring `@ApiLog(excludeFields = {...})`、NestJS `@ApiLog({ excludeFields: [...] })`、FastAPI `@logWithConfig(exclude_fields = [...])`（`@log` 不支持）；**GoZero 的 `ApplyApiLog` 没有任何排除能力**，涉及凭据的接口不要挂它，或先给中间件补过滤参数
+15. **新增接口必须带参数校验**，任何接收请求参数的接口都要声明校验规则，不得只靠业务层兜底。各服务写法见对应章节；**GoZero 的校验标签写在 `.api` 文件里**（随 goctl 生成进 `types.go`），漏写标签等于该参数没有校验，不会报错也不会告警
+16. **新增、修改或删除对外接口后，必须重新生成静态 OpenAPI 文档并同步 Apifox**：先 `./mix swag <service>`，产物（`openapi.json` + `openapi.yaml`）与服务代码同一次提交；再 `./mix apifox <service>` 同步到 Apifox，未配置令牌时跳过并说明。完整流程见「接口文档收尾流程」章节
+17. **业务配置统一经 YAML 导入环境变量**：服务配置值在对应 `application.yaml` 中声明 `${ENV_NAME:default}`，业务代码通过项目配置加载器或框架配置服务读取；禁止在业务模块直接调用 `os.getenv`、`process.env`、`System.getenv`、`os.LookupEnv` 等绕过 YAML。环境变量直接读取仅保留在配置加载器/启动引导，以及第三方库必须从标准进程环境读取且 YAML 无法替代的场景（如 HTTP 代理变量），新增例外需说明原因。可选变量当前不启用时，在 `.env`、`.env.example`、`.env.docker` 中注释变量行，并注明未配置时的默认行为；不要用空值赋值伪装成已配置
+18. **接口响应必须使用具名结构，禁止匿名 Map**：控制器/路由的返回类型要有明确的结构定义并携带字段说明，便于 Swagger 呈现与下游解析。各服务落地：Spring 用 `entity/vo/` 下的 VO（字段加 `@Schema`）、NestJS 用 `common/utils/swaggerResponse.ts` 的 `SchemaObject` 加响应 DTO、FastAPI 用 `internal/schemas/` 的 Pydantic 模型、GoZero 用 `.api" 里的具名 `type`。**Spring 额外硬性要求**：禁止 `Map<String, Object>`（含 `java.util.Map`）作为控制器返回类型，`./mix lint spring`会检测；用于替换匿名 Map 的 VO 必须保持原有下划线字段名（类上加`@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)`），否则下游 FastAPI/GoZero 会解析不到字段；确实只能使用 Map 的场景（如列由运行时决定的动态查询结果）必须显式豁免：方法或其注解上方写 `// vo-exempt: 原因`，整个控制器写 `// vo-exempt-class: 原因`
 
 ## Spring 服务（spring/，WebFlux 响应式栈）
 
@@ -383,7 +388,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - git 用于精确核对与回退：`git status --porcelain`、`git diff --ignore-cr-at-eol`（判断是否仅行尾差异）、`git checkout -- <文件>`
 - 本机环境参考：Go / gofmt 在 `C:\Program Files\Go\bin\`，goctl 在 `C:\Users\30708\go\bin\goctl.EXE`，git 在 `C:\Program Files\Git\cmd\git.EXE`（`usr\bin\` 下有 grep / tr / sed / basename 等，用完整路径调用），maven 在 `C:\apache-maven-3.9.11\bin\mvn.CMD`，javap 在 `C:\Program Files\Java\jdk-17\bin\javap.exe`
 - bash 环境的 `dirname` / `head` 等不稳定（PATH 时有时无），批量格式与行尾校验优先走 `./mix format` / `./mix lint`，需要脚本兜底时用 Python `subprocess` 调绝对路径
-- `mix` 脚本顶层子命令有 `setup`、`swag`、`apifox`、`apifox-readme`、`goctl-api`、`goctl-orm`、`lint`、`format`、`test`、`skills`、`dev`、`dist`、`docker`、`docker-services`、`loki`、`compose`、`help`；开发模式必须写全 `./mix dev multi|seq|stop`（**没有** `./mix seq` / `./mix multi` / `./mix stop`，README 历史版本里这三处写错）
+- `mix` 脚本顶层子命令有 `setup`、`swag`、`apifox`、`apifox-readme`、`goctl-api`、`goctl-orm`、`lint`、`format`、`test`、`compile`、`hooks`、`skills`、`dev`、`dist`、`docker`、`docker-services`、`loki`、`compose`、`help`；开发模式必须写全 `./mix dev multi|seq|stop`（**没有** `./mix seq` / `./mix multi` / `./mix stop`，README 历史版本里这三处写错）
 - `scripts/run.sh` 的运行工具默认值：`--java-build` 默认 `maven`、`--node-runtime` 默认 `bun`、`--python-runtime` 默认 `uv`
 - 两套容器编排的容器名不同：`./mix docker` 用 `mix-<service>-container`，`./mix compose` 用 `mix-<service>`（compose 的 `container_name`）
 - `README.md` 行尾由 `.gitattributes` 统一为 LF，批量改文档按「归一化 LF → 断言唯一性后替换」处理，不要逐处手工编辑
@@ -464,13 +469,17 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 ## 验证命令
 
+统一入口是 `./mix compile <service>`（只编译校验，不产出打包目录）；下表列出各服务等价或更细的底层命令，编译未通过不得交付。
+
 | 服务    | 验证                                                                                                                                |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| spring  | `mvn compile -f spring/pom.xml`（打包 `mvn clean package -DskipTests`）                                                             |
-| nestjs  | `npm run node:build`（nestjs 目录）                                                                                                 |
-| fastapi | `.venv/Scripts/python.exe -c "import app"` 级导入校验 + pytest                                                                      |
+| spring  | `./mix compile spring`（`mvn -q -DskipTests -Dspotless.check.skip=true compile`；打包 `mvn clean package -DskipTests`）             |
+| nestjs  | `./mix compile nestjs`（`tsc --noEmit -p tsconfig.build.json`；打包 `npm run node:build`）                                          |
+| fastapi | `./mix compile fastapi`（逐文件字节码编译，只报语法错误、不写 `__pycache__`；另有 pytest）                                          |
 | gozero  | `cd gozero/app && GOTOOLCHAIN=local go build ./... && go vet ./... && go test ./... -count=1`；格式与静态检查走 `./mix lint gozero` |
 | gateway | `apisix.yaml` 改动后校验 YAML 语法与目标路由的插件挂载（配置驱动，无业务代码）                                                      |
+
+FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大量报错（主要在测试文件），作为门禁会一直失败；`pyright` 仍保留在 `fastapi/pyproject.toml` 供编辑器使用。`./mix compile` 对未安装工具的服务返回码 2 并跳过，不能把「跳过」当成「通过」。
 
 ### 代码风格检查与格式化
 
@@ -496,3 +505,32 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 ```
 
 底层脚本是 `scripts/format.sh` 与 `scripts/lint.sh`，对应工具未安装时该服务会自动跳过并提示；`gateway` 为 APISIX 配置，不参与。行尾由根目录 `.gitattributes` 统一为 LF。
+
+### 交付前校验顺序
+
+改完代码后按固定顺序自检，任一步未通过都不算完成（各步命令与底层实现见「验证命令」与「代码风格检查与格式化」章节）：
+
+```bash
+./mix format <service>    # 1. 自动格式化
+./mix lint <service>      # 2. 代码检查
+./mix compile <service>   # 3. 编译校验（只编译，不打包）
+./mix test <service>      # 4. 单元测试
+```
+
+### Git 提交钩子
+
+仓库内置版本化钩子，启用后 `git commit` 会自动按上面的顺序执行「格式化 → 检查 → 编译校验 → 单元测试」，任一步失败即阻止提交：
+
+```bash
+./mix hooks              # 启用（git config core.hooksPath .githooks）
+./mix hooks status       # 查看当前配置
+./mix hooks uninstall    # 停用
+```
+
+- 钩子只对暂存区里属于 `spring/`、`gozero/`、`nestjs/`、`fastapi/` 的改动生效；非这四个目录的提交（文档、`scripts/`、`gateway/`）直接放行
+- 格式化跑完后会把结果重新 `git add -u` 进暂存区，保证提交的是格式化后的版本
+- 临时跳过单次提交：`SKIP_HOOKS=1 git commit ...` 或 `git commit --no-verify`
+- 钩子是 bash 脚本，由 Git 自带的 `sh` 执行：Linux/macOS 直接可用，Windows 走 Git for Windows 自带的 Git Bash（无需 PowerShell 版本）；换行符由 `.gitattributes` 统一为 LF
+- 新克隆的仓库需执行一次 `./mix hooks` 才会启用；生成代码时不要依赖钩子替代手动校验，钩子有跨服务共享脚本的覆盖缺口（改 `scripts/` 下的检查脚本本身不会触发服务检查）
+
+`mix` 脚本顶层子命令新增 `compile` 与 `hooks`，完整列表见「仓库工程约束」章节。
