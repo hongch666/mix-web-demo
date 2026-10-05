@@ -1,0 +1,12 @@
+{
+  "comment": "由 fix.py 从 goctl 产物提取，只含需要由代码同步到 Apifox 的字段",
+  "websockets": [
+    {
+      "path": "/ws/chat",
+      "description": "建立WebSocket连接，自动加入聊天队列。握手成功返回 101 升级协议，之后通过文本帧双向通信，帧结构见响应模型",
+      "tags": [
+        "聊天模块"
+      ]
+    }
+  ]
+}
