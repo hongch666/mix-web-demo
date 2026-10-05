@@ -146,7 +146,8 @@ class DataSyncAspectTest {
         lenient().when(joinPoint.getSignature()).thenReturn(signature);
         lenient().when(joinPoint.getArgs()).thenReturn(new Object[] { id });
         lenient().when(signature.toShortString()).thenReturn("fixture.method");
-        when(dataSync.description()).thenReturn("测试描述");
+        // description 只在业务成功的同步触发路径上被读取，失败用例不会走到，故声明为宽松桩
+        lenient().when(dataSync.description()).thenReturn("测试描述");
         lenient().when(dataSync.resource()).thenReturn(SyncResource.COMMENTS);
         lenient().when(dataSync.changeType()).thenReturn(SyncChangeType.DELETE);
 
