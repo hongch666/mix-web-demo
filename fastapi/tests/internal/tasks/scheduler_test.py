@@ -24,8 +24,15 @@ class FakeScheduler:
 
 
 def _start_scheduler(
-    monkeypatch: pytest.MonkeyPatch, **injected: Any
+    monkeypatch: pytest.MonkeyPatch,
+    vector_dependencies: Any = None,
+    **injected: Any,
 ) -> tuple[Any, FakeScheduler]:
+    """启动调度器并把外部依赖替换为假对象
+
+    向量同步依赖默认注入假对象：不注入时 start_scheduler 会走组合根，
+    进而真实连接 pgvector
+    """
     created: list[FakeScheduler] = []
 
     def factory(**kwargs: Any) -> FakeScheduler:
@@ -36,7 +43,12 @@ def _start_scheduler(
     monkeypatch.setattr(scheduler_module, "Logger", Mock())
     monkeypatch.setattr(scheduler_module, "AsyncIOScheduler", factory)
 
-    result = scheduler_module.start_scheduler(**injected)
+    result = scheduler_module.start_scheduler(
+        vector_dependencies=(
+            vector_dependencies if vector_dependencies is not None else Mock()
+        ),
+        **injected,
+    )
     return result, created[0]
 
 
@@ -114,8 +126,10 @@ def test_injects_dependencies_into_job_functions(
     nestjs_client = Mock()
     analyze_service = Mock()
     article_mapper = Mock()
+    vector_dependencies = Mock()
     _, fake = _start_scheduler(
         monkeypatch,
+        vector_dependencies=vector_dependencies,
         article_mapper=article_mapper,
         analyze_service=analyze_service,
         spring_client=spring_client,
@@ -125,6 +139,7 @@ def test_injects_dependencies_into_job_functions(
 
     vector_keywords = _job_task_func(jobs["sync_vectors"]).keywords
     assert vector_keywords["article_mapper"] is article_mapper
+    assert vector_keywords["dependencies"] is vector_dependencies
     assert vector_keywords["enable_incremental_sync"] is True
     assert (
         _job_task_func(jobs["update_analyze_caches"]).keywords["analyze_service"]

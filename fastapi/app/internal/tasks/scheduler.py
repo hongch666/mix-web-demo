@@ -16,6 +16,7 @@ from app.internal.clients import NestjsClient, SpringClient
 from .logic.analyzeCacheTask import update_analyze_caches_async
 from .logic.neo4jSyncTask import sync_mysql_to_neo4j_async
 from .logic.vectorSyncTask import (
+    VectorSyncDependencies,
     build_vector_sync_dependencies,
     export_article_vectors_to_postgres_async,
 )
@@ -47,6 +48,7 @@ def start_scheduler(
     analyze_service: Optional[Any] = None,
     nestjs_client: Optional[NestjsClient] = None,
     spring_client: Optional[SpringClient] = None,
+    vector_dependencies: Optional[VectorSyncDependencies] = None,
 ) -> BaseScheduler:
     """
     启动调度器，可把依赖注入进来（用于测试或容器式管理）
@@ -55,6 +57,7 @@ def start_scheduler(
           article_mapper=get_article_mapper(),
           db_factory=lambda: AsyncSessionLocal()
       )
+    向量同步依赖必须显式传入，未传入时才由组合根构建（会真实连接 pgvector）
     """
     scheduler: AsyncIOScheduler = AsyncIOScheduler(
         job_defaults={"coalesce": True, "max_instances": 1}
@@ -65,7 +68,7 @@ def start_scheduler(
         export_article_vectors_to_postgres_async,
         article_mapper=article_mapper,
         mysql_db_factory=mysql_db_factory,
-        dependencies=build_vector_sync_dependencies(),
+        dependencies=vector_dependencies or build_vector_sync_dependencies(),
         enable_incremental_sync=True,  # 启用增量同步
     )
     # 每24小时执行一次

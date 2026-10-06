@@ -28,6 +28,24 @@ def silence_logger(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, Non
     yield
 
 
+def _fake_dependencies(
+    *,
+    spring_client: Mock | None = None,
+    vector_mapper: Mock | None = None,
+    redis_client: FakeRedisClient | None = None,
+) -> task.VectorSyncDependencies:
+    """构造向量同步任务的假依赖
+
+    任务入口不传依赖时会走组合根，进而真连接 pgvector 与 Redis，
+    单元测试必须显式注入假依赖
+    """
+    return task.VectorSyncDependencies(
+        spring_client=spring_client if spring_client is not None else Mock(),
+        vector_mapper=vector_mapper if vector_mapper is not None else Mock(),
+        redis_client=redis_client if redis_client is not None else FakeRedisClient(),
+    )
+
+
 def _patch_sources(
     monkeypatch: pytest.MonkeyPatch,
     *,
@@ -407,11 +425,11 @@ async def test_export_async_skips_when_lock_is_not_acquired(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     redis_client = FakeRedisClient(None)
+    dependencies = _fake_dependencies(redis_client=redis_client)
     export = AsyncMock()
-    monkeypatch.setattr(task, "get_redis_client", lambda: redis_client)
     monkeypatch.setattr(task, "_export_article_vectors_to_postgres", export)
 
-    await task.export_article_vectors_to_postgres_async()
+    await task.export_article_vectors_to_postgres_async(dependencies=dependencies)
 
     export.assert_not_awaited()
     redis_client.unlock.assert_not_awaited()
@@ -426,13 +444,15 @@ async def test_export_async_unlocks_and_forwards_incremental_flag(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     redis_client = FakeRedisClient()
+    dependencies = _fake_dependencies(redis_client=redis_client)
     export = AsyncMock()
-    monkeypatch.setattr(task, "get_redis_client", lambda: redis_client)
     monkeypatch.setattr(task, "_export_article_vectors_to_postgres", export)
 
-    await task.export_article_vectors_to_postgres_async(enable_incremental_sync=False)
+    await task.export_article_vectors_to_postgres_async(
+        dependencies=dependencies, enable_incremental_sync=False
+    )
 
-    export.assert_awaited_once_with(None, None, False)
+    export.assert_awaited_once_with(dependencies, enable_incremental_sync=False)
     redis_client.unlock.assert_awaited_once_with(
         RedisKeys.LOCK_TASK_VECTOR_SYNC, "lock-value"
     )
@@ -452,7 +472,6 @@ async def test_hash_init_skips_existing_hashes_and_saves_timestamp(
     spring_client.get_published_articles = AsyncMock(
         return_value={"records": articles, "total": 3}
     )
-    monkeypatch.setattr(task, "get_spring_client", lambda: spring_client)
     monkeypatch.setattr(
         task, "_get_article_content_hash", AsyncMock(side_effect=["existing", None])
     )
@@ -461,7 +480,9 @@ async def test_hash_init_skips_existing_hashes_and_saves_timestamp(
     save_time = AsyncMock()
     monkeypatch.setattr(task, "_save_sync_time", save_time)
 
-    await task._initialize_article_content_hash_cache()
+    await task._initialize_article_content_hash_cache(
+        dependencies=_fake_dependencies(spring_client=spring_client)
+    )
 
     save.assert_awaited_once()
     assert save.await_args.args[0] == 2
@@ -477,11 +498,12 @@ async def test_hash_init_returns_when_no_articles(
     spring_client.get_published_articles = AsyncMock(
         return_value={"records": [], "total": 0}
     )
-    monkeypatch.setattr(task, "get_spring_client", lambda: spring_client)
     save_time = AsyncMock()
     monkeypatch.setattr(task, "_save_sync_time", save_time)
 
-    await task._initialize_article_content_hash_cache()
+    await task._initialize_article_content_hash_cache(
+        dependencies=_fake_dependencies(spring_client=spring_client)
+    )
 
     save_time.assert_not_awaited()
 
