@@ -380,6 +380,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 ## 仓库工程约束
 
+- **禁止删除、清空、移动或重建本地依赖环境**：`fastapi/.venv`、`nestjs/node_modules` 属于开发者本机已安装的依赖环境，删除与整体重建都是禁止操作（重装需联网且耗时，也会打断本地校验命令）；排查问题、清理临时文件、执行格式化与校验时一律绕开这些目录，确需变更依赖时用对应包管理命令做增量安装。**不要为了任何理由运行删除 `.venv` 的命令**（含 `rm -rf`、`Remove-Item -Recurse`、`uv venv --clear`、`python -m venv --clear` 等）
 - 行尾由根目录 `.gitattributes`（`* text=auto eol=lf`）统一为 LF，仓库不再按 CRLF 维护；新建文件不需要手工转换行尾
 - 格式化统一走各服务的工具（`./mix format`）：Spring Spotless、GoZero golangci-lint、NestJS Prettier、FastAPI Ruff；不要再手工执行 `gofmt -w` 或 `prettier --write` 做全量重排
 - Go 的格式问题用 `./mix lint gozero` 判断（golangci-lint 的 gofmt formatter），不要用裸 `gofmt -l`：它对行尾差异会报大量假阳性
