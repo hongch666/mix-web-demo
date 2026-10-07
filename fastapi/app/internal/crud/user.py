@@ -1,7 +1,7 @@
 import asyncio
-from datetime import datetime
+from datetime import date, datetime
 from functools import lru_cache
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import desc, func, select
 
@@ -9,11 +9,36 @@ from app.core.constants import Messages
 from app.core.db import ClickHouseSessionFactory
 from app.internal.models import AdsUserDay, AdsUserStats, AdsUserViewArticle, DimUser
 
+DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+DATE_FORMAT: str = "%Y-%m-%d"
+
 
 def _date_value(value: datetime) -> Any:
     """ClickHouse Date 列不能直接比较带时间的 datetime"""
 
     return value.date()
+
+
+def _to_datetime_text(value: Any) -> Optional[str]:
+    """DateTime 列转响应约定的时间字符串，响应模型不接收 datetime 对象"""
+
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.strftime(DATETIME_FORMAT)
+    return str(value)
+
+
+def _to_date_text(value: Any) -> Optional[str]:
+    """Date 列转响应约定的日期字符串，响应模型不接收 date 对象"""
+
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.strftime(DATE_FORMAT)
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value)
 
 
 class UserMapper:
@@ -101,7 +126,10 @@ class UserMapper:
             if total_rows
             else 0,
             "daily_follows": [
-                {"date": row.get("date"), "count": int(row.get("count") or 0)}
+                {
+                    "date": _to_date_text(row.get("date")),
+                    "count": int(row.get("count") or 0),
+                }
                 for row in daily_rows
             ],
         }
@@ -128,7 +156,10 @@ class UserMapper:
         )
         rows = await self._execute_mappings(statement)
         trends = [
-            {"date": row.get("date"), "count": int(row.get("count") or 0)}
+            {
+                "date": _to_date_text(row.get("date")),
+                "count": int(row.get("count") or 0),
+            }
             for row in rows
         ]
         return {"total": sum(item["count"] for item in trends), "daily_trends": trends}
@@ -169,7 +200,7 @@ class UserMapper:
             "total_collects_given": int(row.get("total_collects_given") or 0),
             "total_comments": int(row.get("total_comments") or 0),
             "total_focus": int(row.get("total_focus") or 0),
-            "last_active_time": row.get("last_active_time"),
+            "last_active_time": _to_datetime_text(row.get("last_active_time")),
         }
 
 

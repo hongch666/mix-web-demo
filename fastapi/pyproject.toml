@@ -101,6 +101,8 @@ filterwarnings = [
   "ignore:ssl\\.PROTOCOL_TLS is deprecated:DeprecationWarning:nacos.client",
   # 当前 langchain 版本仍通过 langchain-community 提供 PGVector，该类的迁移受依赖版本约束
   "ignore:This class is pending deprecation.*:langchain_core._api.deprecation.LangChainPendingDeprecationWarning",
+  # jieba 0.42.1 正则字符串中的转义写法在 Python 3.12 起报 SyntaxWarning，属上游源码问题
+  "ignore:invalid escape sequence:SyntaxWarning:jieba",
 ]
 
 [tool.pyright]
