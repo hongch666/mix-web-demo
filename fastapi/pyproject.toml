@@ -102,7 +102,8 @@ filterwarnings = [
   # 当前 langchain 版本仍通过 langchain-community 提供 PGVector，该类的迁移受依赖版本约束
   "ignore:This class is pending deprecation.*:langchain_core._api.deprecation.LangChainPendingDeprecationWarning",
   # jieba 0.42.1 正则字符串中的转义写法在 Python 3.12 起报 SyntaxWarning，属上游源码问题
-  "ignore:invalid escape sequence:SyntaxWarning:jieba",
+  # 该告警在导入编译期抛出，没有可匹配的 module 名，写成 :jieba 不会生效，只能按消息与类别过滤
+  "ignore:invalid escape sequence:SyntaxWarning",
 ]
 
 [tool.pyright]
