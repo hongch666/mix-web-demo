@@ -6,6 +6,33 @@
 
 目标是稳定验证权限、核心业务规则、状态迁移、远程调用契约和异常分支，不以测试数量或覆盖率数字代替有效断言
 
+## 测试工具与运行命令
+
+各服务的测试工具、配置位置与运行入口固定如下，不要引入第二套测试框架：
+
+| 服务       | 测试工具                                                                                          | 配置位置                                                      | 默认命令                                             |
+| ---------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------- |
+| `spring/`  | JUnit 5（Jupiter）+ Mockito + AssertJ；响应式链用 `reactor-test` 的 `StepVerifier`，Controller 用 `WebTestClient` | `spring/pom.xml`（`spring-boot-starter-test`、`reactor-test`） | `cd spring && mvn test`                              |
+| `nestjs/`  | Jest + ts-jest                                                                                    | `nestjs/package.json` 的 `jest` 段                            | `cd nestjs && bun run test -- --runInBand`           |
+| `fastapi/` | pytest，异步用例用 anyio 插件的 `@pytest.mark.anyio`                                               | `fastapi/pyproject.toml` 的 `[tool.pytest.ini_options]`       | `cd fastapi && uv run pytest -q`（Windows + WSL 场景改用自带解释器） |
+| `gozero/`  | Go 标准库 `testing` + `net/http/httptest`（当前未引入 testify / sqlmock 等第三方库）                | 测试与被测包同目录，命名 `xxx_test.go`                         | `cd gozero/app && go test ./... -count=1`            |
+| `gateway/` | 无单元测试（配置驱动）                                                                            | -                                                             | `./mix test gateway` 直接跳过                        |
+
+统一入口是 `./mix test <service>`（省略服务名时跑 spring、gozero、nestjs、fastapi，底层 `scripts/test.sh` 的实际命令与上表一致）。对应工具未安装时该服务返回码 2 并跳过，「跳过」不能当成「通过」；每个服务的 test 入口与 format、lint、compile 一样是交付前必跑项
+
+**Windows + WSL 场景下不要用 WSL 的 bash 跑 fastapi 的测试**（只在 Windows 主机装了 WSL、且用 WSL bash 执行时出现；Linux/macOS 与 Windows 侧 Git Bash/PowerShell 均不受影响）：`scripts/test.sh` 优先走 `uv run pytest`，WSL 里的 Linux uv 会清空并重建 Windows 创建的 `fastapi/.venv`，属禁止操作；此时改用 `cd fastapi && .venv/Scripts/python.exe -m pytest -q`，或在不带服务名执行 `./mix test` 时明确只列其它服务
+
+### NestJS 双运行器约束（Jest 与 bun test）
+
+NestJS 的测试文件必须同时能被 Jest 和 `bun test` 执行：
+
+- 仓库基线是 **Jest**：`package.json` 的 `test` 脚本是 `jest`（`ts-jest` 转换），`./mix test nestjs` 走 `bun run test -- --runInBand`（无 bun 时回退 `npm test`），执行的都是 Jest
+- 直接跑 `bun test` 时用的是 Bun 内置 `bun:test` 与一层 `jest` 兼容层，**不是** Jest：同名 API 的行为与可选项并不完全一致
+- spec 里只使用两个运行器都提供的 API：`jest.mock`、`jest.fn`、`jest.spyOn`、`jest.mockReturnValue` 等 mock 方法链、`jest.clearAllMocks`、`jest.restoreAllMocks` 与 `expect.*` 断言
+- **禁止只有 Jest 提供的 API**：`jest.requireActual`、`jest.requireMock`、`jest.unmock`、`jest.deepUnmock`。需要 mock 系统边界（如 `node:http`、`fs`）时，在工厂里显式返回被测代码真正用到的成员，不要用 `requireActual` 展开真实模块
+- 禁止 `import { test, expect } from "bun:test"`，也禁止为兼容而新增双导出或 `bun:test` 兼容层，仓库不维护两套测试入口
+- 报错 `TypeError: jest.requireActual is not a function` 说明用 `bun test` 跑到了含 Jest 专有 API 的 spec，修改 spec 去掉该 API，而不是换运行器
+
 ## 测试分层
 
 ### 单元测试
@@ -115,6 +142,7 @@ Redis Pub/Sub 跨实例去重、真实断线重连、浏览器持续打开窗口
 
 ### Spring WebFlux
 
+- 测试工具：JUnit 5（Jupiter）+ Mockito + AssertJ；响应式链用 `reactor-test` 的 `StepVerifier`，Controller、校验与异常映射用 `WebTestClient`
 - 测试放在 `spring/src/test/java/<生产包路径>/XxxTest.java`
 - Reactor 链使用 `StepVerifier`，禁止 `.block()`
 - Reactor Context 用 `contextWrite` 显式构造
@@ -122,38 +150,42 @@ Redis Pub/Sub 跨实例去重、真实断线重连、浏览器持续打开窗口
 - Service 依赖使用 Mockito 或小型 Fake；保持 Mockito 严格模式，不用宽松 stub 掩盖无关依赖
 - R2DBC SQL 和事务使用 Testcontainers 集成测试
 - AOP 测试必须订阅 Mono 并验证订阅后的行为
-- 默认命令：`cd spring && mvn test`
+- 默认命令：`cd spring && mvn test`（等价 `./mix test spring`）
 
 ### NestJS
 
+- 测试工具：Jest + ts-jest（配置在 `package.json` 的 `jest` 段）
 - 单元测试放在 `nestjs/src/**/xxx.spec.ts`
 - 组件/集成测试放在 `nestjs/test/integration/**/*.integration-spec.ts`，端到端测试放在 `nestjs/test/e2e/**/*.e2e-spec.ts`
 - Service、Guard、Filter、Middleware 使用 `TestingModule` 或直接构造；外部 Provider 用 `useValue`、`useFactory` 或 Token 替换
 - 每个测试恢复 Mock；定时器、批处理和重试使用 Fake Timers
 - 默认测试禁止加载真实应用配置或触发连接外部服务的 `onModuleInit`
-- 项目只以 Jest 为测试基线；`bun run test -- --runInBand` 调用的是 Jest，不要使用 `bun test` 或新增 `bun:test` 兼容层
-- 默认命令：`cd nestjs && bun run test -- --runInBand`
+- 仓库基线是 Jest：`./mix test nestjs` 与 `bun run test -- --runInBand` 执行的都是 Jest，不要新增第二套测试入口
+- spec 必须同时能被 `bun test` 执行：只使用两个运行器都有的 API，禁止 `jest.requireActual`、`jest.requireMock`、`jest.unmock`、`jest.deepUnmock` 与 `bun:test` 导入，详见「NestJS 双运行器约束」
+- 默认命令：`cd nestjs && bun run test -- --runInBand`（等价 `./mix test nestjs`）
 
 ### FastAPI
 
+- 测试工具：pytest，异步用例用 anyio 插件的 `@pytest.mark.anyio`（配置在 `pyproject.toml` 的 `[tool.pytest.ini_options]`）
 - 测试沿用 `fastapi/tests/<应用包路径>/xxx_test.py`；引入 integration marker 后再拆分独立集成目录
 - 异步测试使用 pytest/AnyIO，异步依赖使用 `AsyncMock`
 - 路由组件测试使用 `dependency_overrides`
 - 每个测试清理 dependency override、contextvars、`lru_cache` 单例和共享熔断器状态
 - SQLAlchemy Session、HTTP Client、Redis 和 MQ 不得在单元测试中真实连接
 - 后台任务直接调用核心 async 函数，不依赖 APScheduler 触发
-- 默认命令：`cd fastapi && .venv/Scripts/python.exe -m pytest -q`
+- 默认命令：`cd fastapi && uv run pytest -q`（等价 `./mix test fastapi`）；**Windows + WSL 场景下改用自带解释器 `cd fastapi && .venv/Scripts/python.exe -m pytest -q`**：`uv run` 在 WSL 的 bash 里会由 Linux uv 清空并重建 Windows 创建的 `.venv`，等价于重建本地依赖环境，属禁止操作（细节见 SKILL.md 的「仓库工程约束」）。此约束只针对 Windows + WSL，Linux/macOS 上 `uv` 与 `.venv` 同平台，直接跑默认命令即可
 
 ### GoZero
 
+- 测试工具：Go 标准库 `testing` + `net/http/httptest`；当前未引入 testify / sqlmock 等第三方测试库，新增测试依赖前先确认
 - 测试与生产包同目录，命名 `xxx_test.go`
 - 边界和错误分类优先表驱动；资源使用 `t.Cleanup` 回收
 - HTTP 使用 `httptest.Server` 或注入 `RoundTripper`
-- sqlx Model 使用 `sqlmock` 验证条件和参数；关键 SQL 另加 MySQL 集成测试
+- sqlx Model 的参数与条件用轻量 Fake 或窄接口注入验证（仓库未引入 `sqlmock`，确需使用时先补依赖）；关键 SQL 另加 MySQL 集成测试
 - Logic 通过窄 Model/Client 接口注入依赖，不为测试在 Logic 中增加 SQL
 - Middleware 使用 `httptest.NewRecorder` 验证状态码、响应体、Context 和 Body 恢复
 - goctl 生成的 DTO、Handler 脚手架不要求逐文件覆盖，但手写 `Validate()` 和路由中间件绑定必须测试
-- 默认命令：`cd gozero/app && go test ./... -count=1`
+- 默认命令：`cd gozero/app && go test ./... -count=1`（等价 `./mix test gozero`）
 
 ## OSS 专项边界
 
