@@ -1,20 +1,16 @@
-package com.hcsy.spring.core.aspect;
+package com.hcsy.spring.common.utils;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.reflect.MethodSignature;
-
 import com.hcsy.spring.common.constants.SyncChangeType;
-import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.event.ChangeEvent;
 
 /**
  * 变更事件采集工具
  * 从切点入参与业务返回值中解析受影响的主键，兼容 DTO、主键、主键集合与逗号分隔字符串
- * 仅供同步切面使用，与切面同包避免把 AspectJ 依赖下沉到 common
+ * 不依赖 AspectJ：方法参数名与参数值由调用方（同步切面）传入
  */
 public final class SyncEventCollector {
 
@@ -117,10 +113,8 @@ public final class SyncEventCollector {
     /**
      * 按方法参数名解析指定参数值，用于路径变量与多参数场景
      */
-    public static Long readByName(ProceedingJoinPoint joinPoint, String parameterName) {
-        String[] parameterNames = ((MethodSignature) joinPoint.getSignature()).getParameterNames();
-        Object[] parameterValues = joinPoint.getArgs();
-        if (parameterNames == null) {
+    public static Long readByName(String[] parameterNames, Object[] parameterValues, String parameterName) {
+        if (parameterNames == null || parameterValues == null) {
             return null;
         }
         for (int index = 0; index < parameterNames.length && index < parameterValues.length; index++) {

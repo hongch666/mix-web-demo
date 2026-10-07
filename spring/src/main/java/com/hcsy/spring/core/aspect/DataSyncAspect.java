@@ -11,6 +11,7 @@ import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.utils.Result;
+import com.hcsy.spring.common.utils.SyncEventCollector;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.DataSync;
 import com.hcsy.spring.entity.event.ChangeEvent;

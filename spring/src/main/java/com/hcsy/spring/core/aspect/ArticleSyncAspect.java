@@ -18,6 +18,7 @@ import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.common.utils.SyncEventCollector;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.event.ChangeEvent;
@@ -139,7 +140,7 @@ public class ArticleSyncAspect {
                 if (!directIds.isEmpty()) {
                     yield directIds;
                 }
-                Long id = SyncEventCollector.readByName(joinPoint, "id");
+                Long id = readParameterId(joinPoint, "id");
                 yield id == null ? List.of() : List.of(id);
             }
         };
@@ -234,16 +235,14 @@ public class ArticleSyncAspect {
             return focusId;
         }
         // 退化为按方法参数名定位（DELETE /focus 传 userId 与 focusId 两个 Long）
+        return readParameterId(joinPoint, "focusId");
+    }
+
+    /**
+     * 按方法参数名解析 Long 型参数，AspectJ 依赖只保留在切面内，采集工具保持与 AspectJ 无关
+     */
+    private Long readParameterId(ProceedingJoinPoint joinPoint, String parameterName) {
         String[] parameterNames = ((MethodSignature) joinPoint.getSignature()).getParameterNames();
-        Object[] parameterValues = joinPoint.getArgs();
-        if (parameterNames != null) {
-            for (int index = 0; index < parameterNames.length && index < parameterValues.length; index++) {
-                if ("focusId".equals(parameterNames[index])) {
-                    Object value = parameterValues[index];
-                    return value instanceof Number number ? number.longValue() : null;
-                }
-            }
-        }
-        return null;
+        return SyncEventCollector.readByName(parameterNames, joinPoint.getArgs(), parameterName);
     }
 }
