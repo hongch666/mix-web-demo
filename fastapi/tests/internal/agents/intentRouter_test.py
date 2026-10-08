@@ -8,7 +8,13 @@ from langchain_core.runnables import Runnable
 
 from app.core.constants import Messages
 from app.internal.agents import intentRouter as intent_router_module
-from app.internal.agents.intentRouter import IntentRouter, StructuredIntent
+from app.internal.agents.intentRouter import (
+    IntentRouter,
+    StructuredIntent,
+    format_intent_expression,
+    is_direct_chat_intent,
+    parse_intent_expression,
+)
 
 
 class _FakeRunnable(Runnable):
@@ -89,7 +95,7 @@ def _patch_permission_manager(
 @pytest.mark.anyio
 async def test_route_async_returns_structured_intent_when_available() -> None:
     llm = _FakeLLM(
-        structured_result=StructuredIntent(type="knowledge_query", confidence=0.9)
+        structured_result=StructuredIntent(types=["knowledge_query"], confidence=0.9)
     )
     router = IntentRouter(llm=llm)
 
@@ -98,6 +104,64 @@ async def test_route_async_returns_structured_intent_when_available() -> None:
         "structured",
     )
     assert llm.structured_calls == 1
+
+
+# 模型一次给出多个领域时直接组合路由，不再依赖关键词表扩写
+@pytest.mark.anyio
+async def test_route_async_combines_multiple_model_intents() -> None:
+    llm = _FakeLLM(
+        structured_result=StructuredIntent(
+            types=["database_query", "log_analysis"], confidence=0.8
+        )
+    )
+    router = IntentRouter(llm=llm)
+
+    assert await router.route_async("查询数据库里的错误日志") == (
+        "database_query|log_analysis",
+        "structured",
+    )
+
+
+# 模型未给出的领域不会被关键词表追加，避免“相关文章”被扩成组合意图
+@pytest.mark.anyio
+async def test_route_async_keeps_model_intents_without_keyword_expansion() -> None:
+    llm = _FakeLLM(structured_result=StructuredIntent(types=["log_analysis"]))
+    router = IntentRouter(llm=llm)
+
+    assert await router.route_async("分析API日志并查找相关技术文章") == (
+        "log_analysis",
+        "structured",
+    )
+
+
+# 模型把闲聊与其它领域一起返回时剔除闲聊，保留需要工具的领域
+@pytest.mark.anyio
+async def test_route_async_drops_general_chat_when_combined_with_tools() -> None:
+    llm = _FakeLLM(
+        structured_result=StructuredIntent(
+            types=["general_chat", "article_search"], confidence=0.7
+        )
+    )
+    router = IntentRouter(llm=llm)
+
+    assert await router.route_async("你好，帮我找一下RAG文章") == (
+        "article_search",
+        "structured",
+    )
+
+
+# 模型未给出可用领域时回落默认意图并标记为默认兜底
+@pytest.mark.anyio
+async def test_route_async_falls_back_to_default_intent_when_model_returns_empty() -> (
+    None
+):
+    llm = _FakeLLM(structured_result=StructuredIntent(types=[]))
+    router = IntentRouter(llm=llm)
+
+    assert await router.route_async("任意问题") == (
+        "article_search",
+        "default_fallback",
+    )
 
 
 # 结构化结果为纯文本时降级为 text_fallback 并解析文本意图
@@ -210,25 +274,89 @@ def test_resolve_text_intent_maps_keywords(text: str, expected: str) -> None:
     assert IntentRouter._resolve_text_intent(text) == expected
 
 
-def test_merge_intents_keeps_single_domain_compatible() -> None:
-    assert IntentRouter._merge_intents("有哪些相关文章", "knowledge_query") == [
+# 纯 ASCII 关键词按词边界匹配，避免 log 命中 blog、login 这类无关词
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("分析系统日志", ["log_analysis"]),
+        ("查询 mysql 表结构", ["database_query"]),
+        ("我的 blog 更新了", []),
+        ("请帮我 login 一下", []),
+    ],
+)
+def test_resolve_text_intents_matches_ascii_markers_by_word_boundary(
+    text: str, expected: list[str]
+) -> None:
+    assert IntentRouter._resolve_text_intents(text) == expected
+
+
+def test_merge_text_intents_keeps_single_domain_compatible() -> None:
+    assert IntentRouter._merge_text_intents("有哪些相关文章", "knowledge_query") == [
         "knowledge_query"
     ]
 
 
-def test_merge_intents_detects_multiple_tool_domains() -> None:
-    assert IntentRouter._merge_intents(
+def test_merge_text_intents_detects_multiple_tool_domains() -> None:
+    assert IntentRouter._merge_text_intents(
         "分析API日志并查找相关技术文章", "log_analysis"
     ) == ["log_analysis", "article_search"]
 
 
+# 闲聊要被关键词接管需要两个能力信号，单词命中保持闲聊
+def test_merge_text_intents_keeps_general_chat_on_single_signal() -> None:
+    assert IntentRouter._merge_text_intents("推荐一首歌", "general_chat") == [
+        "general_chat"
+    ]
+
+
+def test_merge_text_intents_takes_over_general_chat_with_two_signals() -> None:
+    assert IntentRouter._merge_text_intents(
+        "帮我推荐相关文章并查看知识图谱", "general_chat"
+    ) == ["article_search", "knowledge_query"]
+
+
 def test_format_and_parse_combined_intents() -> None:
-    encoded = IntentRouter._format_intents(["log_analysis", "article_search"])
+    encoded = format_intent_expression(["log_analysis", "article_search"])
     assert encoded == "log_analysis|article_search"
-    assert IntentRouter._parse_intents(encoded) == [
+    assert parse_intent_expression(encoded) == [
         "log_analysis",
         "article_search",
     ]
+
+
+# 表达式编解码过滤未知值、去重，并在无可识别意图时回落默认意图
+def test_parse_intent_expression_filters_unknown_and_duplicates() -> None:
+    assert parse_intent_expression(
+        "database_query|unknown|database_query|log_analysis"
+    ) == [
+        "database_query",
+        "log_analysis",
+    ]
+
+
+def test_parse_intent_expression_falls_back_to_default_intent() -> None:
+    assert parse_intent_expression("") == ["article_search"]
+    assert parse_intent_expression("unknown") == ["article_search"]
+
+
+def test_format_intent_expression_falls_back_to_default_intent() -> None:
+    assert format_intent_expression(["unknown"]) == "article_search"
+
+
+# 只有闲聊单独出现时才走直连对话
+@pytest.mark.parametrize(
+    ("expression", "expected"),
+    [
+        ("general_chat", True),
+        ("general_chat|article_search", False),
+        ("article_search", False),
+        ("", False),
+    ],
+)
+def test_is_direct_chat_intent_only_accepts_pure_general_chat(
+    expression: str, expected: bool
+) -> None:
+    assert is_direct_chat_intent(expression) is expected
 
 
 # 未登录请求 database_query 意图被拒绝并返回无权限消息
@@ -386,6 +514,36 @@ async def test_combined_intent_checks_all_restricted_domains(
     assert result == ("database_query|log_analysis", True, "", "structured")
     manager.can_access_sql_tools_async.assert_awaited_once()
     manager.can_access_mongodb_logs_async.assert_awaited_once()
+
+
+# 权限校验回传规范化后的意图表达式，与校验使用的意图集合保持一致
+@pytest.mark.anyio
+async def test_permission_check_returns_normalized_intent_expression(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manager = _FakePermissionManager()
+    _patch_permission_manager(monkeypatch, manager)
+    router = _router_with_intent("unknown|log_analysis")
+
+    result = await router.route_with_permission_check_async(
+        "看日志", user_id=7, db=Mock()
+    )
+
+    assert result == ("log_analysis", True, "", "structured")
+    manager.can_access_sql_tools_async.assert_not_awaited()
+
+
+# 未登录时组合意图含受限领域即整体拒绝
+@pytest.mark.anyio
+async def test_combined_restricted_intent_without_login_is_rejected() -> None:
+    router = _router_with_intent("database_query|log_analysis")
+
+    assert await router.route_with_permission_check_async("查询数据库并分析日志") == (
+        "database_query|log_analysis",
+        False,
+        Messages.INTENT_ROUTER_NO_PERMISSION_ERROR,
+        "structured",
+    )
 
 
 # 请求传入的身份覆盖路由器默认用户与会话

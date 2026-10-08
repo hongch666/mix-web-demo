@@ -455,6 +455,22 @@ async def test_simple_chat_agent_intent_uses_agent_executor() -> None:
     assert router.route_async.await_args.args[0] == "查日志"
 
 
+# 闲聊与其它领域组合时不再走直连对话，交由 agent 执行器
+@pytest.mark.anyio
+async def test_simple_chat_combined_general_intent_uses_agent_executor() -> None:
+    router = _FakeIntentRouter(
+        route_result=("general_chat|article_search", "structured")
+    )
+    executor = _FakeAgentExecutor(invoke_result={"output": "组合答复"})
+    service = _make_service(
+        llm=_FakeStreamingLLM(), intent_router=router, agent_executor=executor
+    )
+
+    result = await service.simple_chat("你好，帮我找一下RAG文章")
+
+    assert result == "组合答复"
+
+
 # 意图权限校验未通过时直接返回无权限提示内容
 @pytest.mark.anyio
 async def test_simple_chat_returns_permission_message_when_denied() -> None:
@@ -588,6 +604,28 @@ async def test_stream_chat_agent_emits_tool_steps_and_final_result() -> None:
     ]
     payload = executor.astream_events_calls[0]["payload"]
     assert payload["input"] == Messages.CURRENT_QUESTION("查日志")
+
+
+# 流式链路按组合意图走 agent，不下发直连闲聊回复
+@pytest.mark.anyio
+async def test_stream_chat_combined_general_intent_uses_agent_stream() -> None:
+    events = [{"event": "on_chain_end", "data": {"output": {"output": "组合答复"}}}]
+    router = _FakeIntentRouter(
+        route_result=("general_chat|article_search", "structured")
+    )
+    executor = _FakeAgentExecutor(events=events)
+    llm = _FakeStreamingLLM(chunks=[_FakeChunk("组合答复")])
+    service = _make_service(llm=llm, intent_router=router, agent_executor=executor)
+
+    frames = await _collect_frames(service.stream_chat("你好，帮我找一下RAG文章"))
+
+    assert frames[-1] == {"type": "content", "content": "组合答复"}
+    assert executor.astream_events_calls
+    assert llm.stream_calls[0]["config"]["run_name"] == "agent.execute"
+    assert (
+        llm.stream_calls[0]["config"]["metadata"]["intent"]
+        == "general_chat|article_search"
+    )
 
 
 # agent 最终流内容为空时回退到同步调用结果

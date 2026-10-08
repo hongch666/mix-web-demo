@@ -97,7 +97,7 @@ class Prompts:
     # ===== 意图路由提示词 =====
     ROUTER_INTENT_PROMPT: str = """你是一个智能路由助手，需要判断用户的问题类型。
 
-    分析用户问题，判断应该使用哪种方式处理：
+    分析用户问题，判断涉及哪些处理方式，可以同时命中多个领域：
 
     1. **database_query** - 需要查询数据库统计数据、获取记录列表、数据分析时选择
     - 关键词：多少、统计、列表、查询、总数、排行、最新、用户信息、聊天记录、对话历史等
@@ -150,7 +150,14 @@ class Prompts:
         * "谢谢你的帮助"
         * "你能做什么？"
 
-    请只返回以下五个选项之一：database_query、article_search、log_analysis、knowledge_query、general_chat
+    组合规则：
+    - 只涉及一个领域时返回该领域
+    - 同时涉及多个领域时全部返回，不要遗漏
+    - general_chat 仅在问题与其它领域无关时返回，禁止与其它领域一起返回
+
+    只输出意图标识，多个用英文逗号分隔，不要输出其它内容
+    可选值：database_query、article_search、log_analysis、knowledge_query、general_chat
+    组合示例："分析最近的API日志并找出相关的技术文章" 返回 log_analysis,article_search
     """
 
     # ===== RAG 工具描述 =====

@@ -17,6 +17,7 @@ from app.internal.agents import (
     AgentToolFactories,
     IntentRouter,
     default_agent_tool_factories,
+    is_direct_chat_intent,
 )
 
 ChatHistoryItem = tuple[str, str]
@@ -605,8 +606,7 @@ class BaseAiService:
             if db and normalized_user_id is not None:
                 chat_history = await self._load_chat_history(normalized_user_id, db)
 
-            intents = [item for item in str(intent).split("|") if item]
-            if intents == ["general_chat"]:
+            if is_direct_chat_intent(intent):
                 config.setdefault("run_name", "chat.direct")
                 history_messages: list[Any] = []
                 for human_msg, ai_msg in chat_history:
@@ -761,8 +761,7 @@ class BaseAiService:
             if db and normalized_user_id is not None:
                 chat_history = await self._load_chat_history(normalized_user_id, db)
 
-            intents = [item for item in str(intent).split("|") if item]
-            if intents == ["general_chat"]:
+            if is_direct_chat_intent(intent):
                 config.setdefault("run_name", "chat.direct")
                 history_messages: list[Any] = []
                 for human_msg, ai_msg in chat_history:

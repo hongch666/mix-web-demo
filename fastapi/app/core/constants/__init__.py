@@ -2,6 +2,7 @@ from .algorithm import AlgorithmConstants
 from .defaults import Defaults
 from .errorCodes import ErrorCodes
 from .httpCode import HttpCode
+from .intent import IntentConstants, IntentExpression, IntentResolution, IntentType
 from .messages import Messages
 from .metricNames import MetricNames
 from .prompts import Prompts
@@ -26,4 +27,8 @@ __all__ = [
     "TelemetryConstants",
     "WarehouseScripts",
     "VectorConstants",
+    "IntentConstants",
+    "IntentType",
+    "IntentResolution",
+    "IntentExpression",
 ]

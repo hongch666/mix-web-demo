@@ -1,4 +1,6 @@
-from typing import Any, Literal, Optional
+import re
+from collections.abc import Sequence
+from typing import Any, Optional, cast
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -6,34 +8,90 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.base import Logger
-from app.core.constants import Messages, Prompts
+from app.core.constants import (
+    IntentConstants,
+    IntentExpression,
+    IntentResolution,
+    IntentType,
+    Messages,
+    Prompts,
+)
 
 from .userPermissionManager import UserPermissionManager, get_user_permission_manager
 
-IntentType = Literal[
-    "database_query",
-    "article_search",
-    "log_analysis",
-    "knowledge_query",
-    "general_chat",
-]
 
-IntentResolution = Literal[
-    "structured",
-    "text_fallback",
-    "default_fallback",
-]
+def _build_marker_pattern(marker: str) -> re.Pattern[str]:
+    """编译关键词正则：纯 ASCII 关键词按词边界匹配，中文关键词按子串匹配"""
+    if marker.isascii():
+        return re.compile(
+            rf"(?<![a-z0-9]){re.escape(marker)}(?![a-z0-9])", re.IGNORECASE
+        )
+    return re.compile(re.escape(marker))
+
+
+# 关键词表在导入时编译一次，文本降级链路按表顺序匹配（表顺序即优先级）
+_INTENT_MARKER_PATTERNS: tuple[tuple[IntentType, tuple[re.Pattern[str], ...]], ...] = (
+    cast(
+        "tuple[tuple[IntentType, tuple[re.Pattern[str], ...]], ...]",
+        tuple(
+            (intent, tuple(_build_marker_pattern(marker) for marker in markers))
+            for intent, markers in IntentConstants.MARKERS
+        ),
+    )
+)
+
+
+def format_intent_expression(intents: Sequence[str]) -> IntentExpression:
+    """把意图列表格式化为表达式，去重并剔除不支持的意图"""
+    valid = [
+        item
+        for item in dict.fromkeys(intents)
+        if item in IntentConstants.SUPPORTED_TYPES
+    ]
+    return "|".join(valid) if valid else IntentConstants.DEFAULT
+
+
+def parse_intent_expression(expression: IntentExpression) -> list[IntentType]:
+    """解析意图表达式为意图列表，过滤未知值并在空结果时回落默认意图"""
+    intents = [
+        cast(IntentType, item)
+        for item in dict.fromkeys(str(expression).split("|"))
+        if item in IntentConstants.SUPPORTED_TYPES
+    ]
+    return intents or [IntentConstants.DEFAULT]
+
+
+def normalize_intents(intents: Sequence[str]) -> list[IntentType]:
+    """规范化模型给出的意图集合：去重、过滤未知值、剔除与其它领域并存的闲聊"""
+    unique = [
+        cast(IntentType, item)
+        for item in dict.fromkeys(intents)
+        if item in IntentConstants.SUPPORTED_TYPES
+    ]
+    if not unique:
+        return [IntentConstants.DEFAULT]
+    if len(unique) > 1 and IntentConstants.GENERAL_CHAT in unique:
+        unique = [item for item in unique if item != IntentConstants.GENERAL_CHAT]
+    return unique
+
+
+def is_direct_chat_intent(expression: IntentExpression) -> bool:
+    """判断是否为纯闲聊意图，只有闲聊单独出现时才走直连对话"""
+    return parse_intent_expression(expression) == [IntentConstants.GENERAL_CHAT]
 
 
 class StructuredIntent(BaseModel):
     """结构化意图识别结果（优先使用，避免脆弱文本匹配）"""
 
-    type: IntentType = Field(description="识别出的用户意图类型")
+    types: list[IntentType] = Field(
+        default_factory=list,
+        description=IntentConstants.STRUCTURED_TYPES_DESCRIPTION,
+    )
     confidence: float = Field(
         default=1.0,
         ge=0.0,
         le=1.0,
-        description="意图识别的置信度",
+        description=IntentConstants.STRUCTURED_CONFIDENCE_DESCRIPTION,
     )
 
 
@@ -102,46 +160,51 @@ class IntentRouter:
 
     async def route_async(
         self, question: str, runnable_config: Optional[dict] = None
-    ) -> tuple[IntentType, IntentResolution]:
+    ) -> tuple[IntentExpression, IntentResolution]:
         """异步路由用户问题（优先使用结构化输出，降级为文本匹配）
+
+        意图由模型判定，模型给出多个领域时组合路由，关键词表只在降级链路补信号
 
         Args:
             question: 用户问题
             runnable_config: LangChain RunnableConfig (用于 LangSmith 追踪)
 
         Returns:
-            (意图类型, 识别路径)
+            (意图表达式, 识别路径)，意图表达式用 | 连接多个领域
         """
         # 复用主链路的 tags/metadata，但意图链自身的 Run 名称固定为 intent.route
         config = dict(runnable_config) if runnable_config else {}
         config["run_name"] = "intent.route"
         try:
             if self._use_structured_output:
-                intent, resolution = await self._route_structured(question, config)
+                intents, resolution = await self._route_structured(question, config)
             else:
-                intent, resolution = await self._route_text_match(question, config)
-            intents = self._merge_intents(question, intent)
-            return self._format_intents(intents), resolution  # type: ignore[return-value]
+                intents, resolution = await self._route_text_match(question, config)
+            return format_intent_expression(intents), resolution
         except Exception as e:
             self.logger.error(Messages.INTENT_RECOGNITION_FAILED(e))
-            return "article_search", "default_fallback"
+            return IntentConstants.DEFAULT, "default_fallback"
 
     async def _route_structured(
         self, question: str, config: dict
-    ) -> tuple[IntentType, IntentResolution]:
-        """通过 with_structured_output 链识别意图"""
+    ) -> tuple[list[IntentType], IntentResolution]:
+        """通过 with_structured_output 链识别意图，模型给出的领域集合即为最终结果"""
         try:
             result: Any = await self.structured_chain.ainvoke(
                 {"question": question}, config=config
             )
             if isinstance(result, str):
-                return self._resolve_text_intent(result), "text_fallback"
+                # 模型忽略了结构化约束，按文本解析并补齐多领域信号
+                primary = self._resolve_text_intent(result)
+                return self._merge_text_intents(question, primary), "text_fallback"
+            model_types = list(getattr(result, "types", None) or [])
+            intents = normalize_intents(model_types)
             self.logger.info(
                 Messages.INTENT_STRUCTURED_RESULT(
-                    question, result.type, result.confidence
+                    question, format_intent_expression(intents), result.confidence
                 )
             )
-            return result.type, "structured"
+            return intents, "structured" if model_types else "default_fallback"
         except Exception as e:
             # 结构化输出失败，降级为文本匹配
             self.logger.warning(Messages.INTENT_STRUCTURED_FALLBACK(e))
@@ -149,110 +212,54 @@ class IntentRouter:
 
     async def _route_text_match(
         self, question: str, config: dict
-    ) -> tuple[IntentType, IntentResolution]:
-        """通过文本匹配识别意图（降级方案）"""
+    ) -> tuple[list[IntentType], IntentResolution]:
+        """通过文本匹配识别意图（降级方案），关键词表仅在此链路补齐多领域"""
         result: Any = await self.chain.ainvoke({"question": question}, config=config)
         result_text: str = str(result).strip().lower()
 
-        intent = self._resolve_text_intent(result_text)
+        primary = self._resolve_text_intent(result_text)
+        intents = self._merge_text_intents(question, primary)
 
-        self.logger.info(Messages.INTENT_TEXT_RESULT(question, intent))
-        return intent, "text_fallback"
+        self.logger.info(
+            Messages.INTENT_TEXT_RESULT(question, format_intent_expression(intents))
+        )
+        return intents, "text_fallback"
 
     @staticmethod
     def _resolve_text_intent(result_text: str) -> IntentType:
-        """将模型返回的意图文本转换为系统支持的意图类型"""
-        normalized_text = result_text.strip().lower()
-
-        if "database" in normalized_text or "数据库" in normalized_text:
-            return "database_query"
-        elif (
-            "article" in normalized_text
-            or "文章" in normalized_text
-            or "search" in normalized_text
-        ):
-            return "article_search"
-        elif (
-            "log" in normalized_text
-            or "日志" in normalized_text
-            or "活动" in normalized_text
-        ):
-            return "log_analysis"
-        elif (
-            "knowledge" in normalized_text
-            or "知识" in normalized_text
-            or "图谱" in normalized_text
-            or "推荐" in normalized_text
-            or "关系" in normalized_text
-        ):
-            return "knowledge_query"
-        elif (
-            "general" in normalized_text
-            or "chat" in normalized_text
-            or "闲聊" in normalized_text
-        ):
-            return "general_chat"
-        return "article_search"
+        """将模型返回的意图文本转换为系统支持的意图类型，按关键词表优先级取首个命中"""
+        matched = IntentRouter._resolve_text_intents(result_text)
+        return matched[0] if matched else IntentConstants.DEFAULT
 
     @staticmethod
-    def _resolve_text_intents(question: str) -> list[IntentType]:
-        """按问题中的能力信号补充多领域意图，避免单分类吞掉组合请求。"""
-        text = question.strip().lower()
-        intents: list[IntentType] = []
-        markers: tuple[tuple[IntentType, tuple[str, ...]], ...] = (
-            (
-                "database_query",
-                ("database", "数据库", "sql", "表结构", "用户数据", "聊天记录"),
-            ),
-            (
-                "article_search",
-                ("article", "文章", "教程", "技术知识", "搜索文章", "查找文章"),
-            ),
-            (
-                "log_analysis",
-                ("log", "日志", "api调用", "接口调用", "错误日志", "异常日志"),
-            ),
-            (
-                "knowledge_query",
-                ("knowledge", "知识图谱", "图谱", "关联关系", "相似文章", "推荐"),
-            ),
-        )
-        for intent, intent_markers in markers:
-            if any(marker in text for marker in intent_markers):
-                intents.append(intent)
-        return intents
+    def _resolve_text_intents(text: str) -> list[IntentType]:
+        """挑出文本中出现的全部意图，顺序与关键词表优先级一致"""
+        normalized = str(text).strip().lower()
+        return [
+            intent
+            for intent, patterns in _INTENT_MARKER_PATTERNS
+            if any(pattern.search(normalized) for pattern in patterns)
+        ]
 
     @classmethod
-    def _merge_intents(
+    def _merge_text_intents(
         cls, question: str, primary: IntentType
     ) -> list[IntentType]:
-        detected = cls._resolve_text_intents(question)
-        if primary == "general_chat" and not detected:
-            return [primary]
-        if primary == "general_chat" and detected:
-            return detected
-        # 单个关键词只作为结构化分类的校验信号，避免“相关文章”这类问题
-        # 被错误扩展为多个领域；只有多个能力信号同时出现时才组合路由。
+        """文本降级链路按问题中的能力信号补充多领域意图
+
+        单个关键词只作为交叉校验信号，至少两个信号同时出现才组合路由；
+        闲聊被关键词接管同样要求两个信号，避免“推荐一首歌”这类请求误入工具链路
+        """
+        detected = [
+            intent
+            for intent in cls._resolve_text_intents(question)
+            if intent != IntentConstants.GENERAL_CHAT
+        ]
         if len(detected) < 2:
             return [primary]
+        if primary == IntentConstants.GENERAL_CHAT:
+            return detected
         return [primary, *[item for item in detected if item != primary]]
-
-    @staticmethod
-    def _format_intents(intents: list[IntentType]) -> str:
-        return "|".join(dict.fromkeys(intents))
-
-    @staticmethod
-    def _parse_intents(intent: str) -> list[IntentType]:
-        allowed = {
-            "database_query",
-            "article_search",
-            "log_analysis",
-            "knowledge_query",
-            "general_chat",
-        }
-        return [item for item in intent.split("|") if item in allowed] or [
-            "article_search"
-        ]
 
     async def route_with_permission_check_async(
         self,
@@ -260,21 +267,24 @@ class IntentRouter:
         user_id: Optional[int] = None,
         db: Optional[Session] = None,
         runnable_config: Optional[dict] = None,
-    ) -> tuple[IntentType, bool, str, IntentResolution]:
+    ) -> tuple[IntentExpression, bool, str, IntentResolution]:
         """异步路由用户问题并检查权限
 
         Returns:
-            (意图类型, 是否有权限, 权限消息, 识别路径)
+            (意图表达式, 是否有权限, 权限消息, 识别路径)，意图表达式用 | 连接多个领域
         """
         intent, resolution = await self.route_async(question, runnable_config)
-        intents = self._parse_intents(intent)
+        intents = parse_intent_expression(intent)
+        # 回传规范化后的表达式，保证权限校验用的意图集合与返回内容一致
+        intent = format_intent_expression(intents)
 
         if user_id is not None and db is not None:
             self.user_id = user_id
             self.db = db
 
+        # 意图集合来自模型判定，不再由关键词表扩写，未登录时只有模型认出的受限域才拒绝
         if not self.user_id or not self.db:
-            if any(item in ["database_query", "log_analysis"] for item in intents):
+            if any(item in IntentConstants.RESTRICTED for item in intents):
                 return (
                     intent,
                     False,
@@ -289,6 +299,8 @@ class IntentRouter:
         role = await perm_manager.get_user_role_async(self.user_id, self.db)
         perm_manager.apply_tool_scope(self.user_id, role)
 
+        # 组合意图逐项校验受限领域，任一领域无权限即整体拒绝：
+        # agent 共用同一套工具集，无法按意图裁剪工具，因此不做部分放行
         if "database_query" in intents:
             try:
                 if Messages.is_dangerous_nl_request(question):

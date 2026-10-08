@@ -1,5 +1,12 @@
 from .extractor import ReferenceContentExtractor, get_reference_content_extractor
-from .intentRouter import IntentRouter
+from .intentRouter import (
+    IntentExpression,
+    IntentRouter,
+    format_intent_expression,
+    is_direct_chat_intent,
+    normalize_intents,
+    parse_intent_expression,
+)
 from .tools.fastapiSqlTool import FastapiSqlTool, get_fastapi_sql_tool
 from .tools.gozeroSqlTool import GozeroSqlTool, get_gozero_sql_tool
 from .tools.mongoDBTools import MongoDBTools, get_mongodb_tools
@@ -37,6 +44,11 @@ __all__: list[str] = [
     "ClickHouseWarehouseTools",
     "get_warehouse_tools",
     "IntentRouter",
+    "IntentExpression",
+    "format_intent_expression",
+    "parse_intent_expression",
+    "normalize_intents",
+    "is_direct_chat_intent",
     "UserPermissionManager",
     "get_user_permission_manager",
     "ReferenceContentExtractor",
