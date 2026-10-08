@@ -441,12 +441,15 @@ export class Messages {
   ): string => `聚合管道阶段数不能超过 ${max}`;
 
   static readonly MONGO_AGGREGATE_STAGE_SHAPE_INVALID_MSG = (
+    position: number,
     stage: string,
-  ): string => `聚合阶段 ${stage} 必须是只包含一个操作符的对象`;
+  ): string =>
+    `聚合管道第 ${position} 个阶段必须是只包含一个操作符的对象，实际收到: ${stage}`;
 
   static readonly MONGO_AGGREGATE_STAGE_NOT_ALLOWED_MSG = (
+    position: number,
     stage: string,
-  ): string => `不允许的聚合阶段: ${stage}`;
+  ): string => `聚合管道第 ${position} 个阶段的阶段名 ${stage} 不受支持`;
 
   static readonly MONGO_AGGREGATE_STAGE_VALUE_INVALID_MSG = (
     stage: string,

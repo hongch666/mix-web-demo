@@ -91,7 +91,7 @@ describe("MongoToolsService", () => {
         10,
       ),
     ).rejects.toThrow(
-      Messages.MONGO_AGGREGATE_STAGE_NOT_ALLOWED_MSG("$lookup"),
+      Messages.MONGO_AGGREGATE_STAGE_NOT_ALLOWED_MSG(1, "$lookup"),
     );
     expect(aggregate).not.toHaveBeenCalled();
   });
@@ -103,7 +103,9 @@ describe("MongoToolsService", () => {
 
     await expect(
       service.aggregate("apilogs", [{ $match: {}, $limit: 5 }], 10),
-    ).rejects.toThrow(Messages.MONGO_AGGREGATE_STAGE_NOT_ALLOWED_MSG("$match"));
+    ).rejects.toThrow(
+      Messages.MONGO_AGGREGATE_STAGE_NOT_ALLOWED_MSG(1, "$match"),
+    );
   });
 
   // 验证危险操作符即使藏在聚合阶段内部也会被拒绝

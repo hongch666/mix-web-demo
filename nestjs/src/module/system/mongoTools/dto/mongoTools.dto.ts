@@ -77,6 +77,10 @@ export class AggregateMongoDto {
       { $sort: { count: -1 } },
     ],
   })
+  // pipeline 是「对象数组」，必须显式声明元素类型：
+  // 全局 ValidationPipe 开启了 enableImplicitConversion，装饰器又让 design:type 成为 Array，
+  // 不声明 @Type 时 class-transformer 会把每个阶段对象转成空数组，阶段内容全部丢失
+  @Type(() => Object)
   @IsArray({ message: "聚合管道必须是数组" })
   @ArrayMinSize(1, { message: "聚合管道至少需要一个阶段" })
   @ArrayMaxSize(MongoTools.MAX_PIPELINE_STAGES, {

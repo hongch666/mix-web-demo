@@ -144,17 +144,19 @@ export class MongoToolsService {
       );
     }
 
-    const safePipeline: Record<string, unknown>[] = pipeline.map((stage) => {
-      const [stageName, stageValue] = this.assertSafeStage(stage);
+    const safePipeline: Record<string, unknown>[] = pipeline.map(
+      (stage: Record<string, unknown>, index: number) => {
+        const [stageName, stageValue] = this.assertSafeStage(stage, index + 1);
 
-      // 危险操作符可能藏在任意阶段内部，逐个阶段递归校验
-      this.assertSafeFilter(stage);
+        // 危险操作符可能藏在任意阶段内部，逐个阶段递归校验
+        this.assertSafeFilter(stage);
 
-      if (stageName === "$limit") {
-        return { $limit: this.resolveStageLimit(stageValue, safeLimit) };
-      }
-      return { [stageName]: stageValue };
-    });
+        if (stageName === "$limit") {
+          return { $limit: this.resolveStageLimit(stageValue, safeLimit) };
+        }
+        return { [stageName]: stageValue };
+      },
+    );
 
     const lastStage = safePipeline[safePipeline.length - 1];
     if (!Object.prototype.hasOwnProperty.call(lastStage, "$limit")) {
@@ -166,11 +168,19 @@ export class MongoToolsService {
 
   /**
    * 校验单个聚合阶段的形状与白名单，返回阶段名与阶段值
+   * @param stage 聚合阶段
+   * @param position 阶段序号（从 1 开始），便于调用方定位问题阶段
    */
-  private assertSafeStage(stage: Record<string, unknown>): [string, unknown] {
+  private assertSafeStage(
+    stage: Record<string, unknown>,
+    position: number,
+  ): [string, unknown] {
     if (stage === null || typeof stage !== "object" || Array.isArray(stage)) {
       throw new BusinessException(
-        Messages.MONGO_AGGREGATE_STAGE_SHAPE_INVALID_MSG(String(stage)),
+        Messages.MONGO_AGGREGATE_STAGE_SHAPE_INVALID_MSG(
+          position,
+          describeStage(stage),
+        ),
         HttpCode.BAD_REQUEST,
         ErrorIds.PARAM_PARSE_FAILED,
       );
@@ -183,7 +193,10 @@ export class MongoToolsService {
       !MongoTools.ALLOWED_AGGREGATE_STAGES.has(stageName)
     ) {
       throw new BusinessException(
-        Messages.MONGO_AGGREGATE_STAGE_NOT_ALLOWED_MSG(stageName || "unknown"),
+        Messages.MONGO_AGGREGATE_STAGE_NOT_ALLOWED_MSG(
+          position,
+          stageName || "unknown",
+        ),
         HttpCode.BAD_REQUEST,
         ErrorIds.PARAM_PARSE_FAILED,
       );
@@ -296,6 +309,19 @@ export class MongoToolsService {
       }
     };
     check(filter);
+  }
+}
+
+/**
+ * 把非法阶段序列化成可读片段回显给调用方，便于据此定位与修正参数
+ */
+function describeStage(stage: unknown): string {
+  try {
+    const text: string =
+      typeof stage === "string" ? stage : JSON.stringify(stage);
+    return (text ?? String(stage)).slice(0, 120);
+  } catch {
+    return String(stage);
   }
 }
 
