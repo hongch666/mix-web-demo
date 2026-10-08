@@ -10,6 +10,8 @@ from app.core.constants import Defaults, Messages, Prompts
 from app.internal.agents.toolScope import enforce_mongodb_row_scope, log_scope_denial
 from app.internal.clients import NestjsClient, get_nestjs_client
 
+from .toolArguments import JsonArrayArgument, JsonObjectArgument
+
 
 class MongoDBTools:
     """MongoDB 日志查询工具集（通过 NestJS 内部接口远程查询）"""
@@ -146,7 +148,7 @@ class MongoDBTools:
                 description=Messages.MONGODB_COLLECTION_NAME_INPUT_DESC
             )
             # 管道形态由工具内部校验：pydantic 的英文报错不如本地中文提示便于模型自纠
-            pipeline: list[Any] = Field(
+            pipeline: JsonArrayArgument = Field(
                 description=Messages.MONGODB_PIPELINE_INPUT_DESC
             )
             limit: int = Field(
@@ -162,7 +164,7 @@ class MongoDBTools:
             collection_name: str = Field(
                 description=Messages.MONGODB_COLLECTION_NAME_INPUT_DESC
             )
-            filter_dict: dict[str, Any] = Field(
+            filter_dict: JsonObjectArgument = Field(
                 default_factory=dict,
                 description=Messages.MONGODB_FILTER_INPUT_DESC,
             )

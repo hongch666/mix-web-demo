@@ -175,7 +175,8 @@ class Prompts:
     """
 
     MONGODB_QUERY_TOOL_DESC: str = """MongoDB 日志查询工具，仅用于查询日志相关 collection 的原始记录。
-    参数必须是 JSON 字符串，支持 collection_name、filter_dict、limit 三个字段。
+    参数按字段类型直接传值，不要把整个参数拼成一个字符串:
+    collection_name 是字符串, filter_dict 是对象, limit 是整数。
     参数示例: {"collection_name": "api_logs", "filter_dict": {"response_time": {"$gt": 200}}, "limit": 10}
     使用场景: 已明确 collection 后，按条件查询 API 日志、错误日志、操作日志等数据时使用。
     limit 只表示本次最多返回多少条记录，是返回条数上限而不是过滤条件，取值受服务端上限约束。
@@ -185,8 +186,9 @@ class Prompts:
     """
 
     MONGODB_AGGREGATE_TOOL_DESC: str = """MongoDB 日志聚合查询工具，用于日志的统计、分组、排序与阈值分析。
-    参数必须是 JSON 字符串，支持 collection_name、pipeline、limit 三个字段。
-    pipeline 是阶段数组，每项只能包含一个阶段操作符，允许的阶段:
+    参数按字段类型直接传值，不要把整个参数拼成一个字符串:
+    collection_name 是字符串, pipeline 是数组, limit 是整数。
+    pipeline 的每一项必须是「只包含一个阶段操作符的对象」, 不能只是操作符名字符串, 允许的阶段:
     $match 过滤、$project 裁剪字段、$addFields 新增派生字段、$group 分组统计、
     $sort 排序、$limit 截断、$count 计数、$unwind 展开数组字段。
     参数示例: {"collection_name": "api_logs", "pipeline": [{"$match": {"response_time": {"$gt": 200}}}, {"$group": {"_id": "$path", "count": {"$sum": 1}}}, {"$sort": {"count": -1}}], "limit": 20}

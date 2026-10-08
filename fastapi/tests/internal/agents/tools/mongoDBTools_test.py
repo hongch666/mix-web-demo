@@ -134,6 +134,39 @@ def test_query_tool_schema_rejects_limit_over_remote_max() -> None:
         )
 
 
+# 模型把管道或查询条件整体写成 JSON 字符串时，也能被还原并正常执行
+@pytest.mark.anyio
+async def test_tools_accept_json_string_arguments() -> None:
+    tool, client = _tool()
+    client.aggregate_mongodb.return_value = []
+    client.query_mongodb.return_value = []
+    set_tool_scope(user_id=1, is_admin=True)
+    tools = tool.get_langchain_tools()
+    query_tool, aggregate_tool = tools[1], tools[2]
+
+    await aggregate_tool.ainvoke(
+        {
+            "collection_name": "apilogs",
+            "pipeline": '[{"$count": "total"}]',
+            "limit": 5,
+        }
+    )
+    client.aggregate_mongodb.assert_awaited_once_with(
+        "apilogs", [{"$count": "total"}], 5
+    )
+
+    await query_tool.ainvoke(
+        {
+            "collection_name": "apilogs",
+            "filter_dict": '{"response_time": {"$gt": 200}}',
+            "limit": 5,
+        }
+    )
+    client.query_mongodb.assert_awaited_once_with(
+        "apilogs", {"response_time": {"$gt": 200}}, 5
+    )
+
+
 # 暴露的列表、查询与聚合工具名称与常量一致
 def test_get_langchain_tools_exposes_list_and_query_tools() -> None:
     tool, _ = _tool()

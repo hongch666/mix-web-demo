@@ -113,6 +113,26 @@ async def test_execute_query_wraps_client_failure() -> None:
     )
 
 
+# 参数被整体写成 JSON 字符串时也能还原为键值对象
+@pytest.mark.anyio
+async def test_execute_query_accepts_json_string_params() -> None:
+    tool, client = _tool()
+    client.execute_query.return_value = {"columns": ["id"], "rows": [[1]]}
+    set_tool_scope(user_id=1, is_admin=True)
+    query_tool = tool.get_langchain_tools()[1]
+
+    await query_tool.ainvoke(
+        {
+            "query": "SELECT id FROM t WHERE id = :id LIMIT 1",
+            "params": '{"id": 1}',
+        }
+    )
+
+    client.execute_query.assert_awaited_once_with(
+        "SELECT id FROM t WHERE id = :id LIMIT 1", {"id": 1}
+    )
+
+
 # 暴露的表查询与查询工具名称与常量一致
 def test_get_langchain_tools_exposes_table_and_query_tools() -> None:
     tool, _ = _tool()

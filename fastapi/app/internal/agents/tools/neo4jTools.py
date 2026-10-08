@@ -12,6 +12,8 @@ from app.core.constants import Messages, Prompts, Scripts
 from app.core.db import get_neo4j_client
 from app.internal.models import Article, User
 
+from .toolArguments import JsonObjectArgument
+
 
 class Neo4jQueryTools:
     """Neo4j 知识图谱查询工具集
@@ -303,7 +305,7 @@ class Neo4jQueryTools:
                 description=Messages.NEO4J_QUERY_NAME_INPUT_DESC
                 + ", ".join(self.available_query_names)
             )
-            params: dict[str, Any] = Field(
+            params: JsonObjectArgument = Field(
                 default_factory=dict,
                 description=Messages.NEO4J_QUERY_PARAMS_INPUT_DESC,
             )

@@ -12,6 +12,8 @@ from app.core.constants import Messages, Prompts
 from app.core.db import get_db
 from app.internal.agents.toolScope import enforce_sql_row_scope, log_scope_denial
 
+from .toolArguments import JsonObjectArgument
+
 
 class FastapiSqlTool:
     """FastAPI 本地 MySQL 数据查询工具（直连）
@@ -130,7 +132,7 @@ class FastapiSqlTool:
 
         class ExecuteFastapiSqlQueryInput(BaseModel):
             query: str = Field(description=Messages.SQL_TOOL_QUERY_INPUT_DESC)
-            params: dict[str, Any] = Field(
+            params: JsonObjectArgument = Field(
                 default_factory=dict,
                 description=Messages.SQL_TOOL_PARAMS_INPUT_DESC,
             )

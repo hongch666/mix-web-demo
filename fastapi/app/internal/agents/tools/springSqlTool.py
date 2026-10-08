@@ -10,6 +10,8 @@ from app.core.constants import Messages, Prompts
 from app.internal.agents.toolScope import enforce_sql_row_scope, log_scope_denial
 from app.internal.clients import SpringClient, get_spring_client
 
+from .toolArguments import JsonObjectArgument
+
 
 class SpringSqlTool:
     """Spring 服务 SQL 查询工具（远程代理）"""
@@ -61,7 +63,7 @@ class SpringSqlTool:
 
         class ExecuteSpringSqlQueryInput(BaseModel):
             query: str = Field(description=Messages.SQL_TOOL_QUERY_INPUT_DESC)
-            params: dict[str, Any] = Field(
+            params: JsonObjectArgument = Field(
                 default_factory=dict,
                 description=Messages.SQL_TOOL_PARAMS_INPUT_DESC,
             )

@@ -2201,7 +2201,7 @@ class Messages:
     NEO4J_QUERY_NAME_INPUT_DESC: str = "预定义查询名称，可选值: "
 
     NEO4J_QUERY_PARAMS_INPUT_DESC: str = (
-        '查询参数，例如 {"id": 1, "name": "人工智能", "limit": 10}'
+        '查询参数（对象），例如 {"id": 1, "name": "人工智能", "limit": 10}'
     )
 
     NEO4J_SQL_SELECT_ARTICLES: str = (
@@ -2433,7 +2433,7 @@ class Messages:
 
     SQL_TOOL_QUERY_INPUT_DESC: str = "完整的只读 SQL 查询语句"
 
-    SQL_TOOL_PARAMS_INPUT_DESC: str = "参数化查询参数，键值对形式"
+    SQL_TOOL_PARAMS_INPUT_DESC: str = "参数化查询参数，对象形式的键值对，不要写成字符串"
 
     # ===== SQL 代理工具名 =====
 
