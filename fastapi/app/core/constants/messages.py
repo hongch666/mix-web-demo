@@ -600,6 +600,23 @@ class Messages:
         return f"聚合结果返回条数上限，最大 {limit_max}，服务端会强制收敛"
 
     @staticmethod
+    def MONGODB_PIPELINE_STAGE_INVALID_ERROR(position: int, stage: Any) -> str:
+        return (
+            f"聚合管道第 {position} 个阶段必须是只包含一个操作符的对象，"
+            f"实际收到: {stage}，请改成 [{{'$match': {{...}}}}, {{'$group': {{...}}}}] 这类结构"
+        )
+
+    @staticmethod
+    def MONGODB_PIPELINE_STAGE_UNSUPPORTED_ERROR(position: int, stage: str) -> str:
+        return (
+            f"聚合管道第 {position} 个阶段的阶段名 {stage} 不受支持，可用阶段见工具说明"
+        )
+
+    @staticmethod
+    def MONGODB_PIPELINE_TOO_LONG_ERROR(max_stages: int) -> str:
+        return f"聚合管道阶段数不能超过 {max_stages}，请合并或去掉多余阶段"
+
+    @staticmethod
     def CACHE_L1_HIT(age: float) -> str:
         return f"[L1缓存] 命中，缓存年龄: {age:.1f}s"
 

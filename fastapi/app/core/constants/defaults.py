@@ -16,6 +16,17 @@ class Defaults:
     # NestJS /mongo-tools/aggregate 的结果条数上限与阶段数上限，需与 MongoTools 常量对齐
     MONGODB_AGGREGATE_MAX_DOCS: int = 100
     MONGODB_AGGREGATE_MAX_STAGES: int = 6
+    # 允许的聚合阶段，需与 NestJS MongoTools.ALLOWED_AGGREGATE_STAGES 保持一致
+    MONGODB_AGGREGATE_STAGES: tuple[str, ...] = (
+        "$match",
+        "$project",
+        "$addFields",
+        "$group",
+        "$sort",
+        "$limit",
+        "$count",
+        "$unwind",
+    )
 
     # ===== 权限 =====
     # 无登录用户时的系统调用身份，与内部令牌 userId=-1 的语义一致

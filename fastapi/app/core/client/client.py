@@ -183,6 +183,23 @@ def _should_retry_remote_call(error: Exception) -> bool:
     return False
 
 
+def _is_breaker_failure(error: Exception) -> bool:
+    """判断异常是否计入熔断失败
+
+    只有服务端故障、限流与网络类错误计失败；
+    4xx 与业务错误码是请求侧问题，计入会因参数写错触发熔断，阻断正常请求
+    """
+    if isinstance(error, httpx.RequestError):
+        return True
+    if isinstance(error, httpx.HTTPStatusError):
+        status_code: int = error.response.status_code
+        return (
+            status_code >= HttpCode.INTERNAL_SERVER_ERROR
+            or status_code == HttpCode.TOO_MANY_REQUESTS
+        )
+    return False
+
+
 def _before_retry_log(retry_state: RetryCallState) -> None:
     """输出 tenacity 重试日志"""
     error: Optional[BaseException] = retry_state.outcome.exception()
@@ -403,7 +420,7 @@ async def _call_with_client(
         client_duration.labels(service_name, method.upper()).observe(
             time.perf_counter() - started_at
         )
-        if not isinstance(e, CircuitBreakerOpenError):
+        if _is_breaker_failure(e):
             breaker.record_failure()
         raise _build_remote_service_error(service_name, e) from e
 

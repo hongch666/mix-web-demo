@@ -190,6 +190,49 @@ async def test_aggregate_rejects_empty_input() -> None:
     client.aggregate_mongodb.assert_not_awaited()
 
 
+# 非字典阶段、多操作符阶段、未开放阶段与超长管道都在本地拦截
+@pytest.mark.anyio
+async def test_aggregate_rejects_invalid_pipeline_locally() -> None:
+    tool, client = _tool()
+    set_tool_scope(user_id=1, is_admin=True)
+
+    assert await tool.aggregate_mongodb(
+        "apilogs", ["$match"], 10
+    ) == Messages.MONGODB_PIPELINE_STAGE_INVALID_ERROR(1, '"$match"')
+
+    assert await tool.aggregate_mongodb(
+        "apilogs", [{"$match": {}, "$limit": 5}], 10
+    ) == Messages.MONGODB_PIPELINE_STAGE_INVALID_ERROR(1, '{"$match": {}, "$limit": 5}')
+
+    assert await tool.aggregate_mongodb(
+        "apilogs", [{"$match": {}}, {"$lookup": {}}], 10
+    ) == Messages.MONGODB_PIPELINE_STAGE_UNSUPPORTED_ERROR(2, "$lookup")
+
+    too_many = [{"$limit": 1}] * (Defaults.MONGODB_AGGREGATE_MAX_STAGES + 1)
+    assert await tool.aggregate_mongodb(
+        "apilogs", too_many, 10
+    ) == Messages.MONGODB_PIPELINE_TOO_LONG_ERROR(Defaults.MONGODB_AGGREGATE_MAX_STAGES)
+
+    client.aggregate_mongodb.assert_not_awaited()
+
+
+# 合法的多阶段管道通过校验后才调用远程
+@pytest.mark.anyio
+async def test_aggregate_passes_valid_pipeline_to_remote() -> None:
+    tool, client = _tool()
+    client.aggregate_mongodb.return_value = []
+    set_tool_scope(user_id=1, is_admin=True)
+    pipeline = [
+        {"$match": {"response_time": {"$gt": 200}}},
+        {"$group": {"_id": "$path", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+    ]
+
+    await tool.aggregate_mongodb("apilogs", pipeline, 5)
+
+    client.aggregate_mongodb.assert_awaited_once_with("apilogs", pipeline, 5)
+
+
 # 非管理员作用域下聚合查询被拒绝且不调用远程
 @pytest.mark.anyio
 async def test_aggregate_denies_non_admin_scope() -> None:

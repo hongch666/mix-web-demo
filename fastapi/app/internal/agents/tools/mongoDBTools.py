@@ -71,7 +71,7 @@ class MongoDBTools:
     async def aggregate_mongodb(
         self,
         collection_name: str,
-        pipeline: list[dict[str, Any]],
+        pipeline: list[Any],
         limit: int = 20,
     ) -> str:
         """受限聚合查询工具，支持分组、排序、计数等日志统计场景"""
@@ -80,6 +80,10 @@ class MongoDBTools:
                 return Messages.COLLECTION_NAME_VALIDATION_ERROR
             if not pipeline:
                 return Messages.MONGODB_PIPELINE_EMPTY_ERROR
+
+            invalid_pipeline = self._validate_pipeline(pipeline)
+            if invalid_pipeline:
+                return invalid_pipeline
 
             # 与 find 查询同一行级规则：过滤器无法证明行级隔离，非管理员一律拒绝
             denial = enforce_mongodb_row_scope(None)
@@ -104,6 +108,33 @@ class MongoDBTools:
             self.logger.error(error_msg)
             return error_msg
 
+    @staticmethod
+    def _validate_pipeline(pipeline: list[Any]) -> Optional[str]:
+        """本地预校验聚合管道，把问题定位到具体阶段后回给模型，避免无效远程调用"""
+
+        def describe(value: Any) -> str:
+            try:
+                return json.dumps(value, ensure_ascii=False)[:120]
+            except (TypeError, ValueError):
+                return str(value)[:120]
+
+        if len(pipeline) > Defaults.MONGODB_AGGREGATE_MAX_STAGES:
+            return Messages.MONGODB_PIPELINE_TOO_LONG_ERROR(
+                Defaults.MONGODB_AGGREGATE_MAX_STAGES
+            )
+
+        for position, stage in enumerate(pipeline, start=1):
+            if not isinstance(stage, dict) or len(stage) != 1:
+                return Messages.MONGODB_PIPELINE_STAGE_INVALID_ERROR(
+                    position, describe(stage)
+                )
+            stage_name = str(next(iter(stage)))
+            if stage_name not in Defaults.MONGODB_AGGREGATE_STAGES:
+                return Messages.MONGODB_PIPELINE_STAGE_UNSUPPORTED_ERROR(
+                    position, stage_name
+                )
+        return None
+
     def get_langchain_tools(self) -> list[StructuredTool]:
         """获取 LangChain Tool 对象列表"""
 
@@ -114,7 +145,8 @@ class MongoDBTools:
             collection_name: str = Field(
                 description=Messages.MONGODB_COLLECTION_NAME_INPUT_DESC
             )
-            pipeline: list[dict[str, Any]] = Field(
+            # 管道形态由工具内部校验：pydantic 的英文报错不如本地中文提示便于模型自纠
+            pipeline: list[Any] = Field(
                 description=Messages.MONGODB_PIPELINE_INPUT_DESC
             )
             limit: int = Field(

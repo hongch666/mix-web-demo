@@ -126,7 +126,7 @@ async def test_call_with_client_retries_503_then_returns_success(
     assert breaker.failure_count == 0
 
 
-# 4xx 响应不重试只请求一次并返回 502、计入一次熔断失败
+# 4xx 响应不重试只请求一次并返回 502，且不计入熔断失败
 @pytest.mark.anyio
 @pytest.mark.parametrize("status_code", [400, 401, 403, 404])
 async def test_call_with_client_does_not_retry_4xx(
@@ -164,7 +164,8 @@ async def test_call_with_client_does_not_retry_4xx(
 
     assert caught.value.status_code == 502
     assert attempts == 1
-    assert breaker.failure_count == 1
+    # 参数类错误不应打开熔断器，否则模型连续写错参数就会让整个服务被降级
+    assert breaker.failure_count == 0
 
 
 # 4xx 且下游返回统一错误体时，异常消息带上游说明供调用方自行调整参数
@@ -312,7 +313,7 @@ async def test_open_circuit_fails_fast_without_http_request(
     request_mock.assert_not_awaited()
 
 
-# 响应体业务错误码不重试只请求一次
+# 响应体业务错误码不重试只请求一次，也不计入熔断失败
 @pytest.mark.anyio
 async def test_business_error_is_not_retried(
     monkeypatch: pytest.MonkeyPatch,
@@ -331,6 +332,7 @@ async def test_business_error_is_not_retried(
         "_resolve_service_url",
         AsyncMock(return_value="http://service.local/resource"),
     )
+    breaker = client_module.SimpleCircuitBreaker(5, 30)
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
         with pytest.raises(BusinessException):
             await client_module._call_with_client(
@@ -343,8 +345,42 @@ async def test_business_error_is_not_retried(
                 None,
                 None,
                 3,
-                client_module.SimpleCircuitBreaker(5, 30),
+                breaker,
                 1,
             )
 
     assert attempts == 1
+    assert breaker.failure_count == 0
+
+
+# 5xx 属于服务端故障，计入熔断失败
+@pytest.mark.anyio
+async def test_call_with_client_counts_5xx_as_breaker_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500, request=request, json={"code": 500, "msg": "boom"})
+
+    monkeypatch.setattr(
+        client_module,
+        "_resolve_service_url",
+        AsyncMock(return_value="http://service.local/resource"),
+    )
+    breaker = client_module.SimpleCircuitBreaker(5, 30)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        with pytest.raises(BusinessException):
+            await client_module._call_with_client(
+                http_client,
+                "spring",
+                "/resource",
+                "GET",
+                {},
+                None,
+                None,
+                None,
+                1,
+                breaker,
+                1,
+            )
+
+    assert breaker.failure_count == 1
