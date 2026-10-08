@@ -88,6 +88,7 @@ public class Messages {
     public static final String CACHE_INVALIDATION_PUBLISH_FAILED = "发布本地缓存失效消息失败，频道=%s: %s";
     public static final String CACHE_INVALIDATION_SUBSCRIBE_FAILED = "订阅本地缓存失效消息失败，频道=%s: %s";
     public static final String REFERENCE_EXIST = "该子分类已存在权威参考文本";
+    public static final String REFERENCE_NOT_EXIST = "该子分类暂无权威参考文本";
     public static final String PDF_EMPTY = "PDF类型必须提供pdf链接";
     public static final String LINK_EMPTY = "link类型必须提供link链接";
     public static final String PDF_TAIL = "PDF链接必须以.pdf结尾";
