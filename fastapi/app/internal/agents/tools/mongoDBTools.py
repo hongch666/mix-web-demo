@@ -68,11 +68,63 @@ class MongoDBTools:
             self.logger.error(error_msg)
             return error_msg
 
+    async def aggregate_mongodb(
+        self,
+        collection_name: str,
+        pipeline: list[dict[str, Any]],
+        limit: int = 20,
+    ) -> str:
+        """受限聚合查询工具，支持分组、排序、计数等日志统计场景"""
+        try:
+            if not collection_name:
+                return Messages.COLLECTION_NAME_VALIDATION_ERROR
+            if not pipeline:
+                return Messages.MONGODB_PIPELINE_EMPTY_ERROR
+
+            # 与 find 查询同一行级规则：过滤器无法证明行级隔离，非管理员一律拒绝
+            denial = enforce_mongodb_row_scope(None)
+            if denial:
+                log_scope_denial("MongoDBTools", denial)
+                return denial
+
+            # limit 收敛到 NestJS 接口接受的区间：超限会被其校验管道拒绝
+            limit_int = min(max(int(limit), 1), Defaults.MONGODB_AGGREGATE_MAX_DOCS)
+
+            results: list[dict[str, Any]] = await self._nestjs_client.aggregate_mongodb(
+                collection_name, pipeline, limit_int
+            )
+
+            self.logger.info(
+                Messages.MONGODB_QUERY_RESULT(collection_name, pipeline, len(results))
+            )
+            return json.dumps(results, ensure_ascii=False, indent=2)
+
+        except Exception as e:
+            error_msg = Messages.MONGODB_AGGREGATE_FAILED(e)
+            self.logger.error(error_msg)
+            return error_msg
+
     def get_langchain_tools(self) -> list[StructuredTool]:
         """获取 LangChain Tool 对象列表"""
 
         class EmptyInput(BaseModel):
             pass
+
+        class AggregateMongoInput(BaseModel):
+            collection_name: str = Field(
+                description=Messages.MONGODB_COLLECTION_NAME_INPUT_DESC
+            )
+            pipeline: list[dict[str, Any]] = Field(
+                description=Messages.MONGODB_PIPELINE_INPUT_DESC
+            )
+            limit: int = Field(
+                default=20,
+                ge=1,
+                le=Defaults.MONGODB_AGGREGATE_MAX_DOCS,
+                description=Messages.MONGODB_AGGREGATE_LIMIT_INPUT_DESC(
+                    Defaults.MONGODB_AGGREGATE_MAX_DOCS
+                ),
+            )
 
         class QueryMongoInput(BaseModel):
             collection_name: str = Field(
@@ -103,6 +155,12 @@ class MongoDBTools:
                 description=Prompts.MONGODB_QUERY_TOOL_DESC,
                 coroutine=self.query_mongodb,
                 args_schema=QueryMongoInput,
+            ),
+            StructuredTool(
+                name=Messages.MONGODB_AGGREGATE_TOOL_NAME,
+                description=Prompts.MONGODB_AGGREGATE_TOOL_DESC,
+                coroutine=self.aggregate_mongodb,
+                args_schema=AggregateMongoInput,
             ),
         ]
 

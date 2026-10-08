@@ -134,11 +134,101 @@ def test_query_tool_schema_rejects_limit_over_remote_max() -> None:
         )
 
 
-# 暴露的列表与查询工具名称与常量一致
+# 暴露的列表、查询与聚合工具名称与常量一致
 def test_get_langchain_tools_exposes_list_and_query_tools() -> None:
     tool, _ = _tool()
 
     assert [item.name for item in tool.get_langchain_tools()] == [
         Messages.MONGODB_LIST_COLLECTIONS_TOOL_NAME,
         Messages.MONGODB_QUERY_TOOL_NAME,
+        Messages.MONGODB_AGGREGATE_TOOL_NAME,
     ]
+
+
+# 管理员聚合查询返回结果并把字符串 limit 转为整数
+@pytest.mark.anyio
+async def test_aggregate_returns_records_for_admin() -> None:
+    tool, client = _tool()
+    client.aggregate_mongodb.return_value = [{"_id": "a", "count": 2}]
+    set_tool_scope(user_id=1, is_admin=True)
+    pipeline = [{"$group": {"_id": "$path", "count": {"$sum": 1}}}]
+
+    result = await tool.aggregate_mongodb("apilogs", pipeline, "5")
+
+    assert json.loads(result) == [{"_id": "a", "count": 2}]
+    client.aggregate_mongodb.assert_awaited_once_with("apilogs", pipeline, 5)
+
+
+# 聚合 limit 超过远程上限时收敛，避免 NestJS 校验管道拒绝
+@pytest.mark.anyio
+async def test_aggregate_clamps_limit_to_remote_max() -> None:
+    tool, client = _tool()
+    client.aggregate_mongodb.return_value = []
+    set_tool_scope(user_id=1, is_admin=True)
+    pipeline = [{"$count": "total"}]
+
+    await tool.aggregate_mongodb("apilogs", pipeline, 500)
+
+    client.aggregate_mongodb.assert_awaited_once_with(
+        "apilogs", pipeline, Defaults.MONGODB_AGGREGATE_MAX_DOCS
+    )
+
+
+# 空集合名与空管道在本地拦截，不触发远程调用
+@pytest.mark.anyio
+async def test_aggregate_rejects_empty_input() -> None:
+    tool, client = _tool()
+
+    assert (
+        await tool.aggregate_mongodb("", [{"$count": "total"}])
+        == Messages.COLLECTION_NAME_VALIDATION_ERROR
+    )
+    assert (
+        await tool.aggregate_mongodb("apilogs", [])
+        == Messages.MONGODB_PIPELINE_EMPTY_ERROR
+    )
+    client.aggregate_mongodb.assert_not_awaited()
+
+
+# 非管理员作用域下聚合查询被拒绝且不调用远程
+@pytest.mark.anyio
+async def test_aggregate_denies_non_admin_scope() -> None:
+    tool, client = _tool()
+    set_tool_scope(user_id=7, is_admin=False)
+
+    result = await tool.aggregate_mongodb("apilogs", [{"$count": "total"}], 10)
+
+    assert result == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN
+    client.aggregate_mongodb.assert_not_awaited()
+
+
+# 聚合远程异常时包装为聚合查询失败消息
+@pytest.mark.anyio
+async def test_aggregate_wraps_client_failure() -> None:
+    tool, client = _tool()
+    client.aggregate_mongodb.side_effect = RuntimeError("remote down")
+    set_tool_scope(user_id=1, is_admin=True)
+
+    result = await tool.aggregate_mongodb("apilogs", [{"$count": "total"}], 10)
+
+    assert result == Messages.MONGODB_AGGREGATE_FAILED(RuntimeError("remote down"))
+
+
+# 聚合工具入参 schema 自带上限，超限参数在进入工具函数前就被拒绝
+def test_aggregate_tool_schema_rejects_limit_over_remote_max() -> None:
+    tool, _ = _tool()
+    schema = tool.get_langchain_tools()[2].args_schema
+
+    assert schema is not None
+    pipeline = [{"$count": "total"}]
+    schema(
+        collection_name="apilogs",
+        pipeline=pipeline,
+        limit=Defaults.MONGODB_AGGREGATE_MAX_DOCS,
+    )
+    with pytest.raises(ValidationError):
+        schema(
+            collection_name="apilogs",
+            pipeline=pipeline,
+            limit=Defaults.MONGODB_AGGREGATE_MAX_DOCS + 1,
+        )

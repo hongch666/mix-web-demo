@@ -174,14 +174,33 @@ class Prompts:
     使用场景: 用户需要先了解日志库里有哪些 collection 以及大致字段结构时使用。
     """
 
-    MONGODB_QUERY_TOOL_DESC: str = """MongoDB 日志查询工具，仅用于查询日志相关 collection。
+    MONGODB_QUERY_TOOL_DESC: str = """MongoDB 日志查询工具，仅用于查询日志相关 collection 的原始记录。
     参数必须是 JSON 字符串，支持 collection_name、filter_dict、limit 三个字段。
     参数示例: {"collection_name": "api_logs", "filter_dict": {"response_time": {"$gt": 200}}, "limit": 10}
     使用场景: 已明确 collection 后，按条件查询 API 日志、错误日志、操作日志等数据时使用。
     limit 只表示本次最多返回多少条记录，是返回条数上限而不是过滤条件，取值受服务端上限约束。
     耗时、状态码、时间范围、用户范围这类阈值条件必须写入 filter_dict，
-    例如统计耗时超过 200 毫秒的接口要用 {"response_time": {"$gt": 200}}，不能靠放大 limit 实现，
-    需要数量时先收窄 filter_dict 再按返回记录条数判断，并说明结果基于返回样本。
+    例如统计耗时超过 200 毫秒的接口要用 {"response_time": {"$gt": 200}}，不能靠放大 limit 实现。
+    需要计数、分组、排序、取 TOP 这类聚合统计时改用 aggregate_mongodb 工具，本工具只返回原始样本。
+    """
+
+    MONGODB_AGGREGATE_TOOL_DESC: str = """MongoDB 日志聚合查询工具，用于日志的统计、分组、排序与阈值分析。
+    参数必须是 JSON 字符串，支持 collection_name、pipeline、limit 三个字段。
+    pipeline 是阶段数组，每项只能包含一个阶段操作符，允许的阶段:
+    $match 过滤、$project 裁剪字段、$addFields 新增派生字段、$group 分组统计、
+    $sort 排序、$limit 截断、$count 计数、$unwind 展开数组字段。
+    参数示例: {"collection_name": "api_logs", "pipeline": [{"$match": {"response_time": {"$gt": 200}}}, {"$group": {"_id": "$path", "count": {"$sum": 1}}}, {"$sort": {"count": -1}}], "limit": 20}
+    使用场景:
+        * 统计满足条件的记录数量, 例如 $match 后接 {"$count": "total"}
+        * 按接口路径、状态码、用户等维度分组计数或求平均耗时
+        * 取耗时最高的接口 TOP N, 例如 $group 后接 $sort 与 $limit
+    使用约束:
+        * $match 必须放在管道最前面收窄范围, 否则会扫描整个 collection
+        * 每项只能有一个操作符, 写成 {"$match": {}, "$limit": 10} 会被服务端拒绝
+        * 服务端只开放上述阶段, 会拒绝 $lookup、$facet、$out、$merge 等跨集合或写入阶段
+        * 管道阶段数与结果条数都有服务端上限, 超限会被拒绝并返回具体原因, 按提示调整后重试
+        * limit 只控制返回结果条数, 不是过滤条件, 不要靠放大 limit 拿全量数据
+        * $group 后建议接 $project 固定输出字段, 便于阅读
     """
 
     # ===== FastAPI 本地 SQL 工具描述 =====

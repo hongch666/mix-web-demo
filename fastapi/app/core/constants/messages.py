@@ -592,6 +592,14 @@ class Messages:
         return f"返回结果数量上限，最大 {limit_max}，阈值条件请写入 filter_dict"
 
     @staticmethod
+    def MONGODB_AGGREGATE_FAILED(error: Exception) -> str:
+        return f"MongoDB 聚合查询失败: {error}"
+
+    @staticmethod
+    def MONGODB_AGGREGATE_LIMIT_INPUT_DESC(limit_max: int) -> str:
+        return f"聚合结果返回条数上限，最大 {limit_max}，服务端会强制收敛"
+
+    @staticmethod
     def CACHE_L1_HIT(age: float) -> str:
         return f"[L1缓存] 命中，缓存年龄: {age:.1f}s"
 
@@ -2059,11 +2067,19 @@ class Messages:
 
     MESSAGE_RETRIEVAL_ERROR: str = "无法获取结果"
 
+    MONGODB_AGGREGATE_TOOL_NAME: str = "aggregate_mongodb"
+
     MONGODB_COLLECTION_NAME_INPUT_DESC: str = "collection 的名称"
 
     MONGODB_FILTER_INPUT_DESC: str = "MongoDB 查询条件"
 
     MONGODB_LIST_COLLECTIONS_TOOL_NAME: str = "list_mongodb_collections"
+
+    MONGODB_PIPELINE_EMPTY_ERROR: str = "聚合管道不能为空，请至少提供一个聚合阶段"
+
+    MONGODB_PIPELINE_INPUT_DESC: str = (
+        "聚合管道，按顺序执行的阶段数组，每项只包含一个阶段操作符"
+    )
 
     MONGODB_QUERY_TOOL_NAME: str = "query_mongodb"
 

@@ -71,6 +71,25 @@ class NestjsClient:
         )
         return result.get("data", [])
 
+    async def aggregate_mongodb(
+        self,
+        collection_name: str,
+        pipeline: list[dict[str, Any]],
+        limit: int,
+    ) -> Any:
+        """远程调用 NestJS 执行受限聚合查询"""
+        result: dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/mongo-tools/aggregate",
+            method="POST",
+            json={
+                "collection_name": collection_name,
+                "pipeline": pipeline,
+                "limit": limit,
+            },
+        )
+        return result.get("data", [])
+
     async def sync_article_logs(
         self, cursor: str = "", limit: int = 1000
     ) -> dict[str, Any]:

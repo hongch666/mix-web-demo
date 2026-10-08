@@ -13,6 +13,9 @@ class Defaults:
     # ===== 远程调用边界 =====
     # NestJS /mongo-tools/query 的 limit 上界，需与 QueryMongoDto 的 @Max 保持一致
     MONGODB_QUERY_MAX_LIMIT: int = 50
+    # NestJS /mongo-tools/aggregate 的结果条数上限与阶段数上限，需与 MongoTools 常量对齐
+    MONGODB_AGGREGATE_MAX_DOCS: int = 100
+    MONGODB_AGGREGATE_MAX_STAGES: int = 6
 
     # ===== 权限 =====
     # 无登录用户时的系统调用身份，与内部令牌 userId=-1 的语义一致
