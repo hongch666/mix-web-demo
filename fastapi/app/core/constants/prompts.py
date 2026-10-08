@@ -176,8 +176,12 @@ class Prompts:
 
     MONGODB_QUERY_TOOL_DESC: str = """MongoDB 日志查询工具，仅用于查询日志相关 collection。
     参数必须是 JSON 字符串，支持 collection_name、filter_dict、limit 三个字段。
-    参数示例: {"collection_name": "api_logs", "limit": 10}使用场景: 已明确 collection 后，按条件查询 API 日志、错误日志、操作日志等数据时使用。
-    如果日志量可能较大，必须加上时间范围、用户范围、状态条件或 limit。
+    参数示例: {"collection_name": "api_logs", "filter_dict": {"response_time": {"$gt": 200}}, "limit": 10}
+    使用场景: 已明确 collection 后，按条件查询 API 日志、错误日志、操作日志等数据时使用。
+    limit 只表示本次最多返回多少条记录，是返回条数上限而不是过滤条件，取值受服务端上限约束。
+    耗时、状态码、时间范围、用户范围这类阈值条件必须写入 filter_dict，
+    例如统计耗时超过 200 毫秒的接口要用 {"response_time": {"$gt": 200}}，不能靠放大 limit 实现，
+    需要数量时先收窄 filter_dict 再按返回记录条数判断，并说明结果基于返回样本。
     """
 
     # ===== FastAPI 本地 SQL 工具描述 =====

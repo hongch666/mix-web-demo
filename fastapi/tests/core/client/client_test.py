@@ -11,6 +11,7 @@ from app.common.middleware.contextMiddleware import (
     username_ctx_var,
 )
 from app.core.client import client as client_module
+from app.core.constants import Messages
 from app.core.errors import BusinessException
 
 
@@ -164,6 +165,121 @@ async def test_call_with_client_does_not_retry_4xx(
     assert caught.value.status_code == 502
     assert attempts == 1
     assert breaker.failure_count == 1
+
+
+# 4xx 且下游返回统一错误体时，异常消息带上游说明供调用方自行调整参数
+@pytest.mark.anyio
+async def test_call_with_client_surfaces_downstream_error_detail_on_4xx(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            400,
+            request=request,
+            json={"code": 400, "msg": "返回条数最大为50", "data": None},
+        )
+
+    monkeypatch.setattr(
+        client_module,
+        "_resolve_service_url",
+        AsyncMock(return_value="http://service.local/mongo-tools/query"),
+    )
+    breaker = client_module.SimpleCircuitBreaker(5, 30)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        with pytest.raises(BusinessException) as caught:
+            await client_module._call_with_client(
+                http_client,
+                "nestjs",
+                "/mongo-tools/query",
+                "POST",
+                {},
+                None,
+                None,
+                {"limit": 100},
+                3,
+                breaker,
+                1,
+            )
+
+    assert caught.value.status_code == 502
+    assert caught.value.message == Messages.REMOTE_SERVICE_REJECTED(
+        "nestjs", 400, "返回条数最大为50"
+    )
+
+
+# 4xx 响应体不是统一错误结构时回落到通用文案
+@pytest.mark.anyio
+async def test_call_with_client_falls_back_when_4xx_body_has_no_detail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            400,
+            request=request,
+            content=b"bad request",
+            headers={"content-type": "text/plain"},
+        )
+
+    monkeypatch.setattr(
+        client_module,
+        "_resolve_service_url",
+        AsyncMock(return_value="http://service.local/resource"),
+    )
+    breaker = client_module.SimpleCircuitBreaker(5, 30)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        with pytest.raises(BusinessException) as caught:
+            await client_module._call_with_client(
+                http_client,
+                "spring",
+                "/resource",
+                "GET",
+                {},
+                None,
+                None,
+                None,
+                3,
+                breaker,
+                1,
+            )
+
+    assert caught.value.message == Messages.REMOTE_SERVICE_UNAVAILABLE("spring")
+
+
+# 5xx 保持通用文案，服务端故障无需调用方调整参数
+@pytest.mark.anyio
+async def test_call_with_client_keeps_generic_message_on_5xx(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            500,
+            request=request,
+            json={"code": 500, "msg": "内部异常", "data": None},
+        )
+
+    monkeypatch.setattr(
+        client_module,
+        "_resolve_service_url",
+        AsyncMock(return_value="http://service.local/resource"),
+    )
+    breaker = client_module.SimpleCircuitBreaker(5, 30)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        with pytest.raises(BusinessException) as caught:
+            await client_module._call_with_client(
+                http_client,
+                "spring",
+                "/resource",
+                "GET",
+                {},
+                None,
+                None,
+                None,
+                1,
+                breaker,
+                1,
+            )
+
+    assert caught.value.message == Messages.REMOTE_SERVICE_UNAVAILABLE("spring")
 
 
 # 熔断打开时快速失败返回 503 且不发起 HTTP 请求

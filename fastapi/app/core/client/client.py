@@ -217,6 +217,21 @@ async def _request_remote_service(
     return response.json()
 
 
+def _extract_remote_error_detail(response: httpx.Response) -> str:
+    """提取下游统一响应体里的错误说明，便于调用方据此调整参数"""
+    try:
+        payload: Any = response.json()
+    except ValueError:
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    for key in ("msg", "message"):
+        detail = payload.get(key)
+        if isinstance(detail, str) and detail.strip():
+            return detail.strip()
+    return ""
+
+
 def _build_remote_service_error(
     service_name: str, error: Exception
 ) -> BusinessException:
@@ -230,6 +245,20 @@ def _build_remote_service_error(
         )
     if isinstance(error, httpx.HTTPStatusError):
         status_code: int = error.response.status_code
+        detail: str = _extract_remote_error_detail(error.response)
+        # 4xx 属于调用方参数问题，把下游说明透出，调用方可据此自行调整参数
+        if (
+            detail
+            and HttpCode.BAD_REQUEST <= status_code < HttpCode.INTERNAL_SERVER_ERROR
+        ):
+            Logger.error(
+                Messages.REMOTE_SERVICE_REJECTED(service_name, status_code, detail)
+            )
+            return BusinessException(
+                Messages.REMOTE_SERVICE_REJECTED(service_name, status_code, detail),
+                HttpCode.BAD_GATEWAY,
+                Messages.ERROR_SERVICE_CALL_FAILED,
+            )
         Logger.error(
             Messages.REMOTE_SERVICE_NON_SUCCESS(
                 service_name, status_code, error.request.url

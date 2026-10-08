@@ -6,7 +6,7 @@ from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
 from app.core.base import Logger
-from app.core.constants import Messages, Prompts
+from app.core.constants import Defaults, Messages, Prompts
 from app.internal.agents.toolScope import enforce_mongodb_row_scope, log_scope_denial
 from app.internal.clients import NestjsClient, get_nestjs_client
 
@@ -49,8 +49,8 @@ class MongoDBTools:
                 log_scope_denial("MongoDBTools", denial)
                 return denial
 
-            # 确保 limit 是整数
-            limit_int = int(limit)
+            # limit 收敛到 NestJS 接口接受的区间：超限会被其校验管道拒绝
+            limit_int = min(max(int(limit), 1), Defaults.MONGODB_QUERY_MAX_LIMIT)
 
             results: list[dict[str, Any]] = await self._nestjs_client.query_mongodb(
                 collection_name, filter_dict, limit_int
@@ -85,7 +85,10 @@ class MongoDBTools:
             limit: int = Field(
                 default=10,
                 ge=1,
-                description=Messages.MONGODB_LIMIT_INPUT_DESC,
+                le=Defaults.MONGODB_QUERY_MAX_LIMIT,
+                description=Messages.MONGODB_LIMIT_INPUT_DESC(
+                    Defaults.MONGODB_QUERY_MAX_LIMIT
+                ),
             )
 
         return [

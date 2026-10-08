@@ -10,6 +10,10 @@ class Defaults:
     # ===== 分布式锁 =====
     LOCK_DEFAULT_EXPIRE: int = 30
 
+    # ===== 远程调用边界 =====
+    # NestJS /mongo-tools/query 的 limit 上界，需与 QueryMongoDto 的 @Max 保持一致
+    MONGODB_QUERY_MAX_LIMIT: int = 50
+
     # ===== 权限 =====
     # 无登录用户时的系统调用身份，与内部令牌 userId=-1 的语义一致
     SYSTEM_USER_ID: int = -1

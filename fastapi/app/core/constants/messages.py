@@ -298,6 +298,12 @@ class Messages:
         return f"调用 {service_name} 返回非 2xx 状态码: {status_code}, url={url}"
 
     @staticmethod
+    def REMOTE_SERVICE_REJECTED(
+        service_name: str, status_code: int, detail: str
+    ) -> str:
+        return f"{service_name} 服务拒绝请求(HTTP {status_code}): {detail}"
+
+    @staticmethod
     def REMOTE_SERVICE_NETWORK_ERROR(service_name: str, error: Exception) -> str:
         return f"调用 {service_name} 网络异常: {error}"
 
@@ -580,6 +586,10 @@ class Messages:
     @staticmethod
     def MONGODB_QUERY_FAILED(error: Exception) -> str:
         return f"MongoDB 查询失败: {error}"
+
+    @staticmethod
+    def MONGODB_LIMIT_INPUT_DESC(limit_max: int) -> str:
+        return f"返回结果数量上限，最大 {limit_max}，阈值条件请写入 filter_dict"
 
     @staticmethod
     def CACHE_L1_HIT(age: float) -> str:
@@ -2052,8 +2062,6 @@ class Messages:
     MONGODB_COLLECTION_NAME_INPUT_DESC: str = "collection 的名称"
 
     MONGODB_FILTER_INPUT_DESC: str = "MongoDB 查询条件"
-
-    MONGODB_LIMIT_INPUT_DESC: str = "返回结果数量限制"
 
     MONGODB_LIST_COLLECTIONS_TOOL_NAME: str = "list_mongodb_collections"
 

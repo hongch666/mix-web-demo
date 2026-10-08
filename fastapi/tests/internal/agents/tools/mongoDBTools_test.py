@@ -4,8 +4,9 @@ import json
 from unittest.mock import AsyncMock
 
 import pytest
+from pydantic import ValidationError
 
-from app.core.constants import Messages
+from app.core.constants import Defaults, Messages
 from app.internal.agents import clear_tool_scope, set_tool_scope
 from app.internal.agents.tools.mongoDBTools import MongoDBTools
 
@@ -90,6 +91,47 @@ async def test_query_wraps_client_failure() -> None:
     result = await tool.query_mongodb("apilogs", {}, 10)
 
     assert result == Messages.MONGODB_QUERY_FAILED(RuntimeError("remote down"))
+
+
+# limit 超过远程上限时收敛到上限，避免 NestJS 校验管道拒绝整个查询
+@pytest.mark.anyio
+async def test_query_clamps_limit_to_remote_max() -> None:
+    tool, client = _tool()
+    client.query_mongodb.return_value = []
+    set_tool_scope(user_id=1, is_admin=True)
+
+    await tool.query_mongodb("apilogs", {}, 200)
+
+    client.query_mongodb.assert_awaited_once_with(
+        "apilogs", {}, Defaults.MONGODB_QUERY_MAX_LIMIT
+    )
+
+
+# limit 低于下界时收敛为 1，保证远程调用参数始终合法
+@pytest.mark.anyio
+async def test_query_clamps_limit_to_lower_bound() -> None:
+    tool, client = _tool()
+    client.query_mongodb.return_value = []
+    set_tool_scope(user_id=1, is_admin=True)
+
+    await tool.query_mongodb("apilogs", {}, 0)
+
+    client.query_mongodb.assert_awaited_once_with("apilogs", {}, 1)
+
+
+# 工具入参 schema 自带上限，超限参数在进入工具函数前就被拒绝
+def test_query_tool_schema_rejects_limit_over_remote_max() -> None:
+    tool, _ = _tool()
+    schema = tool.get_langchain_tools()[1].args_schema
+
+    assert schema is not None
+    schema(collection_name="apilogs", filter_dict={}, limit=50)
+    with pytest.raises(ValidationError):
+        schema(
+            collection_name="apilogs",
+            filter_dict={},
+            limit=Defaults.MONGODB_QUERY_MAX_LIMIT + 1,
+        )
 
 
 # 暴露的列表与查询工具名称与常量一致
