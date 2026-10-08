@@ -1371,6 +1371,48 @@ paths:
       summary: 查询日志文档
       tags:
         - MongoDB工具模块
+  /mongo-tools/aggregate:
+    post:
+      description: 对白名单内的日志集合执行受限只读聚合管道，供 FastAPI 内部远程调用
+      operationId: MongoToolsController_aggregate
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AggregateMongoDto'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 统一接口响应体
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    example: success
+                    description: 响应消息
+                  data:
+                    type: array
+                    description: MongoDB 聚合结果，元素结构由聚合管道的 $project/$group 决定
+                    items:
+                      type: object
+                      description: 聚合结果文档
+                required:
+                  - code
+                  - msg
+                  - data
+      summary: 聚合查询日志文档
+      tags:
+        - MongoDB工具模块
   /upload:
     post:
       description: 通过本地文件路径上传文件到 OSS
@@ -1982,6 +2024,38 @@ components:
           default: 10
       required:
         - collection_name
+    AggregateMongoDto:
+      type: object
+      properties:
+        collection_name:
+          type: string
+          description: 集合名称（仅限白名单内的日志集合）
+          example: apilogs
+        pipeline:
+          description: >-
+            聚合管道，每项为只包含一个操作符的对象，允许
+            $match/$project/$addFields/$group/$sort/$limit/$count/$unwind
+          example:
+            - $match:
+                response_time:
+                  $gt: 200
+            - $group:
+                _id: $path
+                count:
+                  $sum: 1
+            - $sort:
+                count: -1
+          type: array
+          items:
+            type: string
+        limit:
+          type: number
+          description: 聚合结果返回条数上限
+          example: 20
+          default: 20
+      required:
+        - collection_name
+        - pipeline
     UploadDto:
       type: object
       properties:

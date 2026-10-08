@@ -436,6 +436,22 @@ export class Messages {
   static readonly MONGO_FORBIDDEN_OPERATOR_MSG = (key: string): string =>
     `不允许使用操作符: ${key}`;
 
+  static readonly MONGO_AGGREGATE_PIPELINE_TOO_LONG_MSG = (
+    max: number,
+  ): string => `聚合管道阶段数不能超过 ${max}`;
+
+  static readonly MONGO_AGGREGATE_STAGE_SHAPE_INVALID_MSG = (
+    stage: string,
+  ): string => `聚合阶段 ${stage} 必须是只包含一个操作符的对象`;
+
+  static readonly MONGO_AGGREGATE_STAGE_NOT_ALLOWED_MSG = (
+    stage: string,
+  ): string => `不允许的聚合阶段: ${stage}`;
+
+  static readonly MONGO_AGGREGATE_STAGE_VALUE_INVALID_MSG = (
+    stage: string,
+  ): string => `聚合阶段 ${stage} 的参数格式不正确`;
+
   static readonly SQL_PROXY_TABLE_NOT_ALLOWED = (tableName: string): string =>
     `安全限制：表 '${tableName}' 不在白名单内`;
 
@@ -444,6 +460,8 @@ export class Messages {
 
   static readonly SQL_PROXY_TABLE_SCHEMA_FAILED = (message: string): string =>
     `获取表结构信息失败: ${message}`;
+
+  static readonly MONGO_AGGREGATE_PIPELINE_EMPTY = "聚合管道不能为空";
 
   static readonly INTERNAL_TOKEN_SECRET_NOT_CONFIGURED = "内部令牌密钥未配置";
 

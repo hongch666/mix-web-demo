@@ -2,12 +2,13 @@ import { Body, Controller, Get, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
 import {
+  SwaggerMongoAggregateData,
   SwaggerMongoCollectionsData,
   SwaggerMongoQueryData,
   ApiResponseModel,
 } from "src/common/utils/swaggerResponse";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
-import { QueryMongoDto } from "./dto/mongoTools.dto";
+import { AggregateMongoDto, QueryMongoDto } from "./dto/mongoTools.dto";
 import { MongoToolsService } from "./mongoTools.service";
 
 @Controller("mongo-tools")
@@ -39,6 +40,25 @@ export class MongoToolsController {
       dto.collectionName,
       dto.filter ?? {},
       dto.limit ?? 10,
+    );
+    return success(data);
+  }
+
+  @Post("aggregate")
+  @ApiOperation({
+    summary: "聚合查询日志文档",
+    description:
+      "对白名单内的日志集合执行受限只读聚合管道，供 FastAPI 内部远程调用",
+  })
+  @RequireInternalToken()
+  @ApiResponseModel({ data: SwaggerMongoAggregateData })
+  async aggregate(
+    @Body() dto: AggregateMongoDto,
+  ): Promise<ApiResponse<unknown>> {
+    const data: unknown = await this.mongoToolsService.aggregate(
+      dto.collectionName,
+      dto.pipeline,
+      dto.limit ?? 20,
     );
     return success(data);
   }

@@ -321,3 +321,9 @@ export const SwaggerMongoQueryData: SchemaObject = {
   description: "MongoDB 查询结果",
   items: { type: "object", description: "MongoDB 文档" },
 };
+
+export const SwaggerMongoAggregateData: SchemaObject = {
+  type: "array",
+  description: "MongoDB 聚合结果，元素结构由聚合管道的 $project/$group 决定",
+  items: { type: "object", description: "聚合结果文档" },
+};

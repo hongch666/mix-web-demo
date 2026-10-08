@@ -1,6 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -9,6 +12,7 @@ import {
   Max,
   Min,
 } from "class-validator";
+import { MongoTools } from "src/common/constants";
 import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
 
 /**
@@ -45,5 +49,52 @@ export class QueryMongoDto {
   @IsInt({ message: "返回条数必须是整数" })
   @Min(1, { message: "返回条数最小为1" })
   @Max(50, { message: "返回条数最大为50" })
+  limit?: number;
+}
+
+/**
+ * MongoDB 聚合查询 DTO
+ *
+ * 说明：只读聚合管道，阶段合法性由服务层的白名单校验兜底，
+ * 这里约束管道的基本形态与返回条数
+ */
+export class AggregateMongoDto {
+  @ApiProperty({
+    description: "集合名称（仅限白名单内的日志集合）",
+    example: "apilogs",
+  })
+  @ExposeName()
+  @IsString({ message: "集合名称必须是字符串" })
+  @IsNotEmpty({ message: "集合名称不能为空" })
+  collectionName!: string;
+
+  @ApiProperty({
+    description:
+      "聚合管道，每项为只包含一个操作符的对象，允许 $match/$project/$addFields/$group/$sort/$limit/$count/$unwind",
+    example: [
+      { $match: { response_time: { $gt: 200 } } },
+      { $group: { _id: "$path", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ],
+  })
+  @IsArray({ message: "聚合管道必须是数组" })
+  @ArrayMinSize(1, { message: "聚合管道至少需要一个阶段" })
+  @ArrayMaxSize(MongoTools.MAX_PIPELINE_STAGES, {
+    message: `聚合管道阶段数不能超过 ${MongoTools.MAX_PIPELINE_STAGES}`,
+  })
+  pipeline!: Record<string, unknown>[];
+
+  @ApiPropertyOptional({
+    description: "聚合结果返回条数上限",
+    example: 20,
+    default: 20,
+  })
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt({ message: "返回条数必须是整数" })
+  @Min(1, { message: "返回条数最小为1" })
+  @Max(MongoTools.MAX_AGGREGATE_DOCS, {
+    message: `返回条数最大为${MongoTools.MAX_AGGREGATE_DOCS}`,
+  })
   limit?: number;
 }
