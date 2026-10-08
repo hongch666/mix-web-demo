@@ -605,7 +605,8 @@ class BaseAiService:
             if db and normalized_user_id is not None:
                 chat_history = await self._load_chat_history(normalized_user_id, db)
 
-            if intent == "general_chat":
+            intents = [item for item in str(intent).split("|") if item]
+            if intents == ["general_chat"]:
                 config.setdefault("run_name", "chat.direct")
                 history_messages: list[Any] = []
                 for human_msg, ai_msg in chat_history:
@@ -760,7 +761,8 @@ class BaseAiService:
             if db and normalized_user_id is not None:
                 chat_history = await self._load_chat_history(normalized_user_id, db)
 
-            if intent == "general_chat":
+            intents = [item for item in str(intent).split("|") if item]
+            if intents == ["general_chat"]:
                 config.setdefault("run_name", "chat.direct")
                 history_messages: list[Any] = []
                 for human_msg, ai_msg in chat_history:

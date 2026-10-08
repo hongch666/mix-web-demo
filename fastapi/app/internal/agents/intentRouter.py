@@ -120,7 +120,8 @@ class IntentRouter:
                 intent, resolution = await self._route_structured(question, config)
             else:
                 intent, resolution = await self._route_text_match(question, config)
-            return intent, resolution
+            intents = self._merge_intents(question, intent)
+            return self._format_intents(intents), resolution  # type: ignore[return-value]
         except Exception as e:
             self.logger.error(Messages.INTENT_RECOGNITION_FAILED(e))
             return "article_search", "default_fallback"
@@ -193,6 +194,66 @@ class IntentRouter:
             return "general_chat"
         return "article_search"
 
+    @staticmethod
+    def _resolve_text_intents(question: str) -> list[IntentType]:
+        """按问题中的能力信号补充多领域意图，避免单分类吞掉组合请求。"""
+        text = question.strip().lower()
+        intents: list[IntentType] = []
+        markers: tuple[tuple[IntentType, tuple[str, ...]], ...] = (
+            (
+                "database_query",
+                ("database", "数据库", "sql", "表结构", "用户数据", "聊天记录"),
+            ),
+            (
+                "article_search",
+                ("article", "文章", "教程", "技术知识", "搜索文章", "查找文章"),
+            ),
+            (
+                "log_analysis",
+                ("log", "日志", "api调用", "接口调用", "错误日志", "异常日志"),
+            ),
+            (
+                "knowledge_query",
+                ("knowledge", "知识图谱", "图谱", "关联关系", "相似文章", "推荐"),
+            ),
+        )
+        for intent, intent_markers in markers:
+            if any(marker in text for marker in intent_markers):
+                intents.append(intent)
+        return intents
+
+    @classmethod
+    def _merge_intents(
+        cls, question: str, primary: IntentType
+    ) -> list[IntentType]:
+        detected = cls._resolve_text_intents(question)
+        if primary == "general_chat" and not detected:
+            return [primary]
+        if primary == "general_chat" and detected:
+            return detected
+        # 单个关键词只作为结构化分类的校验信号，避免“相关文章”这类问题
+        # 被错误扩展为多个领域；只有多个能力信号同时出现时才组合路由。
+        if len(detected) < 2:
+            return [primary]
+        return [primary, *[item for item in detected if item != primary]]
+
+    @staticmethod
+    def _format_intents(intents: list[IntentType]) -> str:
+        return "|".join(dict.fromkeys(intents))
+
+    @staticmethod
+    def _parse_intents(intent: str) -> list[IntentType]:
+        allowed = {
+            "database_query",
+            "article_search",
+            "log_analysis",
+            "knowledge_query",
+            "general_chat",
+        }
+        return [item for item in intent.split("|") if item in allowed] or [
+            "article_search"
+        ]
+
     async def route_with_permission_check_async(
         self,
         question: str,
@@ -206,13 +267,14 @@ class IntentRouter:
             (意图类型, 是否有权限, 权限消息, 识别路径)
         """
         intent, resolution = await self.route_async(question, runnable_config)
+        intents = self._parse_intents(intent)
 
         if user_id is not None and db is not None:
             self.user_id = user_id
             self.db = db
 
         if not self.user_id or not self.db:
-            if intent in ["database_query", "log_analysis"]:
+            if any(item in ["database_query", "log_analysis"] for item in intents):
                 return (
                     intent,
                     False,
@@ -227,7 +289,7 @@ class IntentRouter:
         role = await perm_manager.get_user_role_async(self.user_id, self.db)
         perm_manager.apply_tool_scope(self.user_id, role)
 
-        if intent == "database_query":
+        if "database_query" in intents:
             try:
                 if Messages.is_dangerous_nl_request(question):
                     self.logger.warning(Messages.INTENT_WRITE_SQL_BLOCKED(question))
@@ -245,17 +307,14 @@ class IntentRouter:
             )
             if not has_permission:
                 return intent, False, msg, resolution
-            return intent, True, "", resolution
+            if len(intents) == 1:
+                return intent, True, "", resolution
 
-        if intent == "knowledge_query":
-            return intent, True, "", resolution
-
-        if intent == "log_analysis":
+        if "log_analysis" in intents:
             has_permission, msg = await perm_manager.can_access_mongodb_logs_async(
                 self.user_id, self.db, question, role=role
             )
             if not has_permission:
                 return intent, False, msg, resolution
-            return intent, True, "", resolution
 
         return intent, True, "", resolution

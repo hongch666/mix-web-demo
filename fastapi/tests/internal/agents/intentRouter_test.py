@@ -210,6 +210,27 @@ def test_resolve_text_intent_maps_keywords(text: str, expected: str) -> None:
     assert IntentRouter._resolve_text_intent(text) == expected
 
 
+def test_merge_intents_keeps_single_domain_compatible() -> None:
+    assert IntentRouter._merge_intents("有哪些相关文章", "knowledge_query") == [
+        "knowledge_query"
+    ]
+
+
+def test_merge_intents_detects_multiple_tool_domains() -> None:
+    assert IntentRouter._merge_intents(
+        "分析API日志并查找相关技术文章", "log_analysis"
+    ) == ["log_analysis", "article_search"]
+
+
+def test_format_and_parse_combined_intents() -> None:
+    encoded = IntentRouter._format_intents(["log_analysis", "article_search"])
+    assert encoded == "log_analysis|article_search"
+    assert IntentRouter._parse_intents(encoded) == [
+        "log_analysis",
+        "article_search",
+    ]
+
+
 # 未登录请求 database_query 意图被拒绝并返回无权限消息
 @pytest.mark.anyio
 async def test_database_query_without_login_is_rejected() -> None:
@@ -347,6 +368,23 @@ async def test_log_analysis_checks_mongodb_permission(
     )
 
     assert result == ("log_analysis", False, "无日志权限", "structured")
+    manager.can_access_mongodb_logs_async.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_combined_intent_checks_all_restricted_domains(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manager = _FakePermissionManager()
+    _patch_permission_manager(monkeypatch, manager)
+    router = _router_with_intent("database_query|log_analysis")
+
+    result = await router.route_with_permission_check_async(
+        "查询数据库并分析日志", user_id=7, db=Mock()
+    )
+
+    assert result == ("database_query|log_analysis", True, "", "structured")
+    manager.can_access_sql_tools_async.assert_awaited_once()
     manager.can_access_mongodb_logs_async.assert_awaited_once()
 
 
