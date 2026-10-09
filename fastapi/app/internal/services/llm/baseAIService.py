@@ -405,7 +405,7 @@ class BaseAiService:
                 Messages.LLM_CHAT_CONTEXT_BUDGET_EXHAUSTED(
                     self.service_name,
                     self._context_budget.window_tokens,
-                    prompt_tokens,
+                    self._context_budget.reserved_tokens(prompt_tokens, use_tools),
                 )
             )
             return "", []

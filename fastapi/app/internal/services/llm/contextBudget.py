@@ -78,6 +78,21 @@ class ContextBudgetConfig:
             ),
         )
 
+    def reserved_tokens(self, prompt_tokens: int, use_tools: bool = False) -> int:
+        """提示词与各项预留占用的 token 总量
+
+        Args:
+            prompt_tokens: 系统提示词与用户提示词的估算 token 数
+            use_tools: 是否走带工具的 Agent 路径，该路径需要额外的工具预留
+
+        Returns:
+            int: 提示词、输出预留与工具预留的估算 token 合计
+        """
+        reserved = prompt_tokens + self.output_reserve_tokens
+        if use_tools:
+            reserved += self.tool_reserve_tokens
+        return reserved
+
     def history_budget(self, prompt_tokens: int, use_tools: bool = False) -> int:
         """按模型窗口扣除提示词与预留，得到历史可用的 token 预算
 
@@ -92,11 +107,10 @@ class ContextBudgetConfig:
         Returns:
             int: 历史可用的估算 token 预算，窗口不足时为 0
         """
-        reserved = prompt_tokens + self.output_reserve_tokens
-        if use_tools:
-            reserved += self.tool_reserve_tokens
         # 负预算按 0 返回，交由调用方决定降级方式
-        return max(self.window_tokens - reserved, 0)
+        return max(
+            self.window_tokens - self.reserved_tokens(prompt_tokens, use_tools), 0
+        )
 
 
 @dataclass(frozen=True)

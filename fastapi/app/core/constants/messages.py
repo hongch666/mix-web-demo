@@ -352,11 +352,12 @@ class Messages:
 
     @staticmethod
     def LLM_CHAT_CONTEXT_BUDGET_EXHAUSTED(
-        service_name: str, window_tokens: int, prompt_tokens: int
+        service_name: str, window_tokens: int, reserved_tokens: int
     ) -> str:
         return (
             f"{service_name} 上下文窗口不足以容纳提示词与预留，"
-            f"本轮不注入历史: 窗口 {window_tokens} tokens, 提示词 {prompt_tokens} tokens"
+            f"本轮不注入历史: 窗口 {window_tokens} tokens, "
+            f"提示词与预留合计 {reserved_tokens} tokens"
         )
 
     @staticmethod

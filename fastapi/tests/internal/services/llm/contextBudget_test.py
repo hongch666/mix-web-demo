@@ -47,6 +47,8 @@ def test_history_budget_subtracts_prompt_and_reserves() -> None:
         safety_ratio=1.0,
     )
 
+    assert config.reserved_tokens(500) == 1500
+    assert config.reserved_tokens(500, use_tools=True) == 3500
     assert config.history_budget(500) == 8500
     assert config.history_budget(500, use_tools=True) == 6500
 
