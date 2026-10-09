@@ -242,6 +242,7 @@ class BaseAiService:
         user_id: Optional[int],
         db: Optional[Session],
         runnable_config: Optional[dict] = None,
+        notes: Optional[list[str]] = None,
     ) -> list[Any]:
         """构建直连对话的消息列表
 
@@ -253,6 +254,7 @@ class BaseAiService:
             user_id: 归一化后的用户 ID
             db: 数据库会话
             runnable_config: LangChain RunnableConfig
+            notes: 记忆压缩说明的收集列表，供前端思考流与历史记录复用
 
         Returns:
             list[Any]: 系统消息、历史消息与本轮提问
@@ -267,6 +269,7 @@ class BaseAiService:
                 db,
                 False,
                 runnable_config,
+                notes,
             )
         elif user_id is not None:
             Logger.info(Messages.MEMORY_SKIPPED_SYSTEM_USER(user_id))
@@ -288,6 +291,7 @@ class BaseAiService:
         message: str,
         db: Optional[Session],
         runnable_config: Optional[dict] = None,
+        notes: Optional[list[str]] = None,
     ) -> tuple[str, list[ChatHistoryItem]]:
         """加载 Agent 路径的聊天记忆
 
@@ -299,6 +303,7 @@ class BaseAiService:
             message: 本轮用户提问
             db: 数据库会话
             runnable_config: LangChain RunnableConfig
+            notes: 记忆压缩说明的收集列表，供前端思考流与历史记录复用
 
         Returns:
             tuple[str, list[ChatHistoryItem]]: 历史摘要与注入的原文轮次
@@ -315,6 +320,7 @@ class BaseAiService:
             db,
             True,
             runnable_config,
+            notes,
         )
 
     async def _load_memory_summary(
@@ -335,6 +341,7 @@ class BaseAiService:
         db: Session,
         use_tools: bool,
         runnable_config: Optional[dict] = None,
+        notes: Optional[list[str]] = None,
     ) -> tuple[str, list[ChatHistoryItem]]:
         """加载用户级聊天记忆，必要时压缩并持久化
 
@@ -349,6 +356,7 @@ class BaseAiService:
             db: 数据库会话
             use_tools: 是否走带工具的 Agent 路径
             runnable_config: LangChain RunnableConfig，使压缩调用进入同一链路追踪
+            notes: 记忆压缩说明的收集列表，压缩发生时写入一条说明
 
         Returns:
             tuple[str, list[ChatHistoryItem]]: 历史摘要与注入的原文轮次
@@ -428,6 +436,7 @@ class BaseAiService:
             db=db,
             user_id=user_id,
             runnable_config=runnable_config,
+            notes=notes,
         )
         if new_summary is None:
             return plan.summary, plan.history
@@ -502,11 +511,13 @@ class BaseAiService:
         db: Session,
         user_id: int,
         runnable_config: Optional[dict] = None,
+        notes: Optional[list[str]] = None,
     ) -> Optional[str]:
         """把更早轮次折叠进摘要并持久化
 
         压缩失败时返回 None，调用方保持原摘要且不推进水位线，
-        下一轮可重新尝试，不会造成历史丢失
+        下一轮可重新尝试，不会造成历史丢失；
+        传入 notes 时写入一条说明，供前端思考流与历史记录展示这次整理
 
         Returns:
             Optional[str]: 合并后的摘要，失败时返回 None
@@ -548,6 +559,9 @@ class BaseAiService:
                         self._context_budget.summary_max_chars,
                     )
                 )
+                self._append_compact_note(
+                    notes, Messages.CHAT_MEMORY_COMPACT_FAILED_THINKING(len(targets))
+                )
                 return None
 
             await self.ai_summary_mapper.upsert_async(
@@ -558,12 +572,31 @@ class BaseAiService:
                     self.service_name, len(new_summary), watermark_id
                 )
             )
+            self._append_compact_note(
+                notes,
+                Messages.CHAT_MEMORY_COMPACT_THINKING(len(targets), len(new_summary)),
+            )
             return new_summary
         except Exception as error:
             Logger.error(
                 Messages.LLM_CHAT_MEMORY_COMPACT_FAILED(self.service_name, error)
             )
+            self._append_compact_note(
+                notes, Messages.CHAT_MEMORY_COMPACT_FAILED_THINKING(len(targets))
+            )
             return None
+
+    @staticmethod
+    def _append_compact_note(notes: Optional[list[str]], note: str) -> None:
+        """记录一条记忆压缩说明，未传入收集列表时不做任何事"""
+        if notes is None:
+            return
+        notes.append(note)
+
+    @staticmethod
+    def _build_notes_frames(notes: list[str]) -> list[dict[str, str]]:
+        """把记忆压缩说明转为思考帧，供流式接口下发给前端"""
+        return [{"type": "thinking", "content": note} for note in notes]
 
     @staticmethod
     def _build_compact_runnable_config(
@@ -925,6 +958,7 @@ class BaseAiService:
         user_id: int | str = 0,
         db: Optional[Session] = None,
         runnable_config: Optional[dict] = None,
+        notes: Optional[list[str]] = None,
     ) -> str:
         """普通聊天接口
 
@@ -933,6 +967,7 @@ class BaseAiService:
             user_id: 用户ID
             db: 数据库会话
             runnable_config: LangChain RunnableConfig (用于 LangSmith 追踪传播)
+            notes: 记忆压缩说明的收集列表，调用方据此落库历史记录的思考字段
         """
         try:
             normalized_user_id = self._normalize_user_id(user_id)
@@ -946,7 +981,7 @@ class BaseAiService:
                 config = dict(runnable_config) if runnable_config else {}
                 config.setdefault("run_name", "chat.direct")
                 messages = await self._build_direct_messages(
-                    message, normalized_user_id, db, config
+                    message, normalized_user_id, db, config, notes
                 )
                 response = await self.llm.ainvoke(messages, config=config)
                 result: str = response.content
@@ -989,7 +1024,7 @@ class BaseAiService:
             if direct_chat:
                 config.setdefault("run_name", "chat.direct")
                 messages = await self._build_direct_messages(
-                    message, normalized_user_id, db, config
+                    message, normalized_user_id, db, config, notes
                 )
                 response = await self.llm.ainvoke(messages, config=config)
                 result = response.content
@@ -1001,7 +1036,7 @@ class BaseAiService:
                 # 单例工具不再持有可变用户字段
 
                 summary, chat_history = await self._load_agent_memory(
-                    normalized_user_id, message, db, config
+                    normalized_user_id, message, db, config, notes
                 )
                 context = self._build_chat_context(summary, chat_history)
                 user_info = (
@@ -1041,6 +1076,8 @@ class BaseAiService:
         try:
             normalized_user_id = self._normalize_user_id(user_id)
             Logger.info(Messages.USER_START_STREAMING_CHAT(user_id, message))
+            # 记忆压缩说明先以思考帧下发，让前端知道本轮在回答前整理过历史
+            notes: list[str] = []
 
             if not getattr(self, "llm", None):
                 yield {"type": "error", "content": Messages.INITIALIZATION_ERROR}
@@ -1050,8 +1087,10 @@ class BaseAiService:
                 config = dict(runnable_config) if runnable_config else {}
                 config.setdefault("run_name", "chat.direct")
                 messages = await self._build_direct_messages(
-                    message, normalized_user_id, db, config
+                    message, normalized_user_id, db, config, notes
                 )
+                for frame in self._build_notes_frames(notes):
+                    yield frame
 
                 try:
                     async for chunk in self.llm.astream(
@@ -1125,8 +1164,10 @@ class BaseAiService:
             if direct_chat:
                 config.setdefault("run_name", "chat.direct")
                 messages = await self._build_direct_messages(
-                    message, normalized_user_id, db, config
+                    message, normalized_user_id, db, config, notes
                 )
+                for frame in self._build_notes_frames(notes):
+                    yield frame
 
                 try:
                     async for chunk in self.llm.astream(
@@ -1158,8 +1199,10 @@ class BaseAiService:
                 # 单例工具不再持有可变用户字段
 
                 summary, chat_history = await self._load_agent_memory(
-                    normalized_user_id, message, db, config
+                    normalized_user_id, message, db, config, notes
                 )
+                for frame in self._build_notes_frames(notes):
+                    yield frame
                 context = self._build_chat_context(summary, chat_history)
                 user_info = (
                     Messages.CURRENT_USER_ID_INFO(normalized_user_id)

@@ -677,6 +677,141 @@ async def test_load_chat_memory_keeps_old_summary_when_new_summary_too_long() ->
     service.ai_summary_mapper.upsert_async.assert_not_awaited()
 
 
+# 压缩成功时收集一条整理说明，供前端思考流与历史记录使用
+@pytest.mark.anyio
+async def test_load_chat_memory_collects_compact_note_on_success() -> None:
+    mapper = AsyncMock()
+    mapper.get_ai_history_after_id_async.return_value = [
+        _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
+    ]
+    mapper.get_oldest_ai_history_after_id_async.return_value = []
+    service = _make_service(
+        ai_history_mapper=mapper,
+        llm=_FakeStreamingLLM(invoke_result=_FakeResponse("合并摘要")),
+        _context_budget=_wide_budget(
+            window_tokens=220, keep_rounds=2, candidate_rounds=6
+        ),
+    )
+    notes: list[str] = []
+
+    await service._load_chat_memory(
+        7, "问题", "系统提示", MagicMock(), True, None, notes
+    )
+
+    assert notes == [
+        Messages.CHAT_MEMORY_COMPACT_THINKING(2, len("合并摘要")),
+    ]
+
+
+# 压缩失败时收集失败说明，前端据此提示本轮只用了窗口内原文
+@pytest.mark.anyio
+async def test_load_chat_memory_collects_compact_note_on_failure() -> None:
+    mapper = AsyncMock()
+    mapper.get_ai_history_after_id_async.return_value = [
+        _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
+    ]
+    mapper.get_oldest_ai_history_after_id_async.return_value = []
+    service = _make_service(
+        ai_history_mapper=mapper,
+        llm=_FakeStreamingLLM(invoke_error=RuntimeError("model down")),
+        _context_budget=_wide_budget(
+            window_tokens=220, keep_rounds=2, candidate_rounds=6
+        ),
+    )
+    notes: list[str] = []
+
+    await service._load_chat_memory(
+        7, "问题", "系统提示", MagicMock(), True, None, notes
+    )
+
+    assert notes == [Messages.CHAT_MEMORY_COMPACT_FAILED_THINKING(2)]
+
+
+# 未触发压缩时不产生整理说明，避免每轮都往前端刷提示
+@pytest.mark.anyio
+async def test_load_chat_memory_keeps_notes_empty_without_compaction() -> None:
+    mapper = AsyncMock()
+    mapper.get_ai_history_after_id_async.return_value = [_FakeHistory(1, "q1", "a1")]
+    service = _make_service(ai_history_mapper=mapper, _context_budget=_wide_budget())
+    notes: list[str] = []
+
+    await service._load_chat_memory(
+        7, "问题", "系统提示", MagicMock(), False, None, notes
+    )
+
+    assert notes == []
+
+
+# 直连流式对话在回答前先下发记忆整理思考帧
+@pytest.mark.anyio
+async def test_stream_chat_emits_compact_note_before_content() -> None:
+    mapper = AsyncMock()
+    mapper.get_ai_history_after_id_async.return_value = [
+        _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
+    ]
+    mapper.get_oldest_ai_history_after_id_async.return_value = []
+    llm = _FakeStreamingLLM(
+        chunks=[_FakeChunk("答复")],
+        invoke_result=_FakeResponse("合并摘要"),
+    )
+    service = _make_service(
+        ai_history_mapper=mapper,
+        llm=llm,
+        _context_budget=_wide_budget(
+            window_tokens=220, keep_rounds=2, candidate_rounds=6
+        ),
+    )
+
+    frames = await _collect_frames(
+        service.stream_chat("问题", user_id=7, db=MagicMock())
+    )
+
+    assert frames[0] == {
+        "type": "thinking",
+        "content": Messages.CHAT_MEMORY_COMPACT_THINKING(3, len("合并摘要")),
+    }
+    assert frames[1] == {"type": "content", "content": "答复"}
+
+
+# Agent 流式对话同样在工具步骤之前下发记忆整理思考帧
+@pytest.mark.anyio
+async def test_stream_chat_agent_emits_compact_note_first() -> None:
+    mapper = AsyncMock()
+    mapper.get_ai_history_after_id_async.return_value = [
+        _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
+    ]
+    mapper.get_oldest_ai_history_after_id_async.return_value = []
+    router = _FakeIntentRouter(
+        permission_result=("log_analysis", True, "", "text_fallback")
+    )
+    executor = _FakeAgentExecutor(
+        events=[{"event": "on_chain_end", "data": {"output": {"output": "最终答复"}}}]
+    )
+    llm = _FakeStreamingLLM(
+        chunks=[_FakeChunk("最终答复")],
+        invoke_result=_FakeResponse("合并摘要"),
+    )
+    service = _make_service(
+        ai_history_mapper=mapper,
+        llm=llm,
+        intent_router=router,
+        agent_executor=executor,
+        _context_budget=_wide_budget(
+            window_tokens=900, keep_rounds=2, candidate_rounds=6
+        ),
+    )
+
+    frames = await _collect_frames(
+        service.stream_chat("查日志", user_id=7, db=MagicMock())
+    )
+
+    assert frames[0] == {
+        "type": "thinking",
+        "content": Messages.CHAT_MEMORY_COMPACT_THINKING(3, len("合并摘要")),
+    }
+    assert all(frame["type"] == "thinking" for frame in frames[:2])
+
+
 # ===== 直连对话消息组装 =====
 
 

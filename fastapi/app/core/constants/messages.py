@@ -1275,6 +1275,17 @@ class Messages:
         return f"\n\n最终分析结果:\n{result}"
 
     @staticmethod
+    def CHAT_MEMORY_COMPACT_THINKING(rounds: int, summary_chars: int) -> str:
+        return (
+            f"历史记忆整理: 已将较早的 {rounds} 轮对话折叠进长期记忆摘要, "
+            f"当前摘要 {summary_chars} 字\n"
+        )
+
+    @staticmethod
+    def CHAT_MEMORY_COMPACT_FAILED_THINKING(rounds: int) -> str:
+        return f"历史记忆整理: {rounds} 轮较早对话折叠失败, 本轮仅使用窗口内原文\n"
+
+    @staticmethod
     def STREAM_FINAL_PROMPT(message: str, agent_result: str) -> str:
         return f"用户问题: {message}\n\n我已经获取到以下信息:\n{agent_result}\n\n请基于这些信息,用清晰、友好的方式回答用户的问题。"
 

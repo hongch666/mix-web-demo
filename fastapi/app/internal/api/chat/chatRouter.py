@@ -130,6 +130,8 @@ async def send_message(
                 }
 
         # 根据请求的服务类型选择对应的AI服务
+        # 记忆压缩说明由服务层写入 compact_notes，供历史记录的思考字段落库
+        compact_notes: list[str] = []
         if request.service == AIServiceType.GPT:
             Logger.info(Messages.CHAT_SERVICE_PROCESSING("GPT", actual_user_id, False))
             response_message: str = await gptService.simple_chat(
@@ -137,6 +139,7 @@ async def send_message(
                 user_id=actual_user_id,
                 db=db,
                 runnable_config=runnable_config,
+                notes=compact_notes,
             )
         elif request.service == AIServiceType.GEMINI:
             Logger.info(
@@ -147,6 +150,7 @@ async def send_message(
                 user_id=actual_user_id,
                 db=db,
                 runnable_config=runnable_config,
+                notes=compact_notes,
             )
         else:
             Logger.info(Messages.CHAT_SERVICE_PROCESSING("GLM", actual_user_id, False))
@@ -155,6 +159,7 @@ async def send_message(
                 user_id=actual_user_id,
                 db=db,
                 runnable_config=runnable_config,
+                notes=compact_notes,
             )
 
     # 检查是否有错误
@@ -173,7 +178,7 @@ async def send_message(
             user_id=int(actual_user_id),
             ask=request.message,
             reply=response_message,
-            thinking=None,
+            thinking="".join(compact_notes) or None,
             ai_type=request.service.value,
         )
         await aiHistoryService.create_ai_history(history, db)
