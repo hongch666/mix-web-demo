@@ -166,16 +166,21 @@ async def send_message(
             code=HttpCode.INTERNAL_SERVER_ERROR, data=None, msg=response_message
         )
 
-    # 保存AI历史记录
-    history = AiHistory(
-        user_id=int(actual_user_id),
-        ask=request.message,
-        reply=response_message,
-        thinking=None,
-        ai_type=request.service.value,
-    )
-    await aiHistoryService.create_ai_history(history, db)
-    Logger.info(Messages.AI_HISTORY_SAVED(actual_user_id, request.service.value, False))
+    # 保存AI历史记录，系统调用身份不写入记忆
+    if _is_memory_user(actual_user_id):
+        history = AiHistory(
+            user_id=int(actual_user_id),
+            ask=request.message,
+            reply=response_message,
+            thinking=None,
+            ai_type=request.service.value,
+        )
+        await aiHistoryService.create_ai_history(history, db)
+        Logger.info(
+            Messages.AI_HISTORY_SAVED(actual_user_id, request.service.value, False)
+        )
+    else:
+        Logger.info(Messages.AI_HISTORY_SKIPPED_SYSTEM_USER(actual_user_id, False))
 
     # 成功响应 - 按照success格式
     response_data: ChatResponseData = ChatResponseData(
@@ -367,7 +372,8 @@ async def stream_message(
                     yield frame
 
                 # 流式聊天完成后保存AI历史记录（在完成流式传输后）
-                if message_acc:
+                # 系统调用身份不写入记忆，避免所有匿名请求共用同一个记忆桶
+                if message_acc and _is_memory_user(actual_user_id):
                     history = AiHistory(
                         user_id=int(actual_user_id),
                         ask=request.message,
@@ -380,6 +386,10 @@ async def stream_message(
                         Messages.AI_HISTORY_SAVED(
                             actual_user_id, request.service.value, True
                         )
+                    )
+                elif message_acc:
+                    Logger.info(
+                        Messages.AI_HISTORY_SKIPPED_SYSTEM_USER(actual_user_id, True)
                     )
 
                 if use_openai_format:
@@ -401,6 +411,18 @@ def _resolve_system_user_id() -> str:
     """身份缺失时返回系统调用身份，供允许匿名访问的聊天接口使用"""
     user_id: Optional[int] = get_current_user_id()
     return str(user_id) if user_id is not None else str(Defaults.SYSTEM_USER_ID)
+
+
+def _is_memory_user(actual_user_id: str) -> bool:
+    """判断是否为可承载记忆的真实用户
+
+    系统调用身份（userId 小于等于 0）不参与聊天记忆读写，
+    否则所有未登录请求会共用同一个记忆桶
+    """
+    try:
+        return int(actual_user_id) > 0
+    except (TypeError, ValueError):
+        return False
 
 
 def _resolve_model_info(service: AIServiceType) -> dict:

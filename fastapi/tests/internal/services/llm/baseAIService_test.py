@@ -13,6 +13,7 @@ from app.internal.services.llm.baseAIService import (
     get_agent_prompt,
     initialize_ai_tools,
 )
+from app.internal.services.llm.contextBudget import ContextBudgetConfig
 
 base_module = importlib.import_module("app.internal.services.llm.baseAIService")
 
@@ -37,7 +38,10 @@ class _FakeAction:
 
 
 class _FakeHistory:
-    def __init__(self, ask: str, reply: str) -> None:
+    """最小历史记录替身，id 用于断言压缩水位线"""
+
+    def __init__(self, history_id: int, ask: str, reply: str) -> None:
+        self.id = history_id
         self.ask = ask
         self.reply = reply
 
@@ -121,6 +125,9 @@ def _make_service(**overrides) -> BaseAiService:
     """绕过 __init__ 的可控构造，避免真实读取配置与创建 LLM 客户端"""
     service = BaseAiService.__new__(BaseAiService)
     service.ai_history_mapper = AsyncMock()
+    service.ai_summary_mapper = AsyncMock()
+    # 默认无已存摘要，需要摘要的用例自行覆盖返回值
+    service.ai_summary_mapper.get_by_user_id_async.return_value = None
     service.service_name = "AI"
     service.config_section = "closeai"
     service.model_config_key = "model_name"
@@ -136,6 +143,7 @@ def _make_service(**overrides) -> BaseAiService:
     service._api_key = ""
     service._base_url = ""
     service._timeout = 30
+    service._context_budget = ContextBudgetConfig()
     for name, value in overrides.items():
         setattr(service, name, value)
     return service
@@ -259,18 +267,38 @@ def test_final_stream_options_enable_thinking_only_for_glm() -> None:
     assert _make_service(service_name="GPT")._final_stream_options() == {}
 
 
-# 历史对话只保留最近三轮，空历史返回空字符串
-def test_build_chat_context_keeps_last_three_rounds() -> None:
+# 裁剪已在加载阶段完成，拼接阶段保留传入的全部轮次；无记忆时返回空串
+def test_build_chat_context_keeps_all_trimmed_rounds() -> None:
     service = _make_service()
     history = [("q1", "a1"), ("q2", "a2"), ("q3", "a3"), ("q4", "a4")]
-    last_three = history[-3:]
     expected = (
         "\n\n历史对话:\n"
-        + "\n".join(Messages.CHAT_HISTORY_LINE(h, a) for h, a in last_three)
+        + "\n".join(Messages.CHAT_HISTORY_LINE(h, a) for h, a in history)
         + "\n\n"
     )
-    assert service._build_chat_context(history) == expected
-    assert service._build_chat_context([]) == ""
+    assert service._build_chat_context("", history) == expected
+    assert service._build_chat_context("", []) == ""
+
+
+# 摘要排在原文之前，保证更早的结论不会因窗口裁剪而丢失
+def test_build_chat_context_places_summary_before_history() -> None:
+    service = _make_service()
+
+    context = service._build_chat_context("历史摘要内容", [("q1", "a1")])
+
+    assert context.index("历史摘要内容") < context.index("q1")
+    assert Messages.CHAT_MEMORY_SUMMARY_HEADER() in context
+
+
+# 无摘要时系统消息保持原样，有摘要时把摘要并入系统消息
+def test_compose_direct_system_message_appends_summary() -> None:
+    service = _make_service()
+
+    assert service._compose_direct_system_message("") == Messages.GENERIC_CHAT_MESSAGE
+
+    composed = service._compose_direct_system_message("历史摘要内容")
+    assert composed.startswith(Messages.GENERIC_CHAT_MESSAGE)
+    assert "历史摘要内容" in composed
 
 
 # 思考文本按执行步骤在前、最终结论在后的顺序拼接
@@ -323,34 +351,166 @@ def test_get_agent_prompt_exposes_expected_variables() -> None:
     assert set(prompt.input_variables) == {"input", "agent_scratchpad"}
 
 
-# ===== 聊天历史加载 =====
+# ===== 聊天记忆加载与压缩 =====
 
 
-# 聊天历史按问答对映射为元组列表并只调用一次 Mapper
+class _FakeSummary:
+    """最小记忆摘要替身"""
+
+    def __init__(self, summary: str = "", watermark: int = 0, count: int = 0) -> None:
+        self.summary = summary
+        self.last_summarized_history_id = watermark
+        self.summarized_count = count
+
+
+def _wide_budget(**overrides: object) -> ContextBudgetConfig:
+    """构造宽松预算，未指定项不影响用例结论"""
+    values: dict[str, object] = {
+        "window_tokens": 100000,
+        "output_reserve_tokens": 0,
+        "tool_reserve_tokens": 0,
+        "compact_trigger_ratio": 0.8,
+        "keep_rounds": 2,
+        "candidate_rounds": 40,
+        "safety_ratio": 1.0,
+        "single_message_chars": 1000,
+        "summary_max_chars": 500,
+    }
+    values.update(overrides)
+    return ContextBudgetConfig(**values)  # type: ignore[arg-type]
+
+
+# 历史与摘要都在预算内时按原样注入，不触发压缩与落库
 @pytest.mark.anyio
-async def test_load_chat_history_maps_ask_reply_pairs() -> None:
+async def test_load_chat_memory_injects_history_without_compaction() -> None:
     mapper = MagicMock()
-    mapper.get_all_ai_history_by_userid_async = AsyncMock(
-        return_value=[_FakeHistory("q1", "a1"), _FakeHistory("q2", "a2")]
+    mapper.get_ai_history_after_id_async = AsyncMock(
+        return_value=[_FakeHistory(1, "q1", "a1"), _FakeHistory(2, "q2", "a2")]
     )
-    service = _make_service(ai_history_mapper=mapper)
+    service = _make_service(ai_history_mapper=mapper, _context_budget=_wide_budget())
 
-    result = await service._load_chat_history(7, MagicMock())
+    summary, history = await service._load_chat_memory(
+        7, "问题", "系统提示", MagicMock(), True
+    )
 
-    assert result == [("q1", "a1"), ("q2", "a2")]
-    mapper.get_all_ai_history_by_userid_async.assert_awaited_once()
+    assert summary == ""
+    assert history == [("q1", "a1"), ("q2", "a2")]
+    service.ai_summary_mapper.upsert_async.assert_not_awaited()
 
 
-# 历史记录查询抛错时返回空列表而不向调用方抛出异常
+# 已有摘要按水位线之后的原文加载，避免重复压缩同一段历史
 @pytest.mark.anyio
-async def test_load_chat_history_returns_empty_on_failure() -> None:
+async def test_load_chat_memory_reuses_persisted_summary() -> None:
     mapper = MagicMock()
-    mapper.get_all_ai_history_by_userid_async = AsyncMock(
+    mapper.get_ai_history_after_id_async = AsyncMock(
+        return_value=[_FakeHistory(5, "q5", "a5")]
+    )
+    service = _make_service(ai_history_mapper=mapper, _context_budget=_wide_budget())
+    service.ai_summary_mapper.get_by_user_id_async = AsyncMock(
+        return_value=_FakeSummary("已存摘要", watermark=4, count=4)
+    )
+    db = MagicMock()
+
+    summary, history = await service._load_chat_memory(7, "问题", "系统提示", db, False)
+
+    assert summary == "已存摘要"
+    assert history == [("q5", "a5")]
+    mapper.get_ai_history_after_id_async.assert_awaited_once_with(db, 7, 4, 40)
+
+
+# 超出窗口预算时把更早轮次折叠进摘要，水位线推进到最后一条折叠记录
+@pytest.mark.anyio
+async def test_load_chat_memory_compacts_and_persists_watermark() -> None:
+    mapper = MagicMock()
+    mapper.get_ai_history_after_id_async = AsyncMock(
+        return_value=[
+            _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
+        ]
+    )
+    service = _make_service(
+        ai_history_mapper=mapper,
+        llm=_FakeStreamingLLM(invoke_result=_FakeResponse("合并摘要")),
+        _context_budget=_wide_budget(
+            window_tokens=220, keep_rounds=2, candidate_rounds=6
+        ),
+    )
+    db = MagicMock()
+
+    summary, history = await service._load_chat_memory(7, "问题", "系统提示", db, True)
+
+    assert summary == "合并摘要"
+    assert history == [
+        ("q3", "答" * 40),
+        ("q4", "答" * 40),
+        ("q5", "答" * 40),
+        ("q6", "答" * 40),
+    ]
+    upsert_args = service.ai_summary_mapper.upsert_async.await_args.args
+    assert upsert_args[0] is db
+    assert upsert_args[1] == 7
+    assert upsert_args[2] == "合并摘要"
+    # q1 与 q2 被折叠，水位线停在第 2 条记录
+    assert upsert_args[3] == 2
+    assert upsert_args[4] == 2
+
+
+# 压缩失败时保留原摘要且不推进水位线，下一轮可重新尝试
+@pytest.mark.anyio
+async def test_load_chat_memory_keeps_summary_when_compaction_fails() -> None:
+    mapper = MagicMock()
+    mapper.get_ai_history_after_id_async = AsyncMock(
+        return_value=[
+            _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
+        ]
+    )
+    service = _make_service(
+        ai_history_mapper=mapper,
+        llm=_FakeStreamingLLM(invoke_error=RuntimeError("model down")),
+        _context_budget=_wide_budget(
+            window_tokens=220, keep_rounds=2, candidate_rounds=6
+        ),
+    )
+    service.ai_summary_mapper.get_by_user_id_async = AsyncMock(
+        return_value=_FakeSummary("旧摘要", watermark=1, count=1)
+    )
+
+    summary, history = await service._load_chat_memory(
+        7, "问题", "系统提示", MagicMock(), True
+    )
+
+    assert summary == "旧摘要"
+    assert history[-1] == ("q6", "答" * 40)
+    service.ai_summary_mapper.upsert_async.assert_not_awaited()
+
+
+# 历史读取失败时降级为仅摘要，不打断本轮回答
+@pytest.mark.anyio
+async def test_load_chat_memory_degrades_when_history_query_fails() -> None:
+    mapper = MagicMock()
+    mapper.get_ai_history_after_id_async = AsyncMock(
         side_effect=RuntimeError("db down")
     )
-    service = _make_service(ai_history_mapper=mapper)
+    service = _make_service(ai_history_mapper=mapper, _context_budget=_wide_budget())
+    service.ai_summary_mapper.get_by_user_id_async = AsyncMock(
+        return_value=_FakeSummary("已存摘要", watermark=3, count=3)
+    )
 
-    assert await service._load_chat_history(7, MagicMock()) == []
+    summary, history = await service._load_chat_memory(
+        7, "问题", "系统提示", MagicMock(), False
+    )
+
+    assert summary == "已存摘要"
+    assert history == []
+
+
+# 系统调用身份不参与记忆读写，只有真实用户才加载聊天历史
+def test_is_memory_user_id_rejects_system_identity() -> None:
+    service = _make_service()
+
+    assert service._is_memory_user_id(7) is True
+    assert service._is_memory_user_id(0) is False
+    assert service._is_memory_user_id(-1) is False
+    assert service._is_memory_user_id(None) is False
 
 
 # ===== 基础对话接口 =====

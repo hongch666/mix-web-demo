@@ -12,7 +12,7 @@ from app.internal.services import (
 )
 
 from .clients import SpringClientDep
-from .mappers import AiHistoryMapperDep
+from .mappers import AiHistoryMapperDep, AiUserSummaryMapperDep
 from .tools import AgentToolFactoriesDep
 
 
@@ -20,24 +20,33 @@ def provide_gpt_service(
     ai_history_mapper: AiHistoryMapperDep,
     spring_client: SpringClientDep,
     tool_factories: AgentToolFactoriesDep,
+    ai_user_summary_mapper: AiUserSummaryMapperDep,
 ) -> GptService:
-    return get_gpt_service(ai_history_mapper, spring_client, tool_factories)
+    return get_gpt_service(
+        ai_history_mapper, spring_client, tool_factories, ai_user_summary_mapper
+    )
 
 
 def provide_gemini_service(
     ai_history_mapper: AiHistoryMapperDep,
     spring_client: SpringClientDep,
     tool_factories: AgentToolFactoriesDep,
+    ai_user_summary_mapper: AiUserSummaryMapperDep,
 ) -> GeminiService:
-    return get_gemini_service(ai_history_mapper, spring_client, tool_factories)
+    return get_gemini_service(
+        ai_history_mapper, spring_client, tool_factories, ai_user_summary_mapper
+    )
 
 
 def provide_glm_service(
     ai_history_mapper: AiHistoryMapperDep,
     spring_client: SpringClientDep,
     tool_factories: AgentToolFactoriesDep,
+    ai_user_summary_mapper: AiUserSummaryMapperDep,
 ) -> GlmService:
-    return get_glm_service(ai_history_mapper, spring_client, tool_factories)
+    return get_glm_service(
+        ai_history_mapper, spring_client, tool_factories, ai_user_summary_mapper
+    )
 
 
 GptServiceDep = Annotated[GptService, Depends(provide_gpt_service)]

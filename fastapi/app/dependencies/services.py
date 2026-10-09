@@ -40,6 +40,7 @@ from .clients import NestjsClientDep, SpringClientDep
 from .llm import GeminiServiceDep, GlmServiceDep, GptServiceDep
 from .mappers import (
     AiHistoryMapperDep,
+    AiUserSummaryMapperDep,
     ApiLogMapperDep,
     ArticleMapperDep,
     UserMapperDep,
@@ -109,8 +110,11 @@ def provide_generate_service(
 def provide_ai_history_service(
     ai_history_mapper: AiHistoryMapperDep,
     spring_client: SpringClientDep,
+    ai_user_summary_mapper: AiUserSummaryMapperDep,
 ) -> AiHistoryService:
-    return get_ai_history_service(ai_history_mapper, spring_client)
+    return get_ai_history_service(
+        ai_history_mapper, spring_client, ai_user_summary_mapper
+    )
 
 
 def provide_api_log_service(

@@ -1,4 +1,5 @@
 from .mysql.aiHistory import AiHistory
+from .mysql.aiUserSummary import AiUserSummary
 from .graph.article import Article
 from .graph.belongsToRel import BelongsToRel
 from .graph.category import Category
@@ -48,6 +49,7 @@ from .warehouse.base import (
 
 __all__: list[str] = [
     "AiHistory",
+    "AiUserSummary",
     "User",
     "Category",
     "SubCategory",

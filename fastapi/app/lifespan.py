@@ -34,7 +34,7 @@ from app.internal.agents.langsmith import (
 )
 from app.internal.clients import get_nestjs_client, get_spring_client
 from app.dependencies import resolve_analyze_service
-from app.internal.models import AiHistory
+from app.internal.models import AiHistory, AiUserSummary
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler
 
@@ -44,7 +44,10 @@ IP: str = Messages.INIT_IP
 PORT: int = server_config["port"]
 
 # 导入并保留实体引用，确保模型已注册到 Base.metadata
-SQLALCHEMY_MODELS: tuple[type[AiHistory], ...] = (AiHistory,)
+SQLALCHEMY_MODELS: tuple[type[AiHistory] | type[AiUserSummary], ...] = (
+    AiHistory,
+    AiUserSummary,
+)
 
 
 @asynccontextmanager

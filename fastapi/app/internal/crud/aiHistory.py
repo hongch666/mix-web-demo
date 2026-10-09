@@ -21,20 +21,48 @@ class AiHistoryMapper:
     async def get_all_ai_history_by_userid_async(
         self, db: AsyncSession, user_id: int, limit: Optional[int]
     ) -> list[AiHistory]:
+        """按用户查询历史记录
+
+        limit 为空时按时间正序返回全部记录，供历史列表展示使用；
+        指定 limit 时先按时间倒序取最近 limit 条，再反转为正序返回，
+        保证调用方拿到的是"最近的记录"且按旧到新排列
+        """
         if limit is None:
             statement = (
                 select(AiHistory)
                 .where(AiHistory.user_id == user_id)
-                .order_by(AiHistory.created_at.asc())
+                .order_by(AiHistory.created_at.asc(), AiHistory.id.asc())
             )
-        else:
-            statement = (
-                select(AiHistory)
-                .where(AiHistory.user_id == user_id)
-                .order_by(AiHistory.created_at.asc())
-                .limit(limit)
-            )
-        return (await db.execute(statement)).scalars().all()
+            return (await db.execute(statement)).scalars().all()
+
+        statement = (
+            select(AiHistory)
+            .where(AiHistory.user_id == user_id)
+            .order_by(AiHistory.created_at.desc(), AiHistory.id.desc())
+            .limit(limit)
+        )
+        recent_histories = list((await db.execute(statement)).scalars().all())
+        # 数据库侧按倒序取最近记录，这里反转为正序，供上下文按旧到新拼接
+        recent_histories.reverse()
+        return recent_histories
+
+    async def get_ai_history_after_id_async(
+        self, db: AsyncSession, user_id: int, after_id: int, limit: int
+    ) -> list[AiHistory]:
+        """取压缩水位线之后的历史记录
+
+        先按 id 倒序取最近的 limit 条，再反转为正序返回，
+        保证返回的是最新一批且按旧到新排列
+        """
+        statement = (
+            select(AiHistory)
+            .where(AiHistory.user_id == user_id, AiHistory.id > after_id)
+            .order_by(AiHistory.id.desc())
+            .limit(limit)
+        )
+        recent_histories = list((await db.execute(statement)).scalars().all())
+        recent_histories.reverse()
+        return recent_histories
 
     async def delete_ai_history_by_userid_async(
         self, db: AsyncSession, user_id: int

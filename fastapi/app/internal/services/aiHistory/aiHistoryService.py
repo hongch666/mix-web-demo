@@ -1,10 +1,15 @@
 from functools import lru_cache
 from typing import Any, Optional
 
+from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 from app.internal.clients import SpringClient, get_spring_client
-from app.internal.crud import AiHistoryMapper
+from app.internal.crud import (
+    AiHistoryMapper,
+    AiUserSummaryMapper,
+    get_ai_user_summary_mapper,
+)
 from app.internal.models import AiHistory
 
 
@@ -15,9 +20,13 @@ class AiHistoryService:
         self,
         ai_history_mapper: Optional[AiHistoryMapper] = None,
         spring_client: Optional[SpringClient] = None,
+        ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
     ) -> None:
         self.ai_history_mapper: Optional[AiHistoryMapper] = ai_history_mapper
         self._spring_client: SpringClient = spring_client or get_spring_client()
+        self._ai_user_summary_mapper: AiUserSummaryMapper = (
+            ai_user_summary_mapper or get_ai_user_summary_mapper()
+        )
 
     async def create_ai_history(self, ai_history: Any, db: Any) -> Any:
         data: dict[str, Any] = self._normalize_ai_history_data(ai_history)
@@ -54,6 +63,9 @@ class AiHistoryService:
             )
 
         await self.ai_history_mapper.delete_ai_history_by_userid_async(db, user_id)
+        # 摘要与原文必须同步清理，否则会出现用户已清空历史但记忆仍在的情况
+        await self._ai_user_summary_mapper.delete_by_user_id_async(db, user_id)
+        Logger.info(Messages.AI_MEMORY_SUMMARY_CLEARED(user_id))
 
     async def get_ai_history_by_id(self, id: int, db: Any) -> Optional[dict[str, Any]]:
         """根据ID查询AI历史记录"""
@@ -139,8 +151,10 @@ class AiHistoryService:
 def get_ai_history_service(
     ai_history_mapper: AiHistoryMapper,
     spring_client: SpringClient,
+    ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
 ) -> AiHistoryService:
     return AiHistoryService(
         ai_history_mapper,
         spring_client,
+        ai_user_summary_mapper,
     )

@@ -50,6 +50,26 @@ class Prompts:
         """
 
     @staticmethod
+    def USER_MEMORY_COMPACT(
+        existing_summary: str, new_content: str, max_length: int
+    ) -> str:
+        return f"""请把既有摘要与新增对话合并成一份新的对话记忆摘要：
+
+        既有摘要：
+        {existing_summary}
+
+        新增对话：
+        {new_content}
+
+        要求：
+        1. 合并后的摘要控制在 {max_length} 字以内
+        2. 按主题分段，同一话题的结论集中在一段
+        3. 保留关键实体（用户ID、文章ID、表名）、用户偏好与明确约束
+        4. 同义内容只保留一次，不要罗列原始问答
+        5. 既有摘要为空时，只总结新增对话
+        """
+
+    @staticmethod
     def REFERENCE_BASED_EVALUATION(message: str, reference_content: str) -> str:
         return f"""请基于以下权威参考文本，对文章或内容进行评价。
 

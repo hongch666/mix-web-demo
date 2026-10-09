@@ -5,11 +5,13 @@ from fastapi import Depends
 from app.core.db import get_clickhouse_session_factory
 from app.internal.crud import (
     AiHistoryMapper,
+    AiUserSummaryMapper,
     ApiLogMapper,
     ArticleMapper,
     UserMapper,
     VectorMapper,
     get_ai_history_mapper,
+    get_ai_user_summary_mapper,
     get_api_log_mapper,
     get_article_mapper,
     get_user_mapper,
@@ -47,6 +49,9 @@ def resolve_article_mapper() -> ArticleMapper:
 
 
 AiHistoryMapperDep = Annotated[AiHistoryMapper, Depends(get_ai_history_mapper)]
+AiUserSummaryMapperDep = Annotated[
+    AiUserSummaryMapper, Depends(get_ai_user_summary_mapper)
+]
 ApiLogMapperDep = Annotated[ApiLogMapper, Depends(provide_api_log_mapper)]
 ArticleMapperDep = Annotated[ArticleMapper, Depends(provide_article_mapper)]
 UserMapperDep = Annotated[UserMapper, Depends(provide_user_mapper)]

@@ -13,11 +13,21 @@ from app.internal.services.aiHistory.aiHistoryService import (
 )
 
 
-def _make_service() -> tuple[AiHistoryService, AsyncMock, AsyncMock]:
-    """构造注入了 Fake Mapper 与 Fake SpringClient 的被测服务"""
+def _make_service_with_summary() -> tuple[
+    AiHistoryService, AsyncMock, AsyncMock, AsyncMock
+]:
+    """构造被测服务并额外返回记忆摘要 Mapper，供删除联动用例断言"""
     mapper = AsyncMock()
     spring_client = AsyncMock()
-    return AiHistoryService(mapper, spring_client), mapper, spring_client
+    summary_mapper = AsyncMock()
+    service = AiHistoryService(mapper, spring_client, summary_mapper)
+    return service, mapper, spring_client, summary_mapper
+
+
+def _make_service() -> tuple[AiHistoryService, AsyncMock, AsyncMock]:
+    """构造注入了 Fake Mapper 与 Fake SpringClient 的被测服务"""
+    service, mapper, spring_client, _summary_mapper = _make_service_with_summary()
+    return service, mapper, spring_client
 
 
 # dict 入参映射为 ORM 字段并透传 db，空 thinking 归一为 None
@@ -152,10 +162,10 @@ async def test_delete_by_userid_raises_when_user_missing() -> None:
     mapper.delete_ai_history_by_userid_async.assert_not_awaited()
 
 
-# 用户存在时按 user_id 委托 mapper 删除
+# 用户存在时按 user_id 委托 mapper 删除，并联动清空记忆摘要
 @pytest.mark.anyio
 async def test_delete_by_userid_delegates_when_user_exists() -> None:
-    service, mapper, spring = _make_service()
+    service, mapper, spring, summary_mapper = _make_service_with_summary()
     spring.get_users_by_ids.return_value = [{"id": 7}]
     db = Mock()
 
@@ -163,6 +173,7 @@ async def test_delete_by_userid_delegates_when_user_exists() -> None:
 
     spring.get_users_by_ids.assert_awaited_once_with([7])
     mapper.delete_ai_history_by_userid_async.assert_awaited_once_with(db, 7)
+    summary_mapper.delete_by_user_id_async.assert_awaited_once_with(db, 7)
 
 
 # 记录不存在时返回 None

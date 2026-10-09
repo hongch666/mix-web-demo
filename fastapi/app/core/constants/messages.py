@@ -222,6 +222,27 @@ class Messages:
         return f"{prefix}AI历史记录已保存: user_id={user_id}, ai_type={ai_type}"
 
     @staticmethod
+    def AI_HISTORY_SKIPPED_SYSTEM_USER(user_id: str, streaming: bool) -> str:
+        prefix = "流式" if streaming else ""
+        return f"{prefix}系统调用身份不写入AI历史，跳过记忆落库: user_id={user_id}"
+
+    @staticmethod
+    def MEMORY_SKIPPED_SYSTEM_USER(user_id: Any) -> str:
+        return f"系统调用身份不加载聊天历史，跳过记忆读取: user_id={user_id}"
+
+    @staticmethod
+    def CHAT_MEMORY_SUMMARY_HEADER() -> str:
+        return "\n\n历史对话摘要:\n"
+
+    @staticmethod
+    def AI_MEMORY_SUMMARY_CLEARED(user_id: int) -> str:
+        return f"已清空用户记忆摘要: user_id={user_id}"
+
+    CHAT_MEMORY_EMPTY_SUMMARY: str = "无"
+
+    CHAT_MEMORY_COMPACT_EMPTY_RESULT: str = "历史记忆压缩结果为空"
+
+    @staticmethod
     def STREAM_CHUNK_RECEIVED(chunk_type: str, content_length: int) -> str:
         return f"流式块类型: {chunk_type}, 块内容长度: {content_length}"
 
@@ -266,6 +287,73 @@ class Messages:
     @staticmethod
     def LLM_CHAT_HISTORY_LOAD_FAILED(error: Exception) -> str:
         return f"加载聊天历史失败: {error}"
+
+    @staticmethod
+    def LLM_CHAT_CONTEXT_TRIMMED(
+        service_name: str,
+        kept_rounds: int,
+        dropped_rounds: int,
+        estimated_tokens: int,
+    ) -> str:
+        return (
+            f"{service_name} 聊天历史按上下文预算裁剪: "
+            f"保留 {kept_rounds} 轮, 丢弃 {dropped_rounds} 轮, "
+            f"估算 {estimated_tokens} tokens"
+        )
+
+    @staticmethod
+    def LLM_CHAT_CONTEXT_TRUNCATED(service_name: str, estimated_tokens: int) -> str:
+        return (
+            f"{service_name} 聊天历史预算不足，已截断最后一轮内容: "
+            f"估算 {estimated_tokens} tokens"
+        )
+
+    @staticmethod
+    def LLM_CHAT_MEMORY_LOAD_FAILED(error: Exception) -> str:
+        return f"加载用户记忆摘要失败: {error}"
+
+    @staticmethod
+    def LLM_CHAT_MEMORY_PLANNED(
+        service_name: str,
+        budget_tokens: int,
+        estimated_tokens: int,
+        injected_rounds: int,
+        compact_rounds: int,
+    ) -> str:
+        return (
+            f"{service_name} 聊天上下文规划: 预算 {budget_tokens} tokens, "
+            f"注入 {injected_rounds} 轮估算 {estimated_tokens} tokens, "
+            f"待压缩 {compact_rounds} 轮"
+        )
+
+    @staticmethod
+    def LLM_CHAT_MEMORY_COMPACT_START(
+        service_name: str, rounds: int, watermark: int
+    ) -> str:
+        return (
+            f"{service_name} 开始压缩聊天记忆: 新增折叠 {rounds} 轮, "
+            f"起始水位线 {watermark}"
+        )
+
+    @staticmethod
+    def LLM_CHAT_MEMORY_COMPACT_COMPLETED(
+        service_name: str, summary_chars: int, watermark: int
+    ) -> str:
+        return (
+            f"{service_name} 聊天记忆压缩完成: 摘要 {summary_chars} 字, "
+            f"新水位线 {watermark}"
+        )
+
+    @staticmethod
+    def LLM_CHAT_MEMORY_COMPACT_FAILED(service_name: str, error: Exception) -> str:
+        return f"{service_name} 聊天记忆压缩失败，本轮仅使用窗口内原文: {error}"
+
+    @staticmethod
+    def LLM_CHAT_MEMORY_CANDIDATE_LIMIT_REACHED(service_name: str, limit: int) -> str:
+        return (
+            f"{service_name} 未压缩历史达到候选上限 {limit} 轮，"
+            f"最旧的部分本轮不参与上下文"
+        )
 
     @staticmethod
     def LLM_INVALID_USER_ID(user_id: Any) -> str:
@@ -2535,6 +2623,11 @@ class Messages:
 
     SUMMARIZE_CHAT_MESSAGE: str = (
         "你是一个专业的内容总结助手。请精准提取核心信息，用凝练的语言进行总结。"
+    )
+
+    CHAT_MEMORY_COMPACT_SYSTEM_MESSAGE: str = (
+        "你是一个对话记忆整理助手。请把多轮对话压缩成可长期复用的记忆摘要，"
+        "保留结论、关键实体、用户偏好与约束，丢弃寒暄与重复表述。"
     )
 
     SWAGGER_DESCRIPTION: str = "这是项目的FastAPI部分的Swagger文档"
