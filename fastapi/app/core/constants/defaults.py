@@ -115,22 +115,14 @@ class Defaults:
     STREAM_OPENAI_ASSISTANT_ROLE: str = "assistant"
     STREAM_OPENAI_FINISH_REASON_STOP: str = "stop"
 
-    # ===== 聊天上下文预算 =====
-    # 模型上下文窗口 token 数，历史预算由窗口扣除提示词与预留后推导
-    CHAT_CONTEXT_WINDOW_TOKENS: int = 32768
-    # 为模型输出预留的 token 数
-    CHAT_CONTEXT_OUTPUT_RESERVE_TOKENS: int = 2048
-    # 为工具定义与 Agent 中间步骤预留的 token 数，仅 Agent 路径计入
-    CHAT_CONTEXT_TOOL_RESERVE_TOKENS: int = 4000
-    # 历史占用达到预算的比例即触发 compact 压缩，用于"快超过"场景
-    CHAT_CONTEXT_COMPACT_TRIGGER_RATIO: float = 0.8
-    # 最近保留原文的对话轮数，compact 时不折叠这部分
-    CHAT_CONTEXT_KEEP_ROUNDS: int = 4
-    # 单次读取的候选历史轮数上限，需大于保留轮数，为预算内向前扩展留出空间
-    CHAT_CONTEXT_CANDIDATE_ROUNDS: int = 40
-    # token 估算安全系数，估算值放大后参与预算判断，抵消估算偏差
-    CHAT_CONTEXT_SAFETY_RATIO: float = 1.2
-    # 单条历史消息进入上下文的最大字符数，避免单条超长回复挤占整段预算
-    CHAT_CONTEXT_SINGLE_MESSAGE_CHARS: int = 2000
-    # 用户级历史摘要的最大字符数
-    CHAT_CONTEXT_SUMMARY_MAX_CHARS: int = 1200
+    # ===== 聊天上下文估算与裁剪参数 =====
+    # 可配置的预算项（窗口、预留、触发比例等）以 application.yaml 的 agent.closeai 为准，
+    # 冒号后的默认值即部署兜底，代码侧只保留以下估算与裁剪的固定参数
+    # 单条消息在对话模板中的固定开销，用于覆盖角色标记与分隔符
+    CHAT_CONTEXT_MESSAGE_OVERHEAD_TOKENS: int = 4
+    # 仅剩一轮时允许的最小 token 额度，避免预算极小导致上下文完全为空
+    CHAT_CONTEXT_MIN_ROUND_TOKENS: int = 64
+    # 非 CJK 字符按 4 字符 1 token 估算，CJK 字符按 1 字符 1 token 保守估算
+    CHAT_CONTEXT_NON_CJK_CHARS_PER_TOKEN: int = 4
+    # 内容被截断时追加的标记，便于模型感知上下文已裁剪
+    CHAT_CONTEXT_TRUNCATED_SUFFIX: str = "..."

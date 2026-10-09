@@ -48,12 +48,15 @@ class AiUserSummaryMapper:
         return record
 
     async def delete_by_user_id_async(self, db: AsyncSession, user_id: int) -> None:
-        """清空用户记忆摘要，与历史记录删除联动"""
+        """清空用户记忆摘要，与历史记录删除联动
+
+        只提交到会话，事务由调用方统一提交，便于与历史记录删除保持原子
+        """
         existing = await self.get_by_user_id_async(db, user_id)
         if existing is None:
             return
         await db.delete(existing)
-        await db.commit()
+        await db.flush()
 
 
 @lru_cache

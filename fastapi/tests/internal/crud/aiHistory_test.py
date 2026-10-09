@@ -44,6 +44,25 @@ class _FakeSession:
         return _FakeResult(self.rows)
 
 
+class _FakeDeleteSession(_FakeSession):
+    """覆盖删除路径的会话边界，记录删除、flush 与 commit 次数"""
+
+    def __init__(self, rows: list[Any]) -> None:
+        super().__init__(rows)
+        self.deleted: list[Any] = []
+        self.flushes = 0
+        self.commits = 0
+
+    async def delete(self, row: Any) -> None:
+        self.deleted.append(row)
+
+    async def flush(self) -> None:
+        self.flushes += 1
+
+    async def commit(self) -> None:
+        self.commits += 1
+
+
 # 指定 limit 时按时间倒序取最近记录，再反转为正序供上下文按旧到新拼接
 @pytest.mark.anyio
 async def test_recent_history_is_reversed_to_chronological_order() -> None:
@@ -82,3 +101,30 @@ async def test_history_after_watermark_is_reversed_to_chronological_order() -> N
     sql = str(session.statements[0])
     assert "DESC" in sql
     assert "LIMIT" in sql
+
+
+# 取水位线之后最早的一批记录时按 id 正序读取并限制条数
+@pytest.mark.anyio
+async def test_oldest_history_after_watermark_uses_ascending_order() -> None:
+    mapper = AiHistoryMapper()
+    session = _FakeSession([_FakeHistory(3), _FakeHistory(4)])
+
+    result = await mapper.get_oldest_ai_history_after_id_async(session, 7, 2, 2)
+
+    assert [row.id for row in result] == [3, 4]
+    sql = str(session.statements[0])
+    assert "ASC" in sql
+    assert "LIMIT" in sql
+
+
+# 按用户删除只落到会话并 flush，事务由调用方提交以保证与摘要删除原子
+@pytest.mark.anyio
+async def test_delete_by_userid_defers_commit_to_caller() -> None:
+    mapper = AiHistoryMapper()
+    session = _FakeDeleteSession([_FakeHistory(1), _FakeHistory(2)])
+
+    await mapper.delete_ai_history_by_userid_async(session, 7)
+
+    assert [row.id for row in session.deleted] == [1, 2]
+    assert session.flushes == 1
+    assert session.commits == 0

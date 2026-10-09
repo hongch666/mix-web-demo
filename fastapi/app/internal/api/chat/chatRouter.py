@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.common.decorators import log, requireInternalToken
 from app.common.middleware import get_current_user_id
+from app.core.auth import is_memory_user
 from app.core.base import (
     Logger,
     StreamFrameContext,
@@ -167,7 +168,7 @@ async def send_message(
         )
 
     # 保存AI历史记录，系统调用身份不写入记忆
-    if _is_memory_user(actual_user_id):
+    if is_memory_user(actual_user_id):
         history = AiHistory(
             user_id=int(actual_user_id),
             ask=request.message,
@@ -373,7 +374,7 @@ async def stream_message(
 
                 # 流式聊天完成后保存AI历史记录（在完成流式传输后）
                 # 系统调用身份不写入记忆，避免所有匿名请求共用同一个记忆桶
-                if message_acc and _is_memory_user(actual_user_id):
+                if message_acc and is_memory_user(actual_user_id):
                     history = AiHistory(
                         user_id=int(actual_user_id),
                         ask=request.message,
@@ -411,18 +412,6 @@ def _resolve_system_user_id() -> str:
     """身份缺失时返回系统调用身份，供允许匿名访问的聊天接口使用"""
     user_id: Optional[int] = get_current_user_id()
     return str(user_id) if user_id is not None else str(Defaults.SYSTEM_USER_ID)
-
-
-def _is_memory_user(actual_user_id: str) -> bool:
-    """判断是否为可承载记忆的真实用户
-
-    系统调用身份（userId 小于等于 0）不参与聊天记忆读写，
-    否则所有未登录请求会共用同一个记忆桶
-    """
-    try:
-        return int(actual_user_id) > 0
-    except (TypeError, ValueError):
-        return False
 
 
 def _resolve_model_info(service: AIServiceType) -> dict:

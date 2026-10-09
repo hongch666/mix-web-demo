@@ -117,15 +117,16 @@ agent:
     glm_model_name: ${CLOSEAI_GLM_MODEL:glm-5.3-flash} # GLM模型名称
     timeout: 30 # 请求超时时间（秒）
     agent_max_iterations: 20 # Agent 最大迭代轮数
-    context_window_tokens: 32768 # 模型上下文窗口，历史预算由窗口扣除提示词与预留后推导
-    context_output_reserve_tokens: 2048 # 为模型输出预留的 token 数
-    context_tool_reserve_tokens: 4000 # 为工具定义与 Agent 中间步骤预留的 token 数
-    context_compact_trigger_ratio: 0.8 # 历史占用达到预算的比例即触发 compact 压缩
-    context_keep_rounds: 4 # 最近保留原文的对话轮数，compact 时不折叠
-    context_candidate_rounds: 40 # 单次读取的未压缩候选历史轮数上限
-    context_safety_ratio: 1.2 # token 估算安全系数，用于保守裁剪
-    context_single_message_chars: 2000 # 单条历史消息进入上下文的最大字符数
-    context_summary_max_chars: 1200 # 用户级历史摘要的最大字符数
+    context_window_tokens: ${CHAT_CONTEXT_WINDOW_TOKENS:32768} # 模型上下文窗口，历史预算由窗口扣除提示词与预留后推导
+    context_output_reserve_tokens: ${CHAT_CONTEXT_OUTPUT_RESERVE_TOKENS:2048} # 为模型输出预留的 token 数
+    context_tool_reserve_tokens: ${CHAT_CONTEXT_TOOL_RESERVE_TOKENS:4000} # 为工具定义与 Agent 中间步骤预留的 token 数
+    context_compact_trigger_ratio: ${CHAT_CONTEXT_COMPACT_TRIGGER_RATIO:0.8} # 历史占用达到预算的比例即触发 compact 压缩
+    context_keep_rounds: ${CHAT_CONTEXT_KEEP_ROUNDS:4} # 最近保留原文的对话轮数，compact 时不折叠
+    context_candidate_rounds: ${CHAT_CONTEXT_CANDIDATE_ROUNDS:40} # 单次读取的未压缩候选历史轮数上限
+    context_safety_ratio: ${CHAT_CONTEXT_SAFETY_RATIO:1.2} # token 估算安全系数，用于保守裁剪
+    context_single_message_chars: ${CHAT_CONTEXT_SINGLE_MESSAGE_CHARS:2000} # 单条历史消息进入上下文的最大字符数
+    context_summary_max_chars: ${CHAT_CONTEXT_SUMMARY_MAX_CHARS:1200} # 用户级历史摘要的最大字符数
+    context_compact_input_chars: ${CHAT_CONTEXT_COMPACT_INPUT_CHARS:12000} # 单次记忆压缩折叠进提示词的最大字符数
   embedding:
     api_key: ${EMBEDDING_API_KEY:} # 嵌入模型 API Key
     embedding_model: ${EMBEDDING_MODEL:text-embedding-v3} # 嵌入模型名称

@@ -1,10 +1,9 @@
-from app.core.constants import Defaults
 from app.internal.services.llm.contextBudget import (
-    MIN_HISTORY_TOKENS,
     ChatHistoryItem,
     ContextBudgetConfig,
     estimate_tokens,
     plan_chat_context,
+    plan_compact_batch,
     trim_chat_history,
 )
 
@@ -21,6 +20,7 @@ def _budget(**overrides: object) -> ContextBudgetConfig:
         "safety_ratio": 1.0,
         "single_message_chars": 1000,
         "summary_max_chars": 500,
+        "compact_input_chars": 12000,
     }
     values.update(overrides)
     return ContextBudgetConfig(**values)  # type: ignore[arg-type]
@@ -51,8 +51,8 @@ def test_history_budget_subtracts_prompt_and_reserves() -> None:
     assert config.history_budget(500, use_tools=True) == 6500
 
 
-# 安全系数参与预算折算，估算值会被放大后判断
-def test_history_budget_applies_safety_ratio() -> None:
+# 预算按窗口扣除预留后原样返回，安全系数只在比较处折算，不做二次压缩
+def test_history_budget_returns_raw_estimate_without_safety_ratio() -> None:
     config = _budget(
         window_tokens=10000,
         output_reserve_tokens=1000,
@@ -60,14 +60,43 @@ def test_history_budget_applies_safety_ratio() -> None:
         safety_ratio=1.25,
     )
 
-    assert config.history_budget(500) == int((10000 - 1500) / 1.25)
+    assert config.history_budget(500) == 10000 - 1000 - 500
 
 
-# 预留超过窗口时回退到最小值，不出现负预算
-def test_history_budget_never_goes_below_minimum() -> None:
+# 安全系数在裁剪比较处生效一次，估算值放大后决定可注入的轮次
+def test_trim_chat_history_applies_safety_ratio_once() -> None:
+    history = _rounds(6)
+
+    without_safety = trim_chat_history(
+        history, _budget(safety_ratio=1.0, keep_rounds=1), 294
+    )
+    with_safety = trim_chat_history(
+        history, _budget(safety_ratio=1.2, keep_rounds=1), 294
+    )
+
+    # 每轮约 49 tokens：预算 294 在放大 1.2 倍后只剩 5 轮的额度
+    assert len(without_safety.history) == 6
+    assert len(with_safety.history) == 5
+
+
+# 预留超过窗口时返回 0，不出现负预算
+def test_history_budget_returns_zero_when_window_exhausted() -> None:
     config = _budget(window_tokens=100, output_reserve_tokens=1000, safety_ratio=1.0)
 
-    assert config.history_budget(0) == MIN_HISTORY_TOKENS
+    assert config.history_budget(0) == 0
+
+
+# 预算为 0 时不注入摘要与历史，也不产生压缩对象
+def test_plan_chat_context_returns_empty_plan_when_budget_exhausted() -> None:
+    config = _budget(window_tokens=100, output_reserve_tokens=1000)
+
+    plan = plan_chat_context("已存摘要", _rounds(5), config, prompt_tokens=0)
+
+    assert plan.summary == ""
+    assert plan.history == []
+    assert plan.compact_targets == []
+    assert plan.should_compact is False
+    assert plan.budget_tokens == 0
 
 
 # 空历史直接返回空结果，不做任何预算计算
@@ -198,8 +227,58 @@ def test_plan_chat_context_summary_consumes_budget() -> None:
     assert plan.budget_tokens == 400
 
 
-# agent 配置缺失或非法时预算回退默认值，候选轮数不小于保留轮数
+# ===== 记忆压缩批次 =====
+
+
+# 折叠内容按单次输入上限收敛，未纳入批次的记录留待下一轮
+def test_plan_compact_batch_limits_input_by_chars() -> None:
+    items = [(index, f"问{index}", "答" * 100) for index in range(1, 6)]
+    config = _budget(compact_input_chars=250)
+
+    batch = plan_compact_batch(items, config)
+
+    # 每轮 102 字，上限 250 只能容纳最早的两轮
+    assert batch.count == 2
+    assert batch.last_id == 2
+    assert [ask for ask, _reply in batch.rounds] == ["问1", "问2"]
+
+
+# 单条超过字符上限时先截断，压缩输入不会因单条超长而失控
+def test_plan_compact_batch_truncates_single_message() -> None:
+    items = [(1, "问题", "答" * 500)]
+
+    batch = plan_compact_batch(
+        items, _budget(compact_input_chars=10000, single_message_chars=50)
+    )
+
+    assert batch.count == 1
+    reply = batch.rounds[0][1]
+    assert len(reply) == 50
+    assert reply.endswith("...")
+
+
+# 至少折叠一轮，输入上限小于单轮长度时压缩仍能推进
+def test_plan_compact_batch_keeps_first_round_when_limit_too_small() -> None:
+    items = [(1, "问题", "答" * 100), (2, "问题", "答" * 100)]
+
+    batch = plan_compact_batch(items, _budget(compact_input_chars=10))
+
+    assert batch.count == 1
+    assert batch.last_id == 1
+
+
+# 无可折叠内容时返回空批次，水位线不推进
+def test_plan_compact_batch_returns_empty_for_no_items() -> None:
+    batch = plan_compact_batch([], _budget())
+
+    assert batch.rounds == []
+    assert batch.count == 0
+    assert batch.last_id == 0
+
+
+# agent 配置缺失或非法时预算回退字段默认值，候选轮数不小于保留轮数
 def test_context_budget_config_falls_back_to_defaults() -> None:
+    defaults = ContextBudgetConfig()
     config = ContextBudgetConfig.from_agent_config(
         {
             "context_window_tokens": "非法值",
@@ -208,15 +287,17 @@ def test_context_budget_config_falls_back_to_defaults() -> None:
             "context_compact_trigger_ratio": 2,
             "context_safety_ratio": -1,
             "context_single_message_chars": None,
+            "context_compact_input_chars": 0,
         }
     )
 
-    assert config.window_tokens == Defaults.CHAT_CONTEXT_WINDOW_TOKENS
-    assert config.keep_rounds == Defaults.CHAT_CONTEXT_KEEP_ROUNDS
-    assert config.candidate_rounds == Defaults.CHAT_CONTEXT_KEEP_ROUNDS
-    assert config.compact_trigger_ratio == Defaults.CHAT_CONTEXT_COMPACT_TRIGGER_RATIO
-    assert config.safety_ratio == Defaults.CHAT_CONTEXT_SAFETY_RATIO
-    assert config.single_message_chars == Defaults.CHAT_CONTEXT_SINGLE_MESSAGE_CHARS
+    assert config.window_tokens == defaults.window_tokens
+    assert config.keep_rounds == defaults.keep_rounds
+    assert config.candidate_rounds == defaults.keep_rounds
+    assert config.compact_trigger_ratio == defaults.compact_trigger_ratio
+    assert config.safety_ratio == defaults.safety_ratio
+    assert config.single_message_chars == defaults.single_message_chars
+    assert config.compact_input_chars == defaults.compact_input_chars
 
 
 # agent 配置合法时按配置构建预算，字符串数值同样可解析
@@ -232,6 +313,7 @@ def test_context_budget_config_reads_agent_config() -> None:
             "context_safety_ratio": "1.5",
             "context_single_message_chars": "800",
             "context_summary_max_chars": "600",
+            "context_compact_input_chars": "9000",
         }
     )
 
@@ -244,3 +326,4 @@ def test_context_budget_config_reads_agent_config() -> None:
     assert config.safety_ratio == 1.5
     assert config.single_message_chars == 800
     assert config.summary_max_chars == 600
+    assert config.compact_input_chars == 9000

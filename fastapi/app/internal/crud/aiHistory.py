@@ -64,14 +64,34 @@ class AiHistoryMapper:
         recent_histories.reverse()
         return recent_histories
 
+    async def get_oldest_ai_history_after_id_async(
+        self, db: AsyncSession, user_id: int, after_id: int, limit: int
+    ) -> list[AiHistory]:
+        """取压缩水位线之后最早的若干条历史记录
+
+        正向读取水位线之后最旧的一批，供候选上限跳过的更早记录补进摘要，
+        与取最近一批的 get_ai_history_after_id_async 互补
+        """
+        statement = (
+            select(AiHistory)
+            .where(AiHistory.user_id == user_id, AiHistory.id > after_id)
+            .order_by(AiHistory.id.asc())
+            .limit(limit)
+        )
+        return list((await db.execute(statement)).scalars().all())
+
     async def delete_ai_history_by_userid_async(
         self, db: AsyncSession, user_id: int
     ) -> None:
+        """按用户删除历史记录
+
+        只提交到会话，事务由调用方统一提交，便于与记忆摘要删除保持原子
+        """
         statement = select(AiHistory).where(AiHistory.user_id == user_id)
         histories = (await db.execute(statement)).scalars().all()
         for history in histories:
             await db.delete(history)
-        await db.commit()
+        await db.flush()
 
     async def get_ai_history_by_id_async(
         self, db: AsyncSession, id: int

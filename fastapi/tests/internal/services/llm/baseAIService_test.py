@@ -375,6 +375,7 @@ def _wide_budget(**overrides: object) -> ContextBudgetConfig:
         "safety_ratio": 1.0,
         "single_message_chars": 1000,
         "summary_max_chars": 500,
+        "compact_input_chars": 12000,
     }
     values.update(overrides)
     return ContextBudgetConfig(**values)  # type: ignore[arg-type]
@@ -427,6 +428,8 @@ async def test_load_chat_memory_compacts_and_persists_watermark() -> None:
             _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
         ]
     )
+    # 候选轮数与记录数相同，命中上限时会额外读取水位线之后最早的一批
+    mapper.get_oldest_ai_history_after_id_async = AsyncMock(return_value=[])
     service = _make_service(
         ai_history_mapper=mapper,
         llm=_FakeStreamingLLM(invoke_result=_FakeResponse("合并摘要")),
@@ -445,6 +448,7 @@ async def test_load_chat_memory_compacts_and_persists_watermark() -> None:
         ("q5", "答" * 40),
         ("q6", "答" * 40),
     ]
+    mapper.get_oldest_ai_history_after_id_async.assert_awaited_once_with(db, 7, 0, 6)
     upsert_args = service.ai_summary_mapper.upsert_async.await_args.args
     assert upsert_args[0] is db
     assert upsert_args[1] == 7
@@ -452,6 +456,122 @@ async def test_load_chat_memory_compacts_and_persists_watermark() -> None:
     # q1 与 q2 被折叠，水位线停在第 2 条记录
     assert upsert_args[3] == 2
     assert upsert_args[4] == 2
+
+
+# 命中候选上限时，水位线与最近记录之间被跳过的更早记录一并补进摘要
+@pytest.mark.anyio
+async def test_load_chat_memory_folds_records_skipped_by_candidate_limit() -> None:
+    mapper = MagicMock()
+    mapper.get_ai_history_after_id_async = AsyncMock(
+        return_value=[
+            _FakeHistory(5, "q5", "答" * 40),
+            _FakeHistory(6, "q6", "答" * 40),
+        ]
+    )
+    # 最早的一批里 id 5 与最近记录重叠，只有 id 3、4 属于被候选上限跳过的部分
+    mapper.get_oldest_ai_history_after_id_async = AsyncMock(
+        return_value=[
+            _FakeHistory(3, "q3", "答" * 40),
+            _FakeHistory(4, "q4", "答" * 40),
+            _FakeHistory(5, "q5", "答" * 40),
+        ]
+    )
+    llm = _FakeStreamingLLM(invoke_result=_FakeResponse("合并摘要"))
+    service = _make_service(
+        ai_history_mapper=mapper,
+        llm=llm,
+        _context_budget=_wide_budget(
+            window_tokens=60, keep_rounds=1, candidate_rounds=2
+        ),
+    )
+
+    summary, history = await service._load_chat_memory(
+        7, "问题", "系统提示", MagicMock(), True
+    )
+
+    assert summary == "合并摘要"
+    assert history == [("q6", "答" * 40)]
+    # 跳过部分与窗口之外的 q5 一起折叠，水位线推进到 q5
+    prompt = llm.invoke_calls[0]["messages"][1].content
+    assert "q3" in prompt
+    assert "q4" in prompt
+    assert "q5" in prompt
+    upsert_args = service.ai_summary_mapper.upsert_async.await_args.args
+    assert upsert_args[3] == 5
+    assert upsert_args[4] == 3
+
+
+# 折叠内容超过单次输入上限时只折叠最早的一批，其余留待下一轮
+@pytest.mark.anyio
+async def test_load_chat_memory_splits_compaction_by_input_limit() -> None:
+    mapper = MagicMock()
+    mapper.get_ai_history_after_id_async = AsyncMock(
+        return_value=[
+            _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
+        ]
+    )
+    llm = _FakeStreamingLLM(invoke_result=_FakeResponse("合并摘要"))
+    service = _make_service(
+        ai_history_mapper=mapper,
+        llm=llm,
+        _context_budget=_wide_budget(
+            window_tokens=120,
+            keep_rounds=1,
+            candidate_rounds=6,
+            compact_input_chars=100,
+        ),
+    )
+
+    summary, history = await service._load_chat_memory(
+        7, "问题", "系统提示", MagicMock(), True
+    )
+
+    assert summary == "合并摘要"
+    # q1 到 q4 都超出窗口，但单次输入上限只容纳前两轮
+    assert history == [("q5", "答" * 40), ("q6", "答" * 40)]
+    prompt = llm.invoke_calls[0]["messages"][1].content
+    assert "q1" in prompt
+    assert "q2" in prompt
+    assert "q3" not in prompt
+    upsert_args = service.ai_summary_mapper.upsert_async.await_args.args
+    assert upsert_args[3] == 2
+    assert upsert_args[4] == 2
+
+
+# 压缩调用沿用调用方配置并单独命名，调用方持有的配置不被改写
+@pytest.mark.anyio
+async def test_load_chat_memory_passes_runnable_config_to_compaction() -> None:
+    mapper = MagicMock()
+    mapper.get_ai_history_after_id_async = AsyncMock(
+        return_value=[
+            _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
+        ]
+    )
+    mapper.get_oldest_ai_history_after_id_async = AsyncMock(return_value=[])
+    llm = _FakeStreamingLLM(invoke_result=_FakeResponse("合并摘要"))
+    service = _make_service(
+        ai_history_mapper=mapper,
+        llm=llm,
+        _context_budget=_wide_budget(
+            window_tokens=220, keep_rounds=2, candidate_rounds=6
+        ),
+    )
+    runnable_config: dict = {
+        "run_name": "chat.direct",
+        "metadata": {"intent": "general_chat"},
+    }
+
+    await service._load_chat_memory(
+        7, "问题", "系统提示", MagicMock(), True, runnable_config
+    )
+
+    compact_config = llm.invoke_calls[0]["config"]
+    assert compact_config["run_name"] == "chat.memory.compact"
+    assert compact_config["metadata"]["intent"] == "general_chat"
+    # 窗口保留最近 4 轮，本轮折叠窗口之外的 2 轮
+    assert compact_config["metadata"]["memory_compact_rounds"] == 2
+    assert runnable_config["run_name"] == "chat.direct"
+    assert "memory_compact_rounds" not in runnable_config["metadata"]
 
 
 # 压缩失败时保留原摘要且不推进水位线，下一轮可重新尝试
@@ -463,6 +583,7 @@ async def test_load_chat_memory_keeps_summary_when_compaction_fails() -> None:
             _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
         ]
     )
+    mapper.get_oldest_ai_history_after_id_async = AsyncMock(return_value=[])
     service = _make_service(
         ai_history_mapper=mapper,
         llm=_FakeStreamingLLM(invoke_error=RuntimeError("model down")),
@@ -503,14 +624,91 @@ async def test_load_chat_memory_degrades_when_history_query_fails() -> None:
     assert history == []
 
 
-# 系统调用身份不参与记忆读写，只有真实用户才加载聊天历史
-def test_is_memory_user_id_rejects_system_identity() -> None:
+# 窗口被提示词与预留占满时本轮不注入历史也不压缩，优先保证请求可用
+@pytest.mark.anyio
+async def test_load_chat_memory_skips_history_when_budget_exhausted() -> None:
+    mapper = AsyncMock()
+    mapper.get_ai_history_after_id_async.return_value = [_FakeHistory(1, "q1", "a1")]
+    llm = _FakeStreamingLLM(invoke_result=_FakeResponse("合并摘要"))
+    service = _make_service(
+        ai_history_mapper=mapper,
+        llm=llm,
+        _context_budget=_wide_budget(window_tokens=10, output_reserve_tokens=100),
+    )
+    service.ai_summary_mapper.get_by_user_id_async = AsyncMock(
+        return_value=_FakeSummary("已存摘要", watermark=0, count=0)
+    )
+
+    summary, history = await service._load_chat_memory(
+        7, "问题", "系统提示", MagicMock(), True
+    )
+
+    assert summary == ""
+    assert history == []
+    assert llm.invoke_calls == []
+    service.ai_summary_mapper.upsert_async.assert_not_awaited()
+
+
+# 摘要超出长度上限时不落库，保留旧摘要并保持水位线等待下一轮
+@pytest.mark.anyio
+async def test_load_chat_memory_keeps_old_summary_when_new_summary_too_long() -> None:
+    mapper = AsyncMock()
+    mapper.get_ai_history_after_id_async.return_value = [
+        _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
+    ]
+    mapper.get_oldest_ai_history_after_id_async.return_value = []
+    service = _make_service(
+        ai_history_mapper=mapper,
+        llm=_FakeStreamingLLM(invoke_result=_FakeResponse("摘" * 30)),
+        _context_budget=_wide_budget(
+            window_tokens=220, keep_rounds=2, candidate_rounds=6, summary_max_chars=10
+        ),
+    )
+    service.ai_summary_mapper.get_by_user_id_async = AsyncMock(
+        return_value=_FakeSummary("旧摘要", watermark=1, count=1)
+    )
+
+    summary, history = await service._load_chat_memory(
+        7, "问题", "系统提示", MagicMock(), True
+    )
+
+    assert summary == "旧摘要"
+    assert history[-1] == ("q6", "答" * 40)
+    service.ai_summary_mapper.upsert_async.assert_not_awaited()
+
+
+# ===== 直连对话消息组装 =====
+
+
+# 真实用户的直连消息带上摘要与历史原文，顺序为系统消息、历史、本轮提问
+@pytest.mark.anyio
+async def test_build_direct_messages_loads_memory_for_real_user() -> None:
+    mapper = AsyncMock()
+    mapper.get_ai_history_after_id_async.return_value = [_FakeHistory(1, "q1", "a1")]
+    service = _make_service(ai_history_mapper=mapper, _context_budget=_wide_budget())
+    service.ai_summary_mapper.get_by_user_id_async = AsyncMock(
+        return_value=_FakeSummary("已存摘要", watermark=0, count=0)
+    )
+
+    messages = await service._build_direct_messages("问题", 7, MagicMock())
+
+    assert messages[0].content.startswith(Messages.GENERIC_CHAT_MESSAGE)
+    assert "已存摘要" in messages[0].content
+    assert [item.content for item in messages[1:]] == ["q1", "a1", "问题"]
+
+
+# 系统身份的直连消息只带系统提示与本轮提问，不读取记忆
+@pytest.mark.anyio
+async def test_build_direct_messages_skips_memory_for_system_identity() -> None:
     service = _make_service()
 
-    assert service._is_memory_user_id(7) is True
-    assert service._is_memory_user_id(0) is False
-    assert service._is_memory_user_id(-1) is False
-    assert service._is_memory_user_id(None) is False
+    messages = await service._build_direct_messages("问题", -1, MagicMock())
+
+    assert [item.content for item in messages] == [
+        Messages.GENERIC_CHAT_MESSAGE,
+        "问题",
+    ]
+    service.ai_summary_mapper.get_by_user_id_async.assert_not_awaited()
 
 
 # ===== 基础对话接口 =====
@@ -575,14 +773,40 @@ async def test_summarize_content_returns_initialization_error_without_llm() -> N
 # ===== simple_chat =====
 
 
-# 无 agent 时简单对话退化为基础对话且仅调用一次
+# Agent 不可用时简单对话降级为直连对话，与流式路径一致地带上历史记忆
 @pytest.mark.anyio
-async def test_simple_chat_falls_back_to_basic_chat_without_agent() -> None:
+async def test_simple_chat_falls_back_to_direct_chat_without_agent() -> None:
+    llm = _FakeStreamingLLM(invoke_result=_FakeResponse("直答"))
+    mapper = AsyncMock()
+    mapper.get_ai_history_after_id_async.return_value = [_FakeHistory(1, "q1", "a1")]
+    service = _make_service(
+        llm=llm, ai_history_mapper=mapper, _context_budget=_wide_budget()
+    )
+
+    assert await service.simple_chat("问题", user_id=7, db=MagicMock()) == "直答"
+
+    assert len(llm.invoke_calls) == 1
+    assert llm.invoke_calls[0]["config"]["run_name"] == "chat.direct"
+    # 降级路径同样按预算注入历史，不再绕开记忆
+    assert [item.content for item in llm.invoke_calls[0]["messages"][1:]] == [
+        "q1",
+        "a1",
+        "问题",
+    ]
+
+
+# 未登录身份降级为直连对话时不读取记忆，只下发系统提示与本轮提问
+@pytest.mark.anyio
+async def test_simple_chat_falls_back_without_memory_for_system_identity() -> None:
     llm = _FakeStreamingLLM(invoke_result=_FakeResponse("直答"))
     service = _make_service(llm=llm)
 
     assert await service.simple_chat("问题") == "直答"
-    assert len(llm.invoke_calls) == 1
+
+    assert [item.content for item in llm.invoke_calls[0]["messages"]] == [
+        Messages.GENERIC_CHAT_MESSAGE,
+        "问题",
+    ]
 
 
 # 通用意图走直连对话，run_name 为 chat.direct 并携带意图元数据

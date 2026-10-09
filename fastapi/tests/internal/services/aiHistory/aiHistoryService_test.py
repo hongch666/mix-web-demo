@@ -162,18 +162,36 @@ async def test_delete_by_userid_raises_when_user_missing() -> None:
     mapper.delete_ai_history_by_userid_async.assert_not_awaited()
 
 
-# 用户存在时按 user_id 委托 mapper 删除，并联动清空记忆摘要
+# 用户存在时按 user_id 委托 mapper 删除，并联动清空记忆摘要后统一提交
 @pytest.mark.anyio
 async def test_delete_by_userid_delegates_when_user_exists() -> None:
     service, mapper, spring, summary_mapper = _make_service_with_summary()
     spring.get_users_by_ids.return_value = [{"id": 7}]
-    db = Mock()
+    db = AsyncMock()
 
     await service.delete_ai_history_by_userid(7, db)
 
     spring.get_users_by_ids.assert_awaited_once_with([7])
     mapper.delete_ai_history_by_userid_async.assert_awaited_once_with(db, 7)
     summary_mapper.delete_by_user_id_async.assert_awaited_once_with(db, 7)
+    db.commit.assert_awaited_once_with()
+    db.rollback.assert_not_awaited()
+
+
+# 摘要删除失败时整体回滚且不提交，避免出现历史已清空但记忆仍在
+@pytest.mark.anyio
+async def test_delete_by_userid_rolls_back_when_summary_delete_fails() -> None:
+    service, mapper, spring, summary_mapper = _make_service_with_summary()
+    spring.get_users_by_ids.return_value = [{"id": 7}]
+    summary_mapper.delete_by_user_id_async.side_effect = RuntimeError("db down")
+    db = AsyncMock()
+
+    with pytest.raises(RuntimeError):
+        await service.delete_ai_history_by_userid(7, db)
+
+    mapper.delete_ai_history_by_userid_async.assert_awaited_once_with(db, 7)
+    db.commit.assert_not_awaited()
+    db.rollback.assert_awaited_once_with()
 
 
 # 记录不存在时返回 None

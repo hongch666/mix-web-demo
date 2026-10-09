@@ -62,9 +62,14 @@ class AiHistoryService:
                 Messages.ERROR_USER_NOT_FOUND,
             )
 
-        await self.ai_history_mapper.delete_ai_history_by_userid_async(db, user_id)
-        # 摘要与原文必须同步清理，否则会出现用户已清空历史但记忆仍在的情况
-        await self._ai_user_summary_mapper.delete_by_user_id_async(db, user_id)
+        # 摘要与原文必须同步清理，否则会出现用户已清空历史但记忆仍在的情况，两次删除放入同一事务，任一失败整体回滚
+        try:
+            await self.ai_history_mapper.delete_ai_history_by_userid_async(db, user_id)
+            await self._ai_user_summary_mapper.delete_by_user_id_async(db, user_id)
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         Logger.info(Messages.AI_MEMORY_SUMMARY_CLEARED(user_id))
 
     async def get_ai_history_by_id(self, id: int, db: Any) -> Optional[dict[str, Any]]:

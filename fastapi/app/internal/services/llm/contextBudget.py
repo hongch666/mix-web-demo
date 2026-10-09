@@ -7,98 +7,96 @@ from app.core.constants import Defaults
 # 历史对话的一轮记录，格式为 (用户提问, AI 回复)
 ChatHistoryItem = tuple[str, str]
 
-# 单条消息在对话模板中的固定开销，用于覆盖角色标记与分隔符
-MESSAGE_OVERHEAD_TOKENS: int = 4
-# 仅剩一轮时允许的最小 token 额度，避免预算极小导致上下文完全为空
-MIN_ROUND_TOKENS: int = 64
-# 历史预算的下限，避免窗口扣除提示词后出现负预算
-MIN_HISTORY_TOKENS: int = 512
-# 非 CJK 字符按 4 字符 1 token 估算，CJK 字符按 1 字符 1 token 保守估算
-NON_CJK_CHARS_PER_TOKEN: int = 4
-# 内容被截断时追加的标记，便于模型感知上下文已裁剪
-TRUNCATED_SUFFIX: str = "..."
-
 
 @dataclass(frozen=True)
 class ContextBudgetConfig:
     """聊天上下文预算配置
 
-    历史预算不单独配置，由模型窗口扣除系统提示词、用户提示词与各项预留后推导
+    历史预算不单独配置，由模型窗口扣除系统提示词、用户提示词与各项预留后推导；
+    字段默认值只覆盖「配置缺失或非法」的情况，生产取值以 application.yaml 的
+    agent.closeai 段为准（冒号后的默认值即部署兜底），两处调整需保持同步
     """
 
-    window_tokens: int = Defaults.CHAT_CONTEXT_WINDOW_TOKENS
-    output_reserve_tokens: int = Defaults.CHAT_CONTEXT_OUTPUT_RESERVE_TOKENS
-    tool_reserve_tokens: int = Defaults.CHAT_CONTEXT_TOOL_RESERVE_TOKENS
-    compact_trigger_ratio: float = Defaults.CHAT_CONTEXT_COMPACT_TRIGGER_RATIO
-    keep_rounds: int = Defaults.CHAT_CONTEXT_KEEP_ROUNDS
-    candidate_rounds: int = Defaults.CHAT_CONTEXT_CANDIDATE_ROUNDS
-    safety_ratio: float = Defaults.CHAT_CONTEXT_SAFETY_RATIO
-    single_message_chars: int = Defaults.CHAT_CONTEXT_SINGLE_MESSAGE_CHARS
-    summary_max_chars: int = Defaults.CHAT_CONTEXT_SUMMARY_MAX_CHARS
+    window_tokens: int = 32768
+    output_reserve_tokens: int = 2048
+    tool_reserve_tokens: int = 4000
+    compact_trigger_ratio: float = 0.8
+    keep_rounds: int = 4
+    candidate_rounds: int = 40
+    safety_ratio: float = 1.2
+    single_message_chars: int = 2000
+    summary_max_chars: int = 1200
+    compact_input_chars: int = 12000
 
     @classmethod
     def from_agent_config(cls, service_cfg: dict[str, Any]) -> "ContextBudgetConfig":
-        """从 agent 配置构建预算，缺失或非法时回退到默认值"""
+        """从 agent 配置构建预算，缺失或非法时回退到字段默认值"""
+        defaults = cls()
         keep_rounds = _positive_int(
             service_cfg.get("context_keep_rounds"),
-            Defaults.CHAT_CONTEXT_KEEP_ROUNDS,
+            defaults.keep_rounds,
         )
         candidate_rounds = _positive_int(
             service_cfg.get("context_candidate_rounds"),
-            Defaults.CHAT_CONTEXT_CANDIDATE_ROUNDS,
+            defaults.candidate_rounds,
         )
         return cls(
             window_tokens=_positive_int(
                 service_cfg.get("context_window_tokens"),
-                Defaults.CHAT_CONTEXT_WINDOW_TOKENS,
+                defaults.window_tokens,
             ),
             output_reserve_tokens=_positive_int(
                 service_cfg.get("context_output_reserve_tokens"),
-                Defaults.CHAT_CONTEXT_OUTPUT_RESERVE_TOKENS,
+                defaults.output_reserve_tokens,
             ),
             tool_reserve_tokens=_positive_int(
                 service_cfg.get("context_tool_reserve_tokens"),
-                Defaults.CHAT_CONTEXT_TOOL_RESERVE_TOKENS,
+                defaults.tool_reserve_tokens,
             ),
             compact_trigger_ratio=_ratio(
                 service_cfg.get("context_compact_trigger_ratio"),
-                Defaults.CHAT_CONTEXT_COMPACT_TRIGGER_RATIO,
+                defaults.compact_trigger_ratio,
             ),
             keep_rounds=keep_rounds,
             # 候选轮数必须不小于保留轮数，否则保留窗口取不到足够的历史
             candidate_rounds=max(candidate_rounds, keep_rounds),
             safety_ratio=_positive_float(
                 service_cfg.get("context_safety_ratio"),
-                Defaults.CHAT_CONTEXT_SAFETY_RATIO,
+                defaults.safety_ratio,
             ),
             single_message_chars=_positive_int(
                 service_cfg.get("context_single_message_chars"),
-                Defaults.CHAT_CONTEXT_SINGLE_MESSAGE_CHARS,
+                defaults.single_message_chars,
             ),
             summary_max_chars=_positive_int(
                 service_cfg.get("context_summary_max_chars"),
-                Defaults.CHAT_CONTEXT_SUMMARY_MAX_CHARS,
+                defaults.summary_max_chars,
+            ),
+            compact_input_chars=_positive_int(
+                service_cfg.get("context_compact_input_chars"),
+                defaults.compact_input_chars,
             ),
         )
 
     def history_budget(self, prompt_tokens: int, use_tools: bool = False) -> int:
         """按模型窗口扣除提示词与预留，得到历史可用的 token 预算
 
+        返回的是原始估算预算，安全系数只在比较处由 _budgeted_tokens 放大一次，
+        避免预算与判断两侧同时折算导致实际可用额度被压缩两次；
+        窗口被提示词与预留占满时返回 0，表示本轮不能再注入历史
+
         Args:
             prompt_tokens: 系统提示词与用户提示词的估算 token 数
             use_tools: 是否走带工具的 Agent 路径，该路径需要额外的工具预留
 
         Returns:
-            int: 历史可用的估算 token 预算，已扣除安全系数
+            int: 历史可用的估算 token 预算，窗口不足时为 0
         """
         reserved = prompt_tokens + self.output_reserve_tokens
         if use_tools:
             reserved += self.tool_reserve_tokens
-        available = int((self.window_tokens - reserved) / max(self.safety_ratio, 1.0))
-        # 仅当窗口被提示词与预留占满时才回退到下限，正常预算按实际值生效
-        if available <= 0:
-            return MIN_HISTORY_TOKENS
-        return available
+        # 负预算按 0 返回，交由调用方决定降级方式
+        return max(self.window_tokens - reserved, 0)
 
 
 @dataclass(frozen=True)
@@ -131,6 +129,50 @@ class ContextPlan:
         return bool(self.compact_targets)
 
 
+@dataclass(frozen=True)
+class CompactBatch:
+    """单次记忆压缩的输入批次"""
+
+    # 已按字符上限收敛的折叠内容，按旧到新排列
+    rounds: list[ChatHistoryItem]
+    # 批次中最后一条历史记录的 id，压缩成功后作为新水位线
+    last_id: int
+    # 本批次折叠的轮数
+    count: int
+
+
+def plan_compact_batch(
+    items: list[tuple[int, str, str]], config: ContextBudgetConfig
+) -> CompactBatch:
+    """从待折叠记录中取出单次压缩可容纳的最长前缀
+
+    折叠内容会连同既有摘要一起进入模型，因此单条按 single_message_chars 收敛、
+    整体按 compact_input_chars 收敛，避免压缩请求自身超出模型窗口而必然失败；
+    未纳入批次的记录保留在原表中，下一轮仍在水位线之后，可继续折叠
+
+    Args:
+        items: 待折叠记录，元素为 (历史记录 id, 提问, 回复)，按旧到新排列
+        config: 上下文预算配置
+
+    Returns:
+        CompactBatch: 折叠内容、新水位线与折叠轮数，无可折叠内容时 rounds 为空
+    """
+    rounds: list[ChatHistoryItem] = []
+    used_chars = 0
+    last_id = 0
+    for history_id, ask, reply in items:
+        normalized = _truncate_round((ask, reply), config.single_message_chars)
+        round_chars = len(normalized[0]) + len(normalized[1])
+        # 至少折叠一轮，避免输入上限小于单轮长度时压缩永远无法推进
+        if rounds and used_chars + round_chars > config.compact_input_chars:
+            break
+        rounds.append(normalized)
+        used_chars += round_chars
+        last_id = history_id
+
+    return CompactBatch(rounds=rounds, last_id=last_id, count=len(rounds))
+
+
 def estimate_tokens(text: str) -> int:
     """估算文本的 token 数
 
@@ -141,7 +183,9 @@ def estimate_tokens(text: str) -> int:
         return 0
     cjk_chars = sum(1 for char in text if _is_cjk(char))
     other_chars = len(text) - cjk_chars
-    return cjk_chars + math.ceil(other_chars / NON_CJK_CHARS_PER_TOKEN)
+    return cjk_chars + math.ceil(
+        other_chars / Defaults.CHAT_CONTEXT_NON_CJK_CHARS_PER_TOKEN
+    )
 
 
 def plan_chat_context(
@@ -169,8 +213,20 @@ def plan_chat_context(
     summary_text = summary.strip()
     summary_tokens = _summary_tokens(summary_text)
     budget_tokens = config.history_budget(prompt_tokens, use_tools)
+    if budget_tokens <= 0:
+        # 窗口已被提示词与预留占满，本轮不注入摘要与历史，也不触发压缩
+        return ContextPlan(
+            summary="",
+            history=[],
+            compact_targets=[],
+            budget_tokens=0,
+            estimated_tokens=0,
+        )
+
     # 摘要优先占用预算，剩余部分留给原文轮次，至少保留一轮的额度
-    history_budget = max(budget_tokens - summary_tokens, MIN_ROUND_TOKENS)
+    history_budget = max(
+        budget_tokens - summary_tokens, Defaults.CHAT_CONTEXT_MIN_ROUND_TOKENS
+    )
 
     trimmed = trim_chat_history(history, config, history_budget)
     window = trimmed.history
@@ -184,7 +240,8 @@ def plan_chat_context(
     if foldable_rounds:
         compact_targets = foldable_rounds
     elif near_limit and len(window) > config.keep_rounds:
-        # 尚未溢出但已接近预算，提前折叠保留窗口之外的轮次
+        # 尚未溢出但已接近预算，提前折叠保留窗口之外的轮次；
+        # 这些轮次本轮仍在注入窗口内，会与本轮生成的摘要重复一次，下一轮水位线生效后消失
         compact_targets = history[: len(history) - config.keep_rounds]
     else:
         compact_targets = []
@@ -283,13 +340,15 @@ def _summary_tokens(summary: str) -> int:
     """统计摘要占用的 token，含固定消息开销"""
     if not summary:
         return 0
-    return estimate_tokens(summary) + MESSAGE_OVERHEAD_TOKENS * 2
+    return estimate_tokens(summary) + Defaults.CHAT_CONTEXT_MESSAGE_OVERHEAD_TOKENS * 2
 
 
 def _rounds_tokens(rounds: list[ChatHistoryItem]) -> int:
     """统计若干轮对话的 token 估算总量"""
     return sum(
-        estimate_tokens(ask) + estimate_tokens(reply) + MESSAGE_OVERHEAD_TOKENS * 2
+        estimate_tokens(ask)
+        + estimate_tokens(reply)
+        + Defaults.CHAT_CONTEXT_MESSAGE_OVERHEAD_TOKENS * 2
         for ask, reply in rounds
     )
 
@@ -316,8 +375,9 @@ def _truncate_text(text: str, max_chars: int) -> str:
         return ""
     if len(text) <= max_chars:
         return text
-    keep_chars = max(max_chars - len(TRUNCATED_SUFFIX), 0)
-    return text[:keep_chars] + TRUNCATED_SUFFIX
+    suffix = Defaults.CHAT_CONTEXT_TRUNCATED_SUFFIX
+    keep_chars = max(max_chars - len(suffix), 0)
+    return text[:keep_chars] + suffix
 
 
 def _fit_round_to_budget(
@@ -329,8 +389,9 @@ def _fit_round_to_budget(
     """
     safe_ratio = max(config.safety_ratio, 1.0)
     allowed_chars = max(
-        int(max_tokens / safe_ratio) - MESSAGE_OVERHEAD_TOKENS * 2,
-        MIN_ROUND_TOKENS,
+        int(max_tokens / safe_ratio)
+        - Defaults.CHAT_CONTEXT_MESSAGE_OVERHEAD_TOKENS * 2,
+        Defaults.CHAT_CONTEXT_MIN_ROUND_TOKENS,
     )
     ask, reply = item
     truncated_ask = _truncate_text(ask, allowed_chars)

@@ -238,10 +238,6 @@ class Messages:
     def AI_MEMORY_SUMMARY_CLEARED(user_id: int) -> str:
         return f"已清空用户记忆摘要: user_id={user_id}"
 
-    CHAT_MEMORY_EMPTY_SUMMARY: str = "无"
-
-    CHAT_MEMORY_COMPACT_EMPTY_RESULT: str = "历史记忆压缩结果为空"
-
     @staticmethod
     def STREAM_CHUNK_RECEIVED(chunk_type: str, content_length: int) -> str:
         return f"流式块类型: {chunk_type}, 块内容长度: {content_length}"
@@ -351,8 +347,25 @@ class Messages:
     @staticmethod
     def LLM_CHAT_MEMORY_CANDIDATE_LIMIT_REACHED(service_name: str, limit: int) -> str:
         return (
-            f"{service_name} 未压缩历史达到候选上限 {limit} 轮，"
-            f"最旧的部分本轮不参与上下文"
+            f"{service_name} 未压缩历史达到候选上限 {limit} 轮，更早的记录补折叠进摘要"
+        )
+
+    @staticmethod
+    def LLM_CHAT_CONTEXT_BUDGET_EXHAUSTED(
+        service_name: str, window_tokens: int, prompt_tokens: int
+    ) -> str:
+        return (
+            f"{service_name} 上下文窗口不足以容纳提示词与预留，"
+            f"本轮不注入历史: 窗口 {window_tokens} tokens, 提示词 {prompt_tokens} tokens"
+        )
+
+    @staticmethod
+    def LLM_CHAT_MEMORY_COMPACT_OVER_LIMIT(
+        service_name: str, summary_chars: int, max_chars: int
+    ) -> str:
+        return (
+            f"{service_name} 记忆压缩摘要超出上限，保留旧摘要并等待下一轮重试: "
+            f"摘要 {summary_chars} 字, 上限 {max_chars} 字"
         )
 
     @staticmethod
@@ -2629,6 +2642,10 @@ class Messages:
         "你是一个对话记忆整理助手。请把多轮对话压缩成可长期复用的记忆摘要，"
         "保留结论、关键实体、用户偏好与约束，丢弃寒暄与重复表述。"
     )
+
+    CHAT_MEMORY_EMPTY_SUMMARY: str = "无"
+
+    CHAT_MEMORY_COMPACT_EMPTY_RESULT: str = "历史记忆压缩结果为空"
 
     SWAGGER_DESCRIPTION: str = "这是项目的FastAPI部分的Swagger文档"
 

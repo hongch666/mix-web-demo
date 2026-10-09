@@ -10,6 +10,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from sqlalchemy.orm import Session
 
+from app.core.auth import is_memory_user, normalize_user_id
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages, Prompts
@@ -19,13 +20,16 @@ from app.internal.agents import (
     default_agent_tool_factories,
     is_direct_chat_intent,
 )
-from app.internal.crud import get_ai_user_summary_mapper
+from app.internal.crud import AiUserSummaryMapper, get_ai_user_summary_mapper
+from app.internal.models import AiUserSummary
 
 from .contextBudget import (
     ChatHistoryItem,
     ContextBudgetConfig,
+    ContextPlan,
     estimate_tokens,
     plan_chat_context,
+    plan_compact_batch,
 )
 
 IntermediateStep = tuple[Any, Any]
@@ -148,12 +152,12 @@ class BaseAiService:
         temperature: float = 0.7,
         use_structured_output: bool = True,
         tool_factories: Optional[AgentToolFactories] = None,
-        ai_user_summary_mapper: Optional[Any] = None,
+        ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
     ) -> None:
         self._normalize_proxy_env()
         self.ai_history_mapper: Any = ai_history_mapper
         # 用户级记忆摘要 Mapper，缺省时回退进程内单例（与 spring_client 处理方式一致）
-        self.ai_summary_mapper: Any = (
+        self.ai_summary_mapper: AiUserSummaryMapper = (
             ai_user_summary_mapper or get_ai_user_summary_mapper()
         )
         self.service_name: str = service_name
@@ -219,15 +223,6 @@ class BaseAiService:
         return Prompts.REFERENCE_BASED_EVALUATION(message, reference_content)
 
     @staticmethod
-    def _is_memory_user_id(user_id: Optional[int]) -> bool:
-        """判断是否为可承载记忆的真实用户
-
-        系统调用身份（userId 小于等于 0）不参与聊天记忆读写，
-        否则所有未登录请求会共用同一个记忆桶
-        """
-        return user_id is not None and user_id > 0
-
-    @staticmethod
     def _resolve_context_prompt_tokens(system_prompt: str, message: str) -> int:
         """估算系统提示词与用户提示词占用的 token"""
         return estimate_tokens(system_prompt) + estimate_tokens(message)
@@ -241,7 +236,90 @@ class BaseAiService:
             Messages.GENERIC_CHAT_MESSAGE + Messages.CHAT_MEMORY_SUMMARY_HEADER()
         ) + summary
 
-    async def _load_memory_summary(self, user_id: int, db: Session) -> Optional[Any]:
+    async def _build_direct_messages(
+        self,
+        message: str,
+        user_id: Optional[int],
+        db: Optional[Session],
+        runnable_config: Optional[dict] = None,
+    ) -> list[Any]:
+        """构建直连对话的消息列表
+
+        直连路径统一从这里组装，流式与非流式、Agent 就绪与降级场景保持一致，
+        历史记忆按上下文预算加载并裁剪，系统身份不读取记忆
+
+        Args:
+            message: 本轮用户提问
+            user_id: 归一化后的用户 ID
+            db: 数据库会话
+            runnable_config: LangChain RunnableConfig
+
+        Returns:
+            list[Any]: 系统消息、历史消息与本轮提问
+        """
+        summary = ""
+        chat_history: list[ChatHistoryItem] = []
+        if db and is_memory_user(user_id):
+            summary, chat_history = await self._load_chat_memory(
+                user_id,
+                message,
+                Messages.GENERIC_CHAT_MESSAGE,
+                db,
+                False,
+                runnable_config,
+            )
+        elif user_id is not None:
+            Logger.info(Messages.MEMORY_SKIPPED_SYSTEM_USER(user_id))
+
+        history_messages: list[Any] = []
+        for human_msg, ai_msg in chat_history:
+            history_messages.append(HumanMessage(content=human_msg))
+            history_messages.append(AIMessage(content=ai_msg))
+
+        return [
+            SystemMessage(content=self._compose_direct_system_message(summary)),
+            *history_messages,
+            HumanMessage(content=message),
+        ]
+
+    async def _load_agent_memory(
+        self,
+        user_id: Optional[int],
+        message: str,
+        db: Optional[Session],
+        runnable_config: Optional[dict] = None,
+    ) -> tuple[str, list[ChatHistoryItem]]:
+        """加载 Agent 路径的聊天记忆
+
+        Agent 路径的系统提示词更长且需要绑定工具，单独走带工具预留的预算，
+        系统身份不读取记忆
+
+        Args:
+            user_id: 归一化后的用户 ID
+            message: 本轮用户提问
+            db: 数据库会话
+            runnable_config: LangChain RunnableConfig
+
+        Returns:
+            tuple[str, list[ChatHistoryItem]]: 历史摘要与注入的原文轮次
+        """
+        if not (db and is_memory_user(user_id)):
+            if user_id is not None:
+                Logger.info(Messages.MEMORY_SKIPPED_SYSTEM_USER(user_id))
+            return "", []
+
+        return await self._load_chat_memory(
+            user_id,
+            message,
+            Prompts.AGENT_PROMPT(),
+            db,
+            True,
+            runnable_config,
+        )
+
+    async def _load_memory_summary(
+        self, user_id: int, db: Session
+    ) -> Optional[AiUserSummary]:
         """读取用户级记忆摘要，读取失败时降级为无摘要"""
         try:
             return await self.ai_summary_mapper.get_by_user_id_async(db, user_id)
@@ -256,11 +334,13 @@ class BaseAiService:
         system_prompt: str,
         db: Session,
         use_tools: bool,
+        runnable_config: Optional[dict] = None,
     ) -> tuple[str, list[ChatHistoryItem]]:
         """加载用户级聊天记忆，必要时压缩并持久化
 
         历史预算由模型窗口扣除提示词、输出预留与工具预留后推导；
-        未超过阈值时按原样注入，超过或接近阈值时把更早轮次折叠进摘要
+        未超过阈值时按原样注入，超过或接近阈值时把更早轮次折叠进摘要；
+        折叠内容按单次输入上限分批，未纳入批次的记录留在原表，下一轮继续折叠
 
         Args:
             user_id: 真实用户 ID
@@ -268,6 +348,7 @@ class BaseAiService:
             system_prompt: 当前路径使用的系统提示词
             db: 数据库会话
             use_tools: 是否走带工具的 Agent 路径
+            runnable_config: LangChain RunnableConfig，使压缩调用进入同一链路追踪
 
         Returns:
             tuple[str, list[ChatHistoryItem]]: 历史摘要与注入的原文轮次
@@ -278,20 +359,23 @@ class BaseAiService:
         )
         existing_summary = str(summary_row.summary or "") if summary_row else ""
         summarized_count = int(summary_row.summarized_count or 0) if summary_row else 0
+        candidate_rounds = self._context_budget.candidate_rounds
 
         try:
             histories = await self.ai_history_mapper.get_ai_history_after_id_async(
-                db, user_id, watermark, self._context_budget.candidate_rounds
+                db, user_id, watermark, candidate_rounds
             )
         except Exception as error:
             # 历史读取失败只降级为无原文，不打断本轮回答
             Logger.error(Messages.LLM_CHAT_HISTORY_LOAD_FAILED(error))
             return existing_summary, []
 
-        if len(histories) == self._context_budget.candidate_rounds:
+        # 达到候选上限说明水位线之后还有更早的记录被本轮查询越过
+        limit_reached = len(histories) == candidate_rounds
+        if limit_reached:
             Logger.warning(
                 Messages.LLM_CHAT_MEMORY_CANDIDATE_LIMIT_REACHED(
-                    self.service_name, self._context_budget.candidate_rounds
+                    self.service_name, candidate_rounds
                 )
             )
 
@@ -315,29 +399,99 @@ class BaseAiService:
                 len(plan.compact_targets),
             )
         )
-
-        summary = plan.summary
-        if plan.should_compact:
-            folded_rounds = len(plan.compact_targets)
-            new_summary = await self._compact_chat_memory(
-                existing_summary=existing_summary,
-                targets=plan.compact_targets,
-                watermark_id=records[folded_rounds - 1][0],
-                summarized_count=summarized_count + folded_rounds,
-                db=db,
-                user_id=user_id,
-            )
-            if new_summary is not None:
-                summary = new_summary
-                # 摘要长度可能变化，按新摘要重新收敛一次注入窗口，保证不超预算
-                plan = plan_chat_context(
-                    summary,
-                    plan.history,
-                    self._context_budget,
+        if plan.budget_tokens <= 0:
+            # 窗口已被提示词与预留占满，本轮既不注入历史也不压缩，优先保证请求可用
+            Logger.warning(
+                Messages.LLM_CHAT_CONTEXT_BUDGET_EXHAUSTED(
+                    self.service_name,
+                    self._context_budget.window_tokens,
                     prompt_tokens,
-                    use_tools,
                 )
-        return summary, plan.history
+            )
+            return "", []
+
+        targets = await self._resolve_compact_targets(
+            db, user_id, watermark, records, plan, limit_reached
+        )
+        if not targets:
+            return plan.summary, plan.history
+
+        batch = plan_compact_batch(targets, self._context_budget)
+        if not batch.rounds:
+            return plan.summary, plan.history
+
+        new_summary = await self._compact_chat_memory(
+            existing_summary=existing_summary,
+            targets=batch.rounds,
+            watermark_id=batch.last_id,
+            summarized_count=summarized_count + batch.count,
+            db=db,
+            user_id=user_id,
+            runnable_config=runnable_config,
+        )
+        if new_summary is None:
+            return plan.summary, plan.history
+
+        # 摘要长度可能变化，按新摘要重新收敛一次注入窗口，保证不超预算
+        replanned = plan_chat_context(
+            new_summary, plan.history, self._context_budget, prompt_tokens, use_tools
+        )
+        return new_summary, replanned.history
+
+    async def _resolve_compact_targets(
+        self,
+        db: Session,
+        user_id: int,
+        watermark: int,
+        records: list[tuple[int, str, str]],
+        plan: ContextPlan,
+        limit_reached: bool,
+    ) -> list[tuple[int, str, str]]:
+        """解析本轮待折叠的记录，按旧到新排列
+
+        命中候选上限时，水位线与本轮最近记录之间存在被查询跳过的更早记录，
+        这部分必须一并补进摘要，否则会随着水位线推进被永久排除在记忆之外
+
+        Args:
+            db: 数据库会话
+            user_id: 真实用户 ID
+            watermark: 当前压缩水位线
+            records: 本轮读取到的记录，按旧到新排列
+            plan: 上下文组装方案
+            limit_reached: 本轮是否命中候选轮数上限
+
+        Returns:
+            list[tuple[int, str, str]]: 待折叠记录，无可折叠内容时为空
+        """
+        targets: list[tuple[int, str, str]] = []
+        if limit_reached and records:
+            targets.extend(
+                await self._load_gap_records(db, user_id, watermark, records[0][0])
+            )
+        # compact_targets 恒为 records 的前缀，按下标取回对应的记录 id
+        targets.extend(records[: len(plan.compact_targets)])
+        return targets
+
+    async def _load_gap_records(
+        self, db: Session, user_id: int, watermark: int, oldest_loaded_id: int
+    ) -> list[tuple[int, str, str]]:
+        """读取水位线之后、本轮最近记录之前被候选上限跳过的更早记录
+
+        读取失败时降级为空，本轮压缩照常进行，跳过的部分留待下一轮补折叠
+        """
+        try:
+            rows = await self.ai_history_mapper.get_oldest_ai_history_after_id_async(
+                db, user_id, watermark, self._context_budget.candidate_rounds
+            )
+        except Exception as error:
+            Logger.error(Messages.LLM_CHAT_HISTORY_LOAD_FAILED(error))
+            return []
+
+        return [
+            (int(row.id), str(row.ask), str(row.reply))
+            for row in rows
+            if int(row.id) < oldest_loaded_id
+        ]
 
     async def _compact_chat_memory(
         self,
@@ -347,6 +501,7 @@ class BaseAiService:
         summarized_count: int,
         db: Session,
         user_id: int,
+        runnable_config: Optional[dict] = None,
     ) -> Optional[str]:
         """把更早轮次折叠进摘要并持久化
 
@@ -375,11 +530,25 @@ class BaseAiService:
                 HumanMessage(content=prompt),
             ]
 
-            response = await self.llm.ainvoke(messages)
+            response = await self.llm.ainvoke(
+                messages,
+                config=self._build_compact_runnable_config(
+                    runnable_config, len(targets)
+                ),
+            )
             new_summary = str(response.content or "").strip()
-            new_summary = new_summary[: self._context_budget.summary_max_chars]
             if not new_summary:
                 raise ValueError(Messages.CHAT_MEMORY_COMPACT_EMPTY_RESULT)
+            # 超限摘要不落库也不截断，保留旧摘要并保持水位线，下一轮重新合并
+            if len(new_summary) > self._context_budget.summary_max_chars:
+                Logger.warning(
+                    Messages.LLM_CHAT_MEMORY_COMPACT_OVER_LIMIT(
+                        self.service_name,
+                        len(new_summary),
+                        self._context_budget.summary_max_chars,
+                    )
+                )
+                return None
 
             await self.ai_summary_mapper.upsert_async(
                 db, user_id, new_summary, watermark_id, summarized_count
@@ -395,6 +564,31 @@ class BaseAiService:
                 Messages.LLM_CHAT_MEMORY_COMPACT_FAILED(self.service_name, error)
             )
             return None
+
+    @staticmethod
+    def _build_compact_runnable_config(
+        runnable_config: Optional[dict], folded_rounds: int
+    ) -> dict:
+        """构建记忆压缩调用的运行配置
+
+        压缩是一次额外的模型调用，沿用调用方配置才能挂进同一条链路，
+        同时单独命名并记录折叠轮数，便于在追踪中区分它与业务问答
+
+        Args:
+            runnable_config: 调用方传入的 LangChain RunnableConfig
+            folded_rounds: 本次折叠的轮数
+
+        Returns:
+            dict: 用于压缩调用的 RunnableConfig
+        """
+        config = dict(runnable_config) if runnable_config else {}
+        config["run_name"] = "chat.memory.compact"
+        # metadata 重建而非原地更新，避免改动调用方持有的字典
+        config["metadata"] = {
+            **(config.get("metadata") or {}),
+            "memory_compact_rounds": folded_rounds,
+        }
+        return config
 
     def _build_complete_thinking_text(
         self, intermediate_steps: list[IntermediateStep], final_result: str = ""
@@ -463,17 +657,10 @@ class BaseAiService:
 
     def _normalize_user_id(self, user_id: Any) -> Optional[int]:
         """将用户ID统一转换为整数，避免不同调用链传入字符串"""
-        if user_id is None:
-            return None
-
-        try:
-            user_id_text = str(user_id).strip()
-            if not user_id_text:
-                return None
-            return int(user_id_text)
-        except (TypeError, ValueError):
+        normalized = normalize_user_id(user_id)
+        if normalized is None and user_id is not None:
             Logger.warning(Messages.LLM_INVALID_USER_ID(user_id))
-            return None
+        return normalized
 
     @staticmethod
     def _extract_message_content(content: Any) -> str:
@@ -755,7 +942,16 @@ class BaseAiService:
                 return Messages.INITIALIZATION_ERROR
 
             if not self.agent_executor:
-                return await self.basic_chat(message)
+                # Agent 不可用时降级为直连对话，与流式路径一致地带上历史记忆
+                config = dict(runnable_config) if runnable_config else {}
+                config.setdefault("run_name", "chat.direct")
+                messages = await self._build_direct_messages(
+                    message, normalized_user_id, db, config
+                )
+                response = await self.llm.ainvoke(messages, config=config)
+                result: str = response.content
+                Logger.info(Messages.CHAT_REPLY_LENGTH(self.service_name, len(result)))
+                return result
 
             intent = "general_chat"
             intent_resolution = "default_fallback"
@@ -789,36 +985,12 @@ class BaseAiService:
                 }
             )
 
-            summary = ""
-            chat_history: list[ChatHistoryItem] = []
             direct_chat = is_direct_chat_intent(intent)
-            if db and self._is_memory_user_id(normalized_user_id):
-                summary, chat_history = await self._load_chat_memory(
-                    normalized_user_id,
-                    message,
-                    (
-                        Messages.GENERIC_CHAT_MESSAGE
-                        if direct_chat
-                        else Prompts.AGENT_PROMPT()
-                    ),
-                    db,
-                    not direct_chat,
-                )
-            elif normalized_user_id is not None:
-                Logger.info(Messages.MEMORY_SKIPPED_SYSTEM_USER(normalized_user_id))
-
             if direct_chat:
                 config.setdefault("run_name", "chat.direct")
-                history_messages: list[Any] = []
-                for human_msg, ai_msg in chat_history:
-                    history_messages.append(HumanMessage(content=human_msg))
-                    history_messages.append(AIMessage(content=ai_msg))
-
-                messages = [
-                    SystemMessage(content=self._compose_direct_system_message(summary)),
-                    *history_messages,
-                    HumanMessage(content=message),
-                ]
+                messages = await self._build_direct_messages(
+                    message, normalized_user_id, db, config
+                )
                 response = await self.llm.ainvoke(messages, config=config)
                 result = response.content
             else:
@@ -828,10 +1000,13 @@ class BaseAiService:
                 # 用户身份经 contextvars（ToolScope）随请求传递给工具层，
                 # 单例工具不再持有可变用户字段
 
+                summary, chat_history = await self._load_agent_memory(
+                    normalized_user_id, message, db, config
+                )
                 context = self._build_chat_context(summary, chat_history)
                 user_info = (
                     Messages.CURRENT_USER_ID_INFO(normalized_user_id)
-                    if self._is_memory_user_id(normalized_user_id)
+                    if is_memory_user(normalized_user_id)
                     else ""
                 )
                 full_input = context + user_info + Messages.CURRENT_QUESTION(message)
@@ -872,32 +1047,11 @@ class BaseAiService:
                 return
 
             if not self.agent_executor:
-                summary = ""
-                chat_history: list[ChatHistoryItem] = []
-                if db and self._is_memory_user_id(normalized_user_id):
-                    summary, chat_history = await self._load_chat_memory(
-                        normalized_user_id,
-                        message,
-                        Messages.GENERIC_CHAT_MESSAGE,
-                        db,
-                        False,
-                    )
-                elif normalized_user_id is not None:
-                    Logger.info(Messages.MEMORY_SKIPPED_SYSTEM_USER(normalized_user_id))
-
-                history_messages: list[Any] = []
-                for human_msg, ai_msg in chat_history:
-                    history_messages.append(HumanMessage(content=human_msg))
-                    history_messages.append(AIMessage(content=ai_msg))
-
-                messages = [
-                    SystemMessage(content=self._compose_direct_system_message(summary)),
-                    *history_messages,
-                    HumanMessage(content=message),
-                ]
-
                 config = dict(runnable_config) if runnable_config else {}
                 config.setdefault("run_name", "chat.direct")
+                messages = await self._build_direct_messages(
+                    message, normalized_user_id, db, config
+                )
 
                 try:
                     async for chunk in self.llm.astream(
@@ -967,36 +1121,12 @@ class BaseAiService:
                 }
             )
 
-            summary = ""
-            chat_history: list[ChatHistoryItem] = []
             direct_chat = is_direct_chat_intent(intent)
-            if db and self._is_memory_user_id(normalized_user_id):
-                summary, chat_history = await self._load_chat_memory(
-                    normalized_user_id,
-                    message,
-                    (
-                        Messages.GENERIC_CHAT_MESSAGE
-                        if direct_chat
-                        else Prompts.AGENT_PROMPT()
-                    ),
-                    db,
-                    not direct_chat,
-                )
-            elif normalized_user_id is not None:
-                Logger.info(Messages.MEMORY_SKIPPED_SYSTEM_USER(normalized_user_id))
-
             if direct_chat:
                 config.setdefault("run_name", "chat.direct")
-                history_messages: list[Any] = []
-                for human_msg, ai_msg in chat_history:
-                    history_messages.append(HumanMessage(content=human_msg))
-                    history_messages.append(AIMessage(content=ai_msg))
-
-                messages = [
-                    SystemMessage(content=self._compose_direct_system_message(summary)),
-                    *history_messages,
-                    HumanMessage(content=message),
-                ]
+                messages = await self._build_direct_messages(
+                    message, normalized_user_id, db, config
+                )
 
                 try:
                     async for chunk in self.llm.astream(
@@ -1027,10 +1157,13 @@ class BaseAiService:
                 # 用户身份经 contextvars（ToolScope）随请求传递给工具层，
                 # 单例工具不再持有可变用户字段
 
+                summary, chat_history = await self._load_agent_memory(
+                    normalized_user_id, message, db, config
+                )
                 context = self._build_chat_context(summary, chat_history)
                 user_info = (
                     Messages.CURRENT_USER_ID_INFO(normalized_user_id)
-                    if self._is_memory_user_id(normalized_user_id)
+                    if is_memory_user(normalized_user_id)
                     else ""
                 )
                 full_input = context + user_info + Messages.CURRENT_QUESTION(message)
