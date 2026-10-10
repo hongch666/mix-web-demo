@@ -1,4 +1,10 @@
+from collections.abc import Callable, Coroutine
+from time import perf_counter
+from typing import Any
+
+from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
+from starlette.responses import Response
 
 from app.common.middleware import middlewares
 from app.core.constants import SwaggerConfig
@@ -6,8 +12,6 @@ from app.core.errors import exception_handlers
 from app.core.telemetry import instrument_fastapi
 from app.core.telemetry.metrics import http_duration, http_requests
 from app.internal.api import routers
-from fastapi import FastAPI, Request
-from time import perf_counter
 
 from .lifespan import lifespan
 
@@ -27,7 +31,9 @@ def create_app() -> FastAPI:
     )
 
     @app.middleware("http")
-    async def record_http_metrics(request: Request, call_next):
+    async def record_http_metrics(
+        request: Request, call_next: Callable[[Request], Coroutine[Any, Any, Response]]
+    ) -> Response:
         started_at: float = perf_counter()
         response = await call_next(request)
         route: str = getattr(request.scope.get("route"), "path", "UNKNOWN")

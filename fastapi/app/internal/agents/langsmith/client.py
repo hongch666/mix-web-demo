@@ -49,7 +49,7 @@ def init_langsmith(config: Optional[LangSmithConfig] = None) -> None:
 
     if LangSmithClient is None:
         _init_error = Messages.LANGSMITH_PACKAGE_NOT_INSTALLED
-        Logger.warning(_init_error)
+        Logger.warning(Messages.LANGSMITH_PACKAGE_NOT_INSTALLED)
         return
 
     try:
@@ -155,8 +155,10 @@ def get_langsmith_context(
             name=name,
             run_type="chain",
             tags=tags,
-            metadata=metadata,
-            client=client,
+            # RunTree 没有 metadata 参数，langsmith 约定把元数据放在 extra.metadata
+            extra={"metadata": metadata or {}},
+            # client 是只读属性，构造期用字段名 ls_client 传入用户客户端
+            ls_client=client,
         )
         if parent_run and hasattr(run, "parent_run"):
             run.parent_run = parent_run
@@ -211,8 +213,10 @@ async def get_langsmith_context_async(
             name=name,
             run_type="chain",
             tags=tags,
-            metadata=metadata,
-            client=client,
+            # RunTree 没有 metadata 参数，langsmith 约定把元数据放在 extra.metadata
+            extra={"metadata": metadata or {}},
+            # client 是只读属性，构造期用字段名 ls_client 传入用户客户端
+            ls_client=client,
         )
         if parent_run and hasattr(run, "parent_run"):
             run.parent_run = parent_run

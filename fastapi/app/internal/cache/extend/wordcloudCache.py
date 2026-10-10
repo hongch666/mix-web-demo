@@ -1,6 +1,6 @@
 import time
 from functools import lru_cache
-from typing import Optional
+from typing import ClassVar, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys
@@ -28,7 +28,7 @@ class WordcloudCache(VersionedCache):
     L1_CACHE_TTL: int = 300  # 5分钟
 
     # 版本号校验依据：搜索关键词数仓表
-    VERSION_MODEL: type[AdsSearchKeyword] = AdsSearchKeyword
+    VERSION_MODEL: ClassVar[type[AdsSearchKeyword]] = AdsSearchKeyword
 
     async def get_from_redis(self) -> Optional[str]:
         """从 Redis 缓存获取"""
@@ -79,7 +79,7 @@ class WordcloudCache(VersionedCache):
         Logger.info(Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE)
         return None
 
-    async def set(self, oss_url: str) -> None:
+    async def set(self, data: str) -> None:
         """
         设置词云图OSS URL缓存（二级缓存）
 
@@ -89,11 +89,11 @@ class WordcloudCache(VersionedCache):
         3. 版本号
 
         参数:
-            oss_url: OSS中词云图的URL
+            data: OSS中词云图的URL
         """
         # 更新两级缓存
-        await self.update_local_cache(oss_url)
-        await self.update_redis_cache(oss_url)
+        await self.update_local_cache(data)
+        await self.update_redis_cache(data)
 
         # 更新版本号
         await self.update_version()

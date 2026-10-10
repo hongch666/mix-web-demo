@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class SwaggerConfig:
     """
     Swagger/OpenAPI 配置类
@@ -7,7 +10,7 @@ class SwaggerConfig:
     SWAGGER_DESCRIPTION: str = "这是项目的FastAPI部分的Swagger文档"
     SWAGGER_VERSION: str = "1.0.0"
     OPENAPI_VERSION: str = "3.1.0"
-    STREAM_CHAT_RESPONSES: dict[str, object] = {
+    STREAM_CHAT_RESPONSES: dict[int | str, dict[str, Any]] = {
         200: {
             "description": "SSE 流式响应：native 返回 ChatResponse，openai 返回 OpenAIStreamChunk",
             "content": {

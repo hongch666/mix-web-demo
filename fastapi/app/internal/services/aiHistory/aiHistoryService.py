@@ -8,6 +8,7 @@ from app.internal.clients import SpringClient, get_spring_client
 from app.internal.crud import (
     AiHistoryMapper,
     AiUserSummaryMapper,
+    get_ai_history_mapper,
     get_ai_user_summary_mapper,
 )
 from app.internal.models import AiHistory
@@ -22,7 +23,9 @@ class AiHistoryService:
         spring_client: Optional[SpringClient] = None,
         ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
     ) -> None:
-        self.ai_history_mapper: Optional[AiHistoryMapper] = ai_history_mapper
+        self.ai_history_mapper: AiHistoryMapper = (
+            ai_history_mapper or get_ai_history_mapper()
+        )
         self._spring_client: SpringClient = spring_client or get_spring_client()
         self._ai_user_summary_mapper: AiUserSummaryMapper = (
             ai_user_summary_mapper or get_ai_user_summary_mapper()
@@ -45,12 +48,10 @@ class AiHistoryService:
         return await self.ai_history_mapper.create_ai_history_async(history, db)
 
     async def get_all_ai_history(self, user_id: int, db: Any) -> list[dict[str, Any]]:
-        data: list[
-            dict[str, Any]
-        ] = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
+        histories = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
             db, user_id, None
         )
-        return [self._serialize_ai_history(item) for item in data]
+        return [self._serialize_ai_history(item) for item in histories]
 
     async def delete_ai_history_by_userid(self, user_id: int, db: Any) -> None:
         # 检查用户是否存在（通过SpringClient远程查询）
@@ -96,8 +97,13 @@ class AiHistoryService:
         if "reply" in normalized_data:
             history.reply = normalized_data["reply"]
         if "thinking" in normalized_data:
-            thinking = normalized_data["thinking"]
-            history.thinking = thinking if thinking != "" else None
+            # 模型沿用 SQLAlchemy 旧式 Column 标注，空串统一落库为 NULL，这里按运行期值写入
+            thinking_value: Any = (
+                normalized_data["thinking"]
+                if normalized_data["thinking"] != ""
+                else None
+            )
+            history.thinking = thinking_value
         if "ai_type" in normalized_data:
             history.ai_type = normalized_data["ai_type"]
 

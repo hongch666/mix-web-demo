@@ -5,7 +5,6 @@ from functools import partial
 from typing import Any, Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.schedulers.base import BaseScheduler
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base import Logger
@@ -49,7 +48,7 @@ def start_scheduler(
     nestjs_client: Optional[NestjsClient] = None,
     spring_client: Optional[SpringClient] = None,
     vector_dependencies: Optional[VectorSyncDependencies] = None,
-) -> BaseScheduler:
+) -> AsyncIOScheduler:
     """
     启动调度器，可把依赖注入进来（用于测试或容器式管理）
     例如：

@@ -82,7 +82,7 @@ async def test_execute_query_denies_non_admin_scope() -> None:
 
     result = await tool.execute_query("SELECT id FROM t LIMIT 10", {"user_id": 7})
 
-    assert result == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN
+    assert result == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN()
     client.execute_query.assert_not_awaited()
 
 

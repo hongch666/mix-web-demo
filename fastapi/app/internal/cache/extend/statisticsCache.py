@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys
@@ -27,7 +27,7 @@ class StatisticsCache(VersionedCache):
     L1_CACHE_TTL: int = 600  # 10分钟
 
     # 版本号校验依据：平台统计数仓表
-    VERSION_MODEL: type[AdsPlatformStats] = AdsPlatformStats
+    VERSION_MODEL: ClassVar[type[AdsPlatformStats]] = AdsPlatformStats
 
     async def get(self) -> Optional[dict[str, Any]]:
         """

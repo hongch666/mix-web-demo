@@ -1,4 +1,5 @@
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
@@ -89,7 +90,9 @@ async def request_validation_exception_handler(
     )
 
 
-exception_handlers: dict[type[Exception], Callable] = {
+exception_handlers: dict[
+    type[Exception], Callable[[Request, Any], Coroutine[Any, Any, Response]]
+] = {
     BusinessException: business_exception_handler,
     RequestValidationError: request_validation_exception_handler,
     Exception: global_exception_handler,

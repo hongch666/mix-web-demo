@@ -1,4 +1,8 @@
-def create_app(*args, **kwargs):
+from fastapi import FastAPI
+from typing import Any
+
+
+def create_app(*args: Any, **kwargs: Any) -> FastAPI:
     """延迟加载应用工厂，避免导入工具模块时初始化外部数据库驱动。"""
     from app.core.telemetry import setup_telemetry
 

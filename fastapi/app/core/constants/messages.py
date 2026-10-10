@@ -69,11 +69,11 @@ class Messages:
         return f"总结服务异常: {error}"
 
     @staticmethod
-    def ADMIN_PERMISSION_DENIED(user_id: str, user_role: str) -> str:
+    def ADMIN_PERMISSION_DENIED(user_id: int, user_role: str) -> str:
         return f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}"
 
     @staticmethod
-    def ADMIN_ACCESS_GRANTED(user_id: str) -> str:
+    def ADMIN_ACCESS_GRANTED(user_id: int) -> str:
         return f"管理员 {user_id} 访问受保护的接口"
 
     @staticmethod
@@ -1729,6 +1729,8 @@ class Messages:
 
     INTERNAL_TOKEN_SECRET_NOT_NULL: str = "内部令牌密钥未配置"
 
+    INTERNAL_TOKEN_EXPIRATION_NOT_SET: str = "内部令牌过期时间未配置"
+
     INTERNAL_TOKEN_MISSING: str = "请求头中缺少内部令牌"
 
     INTERNAL_TOKEN_INVALID: str = "内部令牌无效"
@@ -1981,7 +1983,7 @@ class Messages:
 
     GLM_CONFIGURATION_INCOMPLETE_ERROR: str = "GLM配置不完整，客户端未初始化"
 
-    DEFAULT_KEYWORDS: str = [
+    DEFAULT_KEYWORDS: list[str] = [
         "我的",
         "个人",
         "自己的",
@@ -2061,6 +2063,8 @@ class Messages:
     ERROR_INTERNAL_TOKEN_MISSING: str = "INTERNAL_TOKEN_MISSING"
 
     ERROR_INTERNAL_TOKEN_SECRET_NOT_NULL: str = "INTERNAL_TOKEN_SECRET_NOT_NULL"
+
+    ERROR_INTERNAL_TOKEN_EXPIRATION_NOT_SET: str = "INTERNAL_TOKEN_EXPIRATION_NOT_SET"
 
     ERROR_INTERNAL_TOKEN_SERVICE_MISMATCH: str = "INTERNAL_TOKEN_SERVICE_MISMATCH"
 
@@ -2720,3 +2724,7 @@ class Messages:
     )
 
     LANGSMITH_CLIENT_CLOSED: str = "LangSmith 客户端已关闭"
+
+    LANGSMITH_TRACING_DISABLED: str = "LangSmith 追踪未启用，跳过客户端初始化"
+
+    LANGSMITH_PACKAGE_NOT_INSTALLED: str = "LangSmith 依赖未安装，跳过客户端初始化"

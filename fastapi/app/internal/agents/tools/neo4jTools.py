@@ -61,6 +61,24 @@ class Neo4jQueryTools:
         return normalized
 
     @staticmethod
+    def _relation(node: Any, relation: str) -> Any:
+        """读取 neomodel 关系管理器
+
+        neomodel 在节点实例化时把关系描述符替换为 AsyncRelationshipManager，
+        但静态类型仍是描述符本身（没有 single/all 等方法），这里按 Any 取用
+        """
+        return getattr(node, relation)
+
+    @staticmethod
+    def _traverse(node_set: Any, *paths: str) -> Any:
+        """收口 traverse 预加载调用
+
+        neomodel 把 traverse 的形参注解写成 tuple[str, ...]，实际接受 str 路径，
+        这里按 Any 调用以绕开上游注解错误
+        """
+        return node_set.traverse(*paths)
+
+    @staticmethod
     def _first_related(node: Any, relation: str) -> Optional[Any]:
         """读取 traverse/resolve_subgraph 预加载结果中的单个关联节点
 
@@ -92,9 +110,9 @@ class Neo4jQueryTools:
 
         # 作者、子分类、标签相互独立，并行获取
         author, sub_category, tags = await asyncio.gather(
-            article.author.single(),
-            article.sub_category.single(),
-            article.tags_rel.all(),
+            self._relation(article, "author").single(),
+            self._relation(article, "sub_category").single(),
+            self._relation(article, "tags_rel").all(),
         )
         category = await sub_category.category.single() if sub_category else None
 
@@ -138,7 +156,7 @@ class Neo4jQueryTools:
             return []
 
         article_lists = await asyncio.gather(
-            *[user.published_articles.all() for user in users]
+            *[self._relation(user, "published_articles").all() for user in users]
         )
 
         seen: set[int] = set()
@@ -171,7 +189,7 @@ class Neo4jQueryTools:
         node_set = Article.nodes.filter(sub_category__name=name).order_by("-views")
         limited = await node_set.get_item(slice(0, limit))
         # traverse 预加载作者：文章与作者一条查询取回，避免逐行查作者（N+1）
-        rows = await limited.traverse("author").resolve_subgraph()
+        rows = await self._traverse(limited, "author").resolve_subgraph()
         return [
             {
                 "id": row.graph_id,
@@ -193,11 +211,9 @@ class Neo4jQueryTools:
         limit = int(params.get("limit", 10))
         source_id = int(article_id)
 
-        source_rows = (
-            await Article.nodes.filter(graph_id=source_id)
-            .traverse("sub_category")
-            .resolve_subgraph()
-        )
+        source_rows = await self._traverse(
+            Article.nodes.filter(graph_id=source_id), "sub_category"
+        ).resolve_subgraph()
         if not source_rows:
             return []
         sub_category = self._first_related(source_rows[0], "sub_category")
@@ -209,7 +225,7 @@ class Neo4jQueryTools:
             graph_id__ne=source_id,
         ).order_by("-views")
         limited = await node_set.get_item(slice(0, limit))
-        rows = await limited.traverse("author").resolve_subgraph()
+        rows = await self._traverse(limited, "author").resolve_subgraph()
         return [
             {
                 "id": row.graph_id,

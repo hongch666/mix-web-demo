@@ -52,7 +52,7 @@ def _comments_by_user(spring: AsyncMock) -> dict[int, dict]:
 # ===== 关键词提取 =====
 
 
-# 提取关键词前清洗 Markdown 符号并透传 topK
+# 提取关键词前清洗 Markdown 符号并透传 topK，返回值是标签数组（与路由 response_model=list[str] 一致）
 @pytest.mark.anyio
 async def test_extract_tags_strips_markdown_symbols(
     monkeypatch: pytest.MonkeyPatch,
@@ -69,7 +69,7 @@ async def test_extract_tags_strips_markdown_symbols(
 
     result = await service.extract_tags("# 标题\n\n```code```\n**粗体** 正文", topK=2)
 
-    assert result == "tag1,tag2"
+    assert result == ["tag1", "tag2"]
     assert captured["topK"] == 2
     cleaned = str(captured["text"])
     assert "#" not in cleaned

@@ -19,7 +19,7 @@ def test_non_admin_cannot_bypass_sql_scope_with_nested_query() -> None:
     finally:
         clear_tool_scope()
 
-    assert denial == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN
+    assert denial == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN()
 
 
 # 非管理员用 $or 过滤器绕过 MongoDB 行级范围时返回拒绝消息
@@ -33,7 +33,19 @@ def test_non_admin_cannot_bypass_mongodb_scope_with_or_filter() -> None:
     finally:
         clear_tool_scope()
 
-    assert denial == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN
+    assert denial == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN()
+
+
+# 缺失工具作用域时 fail-closed：SQL 与 MongoDB 查询都必须拿到拒绝文案而不是放行
+def test_missing_scope_rejects_sql_and_mongodb_tools() -> None:
+    clear_tool_scope()
+
+    assert enforce_sql_row_scope(
+        "SELECT * FROM users WHERE user_id = :user_id", None
+    ) == (Messages.SQL_TOOL_SCOPE_MISSING())
+    assert enforce_mongodb_row_scope({"userId": 7}) == (
+        Messages.SQL_TOOL_SCOPE_MISSING()
+    )
 
 
 # 管理员无需行级限制即可使用结构化 SQL 与 MongoDB 查询

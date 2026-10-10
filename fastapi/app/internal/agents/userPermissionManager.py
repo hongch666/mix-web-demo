@@ -27,8 +27,8 @@ class UserPermissionManager:
         self.user_mapper: Optional[Any] = user_mapper
         self._spring_client: SpringClient = spring_client or get_spring_client()
 
-    async def get_user_role_async(self, user_id: int, db: Session) -> Optional[str]:
-        """异步获取用户角色"""
+    async def get_user_role_async(self, user_id: int, db: Session) -> str:
+        """异步获取用户角色，任何分支都不会返回 None（取不到时回落普通用户）"""
         try:
             # 使用SpringClient远程获取用户信息
             users = await self._spring_client.get_users_by_ids([user_id])
@@ -37,7 +37,7 @@ class UserPermissionManager:
                 return Messages.ROLE_USER
 
             user_data = users[0]
-            role: Optional[str] = user_data.get("role") or Messages.ROLE_USER
+            role: str = user_data.get("role") or Messages.ROLE_USER
             Logger.info(Messages.USER_ROLE_LOADED(user_id, role))
             return role
         except Exception as e:

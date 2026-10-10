@@ -3,7 +3,7 @@ import re
 import time
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import jieba.analyse
 
@@ -28,12 +28,13 @@ class GenerateService:
         gpt_service: Optional[GptService] = None,
         spring_client: Optional[SpringClient] = None,
     ) -> None:
-        self.glm_service: Optional[GlmService] = glm_service
-        self.gpt_service: Optional[GptService] = gpt_service
-        self.gemini_service: Optional[GeminiService] = gemini_service
+        # 三个模型服务允许缺省，调用失败由各调用点按异常兜底降级，因此按 Any 持有
+        self.glm_service: Any = glm_service
+        self.gpt_service: Any = gpt_service
+        self.gemini_service: Any = gemini_service
         self._spring_client: SpringClient = spring_client or get_spring_client()
 
-    async def extract_tags(self, text: str, topK: int = 5) -> str:
+    async def extract_tags(self, text: str, topK: int = 5) -> list[str]:
         """
         提取文本中的关键词作为tags
         :param text: 文章内容
@@ -47,8 +48,9 @@ class GenerateService:
             text,
         )
         text = re.sub(r"\s+", " ", text).strip()
-        tags: list[str] = jieba.analyse.extract_tags(text, topK=topK)
-        return ",".join(tags)
+        # jieba 未标注返回值，withWeight 默认 False 时实际是纯词表，这里按调用契约收窄
+        tags: list[str] = cast(list[str], jieba.analyse.extract_tags(text, topK=topK))
+        return tags
 
     @staticmethod
     def _build_comment_data(
@@ -148,6 +150,10 @@ class GenerateService:
         total_elapsed = time.time() - total_start_time
         Logger.info(Messages.CONCURRENT_LLM_ALL_COMPLETED(total_elapsed, article_id))
 
+        # gather 的返回类型含 BaseException，这里按运行期值处理，异常由下方 isinstance 分支替换为降级文案
+        response_glm: Any
+        response_gemini: Any
+        response_gpt: Any
         response_glm, response_gemini, response_gpt = responses
 
         # 检查是否有异常返回
@@ -275,16 +281,15 @@ class GenerateService:
                 # 4. 根据类型提取内容并使用大模型进行总结
                 extractor = get_reference_content_extractor()
                 ref_type = category_ref.get("type", "link")
-                ref_value = None
+                # 未知类型时保持空串，提取器对空值直接返回空内容
+                ref_value: str = ""
 
                 if ref_type == "pdf":
-                    ref_value = category_ref.get("pdf")
-                    Logger.info(Messages.REFERENCE_PDF_EXTRACTION_START(str(ref_value)))
+                    ref_value = str(category_ref.get("pdf") or "")
+                    Logger.info(Messages.REFERENCE_PDF_EXTRACTION_START(ref_value))
                 elif ref_type == "link":
-                    ref_value = category_ref.get("link")
-                    Logger.info(
-                        Messages.REFERENCE_LINK_EXTRACTION_START(str(ref_value))
-                    )
+                    ref_value = str(category_ref.get("link") or "")
+                    Logger.info(Messages.REFERENCE_LINK_EXTRACTION_START(ref_value))
 
                 # 定义三个大模型的总结函数
                 async def summarize_with_glm(content: str) -> str:
@@ -443,6 +448,10 @@ class GenerateService:
             Messages.CONCURRENT_LLM_REFERENCE_ALL_COMPLETED(total_elapsed, article_id)
         )
 
+        # gather 的返回类型含 BaseException，这里按运行期值处理，异常由下方 isinstance 分支替换为降级文案
+        response_glm: Any
+        response_gemini: Any
+        response_gpt: Any
         response_glm, response_gemini, response_gpt = responses
 
         # 检查异常返回

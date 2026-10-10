@@ -1,13 +1,14 @@
 import asyncio
 import re
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import sqlalchemy
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from sqlalchemy import CursorResult
 from sqlalchemy.orm import Session
 
 from app.core.base import Logger
@@ -176,7 +177,11 @@ class VectorMapper:
                     [str(article_id) for article_id in article_ids]
                 ),
             )
-            deleted: int = int(session.execute(statement).rowcount or 0)
+            # Session.execute 的静态类型是 Result，UPDATE/DELETE 的实际对象是 CursorResult，才能取 rowcount
+            result: CursorResult[Any] = cast(
+                CursorResult[Any], session.execute(statement)
+            )
+            deleted: int = int(result.rowcount or 0)
             session.commit()
 
         Logger.info(Messages.RAG_DELETE_ARTICLES_SUCCESS(deleted, len(article_ids)))

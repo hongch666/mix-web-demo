@@ -1,18 +1,23 @@
 import inspect
 import json
 import time
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Callable, Coroutine
 from functools import wraps
-from typing import Any, Optional, Union
+from typing import Any, Optional, ParamSpec, TypeVar, Union, cast
 
 from fastapi import Request
 from fastapi.responses import StreamingResponse
+from starlette.responses import Content
 
 from app.common.middleware import get_current_user_id, get_current_username
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.db import send_to_queue_async
 from app.core.errors import BusinessException
+
+P = ParamSpec("P")
+R = TypeVar("R")
+AsyncFunc = Callable[P, Coroutine[Any, Any, R]]
 
 
 class ApiLogConfig:
@@ -31,7 +36,9 @@ class ApiLogConfig:
         self.exclude_fields: list[str] = exclude_fields or []
 
 
-def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
+def apiLog(
+    config: Union[str, ApiLogConfig],
+) -> Callable[[AsyncFunc[P, R]], AsyncFunc[P, R]]:
     """
     API 日志装饰器
 
@@ -53,9 +60,9 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
             pass
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: AsyncFunc[P, R]) -> AsyncFunc[P, R]:
         @wraps(func)
-        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+        async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             # 处理配置
             log_config: ApiLogConfig = (
                 ApiLogConfig(config) if isinstance(config, str) else config
@@ -138,7 +145,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                     captured_kwargs: dict[str, Any] = kwargs.copy()
                     captured_log_config: ApiLogConfig = log_config
 
-                    async def tracked_generator() -> AsyncGenerator[bytes, None]:
+                    async def tracked_generator() -> AsyncGenerator[Content, None]:
                         try:
                             async for chunk in original_generator:
                                 yield chunk
@@ -165,7 +172,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                             )
 
                     result.body_iterator = tracked_generator()
-                    return result
+                    return cast(R, result)
                 else:
                     # 非流式响应，立即记录耗时
                     duration_ms: int = int((time.time() - start) * 1000)

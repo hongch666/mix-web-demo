@@ -1,13 +1,17 @@
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Coroutine
 from functools import wraps
 from inspect import iscoroutinefunction
-from typing import Any, Optional
+from typing import Any, Optional, ParamSpec, TypeVar
 
 from app.common.middleware import get_current_user_id
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 from app.internal.clients import SpringClient, get_spring_client
+
+P = ParamSpec("P")
+R = TypeVar("R")
+AsyncFunc = Callable[P, Coroutine[Any, Any, R]]
 
 AdminChecker = Callable[[int], Awaitable[bool]]
 
@@ -33,11 +37,11 @@ def build_admin_checker(spring_client: SpringClient) -> AdminChecker:
     return checker
 
 
-def requireSelf[T: Callable[..., Any]](
-    func: Optional[T] = None,
+def requireSelf[**P, R](
+    func: Optional[AsyncFunc[P, R]] = None,
     *,
     admin_checker: Optional[AdminChecker] = None,
-) -> Callable[..., Any]:
+) -> AsyncFunc[P, R] | Callable[[AsyncFunc[P, R]], AsyncFunc[P, R]]:
     """
     校验请求中的 user_id 与上下文登录用户一致的装饰器
     管理员可访问任意用户，其余用户仅能访问自身数据
@@ -51,12 +55,12 @@ def requireSelf[T: Callable[..., Any]](
         ...
     """
 
-    def decorator(f: T) -> T:
+    def decorator(f: AsyncFunc[P, R]) -> AsyncFunc[P, R]:
         if not iscoroutinefunction(f):
             raise TypeError(Messages.REQUIRE_SELF_ASYNC_ERROR)
 
         @wraps(f)
-        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+        async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             current_user_id: Optional[int] = get_current_user_id()
             if current_user_id is None:
                 Logger.warning(Messages.USER_IDENTITY_MISSING_MESSAGE)
@@ -66,7 +70,7 @@ def requireSelf[T: Callable[..., Any]](
                     Messages.ERROR_USER_NOT_LOGIN,
                 )
 
-            target_user_id: Optional[int] = kwargs.get("user_id")
+            target_user_id: Optional[int] = kwargs.get("user_id")  # type: ignore[assignment]
             if target_user_id is None:
                 Logger.warning(Messages.USER_SCOPE_TARGET_MISSING_MESSAGE)
                 raise BusinessException(

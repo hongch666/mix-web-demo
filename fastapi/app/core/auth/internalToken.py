@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Optional
 
 import jwt
+from jwt import PyJWTError
 
 from app.core.constants import HttpCode, Messages
 
@@ -14,8 +15,8 @@ class InternalTokenUtil:
 
     _instance: Optional["InternalTokenUtil"] = None
     _initialized: bool = False
-    _secret: Optional[str] = None
-    _expiration: Optional[int] = None
+    _secret: str = ""
+    _expiration: int = 0
 
     def __new__(cls) -> "InternalTokenUtil":
         if cls._instance is None:
@@ -26,16 +27,25 @@ class InternalTokenUtil:
         """初始化 JWT 密钥和过期时间"""
         if not InternalTokenUtil._initialized:
             config: dict[str, Any] = load_config("internal_token")
-            InternalTokenUtil._secret = config.get("secret")
-            InternalTokenUtil._expiration = config.get("expiration")
+            secret: Optional[str] = config.get("secret")
+            expiration: Optional[int] = config.get("expiration")
 
-            if not InternalTokenUtil._secret:
+            if not secret:
                 raise BusinessException(
                     Messages.INTERNAL_TOKEN_SECRET_NOT_NULL,
                     HttpCode.INTERNAL_SERVER_ERROR,
                     Messages.ERROR_INTERNAL_TOKEN_SECRET_NOT_NULL,
                 )
 
+            if expiration is None:
+                raise BusinessException(
+                    Messages.INTERNAL_TOKEN_EXPIRATION_NOT_SET,
+                    HttpCode.INTERNAL_SERVER_ERROR,
+                    Messages.ERROR_INTERNAL_TOKEN_EXPIRATION_NOT_SET,
+                )
+
+            InternalTokenUtil._secret = secret
+            InternalTokenUtil._expiration = expiration
             InternalTokenUtil._initialized = True
 
     def generate_internal_token(self, user_id: int, service_name: str) -> str:
@@ -46,7 +56,7 @@ class InternalTokenUtil:
         :param service_name: 服务名称
         :return: JWT令牌字符串
         """
-        payload = {
+        payload: dict[str, Any] = {
             "userId": user_id,
             "serviceName": service_name,
             "tokenType": "internal",
@@ -64,7 +74,9 @@ class InternalTokenUtil:
         :return: 验证成功返回解密后的声明，失败抛出异常
         """
         try:
-            decoded = jwt.decode(token, InternalTokenUtil._secret, algorithms=["HS256"])
+            decoded: dict[str, Any] = jwt.decode(
+                token, InternalTokenUtil._secret, algorithms=["HS256"]
+            )
             return decoded
         except jwt.ExpiredSignatureError as error:
             raise BusinessException(
@@ -72,7 +84,7 @@ class InternalTokenUtil:
                 HttpCode.UNAUTHORIZED,
                 Messages.ERROR_INTERNAL_TOKEN_EXPIRED,
             ) from error
-        except jwt.InvalidTokenError as error:
+        except PyJWTError as error:
             raise BusinessException(
                 Messages.INTERNAL_TOKEN_INVALID,
                 HttpCode.UNAUTHORIZED,
@@ -87,7 +99,7 @@ class InternalTokenUtil:
         :return: 用户ID
         """
         claims: dict[str, Any] = self.validate_internal_token(token)
-        return claims.get("userId")
+        return claims.get("userId")  # type: ignore[return-value]
 
     def extract_service_name(self, token: str) -> Optional[str]:
         """
@@ -97,4 +109,4 @@ class InternalTokenUtil:
         :return: 服务名称
         """
         claims: dict[str, Any] = self.validate_internal_token(token)
-        return claims.get("serviceName")
+        return claims.get("serviceName")  # type: ignore[return-value]

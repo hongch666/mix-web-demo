@@ -22,6 +22,11 @@ from app.internal.cache import (
     PublishTimeCache,
     StatisticsCache,
     WordcloudCache,
+    get_article_cache,
+    get_category_cache,
+    get_publish_time_cache,
+    get_statistics_cache,
+    get_wordcloud_cache,
 )
 from app.internal.clients import (
     NestjsClient,
@@ -29,7 +34,7 @@ from app.internal.clients import (
     get_nestjs_client,
     get_spring_client,
 )
-from app.internal.crud import ArticleMapper
+from app.internal.crud import ArticleMapper, get_article_mapper
 
 
 class AnalyzeService:
@@ -46,13 +51,18 @@ class AnalyzeService:
         spring_client: Optional[SpringClient] = None,
         nestjs_client: Optional[NestjsClient] = None,
     ) -> None:
-        self.articleMapper: Optional[ArticleMapper] = articleMapper
+        # 依赖由工厂显式传入，缺省时回退进程内单例，字段本身不再需要允许 None
+        self.articleMapper: ArticleMapper = articleMapper or get_article_mapper()
         # 注入缓存对象
-        self._article_cache: Optional[ArticleCache] = article_cache
-        self._category_cache: Optional[CategoryCache] = category_cache
-        self._publish_time_cache: Optional[PublishTimeCache] = publish_time_cache
-        self._statistics_cache: Optional[StatisticsCache] = statistics_cache
-        self._wordcloud_cache: Optional[WordcloudCache] = wordcloud_cache
+        self._article_cache: ArticleCache = article_cache or get_article_cache()
+        self._category_cache: CategoryCache = category_cache or get_category_cache()
+        self._publish_time_cache: PublishTimeCache = (
+            publish_time_cache or get_publish_time_cache()
+        )
+        self._statistics_cache: StatisticsCache = (
+            statistics_cache or get_statistics_cache()
+        )
+        self._wordcloud_cache: WordcloudCache = wordcloud_cache or get_wordcloud_cache()
         self._singleflight_locks: dict[str, asyncio.Lock] = {}
         self._singleflight_guard: asyncio.Lock = asyncio.Lock()
         # 远程服务客户端由工厂装配，缺省时取共享单例
@@ -186,7 +196,8 @@ class AnalyzeService:
         3. 查询成功后更新缓存
         """
         articles: Optional[list[Any]] = None
-        data_source: Optional[str] = None
+        # 走到写缓存分支时数据来源必定已被赋值，这里用空串表示未设置
+        data_source: str = ""
         start: float = time.time()
         try:
             cached_result: Optional[

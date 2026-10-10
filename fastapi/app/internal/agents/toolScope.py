@@ -44,12 +44,12 @@ def enforce_sql_row_scope(
     """
     scope = get_tool_scope()
     if scope is None:
-        return Messages.SQL_TOOL_SCOPE_MISSING
+        return Messages.SQL_TOOL_SCOPE_MISSING()
 
     if scope.is_admin:
         return None
 
-    return Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN
+    return Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN()
 
 
 def enforce_mongodb_row_scope(filter_dict: Optional[dict[str, Any]]) -> Optional[str]:
@@ -59,12 +59,12 @@ def enforce_mongodb_row_scope(filter_dict: Optional[dict[str, Any]]) -> Optional
     """
     scope = get_tool_scope()
     if scope is None:
-        return Messages.SQL_TOOL_SCOPE_MISSING
+        return Messages.SQL_TOOL_SCOPE_MISSING()
 
     if scope.is_admin:
         return None
 
-    return Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN
+    return Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN()
 
 
 def log_scope_denial(tool_name: str, denial: str) -> None:

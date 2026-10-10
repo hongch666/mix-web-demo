@@ -33,7 +33,7 @@ class AiHistoryMapper:
                 .where(AiHistory.user_id == user_id)
                 .order_by(AiHistory.created_at.asc(), AiHistory.id.asc())
             )
-            return (await db.execute(statement)).scalars().all()
+            return list((await db.execute(statement)).scalars().all())
 
         statement = (
             select(AiHistory)

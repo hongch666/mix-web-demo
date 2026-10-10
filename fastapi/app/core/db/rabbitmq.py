@@ -4,6 +4,7 @@ import json
 from typing import Any, Optional
 
 import aio_pika
+from aio_pika.abc import AbstractChannel, AbstractRobustConnection
 
 from app.core.base import Logger
 from app.core.config import load_config
@@ -14,8 +15,8 @@ class RabbitMQClient:
     """RabbitMQ 客户端"""
 
     def __init__(self) -> None:
-        self.connection: Optional[aio_pika.RobustConnection] = None
-        self.channel: Optional[aio_pika.RobustChannel] = None
+        self.connection: Optional[AbstractRobustConnection] = None
+        self.channel: Optional[AbstractChannel] = None
 
     def _build_url(self) -> Optional[str]:
         """构建 AMQP 连接 URL"""
@@ -64,6 +65,9 @@ class RabbitMQClient:
     async def _on_reconnect(self, _: Any) -> None:
         """重连后的回调：重新获取 channel"""
         try:
+            if self.connection is None:
+                Logger.warning(Messages.RABBITMQ_NOT_CONNECTED_MESSAGE)
+                return
             self.channel = await self.connection.channel()
             Logger.info(Messages.RABBITMQ_RECONNECT_CHANNEL_RECOVERED)
         except Exception as e:

@@ -6,12 +6,13 @@ from contextlib import aclosing, suppress
 from typing import Any, Optional
 
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 
 from app.common.decorators import log, requireInternalToken
 from app.common.middleware import get_current_user_id
 from app.core.auth import is_memory_user
 from app.core.base import (
+    ApiResponse,
     Logger,
     StreamFrameContext,
     build_native_frame,
@@ -71,7 +72,7 @@ async def send_message(
     geminiService: GeminiServiceDep,
     glmService: GlmServiceDep,
     aiHistoryService: AiHistoryServiceDep,
-) -> JSONResponse:
+) -> ChatResponse | ApiResponse[ChatResponseData]:
     """普通发送聊天消息"""
 
     user_id: Optional[int] = get_current_user_id()

@@ -109,10 +109,19 @@ filterwarnings = [
 [tool.pyright]
 # 让 Pylance 把 fastapi 目录作为独立执行环境，固定版本与虚拟环境，
 # 避免回退到全局解释器导致 PEP 585 泛型（dict[str, Any]）与第三方导入解析失败
-include = ["app", "tests", "main.py"]
+# 类型门禁只约束生产代码：tests 大量使用 unittest.mock，mock 属性天然是 Unknown，纳入门禁会产生无法收敛的报错，因此不包含 tests
+include = ["app", "main.py"]
 # 自定义 exclude 会覆盖 pyright 默认项，需显式保留 node_modules / 隐藏目录
-exclude = ["**/node_modules", "**/__pycache__", "**/.*", ".venv"]
+exclude = ["**/node_modules", "**/__pycache__", "**/.*", ".venv", "tests"]
 pythonVersion = "3.12"
 venvPath = "."
 venv = ".venv"
-typeCheckingMode = "basic"
+typeCheckingMode = "standard"
+# 以下严格规则在无类型标注的第三方库（clickhouse_sqlalchemy、nacos、jieba、apscheduler、neomodel 等）与 SQLAlchemy 旧式 Column 标注场景下无法满足，保持关闭，避免门禁出现无法收敛的报错
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportUnknownLambdaType = false
+reportMissingParameterType = false

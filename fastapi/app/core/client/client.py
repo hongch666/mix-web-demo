@@ -43,7 +43,9 @@ def _get_remote_call_config() -> dict[str, Any]:
     """获取远程调用配置"""
     global _remote_call_config
     if _remote_call_config is None:
-        _remote_call_config = load_config("remote_call")
+        loaded: dict[str, Any] = load_config("remote_call")
+        _remote_call_config = loaded
+        return loaded
     return _remote_call_config
 
 
@@ -171,7 +173,7 @@ async def _resolve_service_url(service_name: str, path: str) -> str:
     return f"http://{instance['ip']}:{instance['port']}{path}"
 
 
-def _should_retry_remote_call(error: Exception) -> bool:
+def _should_retry_remote_call(error: BaseException) -> bool:
     """仅对瞬时性错误重试，避免无意义放大故障"""
     if isinstance(error, httpx.RequestError):
         return True
@@ -202,7 +204,10 @@ def _is_breaker_failure(error: Exception) -> bool:
 
 def _before_retry_log(retry_state: RetryCallState) -> None:
     """输出 tenacity 重试日志"""
-    error: Optional[BaseException] = retry_state.outcome.exception()
+    outcome = retry_state.outcome
+    error: Optional[BaseException] = (
+        outcome.exception() if outcome is not None else None
+    )
     Logger.warning(Messages.REMOTE_SERVICE_RETRY(retry_state.attempt_number + 1, error))
 
 
@@ -214,8 +219,8 @@ async def _request_remote_service(
     params: Optional[dict[str, Any]],
     data: Optional[dict[str, Any]],
     json: Optional[dict[str, Any]],
-    timeout: Any,
-) -> Any:
+    timeout: float | httpx.Timeout,
+) -> dict[str, Any]:
     """执行一次真正的异步远程请求
 
     timeout 透传到 client.request，确保即使使用 lifespan 中创建的共享客户端，
@@ -237,7 +242,7 @@ async def _request_remote_service(
 def _extract_remote_error_detail(response: httpx.Response) -> str:
     """提取下游统一响应体里的错误说明，便于调用方据此调整参数"""
     try:
-        payload: Any = response.json()
+        payload: dict[str, Any] = response.json()
     except ValueError:
         return ""
     if not isinstance(payload, dict):
@@ -304,8 +309,8 @@ async def call_remote_service(
     data: Optional[dict[str, Any]] = None,
     json: Optional[dict[str, Any]] = None,
     retries: Optional[int] = None,
-    timeout: Optional[int] = None,
-) -> Any:
+    timeout: Optional[float] = None,
+) -> dict[str, Any]:
     """
     通过 Nacos 服务发现并调用远程服务
 
@@ -315,9 +320,13 @@ async def call_remote_service(
     # 从配置文件读取默认值
     config = _get_remote_call_config()
     if retries is None:
-        retries = config.get("max_retries")
+        retries = config.get("max_retries", 3)
     if timeout is None:
-        timeout = config.get("timeout")
+        timeout = config.get("timeout", 30.0)
+
+    # 确保 retries 和 timeout 不为 None
+    assert retries is not None
+    assert timeout is not None
 
     merged_headers: dict[str, str] = _merge_headers(headers)
     breaker: SimpleCircuitBreaker = _get_service_breaker(service_name)
@@ -366,8 +375,8 @@ async def _call_with_client(
     json: Optional[dict[str, Any]],
     retries: int,
     breaker: SimpleCircuitBreaker,
-    timeout: int,
-) -> Any:
+    timeout: float,
+) -> dict[str, Any]:
     """使用指定客户端执行远程调用（含熔断和重试）"""
     started_at: float = time.perf_counter()
     try:

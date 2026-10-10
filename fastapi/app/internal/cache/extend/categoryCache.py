@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys
@@ -27,7 +27,7 @@ class CategoryCache(VersionedCache):
     L1_CACHE_TTL: int = 300  # 5分钟
 
     # 版本号校验依据：分类文章数数仓表
-    VERSION_MODEL: type[AdsCategoryStats] = AdsCategoryStats
+    VERSION_MODEL: ClassVar[type[AdsCategoryStats]] = AdsCategoryStats
 
     async def get(self) -> Optional[list[dict[str, Any]]]:
         """

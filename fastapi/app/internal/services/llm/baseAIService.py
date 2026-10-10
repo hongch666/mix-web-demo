@@ -8,7 +8,8 @@ from langchain_core.agents import AgentAction
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
-from sqlalchemy.orm import Session
+from pydantic import SecretStr
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import is_memory_user, normalize_user_id
 from app.core.base import Logger
@@ -167,10 +168,12 @@ class BaseAiService:
         self.use_structured_output: bool = use_structured_output
         # 工具组装配工厂由依赖图注入，缺省时回退进程内默认装配
         self._tool_factories: Optional[AgentToolFactories] = tool_factories
-        self.llm: Optional[Any] = None
-        self.agent: Optional[Any] = None
-        self.agent_executor: Optional[Any] = None
-        self.intent_router: Optional[Any] = None
+        # 这几个句柄在配置缺失时保持 None，运行期用 getattr/真值判断兜底，
+        # 因此声明为 Any 而不是 Optional[Any]，否则每次成员访问都会被判为可能为 None
+        self.llm: Any = None
+        self.agent: Any = None
+        self.agent_executor: Any = None
+        self.intent_router: Any = None
         self.all_tools: list[Any] = []
         self.model_name: str = ""
         self._api_key: str = ""
@@ -240,7 +243,7 @@ class BaseAiService:
         self,
         message: str,
         user_id: Optional[int],
-        db: Optional[Session],
+        db: Optional[AsyncSession],
         runnable_config: Optional[dict] = None,
         notes: Optional[list[str]] = None,
     ) -> list[Any]:
@@ -261,7 +264,7 @@ class BaseAiService:
         """
         summary = ""
         chat_history: list[ChatHistoryItem] = []
-        if db and is_memory_user(user_id):
+        if db and user_id is not None and is_memory_user(user_id):
             summary, chat_history = await self._load_chat_memory(
                 user_id,
                 message,
@@ -289,7 +292,7 @@ class BaseAiService:
         self,
         user_id: Optional[int],
         message: str,
-        db: Optional[Session],
+        db: Optional[AsyncSession],
         runnable_config: Optional[dict] = None,
         notes: Optional[list[str]] = None,
     ) -> tuple[str, list[ChatHistoryItem]]:
@@ -308,7 +311,7 @@ class BaseAiService:
         Returns:
             tuple[str, list[ChatHistoryItem]]: 历史摘要与注入的原文轮次
         """
-        if not (db and is_memory_user(user_id)):
+        if not (db and user_id is not None and is_memory_user(user_id)):
             if user_id is not None:
                 Logger.info(Messages.MEMORY_SKIPPED_SYSTEM_USER(user_id))
             return "", []
@@ -324,7 +327,7 @@ class BaseAiService:
         )
 
     async def _load_memory_summary(
-        self, user_id: int, db: Session
+        self, user_id: int, db: AsyncSession
     ) -> Optional[AiUserSummary]:
         """读取用户级记忆摘要，读取失败时降级为无摘要"""
         try:
@@ -338,7 +341,7 @@ class BaseAiService:
         user_id: int,
         message: str,
         system_prompt: str,
-        db: Session,
+        db: AsyncSession,
         use_tools: bool,
         runnable_config: Optional[dict] = None,
         notes: Optional[list[str]] = None,
@@ -362,11 +365,15 @@ class BaseAiService:
             tuple[str, list[ChatHistoryItem]]: 历史摘要与注入的原文轮次
         """
         summary_row = await self._load_memory_summary(user_id, db)
+        # 模型沿用 SQLAlchemy 旧式 Column 标注，字段静态类型是 Column[T]，取值时按运行期值处理
+        summary_values: Any = summary_row
         watermark = (
-            int(summary_row.last_summarized_history_id or 0) if summary_row else 0
+            int(summary_values.last_summarized_history_id or 0) if summary_row else 0
         )
-        existing_summary = str(summary_row.summary or "") if summary_row else ""
-        summarized_count = int(summary_row.summarized_count or 0) if summary_row else 0
+        existing_summary = str(summary_values.summary or "") if summary_row else ""
+        summarized_count = (
+            int(summary_values.summarized_count or 0) if summary_row else 0
+        )
         candidate_rounds = self._context_budget.candidate_rounds
 
         try:
@@ -449,7 +456,7 @@ class BaseAiService:
 
     async def _resolve_compact_targets(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         watermark: int,
         records: list[tuple[int, str, str]],
@@ -482,7 +489,7 @@ class BaseAiService:
         return targets
 
     async def _load_gap_records(
-        self, db: Session, user_id: int, watermark: int, oldest_loaded_id: int
+        self, db: AsyncSession, user_id: int, watermark: int, oldest_loaded_id: int
     ) -> list[tuple[int, str, str]]:
         """读取水位线之后、本轮最近记录之前被候选上限跳过的更早记录
 
@@ -508,7 +515,7 @@ class BaseAiService:
         targets: list[ChatHistoryItem],
         watermark_id: int,
         summarized_count: int,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         runnable_config: Optional[dict] = None,
         notes: Optional[list[str]] = None,
@@ -863,7 +870,7 @@ class BaseAiService:
             if self._api_key and self._base_url and self.model_name:
                 self.llm = ChatOpenAI(
                     model=self.model_name,
-                    api_key=self._api_key,
+                    api_key=SecretStr(self._api_key),
                     base_url=self._base_url,
                     temperature=self.temperature,
                     timeout=self._timeout,
@@ -956,7 +963,7 @@ class BaseAiService:
         self,
         message: str,
         user_id: int | str = 0,
-        db: Optional[Session] = None,
+        db: Optional[AsyncSession] = None,
         runnable_config: Optional[dict] = None,
         notes: Optional[list[str]] = None,
     ) -> str:
@@ -1041,7 +1048,8 @@ class BaseAiService:
                 context = self._build_chat_context(summary, chat_history)
                 user_info = (
                     Messages.CURRENT_USER_ID_INFO(normalized_user_id)
-                    if is_memory_user(normalized_user_id)
+                    if normalized_user_id is not None
+                    and is_memory_user(normalized_user_id)
                     else ""
                 )
                 full_input = context + user_info + Messages.CURRENT_QUESTION(message)
@@ -1062,7 +1070,7 @@ class BaseAiService:
         self,
         message: str,
         user_id: int | str = 0,
-        db: Optional[Session] = None,
+        db: Optional[AsyncSession] = None,
         runnable_config: Optional[dict] = None,
     ) -> AsyncGenerator[dict[str, str], None]:
         """流式聊天接口
@@ -1206,7 +1214,8 @@ class BaseAiService:
                 context = self._build_chat_context(summary, chat_history)
                 user_info = (
                     Messages.CURRENT_USER_ID_INFO(normalized_user_id)
-                    if is_memory_user(normalized_user_id)
+                    if normalized_user_id is not None
+                    and is_memory_user(normalized_user_id)
                     else ""
                 )
                 full_input = context + user_info + Messages.CURRENT_QUESTION(message)
@@ -1353,8 +1362,9 @@ class BaseAiService:
                     ),
                 ]
 
+                # 在 try 之前初始化，避免异常路径下变量被判为可能未绑定
+                final_content_emitted = False
                 try:
-                    final_content_emitted = False
                     async for chunk in self.llm.astream(
                         stream_messages,
                         config=config,
@@ -1390,7 +1400,7 @@ class BaseAiService:
                         )
                     except Exception as fallback_error:
                         Logger.error(
-                            Messages.FINAL_STREAM_OUTPUT_FAILED(fallback_error)
+                            Messages.FINAL_STREAM_OUTPUT_FAILED(str(fallback_error))
                         )
                         fallback_content = ""
 

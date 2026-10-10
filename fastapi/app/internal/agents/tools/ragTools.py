@@ -56,7 +56,8 @@ class RAGTools:
                     api_key=agent_cfg["api_key"],
                     base_url=agent_cfg["base_url"],
                     temperature=0.3,
-                    max_tokens=300,
+                    # langchain-openai 的 max_tokens 字段别名为 max_completion_tokens，按别名传入
+                    max_completion_tokens=300,
                     timeout=10,
                 )
                 self.logger.info(Messages.HYDE_LLM_INITIALIZED())

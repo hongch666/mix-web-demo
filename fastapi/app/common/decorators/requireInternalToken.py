@@ -1,7 +1,7 @@
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from functools import wraps
-from typing import Any, Optional
+from typing import Any, Optional, ParamSpec, TypeVar
 
 from fastapi import Request
 
@@ -11,10 +11,16 @@ from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 
+P = ParamSpec("P")
+R = TypeVar("R")
+AsyncFunc = Callable[P, Coroutine[Any, Any, R]]
 
-def requireInternalToken[T: Callable[..., Any]](
-    func: Optional[T] = None, *, required_service_name: Optional[str] = None
-) -> Callable[..., Any]:
+
+def requireInternalToken[**P, R](
+    func: Optional[AsyncFunc[P, R]] = None,
+    *,
+    required_service_name: Optional[str] = None,
+) -> AsyncFunc[P, R] | Callable[[AsyncFunc[P, R]], AsyncFunc[P, R]]:
     """
     需要内部服务令牌验证的装饰器
     用于标记需要内部服务令牌才能访问的接口
@@ -38,9 +44,9 @@ def requireInternalToken[T: Callable[..., Any]](
     # 绑定service名到闭包中，供后续的装饰器使用
     service_name = required_service_name
 
-    def decorator(f: T) -> T:
+    def decorator(f: AsyncFunc[P, R]) -> AsyncFunc[P, R]:
         @wraps(f)
-        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+        async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             request: Optional[Request] = _get_request_from_args(args, kwargs)
             if request is None:
                 Logger.error(Messages.INTERNAL_TOKEN_MISSING)

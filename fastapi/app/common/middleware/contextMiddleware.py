@@ -81,12 +81,16 @@ class ContextMiddleware(BaseHTTPMiddleware):
         internal_token: Optional[str] = _extract_bearer_token(
             request.headers.get("X-Internal-Token")
         )
-        user_id_token: contextvars.Token = user_id_ctx_var.set(user_id)
-        username_token: contextvars.Token = username_ctx_var.set(username)
-        session_id_token: contextvars.Token = session_id_ctx_var.set(session_id)
-        token_token: contextvars.Token = token_ctx_var.set(token)
-        internal_token_token: contextvars.Token = internal_token_ctx_var.set(
-            internal_token
+        user_id_token: contextvars.Token[Optional[int]] = user_id_ctx_var.set(user_id)
+        username_token: contextvars.Token[Optional[str]] = username_ctx_var.set(
+            username
+        )
+        session_id_token: contextvars.Token[Optional[str]] = session_id_ctx_var.set(
+            session_id
+        )
+        token_token: contextvars.Token[Optional[str]] = token_ctx_var.set(token)
+        internal_token_token: contextvars.Token[Optional[str]] = (
+            internal_token_ctx_var.set(internal_token)
         )
         try:
             response: Response = await call_next(request)

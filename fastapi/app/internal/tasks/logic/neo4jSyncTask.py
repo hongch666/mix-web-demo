@@ -131,7 +131,7 @@ class KnowledgeGraphSyncService:
     def _normalize_users(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
             {
-                "id": int(row.get("id")),
+                "id": int(row.get("id") or 0),
                 "name": row.get("name") or "",
                 "email": row.get("email") or "",
                 "role": row.get("role") or "user",

@@ -1,6 +1,6 @@
 from datetime import datetime
 from functools import lru_cache
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,10 +37,12 @@ class AiUserSummaryMapper:
             )
             db.add(record)
         else:
-            existing.summary = summary
-            existing.last_summarized_history_id = last_summarized_history_id
-            existing.summarized_count = summarized_count
-            existing.updated_at = datetime.now()
+            # 模型沿用 SQLAlchemy 旧式 Column 标注，属性静态类型是 Column[T]，这里按运行期对象写入
+            writable: Any = existing
+            writable.summary = summary
+            writable.last_summarized_history_id = last_summarized_history_id
+            writable.summarized_count = summarized_count
+            writable.updated_at = datetime.now()
             record = existing
 
         await db.commit()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from functools import lru_cache
+from typing import Any
 
 from app.core.base import Logger
 from app.core.constants import Defaults, Messages, Scripts
@@ -78,12 +79,14 @@ class GraphSearchService:
 
         # 解析结果
         signal_results: list[dict[int, dict]] = []
-        for r in results:
-            if isinstance(r, Exception):
-                Logger.warning(Messages.GRAPH_SEARCH_QUERY_EXCEPTION_LOG(r))
+        for raw in results:
+            # gather 带 return_exceptions 时结果类型含 BaseException，异常分支单独降级为空结果
+            signal_result: Any = raw
+            if isinstance(signal_result, Exception):
+                Logger.warning(Messages.GRAPH_SEARCH_QUERY_EXCEPTION_LOG(signal_result))
                 signal_results.append({})
             else:
-                signal_results.append(r)
+                signal_results.append(signal_result)
 
         # 合并分数
         article_scores: dict[int, dict] = {}

@@ -182,7 +182,8 @@ class UserService:
         try:
             return await self._nestjs_client.get_article_view_distribution(user_id)
         except Exception as e:
-            Logger.error(Messages.ARTICLE_VIEW_DISTRIBUTION_FAILED(e), exc_info=True)
+            # 项目 Logger 只接收消息，异常内容已由消息模板带上，不能再传 exc_info
+            Logger.error(Messages.ARTICLE_VIEW_DISTRIBUTION_FAILED(e))
             return {"total_views": 0, "articles": []}
 
     async def get_author_follow_statistics_service(

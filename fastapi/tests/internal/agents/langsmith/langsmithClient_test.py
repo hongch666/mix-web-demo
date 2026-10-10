@@ -8,6 +8,7 @@ import pytest
 from langsmith.run_helpers import get_current_run_tree
 from langsmith.utils import tracing_is_enabled
 
+from app.core.constants import Messages
 from app.internal.agents.langsmith import LangSmithConfig, client as client_module
 from app.internal.agents.langsmith.client import (
     get_langsmith_client,
@@ -76,19 +77,14 @@ class _StubLangSmithClient:
 
 
 # 配置关闭时初始化不创建客户端且不记录错误
+# 关闭态日志直接取 Messages 常量，常量缺失会在初始化阶段抛 AttributeError 被本用例拦住
 def test_init_langsmith_logs_disabled_state(monkeypatch: pytest.MonkeyPatch) -> None:
-    # 当前 Messages 常量缺少关闭追踪提示键，注入替身以隔离被测分支
-    monkeypatch.setattr(
-        client_module,
-        "Messages",
-        SimpleNamespace(LANGSMITH_TRACING_DISABLED="LangSmith 追踪已禁用"),
-    )
-
     init_langsmith(_config(enabled=False))
 
     assert client_module._client is None
     assert client_module._init_error is None
     assert get_langsmith_config() is client_module._config
+    assert Messages.LANGSMITH_TRACING_DISABLED != ""
 
 
 # 单例缺失时初始化加载配置并构造客户端
@@ -113,19 +109,12 @@ def test_init_langsmith_loads_config_when_absent(
 def test_init_langsmith_records_missing_package(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # 当前 Messages 常量缺少依赖缺失提示键，注入替身以隔离被测分支
-    missing_package = "LangSmith 依赖未安装"
-    monkeypatch.setattr(
-        client_module,
-        "Messages",
-        SimpleNamespace(LANGSMITH_PACKAGE_NOT_INSTALLED=missing_package),
-    )
     monkeypatch.setattr(client_module, "LangSmithClient", None)
 
     init_langsmith(_config())
 
     assert client_module._client is None
-    assert client_module._init_error == missing_package
+    assert client_module._init_error == Messages.LANGSMITH_PACKAGE_NOT_INSTALLED
 
 
 # 初始化按配置的 api_key 与 endpoint 构造客户端

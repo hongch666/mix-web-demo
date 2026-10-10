@@ -1,6 +1,6 @@
 import hashlib
 from contextvars import ContextVar
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, Scripts
@@ -26,7 +26,8 @@ class VersionedCache(BaseCache):
     REDIS_VERSION_KEY: str = ""
 
     # 版本号校验依据的数仓模型，直接取模型对应表（如 AdsTop10Article 对应 warehouse.ads_top10_articles）
-    VERSION_MODEL: Optional[type[Any]] = None
+    # 声明为 ClassVar[Any]：子类用具体模型类型收窄，可变属性的覆盖类型是固定的，基类不能用 Optional[type[Any]] 卡住
+    VERSION_MODEL: ClassVar[Any] = None
 
     def __init__(self) -> None:
         super().__init__()

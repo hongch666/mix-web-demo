@@ -64,7 +64,7 @@ async def test_query_denies_non_admin_scope() -> None:
 
     result = await tool.query_mongodb("apilogs", {"userId": 7}, 10)
 
-    assert result == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN
+    assert result == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN()
     client.query_mongodb.assert_not_awaited()
 
 
@@ -274,7 +274,7 @@ async def test_aggregate_denies_non_admin_scope() -> None:
 
     result = await tool.aggregate_mongodb("apilogs", [{"$count": "total"}], 10)
 
-    assert result == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN
+    assert result == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN()
     client.aggregate_mongodb.assert_not_awaited()
 
 

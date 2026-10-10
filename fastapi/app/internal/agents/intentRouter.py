@@ -53,17 +53,19 @@ def format_intent_expression(intents: Sequence[str]) -> IntentExpression:
 
 def parse_intent_expression(expression: IntentExpression) -> list[IntentType]:
     """解析意图表达式为意图列表，过滤未知值并在空结果时回落默认意图"""
-    intents = [
+    intents: list[IntentType] = [
         cast(IntentType, item)
         for item in dict.fromkeys(str(expression).split("|"))
         if item in IntentConstants.SUPPORTED_TYPES
     ]
-    return intents or [IntentConstants.DEFAULT]
+    if not intents:
+        return [IntentConstants.DEFAULT]
+    return intents
 
 
 def normalize_intents(intents: Sequence[str]) -> list[IntentType]:
     """规范化模型给出的意图集合：去重、过滤未知值、剔除与其它领域并存的闲聊"""
-    unique = [
+    unique: list[IntentType] = [
         cast(IntentType, item)
         for item in dict.fromkeys(intents)
         if item in IntentConstants.SUPPORTED_TYPES
@@ -71,7 +73,10 @@ def normalize_intents(intents: Sequence[str]) -> list[IntentType]:
     if not unique:
         return [IntentConstants.DEFAULT]
     if len(unique) > 1 and IntentConstants.GENERAL_CHAT in unique:
-        unique = [item for item in unique if item != IntentConstants.GENERAL_CHAT]
+        filtered: list[IntentType] = [
+            item for item in unique if item != IntentConstants.GENERAL_CHAT
+        ]
+        return filtered
     return unique
 
 
@@ -250,7 +255,7 @@ class IntentRouter:
         单个关键词只作为交叉校验信号，至少两个信号同时出现才组合路由；
         闲聊被关键词接管同样要求两个信号，避免“推荐一首歌”这类请求误入工具链路
         """
-        detected = [
+        detected: list[IntentType] = [
             intent
             for intent in cls._resolve_text_intents(question)
             if intent != IntentConstants.GENERAL_CHAT
@@ -259,7 +264,9 @@ class IntentRouter:
             return [primary]
         if primary == IntentConstants.GENERAL_CHAT:
             return detected
-        return [primary, *[item for item in detected if item != primary]]
+        merged: list[IntentType] = [primary]
+        merged.extend(item for item in detected if item != primary)
+        return merged
 
     async def route_with_permission_check_async(
         self,
