@@ -95,6 +95,11 @@ lint_nestjs() {
     command -v npm >/dev/null 2>&1 || return 2
     print_info "检查 NestJS 代码（ESLint + Prettier）..."
     (cd "$WORKDIR/nestjs" && npm run lint && npm run format:check) || return 1
+
+    # TypeScript 编译类型检查
+    print_info "检查 NestJS 类型（tsc --noEmit）..."
+    (cd "$WORKDIR/nestjs" && ./node_modules/.bin/tsc --noEmit -p tsconfig.build.json) || return 1
+
     print_info "检查 NestJS 常量类成员顺序..."
     lint_constants_order "$WORKDIR/nestjs/src/common/constants"
 }
@@ -103,6 +108,18 @@ lint_fastapi() {
     command -v ruff >/dev/null 2>&1 || return 2
     print_info "检查 FastAPI 代码（Ruff）..."
     (cd "$WORKDIR/fastapi" && ruff check .) || return 1
+
+    # pyright 类型检查
+    if command -v pyright >/dev/null 2>&1; then
+        print_info "检查 FastAPI 类型标注（pyright）..."
+        (cd "$WORKDIR/fastapi" && pyright) || return 1
+    elif [ -f "$WORKDIR/fastapi/.venv/Scripts/python.exe" ]; then
+        print_info "检查 FastAPI 类型标注（pyright via venv）..."
+        (cd "$WORKDIR/fastapi" && .venv/Scripts/python.exe -m pyright) || return 1
+    else
+        print_warn "pyright 未安装，跳过类型检查"
+    fi
+
     print_info "检查 FastAPI 常量类成员顺序..."
     lint_constants_order "$WORKDIR/fastapi/app/core/constants" || return 1
     print_info "检查 FastAPI 包导入规范..."
