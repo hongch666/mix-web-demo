@@ -193,8 +193,7 @@ module/system/    系统业务模块（apiLog、articleLog、sqlTools 等）
 ### 目录组织
 
 ```
-app/core/         基础设施：auth、base(Logger)、client(远程调用)、config、constants、db、errors
-app/common/       decorators、middleware（contextvars 上下文中间件）
+app/core/         基础设施：auth、base(Logger)、client(远程调用)、config、constants、db、errors、decorators、middleware（contextvars 上下文中间件）
 app/internal/api        路由（按业务分 router）
 app/internal/services   业务服务（类组织 + 工厂函数）
 app/internal/crud       数据访问 Mapper（含 ClickHouse 查询）
@@ -232,7 +231,7 @@ app/internal/agents     LangChain Agent 与工具
 - Agent 工具经 `internal/agents/toolFactories.py` 的 `AgentToolFactories` 注入 `BaseAiService`（**传工厂而非实例**，以保留线程池并行加载与单组失败隔离）
 - Agent 工具权限：`internal/agents/toolScope.py` 的 contextvars 作用域（**fail-closed**）——`intentRouter` 在路由前统一写入 `ToolScope(user_id, is_admin)`，SQL 与 MongoDB 工具执行前校验行级范围（查询必须含 `user_id` 且绑定值等于当前用户，admin 放行）。禁止把请求态写进 `@lru_cache` 单例的实例字段
 - 日志：`from app.core.base import Logger`，`Logger.info/warning/error/debug`
-- 上下文：`common/middleware/contextMiddleware.py` 的 contextvars（`get_current_user_id` 等），深层函数免参读取用户信息
+- 上下文：`core/middleware/contextMiddleware.py` 的 contextvars（`get_current_user_id` 等），深层函数免参读取用户信息
 
 ## GoZero 服务（gozero/，API-First）
 
