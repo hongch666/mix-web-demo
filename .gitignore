@@ -204,15 +204,15 @@ dist/
 
 .vscode-jest
 
-CLAUDE.md
-
 .claude
 
 .trae
 
-.github
+.github/*
+!.github/copilot-instructions.md
 
-.codebuddy
+.codebuddy/*
+!.codebuddy/rules
 
 .codex
 
