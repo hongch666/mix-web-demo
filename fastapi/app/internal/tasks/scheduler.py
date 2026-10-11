@@ -93,8 +93,9 @@ def start_scheduler(
         next_run_time=datetime.now(),  # 立即执行
     )
 
-    # 任务3：同步 MySQL 到 Neo4j 知识图谱（增量同步，每24小时）
+    # 任务3：同步 MySQL 到 Neo4j 知识图谱
     neo4j_sync_job_func = partial(sync_mysql_to_neo4j_async, force_full=False)
+    # 每24小时执行一次
     scheduler.add_job(
         partial(_run_measured_task, "neo4j-sync", neo4j_sync_job_func),
         "interval",
@@ -102,8 +103,9 @@ def start_scheduler(
         id="sync_neo4j",
     )
 
-    # 任务4：Neo4j 知识图谱全量同步（每周一次，兜底清理 MySQL 已删除数据），增量同步为避免用增量快照误删全图，不执行清理；已删除记录需靠全量同步清理
+    # 任务4：Neo4j 知识图谱全量同步（兜底清理 MySQL 已删除数据），增量同步为避免用增量快照误删全图，不执行清理；已删除记录需靠全量同步清理
     neo4j_full_sync_job_func = partial(sync_mysql_to_neo4j_async, force_full=True)
+    # 每7天执行一次
     scheduler.add_job(
         partial(_run_measured_task, "neo4j-full-sync", neo4j_full_sync_job_func),
         "interval",
@@ -111,14 +113,13 @@ def start_scheduler(
         id="sync_neo4j_full",
     )
 
-    # 任务5：增量同步 MySQL/MongoDB 到 ClickHouse 并刷新数仓，每10分钟执行一次
-    # 实时性由各服务的 HTTP 调用链路承担，数仓仅作低频兜底
-    # 首次延迟 1 分钟，与服务启动后注册进 Nacos 的时间对齐
+    # 任务5：增量同步 MySQL/MongoDB 到 ClickHouse 并刷新数仓
     warehouse_sync_job_func = partial(
         sync_warehouse_async,
         spring_client=spring_client,
         nestjs_client=nestjs_client,
     )
+    # 每10分钟执行一次
     scheduler.add_job(
         partial(_run_measured_task, "warehouse-sync", warehouse_sync_job_func),
         "interval",
