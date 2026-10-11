@@ -1,10 +1,11 @@
 from collections.abc import Generator
 from datetime import datetime
+from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from app.core.constants import RedisKeys, Scripts
+from app.core.constants import RedisKeys
 from app.internal.tasks.logic import neo4jSyncTask as task
 
 
@@ -27,6 +28,11 @@ def silence_logger(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, Non
     """Neo4j 同步任务日志密集，测试中静默日志"""
     monkeypatch.setattr(task, "Logger", Mock())
     yield
+
+
+def _build_neo4j_client(**attributes: Any) -> Mock:
+    """构造 Neo4j 客户端替身，install_schema 默认提供可等待实现"""
+    return Mock(install_schema=AsyncMock(), **attributes)
 
 
 def _build_service(
@@ -68,7 +74,7 @@ def test_extract_deleted_count_handles_missing_counters() -> None:
 def test_normalize_users_maps_fields_and_skips_missing_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    service = _build_service(monkeypatch, Mock())
+    service = _build_service(monkeypatch, _build_neo4j_client())
     rows = [
         {"id": "1", "name": "alice", "role": None, "created_at": None},
         {"name": "no-id"},
@@ -88,7 +94,7 @@ def test_normalize_users_maps_fields_and_skips_missing_id(
 def test_normalize_articles_computes_hash_and_tag_relations(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    service = _build_service(monkeypatch, Mock())
+    service = _build_service(monkeypatch, _build_neo4j_client())
     rows = [
         {
             "id": "7",
@@ -122,7 +128,7 @@ def test_normalize_articles_computes_hash_and_tag_relations(
 def test_normalize_likes_and_focus_skip_incomplete_rows(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    service = _build_service(monkeypatch, Mock())
+    service = _build_service(monkeypatch, _build_neo4j_client())
 
     likes = service._normalize_likes(
         [
@@ -140,17 +146,17 @@ def test_normalize_likes_and_focus_skip_incomplete_rows(
     assert [item["followedId"] for item in focus] == [2]
 
 
-# 建图 schema 按约束脚本数量逐条执行写查询
+# 建图 schema 委托 neomodel 客户端按模型声明安装约束
 @pytest.mark.anyio
-async def test_ensure_schema_runs_all_constraint_scripts(
+async def test_ensure_schema_delegates_to_client_install_schema(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock(run_write_query=AsyncMock())
+    client = _build_neo4j_client()
     service = _build_service(monkeypatch, client)
 
     await service._ensure_schema()
 
-    assert client.run_write_query.await_count == len(Scripts.NEO4J_CREATE_CONSTRAINTS)
+    client.install_schema.assert_awaited_once()
 
 
 # 空行集直接返回 0 且不发起写查询
@@ -158,7 +164,7 @@ async def test_ensure_schema_runs_all_constraint_scripts(
 async def test_batch_write_returns_zero_for_empty_rows(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock(run_write_query=AsyncMock())
+    client = _build_neo4j_client(run_write_query=AsyncMock())
     service = _build_service(monkeypatch, client)
 
     assert await service._batch_write([], "CYPHER", "用户") == 0
@@ -170,7 +176,7 @@ async def test_batch_write_returns_zero_for_empty_rows(
 async def test_batch_write_splits_rows_into_batches(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock(run_write_query=AsyncMock())
+    client = _build_neo4j_client(run_write_query=AsyncMock())
     service = _build_service(monkeypatch, client)
     rows = [{"id": index} for index in range(1201)]
 
@@ -189,7 +195,7 @@ async def test_batch_write_splits_rows_into_batches(
 async def test_cleanup_write_skips_empty_keep_keys(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock(run_write_query=AsyncMock())
+    client = _build_neo4j_client(run_write_query=AsyncMock())
     service = _build_service(monkeypatch, client)
 
     assert await service._cleanup_write("CYPHER", {"ids": []}, "文章") == 0
@@ -202,7 +208,7 @@ async def test_cleanup_write_skips_empty_keep_keys(
 async def test_cleanup_write_batches_relation_keys(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock(run_write_query=AsyncMock(return_value=None))
+    client = _build_neo4j_client(run_write_query=AsyncMock(return_value=None))
     service = _build_service(monkeypatch, client)
     keys = [f"key-{index}" for index in range(2500)]
 
@@ -221,7 +227,7 @@ async def test_cleanup_write_batches_relation_keys(
 async def test_cleanup_write_sends_node_ids_in_single_batch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock(run_write_query=AsyncMock(return_value=None))
+    client = _build_neo4j_client(run_write_query=AsyncMock(return_value=None))
     service = _build_service(monkeypatch, client)
     ids = list(range(2500))
 
@@ -237,7 +243,9 @@ async def test_cleanup_write_sums_deleted_counters(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     counters = Mock(nodes_deleted=2, relationships_deleted=3)
-    client = Mock(run_write_query=AsyncMock(return_value=Mock(counters=counters)))
+    client = _build_neo4j_client(
+        run_write_query=AsyncMock(return_value=Mock(counters=counters))
+    )
     service = _build_service(monkeypatch, client)
 
     assert await service._cleanup_write("CYPHER", {"ids": [1]}, "节点") == 5
@@ -248,7 +256,7 @@ async def test_cleanup_write_sums_deleted_counters(
 async def test_has_graph_data_reads_total_as_int(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock()
+    client = _build_neo4j_client()
     service = _build_service(monkeypatch, client)
 
     client.run_query = AsyncMock(return_value=[{"total": 3}])
@@ -269,7 +277,7 @@ async def test_has_graph_data_reads_total_as_int(
 async def test_sync_incremental_falls_back_to_full_sync_when_graph_empty(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock(
+    client = _build_neo4j_client(
         run_query=AsyncMock(return_value=[{"total": 0}]), run_write_query=AsyncMock()
     )
     service = _build_service(monkeypatch, client)
@@ -287,7 +295,7 @@ async def test_sync_incremental_falls_back_to_full_sync_when_graph_empty(
 async def test_sync_incremental_falls_back_to_full_sync_without_watermark(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock(
+    client = _build_neo4j_client(
         run_query=AsyncMock(return_value=[{"total": 2}]), run_write_query=AsyncMock()
     )
     service = _build_service(monkeypatch, client)
@@ -304,7 +312,7 @@ async def test_sync_incremental_falls_back_to_full_sync_without_watermark(
 async def test_sync_incremental_uses_watermark_window_and_skips_cleanup(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock(
+    client = _build_neo4j_client(
         run_query=AsyncMock(return_value=[{"total": 1}]), run_write_query=AsyncMock()
     )
     service = _build_service(monkeypatch, client)
@@ -324,7 +332,7 @@ async def test_sync_incremental_uses_watermark_window_and_skips_cleanup(
 async def test_sync_all_merges_snapshot_without_cleanup(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock(run_write_query=AsyncMock())
+    client = _build_neo4j_client(run_write_query=AsyncMock())
     service = _build_service(monkeypatch, client)
     monkeypatch.setattr(
         service,
@@ -363,7 +371,7 @@ async def test_sync_all_merges_snapshot_without_cleanup(
 async def test_fetch_snapshot_always_fetches_base_dimensions_in_full(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = Mock()
+    client = _build_neo4j_client()
     service = _build_service(monkeypatch, client)
     spring_client = Mock()
     for method in (
@@ -551,7 +559,7 @@ async def test_save_sync_time_swallows_redis_error(
 
 def _build_sync_service() -> tuple[task.KnowledgeGraphSyncService, Mock, Mock]:
     """构造带 mock 客户端的图谱同步服务"""
-    neo4j_client = Mock()
+    neo4j_client = _build_neo4j_client()
     neo4j_client.run_write_query = AsyncMock(return_value=None)
     spring_client = Mock()
     service = task.KnowledgeGraphSyncService(neo4j_client, spring_client)

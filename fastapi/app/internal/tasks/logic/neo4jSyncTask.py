@@ -234,8 +234,8 @@ class KnowledgeGraphSyncService:
         ]
 
     async def _ensure_schema(self) -> None:
-        for cypher in Scripts.NEO4J_CREATE_CONSTRAINTS:
-            await self.client.run_write_query(cypher)
+        """安装图谱约束与索引，唯一性声明来自 neomodel 模型"""
+        await self.client.install_schema()
 
     async def _batch_write(
         self,

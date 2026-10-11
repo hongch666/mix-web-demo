@@ -502,6 +502,10 @@ class Messages:
         return f"Neo4j 图谱函数查询失败: {query_name}, 错误: {error}"
 
     @staticmethod
+    def NEO4J_SCHEMA_INSTALL_FAILED(error: Exception) -> str:
+        return f"Neo4j 图谱约束与索引安装失败: {error}"
+
+    @staticmethod
     def CYPHER_QUERY_FAILED(error: Exception, cypher: str, params: Any) -> str:
         return f"Cypher 查询失败: {error}\nCypher: {cypher}\nParams: {params}"
 
@@ -1832,6 +1836,8 @@ class Messages:
     NEO4J_CONFIG_NOT_INITIALIZED_MESSAGE: str = "Neo4j 连接参数未初始化"
 
     NEO4J_QUERY_TOOLS_INITIALIZED_MESSAGE: str = "Neo4j 查询工具初始化成功"
+
+    NEO4J_SCHEMA_INSTALLED_MESSAGE: str = "Neo4j 图谱约束与索引已按模型声明安装"
 
     NEO4J_NO_RESULT_MESSAGE: str = "未找到相关知识图谱结果"
 

@@ -128,15 +128,6 @@ class Scripts:
         "connection-string",
     )
 
-    # ===== Neo4j 约束 =====
-    NEO4J_CREATE_CONSTRAINTS: list[str] = [
-        "CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE",
-        "CREATE CONSTRAINT category_id_unique IF NOT EXISTS FOR (c:Category) REQUIRE c.id IS UNIQUE",
-        "CREATE CONSTRAINT sub_category_id_unique IF NOT EXISTS FOR (s:SubCategory) REQUIRE s.id IS UNIQUE",
-        "CREATE CONSTRAINT article_id_unique IF NOT EXISTS FOR (a:Article) REQUIRE a.id IS UNIQUE",
-        "CREATE CONSTRAINT tag_name_unique IF NOT EXISTS FOR (t:Tag) REQUIRE t.name IS UNIQUE",
-    ]
-
     # ===== Neo4j MERGE Cypher（节点） =====
     NEO4J_MERGE_USERS_CYPHER: str = """
         UNWIND $rows AS row

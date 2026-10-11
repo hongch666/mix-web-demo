@@ -1,3 +1,4 @@
+import io
 from functools import lru_cache
 from typing import Any, Optional
 from urllib.parse import quote
@@ -22,6 +23,7 @@ class Neo4jClient:
         self.uri: str = ""
         self.user: str = ""
         self.password: str = ""
+        self._schema_installed: bool = False
         self._initialize_config()
 
     def _initialize_config(self) -> None:
@@ -68,6 +70,45 @@ class Neo4jClient:
         except Exception as e:
             self.logger.error(Messages.NEO4J_CONNECTION_FAILED(e))
             return False
+
+    async def install_schema(self) -> None:
+        """按 neomodel 模型声明安装图谱约束与索引
+
+        neomodel 通过 AsyncStructuredNode 的子类发现模型，故先延迟导入
+        app.internal.models 触发节点类注册（与 ClickHouse 建表同样处理，
+        避免 app.core.db 与 app.internal.models 循环依赖）
+
+        安装动作本身不带 IF NOT EXISTS，重复执行只会触发等价约束已存在
+        的异常，因此全进程只安装一次
+        """
+        if self._schema_installed:
+            return
+
+        # 延迟导入触发节点类注册，neomodel 按已注册子类的唯一索引声明建约束
+        from app.internal.models import (  # noqa: F401
+            Article,
+            Category,
+            SubCategory,
+            Tag,
+            User,
+        )
+
+        if not await self.connect():
+            return
+
+        # neomodel 会把每个类的安装明细写入 stdout，这里转交项目日志
+        buffer = io.StringIO()
+        try:
+            await adb.install_all_labels(stdout=buffer)
+        except Exception as e:
+            self.logger.error(Messages.NEO4J_SCHEMA_INSTALL_FAILED(e))
+            return
+
+        self._schema_installed = True
+        self.logger.info(Messages.NEO4J_SCHEMA_INSTALLED_MESSAGE)
+        detail = buffer.getvalue().strip()
+        if detail:
+            self.logger.debug(detail)
 
     async def run_query(
         self, cypher: str, params: Optional[dict[str, Any]] = None
