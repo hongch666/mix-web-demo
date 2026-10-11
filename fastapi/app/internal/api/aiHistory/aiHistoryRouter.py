@@ -2,8 +2,8 @@ from typing import Any
 
 from fastapi import APIRouter, Path, Query, Request
 
-from app.common.decorators import log, requireInternalToken, requireSelf
 from app.core.base import ApiResponse, success
+from app.core.decorators import log, requireInternalToken, requireSelf
 from app.dependencies import AiHistoryServiceDep, DbSession
 from app.internal.schemas import (
     AiHistoryResponse,

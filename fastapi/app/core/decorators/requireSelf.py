@@ -3,10 +3,10 @@ from functools import wraps
 from inspect import iscoroutinefunction
 from typing import Any, Optional, ParamSpec, TypeVar
 
-from app.common.middleware import get_current_user_id
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
+from app.core.middleware import get_current_user_id
 from app.internal.clients import SpringClient, get_spring_client
 
 P = ParamSpec("P")

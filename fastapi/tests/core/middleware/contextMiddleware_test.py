@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from opentelemetry import context, trace
 from opentelemetry.trace import NonRecordingSpan, SpanContext, TraceFlags, TraceState
 
-from app.common.middleware.contextMiddleware import (
+from app.core.middleware.contextMiddleware import (
     ContextMiddleware,
     _extract_bearer_token,
     get_current_internal_token,

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Request
 
-from app.common.decorators import log
 from app.core.base import ApiResponse, success
 from app.core.constants import Messages
+from app.core.decorators import log
 
 router: APIRouter = APIRouter(
     prefix="/test",

@@ -6,9 +6,9 @@ from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from starlette.responses import Response
 
-from app.common.middleware import middlewares
 from app.core.constants import SwaggerConfig
 from app.core.errors import exception_handlers
+from app.core.middleware import middlewares
 from app.core.telemetry import instrument_fastapi
 from app.core.telemetry.metrics import http_duration, http_requests
 from app.internal.api import routers

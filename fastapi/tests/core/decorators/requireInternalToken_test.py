@@ -6,12 +6,12 @@ from unittest.mock import Mock
 import pytest
 from fastapi import Request
 
-from app.common.decorators import requireInternalToken
 from app.core.constants import ErrorCodes, HttpCode, Messages
+from app.core.decorators import requireInternalToken
 from app.core.errors import BusinessException
 
 internal_token_module = importlib.import_module(
-    "app.common.decorators.requireInternalToken"
+    "app.core.decorators.requireInternalToken"
 )
 
 

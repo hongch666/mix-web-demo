@@ -5,11 +5,11 @@ from typing import Any, Optional, ParamSpec, TypeVar
 
 from fastapi import Request
 
-from app.common.middleware import get_current_internal_token
 from app.core.auth import InternalTokenUtil
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
+from app.core.middleware import get_current_internal_token
 
 P = ParamSpec("P")
 R = TypeVar("R")

@@ -9,11 +9,11 @@ from fastapi import Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from app.common.decorators import ApiLogConfig, apiLog, log, logWithConfig
 from app.core.constants import ErrorCodes, HttpCode, Messages
+from app.core.decorators import ApiLogConfig, apiLog, log, logWithConfig
 from app.core.errors import BusinessException
 
-api_log_module = importlib.import_module("app.common.decorators.apiLog")
+api_log_module = importlib.import_module("app.core.decorators.apiLog")
 
 
 class _ArticlePayload(BaseModel):

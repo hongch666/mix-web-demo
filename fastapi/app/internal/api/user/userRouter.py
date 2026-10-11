@@ -2,8 +2,8 @@ from typing import Any
 
 from fastapi import APIRouter, Query, Request
 
-from app.common.decorators import log, requireSelf
 from app.core.base import ApiResponse, success
+from app.core.decorators import log, requireSelf
 from app.dependencies import UserServiceDep
 from app.internal.schemas import (
     ActionTrendResponse,

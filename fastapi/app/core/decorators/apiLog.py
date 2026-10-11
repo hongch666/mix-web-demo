@@ -9,11 +9,11 @@ from fastapi import Request
 from fastapi.responses import StreamingResponse
 from starlette.responses import Content
 
-from app.common.middleware import get_current_user_id, get_current_username
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.db import send_to_queue_async
 from app.core.errors import BusinessException
+from app.core.middleware import get_current_user_id, get_current_username
 
 P = ParamSpec("P")
 R = TypeVar("R")

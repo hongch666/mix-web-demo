@@ -1,8 +1,8 @@
 from fastapi import APIRouter, BackgroundTasks, Path, Request
 
-from app.common.decorators import log
 from app.core.base import ApiResponse, success
 from app.core.constants import Messages
+from app.core.decorators import log
 from app.dependencies import GenerateServiceDep
 from app.internal.schemas import GenerateCommentTaskResponse, GenerateDTO
 

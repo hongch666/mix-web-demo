@@ -4,10 +4,10 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from app.common.decorators import requireSelf
+from app.core.decorators import requireSelf
 from app.core.errors import BusinessException
 
-require_self_module = importlib.import_module("app.common.decorators.requireSelf")
+require_self_module = importlib.import_module("app.core.decorators.requireSelf")
 
 
 # 访问自身资源放行且不查询管理员权限

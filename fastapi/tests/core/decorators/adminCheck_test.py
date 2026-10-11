@@ -4,11 +4,11 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from app.common.decorators import requireAdmin
 from app.core.constants import ErrorCodes, HttpCode, Messages
+from app.core.decorators import requireAdmin
 from app.core.errors import BusinessException
 
-admin_check_module = importlib.import_module("app.common.decorators.adminCheck")
+admin_check_module = importlib.import_module("app.core.decorators.adminCheck")
 
 
 def _build_spring_client(users: list[dict[str, object]]) -> tuple[Mock, AsyncMock]:

@@ -2,9 +2,9 @@ import logging
 import os
 from datetime import datetime
 
-from app.common.middleware import get_current_trace_id
 from app.core.config import load_config
 from app.core.constants import TelemetryConstants
+from app.core.middleware import get_current_trace_id
 
 logger: logging.Logger = logging.getLogger("uvicorn")
 

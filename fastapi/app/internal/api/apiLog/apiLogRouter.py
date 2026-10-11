@@ -2,8 +2,8 @@ from typing import Any
 
 from fastapi import APIRouter, Request
 
-from app.common.decorators import log, requireAdmin
 from app.core.base import ApiResponse, success
+from app.core.decorators import log, requireAdmin
 from app.dependencies import ApiLogServiceDep
 from app.internal.schemas import ApiLogAverageResponse, ApiLogCalledCountResponse
 

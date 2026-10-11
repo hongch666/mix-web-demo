@@ -2,8 +2,8 @@ from typing import Any
 
 from fastapi import APIRouter, Request
 
-from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
+from app.core.decorators import log, requireInternalToken
 from app.dependencies import AlgorithmServiceDep
 from app.internal.schemas import (
     ScriptParamsResponse,

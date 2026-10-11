@@ -2,10 +2,10 @@ from collections.abc import Awaitable, Callable
 from functools import wraps
 from typing import Any, Optional
 
-from app.common.middleware import get_current_user_id
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
+from app.core.middleware import get_current_user_id
 from app.internal.clients import SpringClient, get_spring_client
 
 AdminChecker = Callable[[int], Awaitable[bool]]

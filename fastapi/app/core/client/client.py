@@ -11,17 +11,17 @@ from tenacity import (
     wait_exponential,
 )
 
-from app.common.middleware import (
-    get_current_session_id,
-    get_current_token,
-    get_current_user_id,
-    get_current_username,
-)
 from app.core.auth import InternalTokenUtil
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
+from app.core.middleware import (
+    get_current_session_id,
+    get_current_token,
+    get_current_user_id,
+    get_current_username,
+)
 from app.core.telemetry.metrics import client_duration, client_requests
 
 from .nacos import get_service_instance

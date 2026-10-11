@@ -3,8 +3,8 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Body, Query, Request
 
-from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
+from app.core.decorators import log, requireInternalToken
 from app.dependencies import NestjsClientDep, SpringClientDep
 from app.internal.cache import (
     get_article_cache,

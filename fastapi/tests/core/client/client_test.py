@@ -4,15 +4,15 @@ from unittest.mock import AsyncMock
 import httpx
 import pytest
 
-from app.common.middleware.contextMiddleware import (
+from app.core.client import client as client_module
+from app.core.constants import Messages
+from app.core.errors import BusinessException
+from app.core.middleware.contextMiddleware import (
     session_id_ctx_var,
     token_ctx_var,
     user_id_ctx_var,
     username_ctx_var,
 )
-from app.core.client import client as client_module
-from app.core.constants import Messages
-from app.core.errors import BusinessException
 
 
 @pytest.fixture(autouse=True)
