@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Callable, Coroutine
 from functools import wraps
-from typing import Any, Optional, ParamSpec, TypeVar
+from typing import Any, Optional, ParamSpec, TypeVar, cast
 
 from fastapi import Request
 
@@ -109,6 +109,10 @@ def requireInternalToken[**P, R](
 
         if not inspect.iscoroutinefunction(f):
             raise TypeError(Messages.REQUIRE_INTERNAL_TOKEN_ASYNC_ERROR)
+
+        # 标记该端点需要内部服务令牌，供路由自省与测试断言对外/内部契约
+        # 函数对象上的自定义属性不在 Callable 类型里，经 Any 赋值以通过类型检查
+        cast(Any, async_wrapper).requires_internal_token = True
 
         return async_wrapper
 

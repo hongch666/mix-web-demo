@@ -41,18 +41,6 @@ class SpringClient:
         )
         return result.get("data", [])
 
-    async def get_article_views_by_ids(self, ids: list[int]) -> dict[int, int]:
-        """批量查询文章阅读量"""
-        if not ids:
-            return {}
-        result: dict[str, Any] = await call_remote_service(
-            service_name=self.SERVICE_NAME,
-            path="/articles/views/batch",
-            method="POST",
-            json={"ids": ids},
-        )
-        return result.get("data", {})
-
     async def get_users_by_ids(self, ids: list[int]) -> list[dict[str, Any]]:
         """批量查询用户"""
         if not ids:
@@ -64,57 +52,6 @@ class SpringClient:
             json={"ids": ids},
         )
         return result.get("data", [])
-
-    async def get_comment_scores_by_article_ids(
-        self, ids: list[int], timeout: Optional[int] = None
-    ) -> dict[int, dict[str, Any]]:
-        """批量查询评论评分（按角色分组）"""
-        if not ids:
-            return {}
-        result: dict[str, Any] = await call_remote_service(
-            service_name=self.SERVICE_NAME,
-            path="/comments/scores/batch",
-            method="POST",
-            json={"ids": ids},
-            timeout=timeout,
-        )
-        return result.get("data", {})
-
-    async def get_like_counts_by_article_ids(self, ids: list[int]) -> dict[int, int]:
-        """批量查询点赞数"""
-        if not ids:
-            return {}
-        result: dict[str, Any] = await call_remote_service(
-            service_name=self.SERVICE_NAME,
-            path="/likes/counts/batch",
-            method="POST",
-            json={"ids": ids},
-        )
-        return result.get("data", {})
-
-    async def get_collect_counts_by_article_ids(self, ids: list[int]) -> dict[int, int]:
-        """批量查询收藏数"""
-        if not ids:
-            return {}
-        result: dict[str, Any] = await call_remote_service(
-            service_name=self.SERVICE_NAME,
-            path="/collects/counts/batch",
-            method="POST",
-            json={"ids": ids},
-        )
-        return result.get("data", {})
-
-    async def get_follow_counts_by_user_ids(self, ids: list[int]) -> dict[int, int]:
-        """批量查询粉丝数"""
-        if not ids:
-            return {}
-        result: dict[str, Any] = await call_remote_service(
-            service_name=self.SERVICE_NAME,
-            path="/focus/counts/batch",
-            method="POST",
-            json={"ids": ids},
-        )
-        return result.get("data", {})
 
     async def get_categories_by_ids(self, ids: list[int]) -> list[dict[str, Any]]:
         """批量查询分类"""
@@ -411,15 +348,6 @@ class SpringClient:
         if isinstance(data, dict):
             return int(data.get("count") or 0)
         return int(data or 0)
-
-    async def get_monthly_follow_trend(self, user_id: int) -> dict[str, Any]:
-        """获取用户本月关注的趋势"""
-        result: dict[str, Any] = await call_remote_service(
-            service_name=self.SERVICE_NAME,
-            path=f"/focus/statistics/monthly-trend/{user_id}",
-            method="GET",
-        )
-        return result.get("data", {"total": 0, "daily_trends": []})
 
     # ==================== 评论统计接口 ====================
 

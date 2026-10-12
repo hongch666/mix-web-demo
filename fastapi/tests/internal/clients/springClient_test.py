@@ -55,10 +55,6 @@ async def test_sync_warehouse_data_returns_empty_dict_when_data_missing(
         ("get_users_by_ids", []),
         ("get_categories_by_ids", []),
         ("get_sub_categories_by_ids", []),
-        ("get_article_views_by_ids", {}),
-        ("get_like_counts_by_article_ids", {}),
-        ("get_collect_counts_by_article_ids", {}),
-        ("get_follow_counts_by_user_ids", {}),
     ],
 )
 async def test_batch_methods_skip_remote_call_for_empty_ids(
@@ -86,30 +82,6 @@ async def test_get_articles_by_ids_posts_ids_and_defaults_to_empty_list(
         method="POST",
         json={"ids": [1, 2]},
     )
-
-
-# 按文章 ID 取浏览量返回 data 字典映射
-@pytest.mark.anyio
-async def test_get_article_views_by_ids_returns_data_mapping(
-    remote: AsyncMock, client: module.SpringClient
-) -> None:
-    remote.return_value = {"code": 200, "data": {"1": 10}}
-
-    assert await client.get_article_views_by_ids([1]) == {"1": 10}
-
-
-# 按文章 ID 取评论评分时转发 timeout 参数并解包 data
-@pytest.mark.anyio
-async def test_get_comment_scores_by_article_ids_forwards_timeout(
-    remote: AsyncMock, client: module.SpringClient
-) -> None:
-    remote.return_value = {"code": 200, "data": {1: {"author": 5}}}
-
-    result = await client.get_comment_scores_by_article_ids([1], timeout=15)
-
-    assert result == {1: {"author": 5}}
-    assert remote.await_args.kwargs["path"] == "/comments/scores/batch"
-    assert remote.await_args.kwargs["timeout"] == 15
 
 
 # 按子分类取分类引用时缺少 data 返回 None 且路径含子分类 ID

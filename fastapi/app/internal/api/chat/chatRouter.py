@@ -24,7 +24,7 @@ from app.core.base import (
 from app.core.config import load_config
 from app.core.constants import Defaults, HttpCode, Messages, SwaggerConfig
 from app.core.db import get_db
-from app.core.decorators import log, requireInternalToken
+from app.core.decorators import log
 from app.core.middleware import get_current_user_id
 from app.dependencies import (
     AiHistoryServiceDep,
@@ -83,7 +83,6 @@ async def get_chat_models(chat_service: ChatServiceDep) -> ApiResponse:
     description="发送聊天消息并返回响应",
 )
 @log("普通聊天")
-@requireInternalToken
 async def send_message(
     http_request: Request,
     request: ChatRequest,

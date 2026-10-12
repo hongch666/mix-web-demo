@@ -424,32 +424,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /ai_history:
-    post:
-      tags:
-      - AI历史模块
-      summary: 创建AI历史记录
-      description: 创建一条AI历史记录
-      operationId: create_ai_history_ai_history_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateHistoryDTO'
-        required: true
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_NoneType_'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
   /ai_history/list:
     get:
       tags:
@@ -498,97 +472,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /ai_history/internal/{id}:
-    get:
-      tags:
-      - AI历史模块
-      summary: 根据ID查询AI历史记录（内部）
-      description: 根据ID查询AI历史记录，供内部服务远程调用
-      operationId: get_ai_history_by_id_internal_ai_history_internal__id__get
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          description: AI历史记录ID
-          title: Id
-        description: AI历史记录ID
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_Union_AiHistoryResponse__NoneType__'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-    put:
-      tags:
-      - AI历史模块
-      summary: 更新AI历史记录（内部）
-      description: 更新AI历史记录，供内部服务远程调用
-      operationId: update_ai_history_internal_ai_history_internal__id__put
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          description: AI历史记录ID
-          title: Id
-        description: AI历史记录ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateHistoryDTO'
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_Union_AiHistoryResponse__NoneType__'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-    delete:
-      tags:
-      - AI历史模块
-      summary: 删除AI历史记录（内部）
-      description: 根据ID删除AI历史记录，供内部服务远程调用
-      operationId: delete_ai_history_internal_ai_history_internal__id__delete
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          description: AI历史记录ID
-          title: Id
-        description: AI历史记录ID
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse_DeletedResponse_'
         '422':
           description: Validation Error
           content:
@@ -1104,26 +987,6 @@ components:
       required:
       - code
       title: ApiResponse[AuthorFollowStatisticsResponse]
-    ApiResponse_DeletedResponse_:
-      properties:
-        code:
-          type: integer
-          title: Code
-          description: 响应码
-        data:
-          anyOf:
-          - $ref: '#/components/schemas/DeletedResponse'
-          - type: 'null'
-          description: 返回数据
-        msg:
-          type: string
-          title: Msg
-          description: 响应消息
-          default: success
-      type: object
-      required:
-      - code
-      title: ApiResponse[DeletedResponse]
     ApiResponse_GenerateCommentTaskResponse_:
       properties:
         code:
@@ -1303,26 +1166,6 @@ components:
       required:
       - code
       title: ApiResponse[SearchWeightsResponse]
-    ApiResponse_Union_AiHistoryResponse__NoneType__:
-      properties:
-        code:
-          type: integer
-          title: Code
-          description: 响应码
-        data:
-          anyOf:
-          - $ref: '#/components/schemas/AiHistoryResponse'
-          - type: 'null'
-          description: 返回数据
-        msg:
-          type: string
-          title: Msg
-          description: 响应消息
-          default: success
-      type: object
-      required:
-      - code
-      title: ApiResponse[Union[AiHistoryResponse, NoneType]]
     ApiResponse_UserFollowerResponse_:
       properties:
         code:
@@ -1760,48 +1603,6 @@ components:
 
 
         streamFormat 可选，缺省为 native，保持前端既有契约不变'
-    CreateHistoryDTO:
-      properties:
-        user_id:
-          type: integer
-          title: User Id
-          description: 用户ID
-        ask:
-          type: string
-          title: Ask
-          description: 用户提问内容
-        reply:
-          type: string
-          title: Reply
-          description: AI回复内容
-        thinking:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Thinking
-          description: AI思考过程，可选
-        ai_type:
-          type: string
-          title: Ai Type
-          description: AI类型（例：gpt、gemini、glm等）
-      type: object
-      required:
-      - user_id
-      - ask
-      - reply
-      - ai_type
-      title: CreateHistoryDTO
-      description: 创建历史记录 DTO
-    DeletedResponse:
-      properties:
-        deleted:
-          type: boolean
-          title: Deleted
-          description: 是否删除成功
-      type: object
-      required:
-      - deleted
-      title: DeletedResponse
     GenerateCommentTaskResponse:
       properties:
         message:
@@ -2214,41 +2015,6 @@ components:
       - openai
       title: StreamFormat
       description: 流式响应帧格式枚举
-    UpdateHistoryDTO:
-      properties:
-        user_id:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: User Id
-          description: 用户ID
-        ask:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Ask
-          description: 用户提问内容
-        reply:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Reply
-          description: AI回复内容
-        thinking:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Thinking
-          description: AI思考过程，可选
-        ai_type:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Ai Type
-          description: AI类型（例：gpt、gemini、glm等）
-      type: object
-      title: UpdateHistoryDTO
-      description: 更新历史记录 DTO
     UserFollowerResponse:
       properties:
         period:

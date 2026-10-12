@@ -24,10 +24,6 @@ class AiHistoryResponse(BaseModel):
     updated_at: Optional[str] = Field(default=None, description="更新时间")
 
 
-class DeletedResponse(BaseModel):
-    deleted: bool = Field(description="是否删除成功")
-
-
 class ArticleStatisticsResponse(BaseModel):
     total_views: int = Field(description="总阅读量")
     total_articles: int = Field(description="文章总数")

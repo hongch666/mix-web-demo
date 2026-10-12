@@ -6,7 +6,6 @@ import pytest
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 from app.internal.models import AiHistory
-from app.internal.schemas import CreateHistoryDTO
 from app.internal.services.aiHistory.aiHistoryService import (
     AiHistoryService,
     get_ai_history_service,
@@ -80,23 +79,6 @@ async def test_create_ai_history_rebuilds_orm_instance() -> None:
     history = mapper.create_ai_history_async.await_args.args[0]
     assert history is not source
     assert (history.user_id, history.ai_type) == (2, "glm")
-
-
-# Pydantic DTO 的驼峰字段映射到 ORM 属性
-@pytest.mark.anyio
-async def test_create_ai_history_accepts_pydantic_dto() -> None:
-    service, mapper, _spring = _make_service()
-    mapper.create_ai_history_async.return_value = "ok"
-    dto = CreateHistoryDTO(
-        userId=9, ask="问", reply="答", thinking="思考", aiType="gemini"
-    )
-
-    await service.create_ai_history(dto, Mock())
-
-    history = mapper.create_ai_history_async.await_args.args[0]
-    assert history.user_id == 9
-    assert history.ai_type == "gemini"
-    assert history.thinking == "思考"
 
 
 # 缺少必填字段时抛 KeyError 且不触发落库
@@ -192,98 +174,6 @@ async def test_delete_by_userid_rolls_back_when_summary_delete_fails() -> None:
     mapper.delete_ai_history_by_userid_async.assert_awaited_once_with(db, 7)
     db.commit.assert_not_awaited()
     db.rollback.assert_awaited_once_with()
-
-
-# 记录不存在时返回 None
-@pytest.mark.anyio
-async def test_get_by_id_returns_none_when_missing() -> None:
-    service, mapper, _spring = _make_service()
-    mapper.get_ai_history_by_id_async.return_value = None
-
-    assert await service.get_ai_history_by_id(5, Mock()) is None
-
-
-# 命中记录时序列化字段并把时间格式化为字符串
-@pytest.mark.anyio
-async def test_get_by_id_serializes_existing_row() -> None:
-    service, mapper, _spring = _make_service()
-    mapper.get_ai_history_by_id_async.return_value = AiHistory(
-        id=5,
-        user_id=7,
-        ask="a",
-        reply="r",
-        thinking="t",
-        ai_type="gpt",
-        created_at=datetime(2026, 2, 3, 4, 5, 6),
-        updated_at=datetime(2026, 2, 3, 4, 5, 6),
-    )
-
-    row = await service.get_ai_history_by_id(5, Mock())
-
-    assert row is not None
-    assert row["id"] == 5
-    assert row["thinking"] == "t"
-    assert row["created_at"] == "2026-02-03 04:05:06"
-
-
-# 目标记录不存在时返回 None 且不调用更新
-@pytest.mark.anyio
-async def test_update_returns_none_when_missing() -> None:
-    service, mapper, _spring = _make_service()
-    mapper.get_ai_history_by_id_async.return_value = None
-
-    assert await service.update_ai_history(1, {"ask": "x"}, Mock()) is None
-    mapper.update_ai_history_async.assert_not_awaited()
-
-
-# 局部字段更新生效，空 thinking 清为 None 且返回序列化结果
-@pytest.mark.anyio
-async def test_update_applies_partial_fields_and_clears_thinking() -> None:
-    service, mapper, _spring = _make_service()
-    existing = AiHistory(
-        id=1,
-        user_id=7,
-        ask="old",
-        reply="r",
-        thinking="old",
-        ai_type="gpt",
-        created_at=datetime(2026, 1, 1),
-        updated_at=datetime(2026, 1, 1),
-    )
-    mapper.get_ai_history_by_id_async.return_value = existing
-    mapper.update_ai_history_async.return_value = existing
-
-    row = await service.update_ai_history(1, {"ask": "new", "thinking": ""}, Mock())
-
-    assert existing.ask == "new"
-    assert existing.thinking is None
-    assert existing.user_id == 7
-    assert existing.ai_type == "gpt"
-    assert row is not None
-    assert row["ask"] == "new"
-    assert row["thinking"] is None
-    mapper.update_ai_history_async.assert_awaited_once()
-
-
-# 记录不存在时删除返回 False 且不调用 mapper
-@pytest.mark.anyio
-async def test_delete_by_id_returns_false_when_missing() -> None:
-    service, mapper, _spring = _make_service()
-    mapper.get_ai_history_by_id_async.return_value = None
-
-    assert await service.delete_ai_history_by_id(3, Mock()) is False
-    mapper.delete_ai_history_by_id_async.assert_not_awaited()
-
-
-# 记录存在时删除并返回 True，按 id 委托 mapper
-@pytest.mark.anyio
-async def test_delete_by_id_removes_and_returns_true() -> None:
-    service, mapper, _spring = _make_service()
-    mapper.get_ai_history_by_id_async.return_value = AiHistory(id=3, ai_type="gpt")
-    db = Mock()
-
-    assert await service.delete_ai_history_by_id(3, db) is True
-    mapper.delete_ai_history_by_id_async.assert_awaited_once_with(db, 3)
 
 
 # 归一化兼容旧式 dict 方法的对象

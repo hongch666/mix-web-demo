@@ -8,7 +8,6 @@ from .chatDTO import (
     OpenAIStreamChunk,
     StreamFormat,
 )
-from .createHistoryDTO import CreateHistoryDTO
 from .generateDTO import GenerateDTO
 from .graphSearchDTO import (
     GraphRelationDTO,
@@ -26,7 +25,6 @@ from .responseDTO import (
     ArticleViewDistributionResponse,
     AuthorFollowStatisticsResponse,
     CategoryArticleCountResponse,
-    DeletedResponse,
     GenerateCommentTaskResponse,
     MonthlyPublishCountResponse,
     ScriptParamsResponse,
@@ -36,7 +34,6 @@ from .responseDTO import (
     UserProfileResponse,
 )
 from .syncEventDTO import ChangeEventDTO, Neo4jSyncDTO, VectorSyncDTO, WarehouseSyncDTO
-from .updateHistoryDTO import UpdateHistoryDTO
 from .vectorSearchDTO import (
     VectorMatchedChunkDTO,
     VectorSearchEnhanceItemDTO,
@@ -53,8 +50,6 @@ __all__: list[str] = [
     "AIServiceType",
     "StreamFormat",
     "GenerateDTO",
-    "CreateHistoryDTO",
-    "UpdateHistoryDTO",
     "GraphRelationDTO",
     "GraphSearchEnhanceItemDTO",
     "GraphSearchEnhanceReq",
@@ -75,7 +70,6 @@ __all__: list[str] = [
     "ArticleViewDistributionResponse",
     "AuthorFollowStatisticsResponse",
     "CategoryArticleCountResponse",
-    "DeletedResponse",
     "GenerateCommentTaskResponse",
     "MonthlyPublishCountResponse",
     "UserFollowerResponse",
