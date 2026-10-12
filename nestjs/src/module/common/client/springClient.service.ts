@@ -54,17 +54,6 @@ export class SpringClientService {
   }
 
   /**
-   * 根据GitHub ID查询用户
-   */
-  async getUserByGithubId(githubId: string): Promise<Record<string, unknown>> {
-    return await this.nacosService.call({
-      serviceName: "spring",
-      method: "GET",
-      path: `/users/by-github-id/${githubId}`,
-    });
-  }
-
-  /**
    * 创建或更新GitHub用户
    */
   async findOrCreateGithubUser(

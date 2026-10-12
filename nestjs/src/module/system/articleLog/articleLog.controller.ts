@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Post,
-  Query,
-} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Query } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
 import {
@@ -23,27 +14,12 @@ import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
 import { ArticleLogService } from "./articleLog.service";
-import { CreateArticleLogDto, QueryArticleLogDto } from "./dto/articleLog.dto";
+import { QueryArticleLogDto } from "./dto/articleLog.dto";
 
 @Controller("article-logs")
 @ApiTags("文章日志模块")
 export class ArticleLogController {
   constructor(private readonly logService: ArticleLogService) {}
-
-  @Post()
-  @HttpCode(200)
-  @ApiOperation({
-    summary: "新增文章日志",
-    description: "通过请求体创建文章日志",
-  })
-  @ApiLog("新增文章日志")
-  @RequireAdmin()
-  @RequireInternalToken()
-  @ApiResponseModel({ data: SwaggerNullData })
-  async create(@Body() dto: CreateArticleLogDto): Promise<ApiResponse<null>> {
-    await this.logService.create(dto);
-    return success(null);
-  }
 
   @Get("list")
   @ApiOperation({

@@ -120,14 +120,6 @@ export class ApiLogService {
   }
 
   /**
-   * 创建API日志
-   * @param dto 创建日志DTO
-   */
-  async create(dto: CreateApiLogDto): Promise<void> {
-    await this.apiLogModel.create(dto);
-  }
-
-  /**
    * 批量创建API日志（攒批写入）
    * 使用 ordered:false 让单条错误文档不影响整批写入
    * @param dtos 日志DTO数组

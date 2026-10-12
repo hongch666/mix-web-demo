@@ -125,10 +125,6 @@ export class ArticleLogService {
     }
   }
 
-  async create(dto: CreateArticleLogDto): Promise<void> {
-    await this.logModel.create(dto);
-  }
-
   /**
    * 批量创建文章操作日志（攒批写入）
    * 使用 ordered:false 让单条错误文档不影响整批写入

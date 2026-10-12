@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Query,
-} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Query } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
 import {
@@ -21,7 +13,7 @@ import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
 import { ApiLogService } from "./apiLog.service";
-import { CreateApiLogDto, QueryApiLogDto } from "./dto/apiLog.dto";
+import { QueryApiLogDto } from "./dto/apiLog.dto";
 
 @Controller("api-logs")
 @ApiTags("API日志模块")
@@ -44,23 +36,6 @@ export class ApiLogController {
   ): Promise<ApiResponse<unknown>> {
     const data: unknown = await this.apiLogService.findByFilter(query);
     return success(data);
-  }
-
-  /**
-   * 创建API日志
-   */
-  @Post()
-  @ApiOperation({
-    summary: "创建API日志",
-    description: "创建一条API日志记录",
-  })
-  @ApiLog("创建API日志")
-  @RequireAdmin()
-  @RequireInternalToken()
-  @ApiResponseModel({ data: SwaggerNullData })
-  async create(@Body() dto: CreateApiLogDto): Promise<ApiResponse<null>> {
-    await this.apiLogService.create(dto);
-    return success(null);
   }
 
   /**
