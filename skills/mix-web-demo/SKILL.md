@@ -335,7 +335,8 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - `page * size` 超过 `SEARCH_RECALL_MAX_SIZE`（200）时退化为窗口内重排并打 `SEARCH_RECALL_DEGRADE_LOG`
 - 融合归一化分母取**整个召回候选集**的最大 ES 分（同一档位内各页可比）；未被向量或图谱召回的候选用**候选集均值**填充，权重保持全局固定。禁止把缺失信号的权重按比例重分配给其余信号
 - 两层权重分开看：ES 内 `script_score` 权重（`ESScoreWeight` / `ViewsWeight` / `RecencyWeight` 等）管第一层，`FusionConfig`（`VectorScoreWeight` / `GraphScoreWeight` / `HybridMinESWeight`）管第二层
-- ES 搜索脚本、权重、参数名映射三件套任一拉取失败 → 整条增强链路关闭，降级为普通 ES 条件分页查询（无脚本时补 `create_at` 降序，避免 `_score` 恒为 0 时顺序不确定）；ES 召回后回填 Spring 统计（views / likes / collects / follows）四路任一失败 → 该指标保留 ES 原值，不抛错
+- ES 搜索脚本、权重、参数名映射三件套任一拉取失败 → 整条增强链路关闭，降级为普通 ES 条件分页查询（无脚本时补 `create_at` 降序，避免 `_score` 恒为 0 时顺序不确定）；ES 召回后回填 Spring 实时统计与评分（views / likes / collects / follows / comment_scores）五路任一失败 → 该指标保留 ES 原值，不抛错
+- 回填只改变返回给前端的展示值，`script_score` 在 ES 内执行、仍用文档快照里的 `ai_score` / `user_score` 打分，因此评分展示实时、排序最多滞后一个同步周期（整点 cron 或精确同步）
 - 两侧候选上限必须对齐：`SEARCH_VECTOR_CANDIDATE_LIMIT` / `SEARCH_GRAPH_CANDIDATE_LIMIT` ≥ 召回上限，FastAPI 侧 `VECTOR_SEARCH_CANDIDATE_LIMIT` / `GRAPH_SEARCH_CANDIDATE_LIMIT` 同步
 
 ### 错误处理与依赖
@@ -354,8 +355,12 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
   3. `swagger2openapi -o openapi.json -p openapi.json` 转成 OpenAPI 3（未安装时自动 `npm install -g`，PATH 不可见则退化为 `npx -y`）
   4. `python fix.py openapi.json openapi.yaml` 做后处理（需要 PyYAML）
 - **不再使用 goctl 的 `--yaml`**：那份停留在 Swagger 2.0，而 JSON 已转成 OpenAPI 3，两边格式会分叉；现在 YAML 由处理后的 JSON 直接派生，两份产物内容完全等价。`fix.py` 写文件时显式 `newline="\n"`，避免 Windows 下写成 CRLF
+- **`fix.py` 的输入必须是 goctl + swagger2openapi 的原始产物**，对已处理过的产物重跑不幂等：`/ws/chat` 已被剔除会把 `docs/websocket.json` 写成空数组、`/sse/chat` 的 `400` 响应键序被打乱。要改产物走 `./mix swag gozero` 全流程；只想改个别字段时直接编辑产物，不要手工重跑 `fix.py`
 - `fix.py` 是生成后修补产物的固定环节，按顺序做以下修补：
   - 补中文标签定义与 `info`（`tag_mapping`、`x-author`），并把每个 operation 的 `tags` 由英文替换为中文名
+  - **把规范版本固定为 `OPENAPI_VERSION`（`3.1.0`）**：产物必须留 3.1 —— 空数据响应用 `type: "null"`（`EMPTY_DATA_SCHEMA`，Apifox 靠它展示空值），而 3.0 的 `type` 只接受 `array`/`boolean`/`integer`/`number`/`object`/`string`，降到 3.0 会让该 schema 非法。**版本只在 `fix.py` 里改**，`genSwagger.sh` 与 `genSwagger.ps1` 都不再单独改写版本（曾因 sh 里多一段内联 Python 强制 3.1 后与 ps1 分叉），两个脚本改为校验产物版本是 `3.1.0`
+  - **服务内嵌的 swagger-ui 必须支持 3.1**：`gozero/app/docs/` 下的 `swagger-ui.css`、`swagger-ui-bundle.js`、`swagger-ui-standalone-preset.js`、`favicon-16x16.png`、`favicon-32x32.png` 取自 `swagger-ui-dist` 5.x，由 `go:embed` 编译进二进制，**不再使用 `swaggo/files`**（该库只到 v1.0.1，内嵌 Swagger UI 4.x，渲染 3.1 会白屏）。升级 UI 时只替换这几个文件，并同步 `docs/embed.go` 的 embed 指令与 `boot/swagger.go` 的资源表；不引入 `.map` 文件
+  - `boot/swagger.go` 的 `swaggerContentTypes` 显式声明内嵌资源的 `Content-Type`，不走 `mime.TypeByExtension`（Windows 上会读系统 MIME 注册表，类型不可控；`swagger-ui-bundle.js` 类型不对会被浏览器拒绝执行、同样白屏）
   - 移除 `swagger2openapi` 注入的全局 / path 级 / operation 级 `servers` 与 per-operation `schemes`（Swagger 2.0 文档没有 host，转换工具会默认补 `https://`，导致前端用错协议）
   - 剔除易变字段 `x-date`、`x-goctl-version`（`VOLATILE_FIELDS`），保证同一份 `.api` 在不同机器、不同 goctl 版本下生成结果可复现，不产生无意义 diff
   - 修正 `/sse/chat` 的 200 响应（`fix_streaming_endpoints`）：帧 schema 复用 goctl 按 `returns` 生成的 inline 结构，**同时挂到 `text/event-stream` 与 `application/json` 两个媒体类型下**，JSON 视图额外加 `SSE_FRAME_SCHEMA_TITLE` 标题（Apifox 取 schema 的 `title` 作为「返回响应」下的节点名），再补 `400` 统一错误体。**Apifox 不会渲染只声明 `text/event-stream` 的响应**（「返回响应」里只显示空的 SSE 封装结构、No schema defined）；FastAPI 侧的流式聊天同样是靠帧 schema 的 JSON 视图才画出帧字段，两边必须保持一致
