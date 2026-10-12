@@ -88,6 +88,8 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
    - GoZero：`app/common/client` 的 `ServiceDiscovery.CallService`（**go-zero `rest/httpc`** + Nacos 轮询 + 退避重试），按目标服务在 `internal/client/` 封装
    - NestJS：`module/common/nacos/nacos.service.ts` 的 `call(opts)`（**axios** + axios-retry + opossum），按目标服务在调用方封装 Client 类
    - FastAPI：`app/core/client/client.py` 的 `call_remote_service`（**httpx** 共享连接池 + SimpleCircuitBreaker + tenacity），按服务在 `internal/clients/` 封装
+   - **客户端只保留有生产调用方的方法（四个服务统一要求）**：不要照下游接口清单成批包装；只为单测存在或完全无引用的方法直接删掉，连同只服务于它的请求/响应类型、解析函数与测试桩一起清。成批包装留下的死代码没人维护，下游契约变更后响应结构漂移也不会暴露（FastAPI 曾出现 5 个批量统计方法把 Spring 的 `List/VO` 响应当 `Map` 返回值，直到 GoZero 侧同契约 bug 才被连带发现）。新增客户端方法前先确认调用方；确认手段：全仓检索方法名（Spring/GoZero 还要对照「接口 + 实现」两处），区分生产调用与 `*_test.go` / `*.spec.ts` / `src/test` 里的测试调用
+   - **内部的「服务间接口」同样按调用方清理（四个服务统一要求）**：被内部令牌保护的接口若无人调用，先判断接口定位再处置——本该服务外部的对外化（去掉内部令牌），确无消费者的连实现一起删。识别方式、判定流程、连带清理范围、已清理清单与产物重生成（含 Spring `target/classes` 残留坑）见「服务间内部接口与无效接口清理」一节
 10. **HTTP 连接池必须随服务生命周期释放**，不能指望进程退出收尾。现状与要求：
 
 - FastAPI 已规范：两个 `httpx.AsyncClient`（内网 `trust_env=False` 与外部抓取各一个）由 `lifespan` 创建、`yield` 之后 `aclose()`，**新增长连接客户端必须走同一处创建与释放**
@@ -337,6 +339,8 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 两层权重分开看：ES 内 `script_score` 权重（`ESScoreWeight` / `ViewsWeight` / `RecencyWeight` 等）管第一层，`FusionConfig`（`VectorScoreWeight` / `GraphScoreWeight` / `HybridMinESWeight`）管第二层
 - ES 搜索脚本、权重、参数名映射三件套任一拉取失败 → 整条增强链路关闭，降级为普通 ES 条件分页查询（无脚本时补 `create_at` 降序，避免 `_score` 恒为 0 时顺序不确定）；ES 召回后回填 Spring 实时统计与评分（views / likes / collects / follows / comment_scores）五路任一失败 → 该指标保留 ES 原值，不抛错
 - 回填只改变返回给前端的展示值，`script_score` 在 ES 内执行、仍用文档快照里的 `ai_score` / `user_score` 打分，因此评分展示实时、排序最多滞后一个同步周期（整点 cron 或精确同步）
+- **Spring 的批量统计数据是 List/VO，不是 Map**：`/articles/views/batch` 直接返回 `[{id,count}]`，`/likes|collects|focus/counts/batch` 返回 `{counts:[{id,count}]}`，`/comments/scores/batch` 返回 `[{article_id, role_scores}]`（Spring 全局 Jackson 是 SNAKE_CASE，见 `spring/src/main/resources/application.yaml`）。GoZero 侧由 `springClient` 的 `ParseArticleViewsMap` / `ParseCountsMap` / `ParseCommentScoresMap` 转成内部 Map，结构体 tag 必须与 Spring 的 VO 对齐（`IdCountVO`、`BatchCountVO`、`ArticleCommentScoresVO`）
+- **解析错误必须显式暴露，禁止 `_` 丢弃**：ES 同步任务（`esSyncerTask`）解析失败直接 `*_PARSE_ERROR` 报错退出，检索回填（`es.go`）解析失败计入 `SEARCH_STATS_FILL_DEGRADE_LOG` 的 metrics。曾因 Spring 把这三个接口的返回从 Map 改成 List/VO 而 GoZero 仍按 Map 解析，错误被静默吞掉，导致 ES 里点赞/收藏/粉丝数/AI 与用户评分长期全为 0（`views` 不受影响是因为它随文章实体一起同步、回填失败时保留 ES 原值）
 - 两侧候选上限必须对齐：`SEARCH_VECTOR_CANDIDATE_LIMIT` / `SEARCH_GRAPH_CANDIDATE_LIMIT` ≥ 召回上限，FastAPI 侧 `VECTOR_SEARCH_CANDIDATE_LIMIT` / `GRAPH_SEARCH_CANDIDATE_LIMIT` 同步
 
 ### 错误处理与依赖
@@ -370,6 +374,52 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - GoZero 的 `xxxResp` 按前端兼容规范保留业务 `Data` 字段并声明 `json:"data"`；handler 必须使用 `utils.Success(w, resp)`，由 `utils.Success` 识别并展开响应对象的 `Data` 字段，最终统一输出单层 `{code, msg, data}`，禁止产生 `data.data`。Swagger 后处理也必须同步展开该字段，保证文档与运行时响应一致。
 - **该文档的 schema 全部是 inline（`components` 下没有 `schemas`），不要改成 `$ref`**
 - 改完 `.api` 后按「接口文档收尾流程」重新生成并提交产物
+
+## 服务间内部接口与无效接口清理
+
+「内部接口」= 只给其它服务调用、靠内部令牌 `X-Internal-Token` 鉴权、并在网关侧被 `block-internal` 挡住外部访问的接口。四个服务的识别方式与校验实现：
+
+| 服务 | 标记方式 | 校验实现 | 网关侧 |
+| --- | --- | --- | --- |
+| Spring | `@RequireInternalToken` | 切面 `InternalTokenAspect` | `block-internal` 黑名单 |
+| NestJS | `@RequireInternalToken()` | `framework/guards/internalToken.guard.ts` | 同上 |
+| FastAPI | `@requireInternalToken`（装饰器会给 wrapper 打 `requires_internal_token` 标记，供契约测试自省） | `core/decorators/requireInternalToken.py` | 同上 |
+| GoZero | `.api` 的 `@server middleware:` + `InternalServiceMiddleware` | `common/middleware/internalServiceMiddleware.go` | 同上 |
+
+### 判定「无效内部接口」的流程（清理前逐步执行）
+
+1. **列全路径**：`类级 @RequestMapping/@Controller` 前缀 + 方法级路径拼成完整路径，路径参数写成模板（`/users/by-github-id/{githubId}`）；GoZero 以 `.api` 里的 `@handler` 路径为准
+2. **全仓检索调用方**：其它三个服务的 client 封装（`infra/client`、`internal/client`、`internal/clients`、`common/client`）、`gateway/apisix/apisix.yaml`、`scripts/`、各服务测试目录。Spring/NestJS 必须**同时对照「接口声明 + 实现」两处**，GoZero 对照 `.api` 与 handler
+3. **区分引用性质**：只出现在 `*_test.go` / `*.spec.ts` / `src/test` 的**不算调用方**；测试里为满足接口而写的 stub 方法同理
+4. **判断定位，别直接删**：
+   - 本该服务外部（前端语言契约、APISIX 可达）→ **去掉内部令牌对外化**（例：`/chat/send` 普通聊天），并确认网关黑名单不再拦它
+   - 确实只服务服务间调用且无消费者 → 删除
+5. **连带清理只服务它的实现**：Service 方法 → Mapper/Repository 查询方法 → 请求/响应 DTO → 测试用例；删除过程中每一层都要重新确认「是否还有其它调用方」
+6. **任务类的手动触发接口一律保留，不纳入清理范围**：`/task/*` 这类手动触发入口（Spring `TaskController`、NestJS `TaskController`、FastAPI `taskRouter`）是运维兜底能力——手工补跑、修数据、紧急刷缓存都靠它。**即使当前没有任何服务调用、也即使 `@Scheduled`（Spring）/ `@Cron`（NestJS）/ scheduler（FastAPI）已在自动调度，都必须保留**：自动调度是常态通道，HTTP 入口是运维通道，两者互补（曾误删 `POST /task/clean`、`/task/apilog`、`/task/articlelog`、`/task/update-analyze-caches`、`/task/init-hash-cache`、`/task/clear-analyze-caches`，已全部恢复）
+7. **重新生成产物并同步文档**：`./scripts/swag-init.sh <service>`（可选 service 名），需要时 `./mix apifox`。**Spring 删过控制器源文件后必须先清掉 `target/classes` 下的残留 `.class`**——Maven 增量编译不删除已移除源文件的产物，文档生成器扫描 classpath，否则已删接口会继续出现在产物里
+
+### 已清理的无效内部接口（勿重复排查）
+
+| 服务 | 已删除 | 已对外化 |
+| --- | --- | --- |
+| Spring | `GET /users/by-github-id/{githubId}`（连带 `UserService.findByGithubId` 接口+实现）、`GET /focus/statistics/monthly-trend/{userId}`（连带 `FocusService.getMonthlyFollowTrend`、`FocusRepository.countMonthlyByUserIdGroupByDate`） | — |
+| FastAPI | `POST /ai_history`、`GET/PUT/DELETE /ai_history/internal/{id}`（连带 `AiHistoryService`/`AiHistoryMapper` 各 3 个方法与 `CreateHistoryDTO`/`UpdateHistoryDTO`/`DeletedResponse`） | `POST /chat/send`：去掉 `@requireInternalToken` 作为普通聊天接口，补 `tests/internal/api/chat/chatRouter_test.py` 固化「聊天接口不带内部令牌」契约 |
+| NestJS | `POST /article-logs`、`POST /api-logs`（连带两个 Service 的 `create`） | — |
+| GoZero | 无（`/task/syncer`、`/sql-tools/tables`、`/sql-tools/query` 均有生产调用方） | — |
+
+### 必须保留的接口（勿当死代码清理）
+
+`/task/*` 手动触发接口一律保留，判定「无效内部接口」时直接排除：
+
+| 服务 | 接口 | 保留理由 |
+| --- | --- | --- |
+| Spring | `POST /task/clean`（`TaskController`） | 手动触发过期 Token 清理；`TokenCleanupTask` 的 `@Scheduled(cron = "0 0 * * * *")` 是常态通道，接口是运维通道 |
+| FastAPI | `POST /task/vector`、`POST /task/sync-neo4j`、`POST /task/sync-warehouse` | 手动补跑向量 / 图谱 / 数仓同步（Spring 的同步切面也会按 ids 触发同一入口） |
+| FastAPI | `POST /task/update-analyze-caches`、`POST /task/init-hash-cache`、`POST /task/clear-analyze-caches` | 手动刷分析缓存、初始化文章内容 hash 缓存、清空分析缓存；scheduler 自动跑同一批函数，接口用于紧急修复 |
+| NestJS | `POST /task/apilog`、`POST /task/articlelog` | 手动清理超期 API 日志 / 文章日志；`TaskService` 的 `@Cron` 是常态通道 |
+| GoZero | `POST /task/syncer` | 按 ids 精确同步 ES（Spring 同步切面在用），同时是手动全量重刷入口 |
+
+**删除时容易误伤的保留项**（都已确认仍在使用，勿再删）：FastAPI 的 `create_ai_history`（流式聊天保存历史）、`update_analyze_caches_async` 与 `initialize_article_content_hash_cache_async`（scheduler / vectorSyncTask，以及恢复后的 `/task/update-analyze-caches`、`/task/init-hash-cache`）、`ChatRequest`（被 `ChatStreamRequest` 继承）、`ChatResponseData`（被 `ChatResponse` 引用）；NestJS 的 `CreateArticleLogDto` / `CreateApiLogDto`（RabbitMQ 消费者攒批 `insertMany` 在用）；各 Cache 的 `clear_all()`（被恢复的 `/task/clear-analyze-caches` 调用）。
 
 ## 网关（gateway/，Apache APISIX）
 
@@ -459,6 +509,8 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 需要根目录 `.env` 中的 `APIFOX_ACCESS_TOKEN` 与 `APIFOX_PROJECT_ID`；未配置时脚本会直接报错退出，这种情况先提交文档产物，把同步留到配好令牌的环境执行
 - 按服务串行导入，输出「新增 / 更新 / 忽略 / 失败」计数；出现失败计数或非零退出码必须排查后重试，不要当成噪声放过
 - 覆盖策略默认 `AUTO_MERGE`，保留 Apifox 侧手工维护的中文名、mock 与返回示例，只按文档更新结构化内容
+- **同步默认以文档为准做全量对齐**：`APIFOX_DELETE_UNMATCHED_RESOURCES` 默认 `true`，对应开放 API 的 `options.deleteUnmatchedResources`，会删除**该服务导入目录内**（`APIFOX_FOLDER_*`）文档里没有的接口与数据模型（本地实测：只同步 fastapi 时项目接口总数 217 → 210，正好清掉 fastapi 目录内的 7 个残留，其它服务目录未受影响；Apifox 的 WebSocket 接口是独立资源类型，删除后仍完好）。所以删掉代码里的接口后，重新生成产物再同步即可自动清理，**不需要手工删 Apifox 接口**
+- 对齐是全量覆盖语义：Apifox 侧手工新增的 HTTP 接口与数据模型会在下次同步时被清掉（`WebSocket` 与 Markdown 文档不受影响）。排查期可临时关闭：`APIFOX_DELETE_UNMATCHED_RESOURCES=false ./mix apifox <service>`；删除是真实删除，可先 `apifox export --project <id> --format apifox --scope all --output <file>` 整项目备份，误删内容可从 Apifox 回收站找回
 - 导入前会为每个接口补写 Apifox 责任人扩展 `x-apifox-maintainer`（值取团队内昵称或用户账户名），默认取 `APIFOX_ACCESS_TOKEN` 对应账号的用户名；可用 `APIFOX_MAINTAINER` 显式指定，或用 `--no-maintainer` 关闭填充
 - 该扩展会被 Apifox 保留在接口 `oasExtensions` 里并在文档页多渲染一行 `x-apifox-maintainer`，脚本导入后会再导入一次不带扩展的原文档把它清掉（`APIFOX_MAINTAINER_CLEAN_EXTENSION=false` 可保留），责任人字段不受影响
 - 令牌等同账号密码，脚本输出不回显令牌，根目录 `.env` 已被 `.gitignore` 忽略
