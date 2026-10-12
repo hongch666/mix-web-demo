@@ -44,11 +44,6 @@ public interface FocusService {
     Mono<Long> getTotalFollows(Long userId);
 
     /**
-     * 获取用户本月关注的趋势
-     */
-    Mono<MapDataVO> getMonthlyFollowTrend(Long userId);
-
-    /**
      * 获取关注数据，用于Neo4j同步
      *
      * @param updatedAfter

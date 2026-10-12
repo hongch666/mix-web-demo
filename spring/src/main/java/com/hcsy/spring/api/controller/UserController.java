@@ -366,19 +366,6 @@ public class UserController {
             .map(Result::success);
     }
 
-    @GetMapping("/by-github-id/{githubId}")
-    @Operation(summary = "根据GitHub ID查询用户（内部）", description = "根据GitHub ID查询用户，供内部服务远程调用")
-    @RequireInternalToken
-    @ApiLog("内部GitHub ID查询用户")
-    public Mono<Result<UserVO>> getUserByGithubId(@PathVariable Long githubId) {
-        return userService.findByGithubId(githubId)
-            .map(user -> {
-                UserVO vo = BeanUtil.copyProperties(user, UserVO.class);
-                return Result.success(vo);
-            })
-            .defaultIfEmpty(Result.<UserVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
-    }
-
     @PostMapping("/github-user")
     @Operation(summary = "创建或更新GitHub用户（内部）", description = "GitHub OAuth登录后创建或更新用户，供内部服务远程调用")
     @RequireInternalToken

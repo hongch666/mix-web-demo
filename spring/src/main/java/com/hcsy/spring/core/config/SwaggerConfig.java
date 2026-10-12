@@ -159,7 +159,7 @@ public class SwaggerConfig {
         }
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ "rawtypes" })
     private void transformSchema(Schema schema) {
         if (schema == null) {
             return;

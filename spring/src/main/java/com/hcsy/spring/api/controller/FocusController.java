@@ -170,14 +170,6 @@ public class FocusController {
         return focusService.getTotalFollows(userId).map(Result::success);
     }
 
-    @GetMapping("/statistics/monthly-trend/{userId}")
-    @Operation(summary = "获取用户月度关注趋势（内部）", description = "获取用户本月关注的趋势，供内部服务远程调用")
-    @RequireInternalToken
-    @ApiLog("内部获取用户月度关注趋势")
-    public Mono<Result<MapDataVO>> getMonthlyFollowTrend(@PathVariable Long userId) {
-        return focusService.getMonthlyFollowTrend(userId).map(Result::success);
-    }
-
     @GetMapping("/neo4j-sync")
     @Operation(summary = "获取关注表数据用于Neo4j同步（内部）", description = "获取关注表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken

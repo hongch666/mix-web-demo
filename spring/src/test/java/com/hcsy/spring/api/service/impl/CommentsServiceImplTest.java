@@ -45,7 +45,6 @@ class CommentsServiceImplTest {
 
     private static final Long COMMENT_ID = 3L;
     private static final Long ARTICLE_ID = 8L;
-    private static final Long AUTHOR_ID = 9L;
     private static final Long AI_USER_ID = 1001L;
     private static final Long NORMAL_USER_ID = 9L;
 

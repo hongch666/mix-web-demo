@@ -226,7 +226,6 @@ public class CacheUtil {
             .then();
     }
 
-    @SuppressWarnings("unchecked")
     private <V> V cast(Object value) {
         return (V) value;
     }

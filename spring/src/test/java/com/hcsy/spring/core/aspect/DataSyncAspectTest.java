@@ -103,7 +103,6 @@ class DataSyncAspectTest {
 
         StepVerifier.create(result).expectNextCount(1).verifyComplete();
 
-        @SuppressWarnings("unchecked")
         ArgumentCaptor<Set<String>> captor = ArgumentCaptor.forClass(Set.class);
         verify(asyncSyncService).syncWarehouseAsync(any(), any(), captor.capture());
         assertEquals(Set.of(SyncResource.COMMENTS), captor.getValue());

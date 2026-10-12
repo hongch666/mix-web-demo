@@ -2032,39 +2032,6 @@
         }
       }
     },
-    "/users/by-github-id/{githubId}" : {
-      "get" : {
-        "tags" : [
-          "用户模块"
-        ],
-        "summary" : "根据GitHub ID查询用户（内部）",
-        "description" : "根据GitHub ID查询用户，供内部服务远程调用",
-        "operationId" : "getUserByGithubId",
-        "parameters" : [
-          {
-            "name" : "github_id",
-            "in" : "path",
-            "required" : true,
-            "schema" : {
-              "type" : "integer",
-              "format" : "int64"
-            }
-          }
-        ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ResultUserVO"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/users/all" : {
       "get" : {
         "tags" : [
@@ -2432,39 +2399,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLong"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/focus/statistics/monthly-trend/{userId}" : {
-      "get" : {
-        "tags" : [
-          "用户关注模块"
-        ],
-        "summary" : "获取用户月度关注趋势（内部）",
-        "description" : "获取用户本月关注的趋势，供内部服务远程调用",
-        "operationId" : "getMonthlyFollowTrend",
-        "parameters" : [
-          {
-            "name" : "user_id",
-            "in" : "path",
-            "required" : true,
-            "schema" : {
-              "type" : "integer",
-              "format" : "int64"
-            }
-          }
-        ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ResultMapDataVO"
                 }
               }
             }

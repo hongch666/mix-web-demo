@@ -40,8 +40,6 @@ public interface UserService {
 
     Flux<User> listAllUserByUsername(String username);
 
-    Mono<User> findByGithubId(Long githubId);
-
     Mono<User> findOrCreateGithubUser(GithubUserInternalDTO dto);
 
     Mono<Boolean> isAdminUser(Long userId);

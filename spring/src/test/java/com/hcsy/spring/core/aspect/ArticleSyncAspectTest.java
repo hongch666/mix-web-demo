@@ -138,7 +138,6 @@ class ArticleSyncAspectTest {
         assertEquals(-1L, message.get("articleId"));
         assertFalse(message.containsKey("targetUserId"));
 
-        @SuppressWarnings("unchecked")
         Map<String, Object> content = (Map<String, Object>) message.get("content");
         assertEquals(200L, content.get("id"));
         assertEquals(7L, content.get("sourceUserId"));
@@ -151,7 +150,6 @@ class ArticleSyncAspectTest {
         subscribe("focusSuccess", "focus", new Class<?>[] { FocusDTO.class },
             new FocusDTO(7L, 200L));
 
-        @SuppressWarnings("unchecked")
         Map<String, Object> content = (Map<String, Object>) captureSentMessage().get("content");
         assertFalse(content.get("targetUserId").equals(content.get("sourceUserId")));
         assertEquals(200L, content.get("targetUserId"));
@@ -215,7 +213,6 @@ class ArticleSyncAspectTest {
             .verifyComplete();
     }
 
-    @SuppressWarnings("unchecked")
     private Map<String, Object> captureSentMessage() throws Throwable {
         ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
         verify(rabbitMQUtil).sendMessage(eq("article-log-queue"), captor.capture());

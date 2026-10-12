@@ -1,6 +1,5 @@
 package com.hcsy.spring.api.service.impl;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -176,36 +175,6 @@ public class FocusServiceImpl implements FocusService {
     @Override
     public Mono<Long> getTotalFollows(Long userId) {
         return focusRepository.countTotalFollowsByUserId(userId).defaultIfEmpty(0L);
-    }
-
-    @Override
-    public Mono<MapDataVO> getMonthlyFollowTrend(Long userId) {
-        LocalDate today = LocalDate.now();
-        LocalDateTime firstDay = today.withDayOfMonth(1).atStartOfDay();
-        LocalDateTime lastDay;
-        if (today.getMonthValue() == 12) {
-            lastDay = LocalDate.of(today.getYear() + 1, 1, 1).atStartOfDay();
-        } else {
-            lastDay = LocalDate.of(today.getYear(), today.getMonthValue() + 1, 1).atStartOfDay();
-        }
-
-        return focusRepository.countMonthlyByUserIdGroupByDate(userId, firstDay, lastDay)
-            .map(row -> {
-                Map<String, Object> trend = new HashMap<>();
-                trend.put("date", row.getDate().toString());
-                trend.put("count", row.getCount());
-                return trend;
-            })
-            .collectList()
-            .map(dailyTrends -> {
-                Map<String, Object> result = new HashMap<>();
-                result.put("daily_trends", dailyTrends);
-                long total = dailyTrends.stream()
-                    .mapToLong(t -> ((Number) t.get("count")).longValue())
-                    .sum();
-                result.put("total", total);
-                return new MapDataVO(result);
-            });
     }
 
     @Override

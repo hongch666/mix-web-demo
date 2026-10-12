@@ -319,7 +319,6 @@ public class ApiLogAspect {
     /**
      * 将对象转换为 Map 并过滤敏感字段
      */
-    @SuppressWarnings("unchecked")
     private Map<String, Object> objectToMap(Object obj, Set<String> excludeFields) {
         try {
             Map<String, Object> map = objectMapper.convertValue(obj, Map.class);

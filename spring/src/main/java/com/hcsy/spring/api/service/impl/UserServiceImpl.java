@@ -413,14 +413,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Mono<User> findByGithubId(Long githubId) {
-        if (githubId == null) {
-            return Mono.empty();
-        }
-        return userRepository.findByGithubId(githubId);
-    }
-
-    @Override
     public Mono<User> findOrCreateGithubUser(GithubUserInternalDTO dto) {
         String githubId = dto.getGithubId();
         return userRepository.findByGithubId(Long.valueOf(githubId))
