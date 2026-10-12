@@ -17,6 +17,7 @@
 #   --no-maintainer 只导入接口，不填充责任人
 #   --create-readme README 目标文档不存在时先创建（其余场景跳过并提示）
 #   令牌与项目 ID 从根目录 .env 读取，变量说明见 .env.example
+# 默认以文档为准做全量对齐：清理目标目录下文档里没有的接口与数据模型（置 APIFOX_DELETE_UNMATCHED_RESOURCES=false 回到只增量、不清理）
 
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -27,6 +28,8 @@ DEFAULT_LOCALE="zh-CN"
 DEFAULT_OVERWRITE_BEHAVIOR="AUTO_MERGE"
 DEFAULT_MAINTAINER_AUTO="true"
 DEFAULT_MAINTAINER_CLEAN_EXTENSION="true"
+# 接口以代码生成的文档为唯一事实来源：默认清理目标目录下文档里没有的接口与数据模型
+DEFAULT_DELETE_UNMATCHED_RESOURCES="true"
 RETRY_TIMES=3
 RETRY_INTERVAL_SECONDS=3
 REQUEST_TIMEOUT_SECONDS=180
@@ -649,10 +652,15 @@ main() {
         return 1
     fi
 
-    delete_unmatched=$(env_flag APIFOX_DELETE_UNMATCHED_RESOURCES "false")
+    delete_unmatched=$(env_flag APIFOX_DELETE_UNMATCHED_RESOURCES "$DEFAULT_DELETE_UNMATCHED_RESOURCES")
     update_folder_of_changed=$(env_flag APIFOX_UPDATE_FOLDER_OF_CHANGED_ENDPOINT "true")
 
     print_info "Apifox 项目: $project_id（$base_url）"
+    if [ "$delete_unmatched" = "true" ]; then
+        print_info "对齐全量模式：以文档为准，清理目标目录下未匹配的接口与数据模型（置 APIFOX_DELETE_UNMATCHED_RESOURCES=false 可关闭）"
+    else
+        print_info "增量模式：保留 Apifox 中多出的接口与数据模型（置 APIFOX_DELETE_UNMATCHED_RESOURCES=true 可开启全量对齐）"
+    fi
     if [ "$dry_run" = "true" ]; then
         print_info "dry-run 模式：只校验产物与配置，不发起导入请求"
     fi
