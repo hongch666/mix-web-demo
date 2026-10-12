@@ -2288,7 +2288,7 @@ APIFOX_PROJECT_ID=你的项目ID
 | `APIFOX_BRANCH_ID` / `APIFOX_MODULE_ID`                                                                  | 否   | 空                                | 目标分支 ID / 目标模块 ID                                       |
 | `APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR`                                                                     | 否   | `AUTO_MERGE`                      | 接口的覆盖策略，取值见下表                                      |
 | `APIFOX_SCHEMA_OVERWRITE_BEHAVIOR`                                                                       | 否   | `AUTO_MERGE`                      | 数据模型的覆盖策略，取值同上                                    |
-| `APIFOX_DELETE_UNMATCHED_RESOURCES`                                                                      | 否   | `false`                           | 是否删除 Apifox 中存在但文档中没有的接口与数据模型              |
+| `APIFOX_DELETE_UNMATCHED_RESOURCES`                                                                      | 否   | `true`                            | 是否以文档为准删除 Apifox 中多出的接口与数据模型（范围限于该服务的导入目录，WebSocket 接口不受影响；置 `false` 回到只增量、不清理） |
 | `APIFOX_UPDATE_FOLDER_OF_CHANGED_ENDPOINT`                                                               | 否   | `true`                            | 是否用文档中的目录信息更新已有接口的所属目录                    |
 | `APIFOX_README_DOC_ID`                                                                                   | 否   | 空                                | `./mix apifox-readme` 的目标 Markdown 文档 ID，配置后为原地更新 |
 | `APIFOX_README_DOC_NAME`                                                                                 | 否   | README 一级标题                   | 创建文档时的名称；更新时只有显式配置才会改名                    |
