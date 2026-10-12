@@ -50,7 +50,13 @@ public class DatabaseInitializer {
                 insertAIUserIfNotExists(Defaults.GEMINI_ID, Defaults.GEMINI_NAME,
                     Defaults.GEMINI_EMAIL, Defaults.GEMINI_IMG),
                 insertAIUserIfNotExists(Defaults.GPT_ID, Defaults.GPT_NAME,
-                    Defaults.GPT_EMAIL, Defaults.GPT_IMG)))
+                    Defaults.GPT_EMAIL, Defaults.GPT_IMG),
+                insertAIUserIfNotExists(Defaults.DEEPSEEK_ID, Defaults.DEEPSEEK_NAME,
+                    Defaults.DEEPSEEK_EMAIL, Defaults.DEEPSEEK_IMG),
+                insertAIUserIfNotExists(Defaults.CLAUDE_ID, Defaults.CLAUDE_NAME,
+                    Defaults.CLAUDE_EMAIL, Defaults.CLAUDE_IMG),
+                insertAIUserIfNotExists(Defaults.QWEN_ID, Defaults.QWEN_NAME,
+                    Defaults.QWEN_EMAIL, Defaults.QWEN_IMG)))
             .then();
     }
 

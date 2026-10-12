@@ -16,10 +16,10 @@ public class Defaults {
     public static final String TEST = "Hello,I am Spring!";
 
     // ===== AI 用户配置 =====
-    public static final long GLM_ID = 1001L;
-    public static final String GLM_NAME = "GLM";
-    public static final String GLM_EMAIL = "glm@example.com";
-    public static final String GLM_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/glm.png";
+    public static final long CLAUDE_ID = 1001L;
+    public static final String CLAUDE_NAME = "Claude";
+    public static final String CLAUDE_EMAIL = "claude@example.com";
+    public static final String CLAUDE_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/claude.png";
     public static final long GEMINI_ID = 1002L;
     public static final String GEMINI_NAME = "Gemini";
     public static final String GEMINI_EMAIL = "gemini@example.com";
@@ -28,6 +28,18 @@ public class Defaults {
     public static final String GPT_NAME = "GPT";
     public static final String GPT_EMAIL = "gpt@example.com";
     public static final String GPT_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/gpt.png";
+    public static final long DEEPSEEK_ID = 1004L;
+    public static final String DEEPSEEK_NAME = "DeepSeek";
+    public static final String DEEPSEEK_EMAIL = "deepseek@example.com";
+    public static final String DEEPSEEK_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/deepseek.png";
+    public static final long GLM_ID = 1005L;
+    public static final String GLM_NAME = "GLM";
+    public static final String GLM_EMAIL = "glm@example.com";
+    public static final String GLM_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/glm.png";
+    public static final long QWEN_ID = 1006L;
+    public static final String QWEN_NAME = "Qwen";
+    public static final String QWEN_EMAIL = "qwen@example.com";
+    public static final String QWEN_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/qwen.png";
     public static final String HIDE_PASSWORD = "******";
 
     // ===== 启动 =====
