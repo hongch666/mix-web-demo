@@ -88,10 +88,14 @@ func TestApplyCommentScoresKeepsSnapshotOnParseFailure(t *testing.T) {
 
 // TestApplyCommentScoresFromSpringResponse 校验 Spring 评分响应可解析并按角色回填到文章
 func TestApplyCommentScoresFromSpringResponse(t *testing.T) {
-	result := client.Result{Data: map[string]any{
-		"1": map[string]any{
-			"ai":   map[string]any{"average_score": 8.5, "count": 4},
-			"user": map[string]any{"average_score": 6.0, "count": 2},
+	// Spring 的 /comments/scores/batch 返回 [{article_id, role_scores}] 列表
+	result := client.Result{Data: []any{
+		map[string]any{
+			"article_id": 1,
+			"role_scores": map[string]any{
+				"ai":   map[string]any{"average_score": 8.5, "count": 4},
+				"user": map[string]any{"average_score": 6.0, "count": 2},
+			},
 		},
 	}}
 

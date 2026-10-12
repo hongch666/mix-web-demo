@@ -112,6 +112,12 @@ const (
 	FOCUS_QUERY_ERROR   = "关注查询错误"
 	LIKE_QUERY_ERROR    = "点赞查询错误"
 
+	// 响应解析错误
+	COMMENT_SCORE_PARSE_ERROR = "评论评分解析错误"
+	LIKE_COUNT_PARSE_ERROR    = "点赞数解析错误"
+	COLLECT_COUNT_PARSE_ERROR = "收藏数解析错误"
+	FOCUS_COUNT_PARSE_ERROR   = "粉丝数解析错误"
+
 	// 初始化
 	LOCAL_IPV4_ADDRESS_NOT_FOUND_ERROR       = "未找到本机可用的 IPv4 地址"
 	ZERO_LOGGER_INIT_FAIL                    = "初始化日志失败: %v"

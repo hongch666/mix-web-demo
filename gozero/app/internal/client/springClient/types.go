@@ -14,7 +14,6 @@ type Client interface {
 	GetPublishedArticles(context.Context, int, int) (client.Result, error)
 	GetArticleViewsByIDs(context.Context, []int64) (client.Result, error)
 	GetArticlesByIDs(context.Context, []int64) (client.Result, error)
-	GetUserByID(context.Context, int64) (client.Result, error)
 	IsAdminUser(context.Context, int64) (bool, error)
 	GetUsersByIDs(context.Context, []int64) (client.Result, error)
 	GetCommentScoresByArticleIDs(context.Context, []int64) (client.Result, error)
@@ -75,6 +74,23 @@ type CommentScoreVO struct {
 	Count        int64   `json:"count"`
 }
 
+// IdCountVO Spring 批量统计返回的元素，字段与 Spring 的 IdCountVO 保持一致
+type IdCountVO struct {
+	ID    int64 `json:"id"`
+	Count int64 `json:"count"`
+}
+
+// BatchCountVO Spring 点赞/收藏/粉丝数批量接口的返回体，数量包在 counts 字段里
+type BatchCountVO struct {
+	Counts []IdCountVO `json:"counts"`
+}
+
+// ArticleCommentScoresVO Spring 评论评分返回的元素，按角色分组
+type ArticleCommentScoresVO struct {
+	ArticleID  int64                     `json:"article_id"`
+	RoleScores map[string]CommentScoreVO `json:"role_scores"`
+}
+
 // CategoryVO 分类视图对象
 type CategoryVO struct {
 	ID   int64  `json:"id"`
@@ -108,18 +124,18 @@ func ParseArticlePage(result client.Result) ([]ArticleVO, int64, error) {
 	return page.Records, page.Total, nil
 }
 
-// ParseArticleViewsMap 解析文章阅读量 Map
+// ParseArticleViewsMap 解析文章阅读量：Spring 返回 [{id, count}]，这里转成 文章ID → 阅读量
 func ParseArticleViewsMap(result client.Result) (map[int64]int, error) {
-	return parseData[map[int64]int](result)
-}
-
-// ParseUserVO 解析单个用户
-func ParseUserVO(result client.Result) (*UserVO, error) {
-	user, err := parseData[UserVO](result)
+	items, err := parseData[[]IdCountVO](result)
 	if err != nil {
 		return nil, err
 	}
-	return &user, nil
+
+	views := make(map[int64]int, len(items))
+	for _, item := range items {
+		views[item.ID] = int(item.Count)
+	}
+	return views, nil
 }
 
 // ParseUserVOs 解析用户列表
@@ -127,14 +143,38 @@ func ParseUserVOs(result client.Result) ([]UserVO, error) {
 	return parseData[[]UserVO](result)
 }
 
-// ParseCommentScoresMap 解析评论评分 Map
+// ParseCommentScoresMap 解析评论评分：Spring 返回 [{article_id, role_scores}]，这里转成 文章ID → 角色 → 评分
 func ParseCommentScoresMap(result client.Result) (map[int64]map[string]CommentScoreVO, error) {
-	return parseData[map[int64]map[string]CommentScoreVO](result)
+	items, err := parseData[[]ArticleCommentScoresVO](result)
+	if err != nil {
+		return nil, err
+	}
+
+	scores := make(map[int64]map[string]CommentScoreVO, len(items))
+	for _, item := range items {
+		scores[item.ArticleID] = item.RoleScores
+	}
+	return scores, nil
 }
 
-// ParseCountsMap 解析计数 Map（点赞/收藏/粉丝数）
+// ParseCountsMap 解析计数（点赞/收藏/粉丝数）：Spring 返回 {counts: [{id, count}]}，这里转成 ID → 数量
 func ParseCountsMap(result client.Result) (map[int64]int64, error) {
-	return parseData[map[int64]int64](result)
+	body, err := parseData[BatchCountVO](result)
+	if err != nil {
+		return nil, err
+	}
+
+	// counts 缺失说明响应结构与契约不符（历史版本直接返回 Map），显式报错让上层记录降级
+	// 合法空结果是 "counts": []，反序列化后是非 nil 空切片，与字段缺失可区分
+	if body.Counts == nil {
+		return nil, fmt.Errorf(constants.RESPONSE_DATA_EMPTY)
+	}
+
+	counts := make(map[int64]int64, len(body.Counts))
+	for _, item := range body.Counts {
+		counts[item.ID] = item.Count
+	}
+	return counts, nil
 }
 
 // ParseCategoryVOs 解析分类列表

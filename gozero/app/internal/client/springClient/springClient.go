@@ -66,16 +66,6 @@ func (c *SpringClient) GetArticlesByIDs(ctx context.Context, ids []int64) (clien
 	})
 }
 
-// GetUserByID 根据ID查询用户
-func (c *SpringClient) GetUserByID(ctx context.Context, id int64) (client.Result, error) {
-	return c.serviceDisc.CallService(ctx, c.serviceName, "/users/:id", client.RequestOptions{
-		Method: "GET",
-		PathParams: map[string]string{
-			"id": strconv.FormatInt(id, 10),
-		},
-	})
-}
-
 // IsAdminUser 判断指定用户是否为管理员
 func (c *SpringClient) IsAdminUser(ctx context.Context, id int64) (bool, error) {
 	result, err := c.serviceDisc.CallService(ctx, c.serviceName, "/users/:id/is-admin", client.RequestOptions{

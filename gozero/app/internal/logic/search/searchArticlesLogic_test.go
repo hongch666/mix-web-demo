@@ -241,18 +241,6 @@ func (s *fastapiClientStub) EnhanceVector(context.Context, *fastapiClient.Vector
 	return commonclient.Result{}, nil
 }
 
-func (s *fastapiClientStub) GetAiHistoryByID(context.Context, int64) (commonclient.Result, error) {
-	return commonclient.Result{}, nil
-}
-
-func (s *fastapiClientStub) UpdateAiHistory(context.Context, int64, *fastapiClient.UpdateAiHistoryRequest) (commonclient.Result, error) {
-	return commonclient.Result{}, nil
-}
-
-func (s *fastapiClientStub) DeleteAiHistory(context.Context, int64) (commonclient.Result, error) {
-	return commonclient.Result{}, nil
-}
-
 func newSearchLogicForTest(
 	t *testing.T,
 	model searchmodel.SearchModel,

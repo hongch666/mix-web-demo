@@ -192,25 +192,33 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 			},
 		)
 
+		viewsMap, viewsParseErr := springClient.ParseArticleViewsMap(viewsResult)
+		likeCounts, likeParseErr := springClient.ParseCountsMap(likeResult)
+		collectCounts, collectParseErr := springClient.ParseCountsMap(collectResult)
+		authorFollowCounts, followParseErr := springClient.ParseCountsMap(followResult)
+		commentScores, commentParseErr := springClient.ParseCommentScoresMap(
+			commentScoreResult,
+		)
+
 		// 回填失败的指标跳过覆盖，保留 ES 文档原值作为降级，不阻断搜索主链路
+		// 调用失败与响应结构不符契约（解析失败）一并计入：解析静默失败会让统计与评分长期显示 ES 旧值
 		metrics := constants.SEARCH_STATS_FILL_METRICS
-		errs := []error{viewsErr, likeErr, collectErr, followErr, commentScoreErr}
+		fillErrors := []error{
+			firstError(viewsErr, viewsParseErr),
+			firstError(likeErr, likeParseErr),
+			firstError(collectErr, collectParseErr),
+			firstError(followErr, followParseErr),
+			firstError(commentScoreErr, commentParseErr),
+		}
 		degraded := make([]string, 0, len(metrics))
-		for i, metricErr := range errs {
-			if metricErr != nil {
+		for i, fillErr := range fillErrors {
+			if fillErr != nil {
 				degraded = append(degraded, metrics[i])
 			}
 		}
 		if len(degraded) > 0 {
-			logx.WithContext(ctx).Slow("[WARN] " + fmt.Sprintf(constants.SEARCH_STATS_FILL_DEGRADE_LOG, strings.Join(degraded, ","), firstError(errs...)))
+			logx.WithContext(ctx).Slow("[WARN] " + fmt.Sprintf(constants.SEARCH_STATS_FILL_DEGRADE_LOG, strings.Join(degraded, ","), firstError(fillErrors...)))
 		}
-
-		viewsMap, _ := springClient.ParseArticleViewsMap(viewsResult)
-		likeCounts, _ := springClient.ParseCountsMap(likeResult)
-		collectCounts, _ := springClient.ParseCountsMap(collectResult)
-		authorFollowCounts, _ := springClient.ParseCountsMap(followResult)
-		// 评论评分解析失败返回空 Map，对应文章保留 ES 文档原值
-		commentScores, _ := springClient.ParseCommentScoresMap(commentScoreResult)
 
 		for i := range articles {
 			if views, ok := viewsMap[articles[i].ID]; ok {

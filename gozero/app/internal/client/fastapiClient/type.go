@@ -11,9 +11,6 @@ import (
 type Client interface {
 	EnhanceGraph(context.Context, *GraphEnhanceRequest) (client.Result, error)
 	EnhanceVector(context.Context, *VectorEnhanceRequest) (client.Result, error)
-	GetAiHistoryByID(context.Context, int64) (client.Result, error)
-	UpdateAiHistory(context.Context, int64, *UpdateAiHistoryRequest) (client.Result, error)
-	DeleteAiHistory(context.Context, int64) (client.Result, error)
 	GetSearchWeights(context.Context) (search.SearchWeights, error)
 	GetSearchScript(context.Context) (search.SearchScript, error)
 	GetSearchScriptParams(context.Context) (search.ScriptParamMapping, error)
@@ -87,25 +84,4 @@ type VectorEnhanceItem struct {
 // VectorEnhanceResponse 向量增强响应
 type VectorEnhanceResponse struct {
 	Items []VectorEnhanceItem `json:"items"`
-}
-
-// AiHistoryVO AI历史记录视图对象
-type AiHistoryVO struct {
-	ID        int64  `json:"id"`
-	UserID    int64  `json:"user_id"`
-	Ask       string `json:"ask"`
-	Reply     string `json:"reply"`
-	Thinking  string `json:"thinking"`
-	AiType    string `json:"ai_type"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-}
-
-// UpdateAiHistoryRequest 更新AI历史记录请求
-type UpdateAiHistoryRequest struct {
-	UserID   *int64  `json:"userId,omitempty"`
-	Ask      *string `json:"ask,omitempty"`
-	Reply    *string `json:"reply,omitempty"`
-	Thinking *string `json:"thinking,omitempty"`
-	AiType   *string `json:"aiType,omitempty"`
 }

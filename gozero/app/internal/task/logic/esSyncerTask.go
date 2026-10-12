@@ -324,10 +324,23 @@ func buildArticleESBatchFromRemote(
 		return nil, logAndWrapError(svcCtx, constants.FOCUS_QUERY_ERROR, followErr)
 	}
 
-	commentScores, _ := springClient.ParseCommentScoresMap(commentResult)
-	likeCounts, _ := springClient.ParseCountsMap(likeResult)
-	collectCounts, _ := springClient.ParseCountsMap(collectResult)
-	authorFollowCounts, _ := springClient.ParseCountsMap(followResult)
+	// 解析失败必须报错退出：静默降级会把 0 写进 ES，让搜索列表的统计与评分长期为 0
+	commentScores, commentParseErr := springClient.ParseCommentScoresMap(commentResult)
+	if commentParseErr != nil {
+		return nil, logAndWrapError(svcCtx, constants.COMMENT_SCORE_PARSE_ERROR, commentParseErr)
+	}
+	likeCounts, likeParseErr := springClient.ParseCountsMap(likeResult)
+	if likeParseErr != nil {
+		return nil, logAndWrapError(svcCtx, constants.LIKE_COUNT_PARSE_ERROR, likeParseErr)
+	}
+	collectCounts, collectParseErr := springClient.ParseCountsMap(collectResult)
+	if collectParseErr != nil {
+		return nil, logAndWrapError(svcCtx, constants.COLLECT_COUNT_PARSE_ERROR, collectParseErr)
+	}
+	authorFollowCounts, followParseErr := springClient.ParseCountsMap(followResult)
+	if followParseErr != nil {
+		return nil, logAndWrapError(svcCtx, constants.FOCUS_COUNT_PARSE_ERROR, followParseErr)
+	}
 
 	// 组装 ES 文档
 	docs := make([]search.ArticleES, 0, len(articleBatch))
