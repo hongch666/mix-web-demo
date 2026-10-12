@@ -1,4 +1,5 @@
 import re
+import warnings
 from collections.abc import Sequence
 from typing import Any, Optional, cast
 
@@ -18,6 +19,25 @@ from app.core.constants import (
 )
 
 from .userPermissionManager import UserPermissionManager, get_user_permission_manager
+
+
+def install_serializer_warning_filter() -> None:
+    """安装结构化输出的第三方序列化告警过滤器
+
+    结构化输出走 json_schema 时，openai SDK 用带 default=None 的未绑定 TypeVar 构造
+    ParsedChatCompletion（construct_type 传入的是 ParsedChatCompletion[ResponseFormatT] 本身），
+    parsed 字段的序列化 schema 因此退化为 none，langchain-openai 随后对该响应做 model_dump，
+    pydantic 会把已正确解析的结果报成 PydanticSerializationUnexpectedValue，
+    属第三方版本组合产生的无害告警（openai 2.21.0 + langchain-openai 1.0.2），此处定向过滤
+    """
+    warnings.filterwarnings(
+        "ignore",
+        message=r"Pydantic serializer warnings:",
+        category=UserWarning,
+    )
+
+
+install_serializer_warning_filter()
 
 
 def _build_marker_pattern(marker: str) -> re.Pattern[str]:

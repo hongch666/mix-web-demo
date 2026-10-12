@@ -7,6 +7,13 @@ from .intentRouter import (
     normalize_intents,
     parse_intent_expression,
 )
+from .modelParams import (
+    DEFAULT_STRUCTURED_OUTPUT_UNSUPPORTED_PREFIXES,
+    DEFAULT_TEMPERATURE_UNSUPPORTED_PREFIXES,
+    parse_model_prefixes,
+    supports_structured_output,
+    supports_temperature,
+)
 from .tools.fastapiSqlTool import FastapiSqlTool, get_fastapi_sql_tool
 from .tools.gozeroSqlTool import GozeroSqlTool, get_gozero_sql_tool
 from .tools.mongoDBTools import MongoDBTools, get_mongodb_tools
@@ -61,4 +68,9 @@ __all__: list[str] = [
     "clear_tool_scope",
     "enforce_sql_row_scope",
     "enforce_mongodb_row_scope",
+    "DEFAULT_TEMPERATURE_UNSUPPORTED_PREFIXES",
+    "DEFAULT_STRUCTURED_OUTPUT_UNSUPPORTED_PREFIXES",
+    "parse_model_prefixes",
+    "supports_temperature",
+    "supports_structured_output",
 ]

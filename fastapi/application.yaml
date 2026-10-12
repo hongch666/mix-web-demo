@@ -118,6 +118,10 @@ agent:
     deepseek_model_name: ${CLOSEAI_DEEPSEEK_MODEL:deepseek-v4.1-flash} # DeepSeek模型名称
     claude_model_name: ${CLOSEAI_CLAUDE_MODEL:claude-haiku-5-5} # Claude模型名称
     qwen_model_name: ${CLOSEAI_QWEN_MODEL:qwen3.8-flash} # 通义千问模型名称
+    # 已弃用 temperature 的模型名前缀，命中时初始化不下发该参数（多个前缀逗号分隔）
+    temperature_unsupported_prefixes: ${CLOSEAI_TEMPERATURE_UNSUPPORTED_PREFIXES:claude}
+    # 不支持结构化输出（response_format json_schema）的模型名前缀，命中时意图识别改用文本匹配
+    structured_output_unsupported_prefixes: ${CLOSEAI_STRUCTURED_OUTPUT_UNSUPPORTED_PREFIXES:deepseek,glm}
     timeout: 30 # 请求超时时间（秒）
     agent_max_iterations: 20 # Agent 最大迭代轮数
     context_window_tokens: ${CHAT_CONTEXT_WINDOW_TOKENS:32768} # 模型上下文窗口，历史预算由窗口扣除提示词与预留后推导

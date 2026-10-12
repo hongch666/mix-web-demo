@@ -20,6 +20,8 @@ from app.internal.agents import (
     IntentRouter,
     default_agent_tool_factories,
     is_direct_chat_intent,
+    supports_structured_output,
+    supports_temperature,
 )
 from app.internal.crud import AiUserSummaryMapper, get_ai_user_summary_mapper
 from app.internal.models import AiUserSummary
@@ -165,6 +167,7 @@ class BaseAiService:
         self.config_section: str = config_section
         self.model_config_key: str = model_config_key
         self.temperature: float = temperature
+        # 结构化输出开关：构造参数只作服务级默认值，初始化时按模型能力再次收敛
         self.use_structured_output: bool = use_structured_output
         # 工具组装配工厂由依赖图注入，缺省时回退进程内默认装配
         self._tool_factories: Optional[AgentToolFactories] = tool_factories
@@ -796,6 +799,50 @@ class BaseAiService:
             return Messages.REQUEST_TIMEOUT_ERROR
         return Messages.LLM_SERVICE_ERROR(self.service_name, error_message)
 
+    def _resolve_use_structured_output(self, service_cfg: dict[str, Any]) -> bool:
+        """综合服务级开关与模型能力判定是否启用结构化输出
+
+        部分模型的 OpenAI 兼容接口不支持 response_format 的 json_schema 类型，
+        命中前缀配置时关闭结构化输出，意图识别直接走文本匹配链路
+
+        Args:
+            service_cfg: 模型服务配置
+
+        Returns:
+            bool: 启用结构化输出时返回 True
+        """
+        if not self.use_structured_output:
+            return False
+        unsupported_prefixes = service_cfg.get("structured_output_unsupported_prefixes")
+        if supports_structured_output(self.model_name, unsupported_prefixes):
+            return True
+        Logger.warning(
+            Messages.LLM_STRUCTURED_OUTPUT_UNSUPPORTED(
+                self.service_name, self.model_name
+            )
+        )
+        return False
+
+    def _build_temperature_option(self, service_cfg: dict[str, Any]) -> dict[str, Any]:
+        """构建模型客户端的温度参数
+
+        新一代模型（如 Claude）已弃用 temperature，下发该参数会返回 400，
+        命中前缀配置时不下发，交由模型默认行为决定
+
+        Args:
+            service_cfg: 模型服务配置
+
+        Returns:
+            dict[str, Any]: 传入 ChatOpenAI 的 temperature 参数
+        """
+        unsupported_prefixes = service_cfg.get("temperature_unsupported_prefixes")
+        if supports_temperature(self.model_name, unsupported_prefixes):
+            return {"temperature": self.temperature}
+        Logger.warning(
+            Messages.LLM_TEMPERATURE_UNSUPPORTED(self.service_name, self.model_name)
+        )
+        return {}
+
     def _build_llm_client_options(self, service_cfg: dict[str, Any]) -> dict[str, Any]:
         """构建模型客户端的模型级扩展参数
 
@@ -864,6 +911,9 @@ class BaseAiService:
                 or service_cfg.get("model_name")
                 or ""
             ).strip()
+            self.use_structured_output = self._resolve_use_structured_output(
+                service_cfg
+            )
             agent_max_iterations = int(service_cfg.get("agent_max_iterations", 8))
             self._context_budget = ContextBudgetConfig.from_agent_config(service_cfg)
 
@@ -872,8 +922,8 @@ class BaseAiService:
                     model=self.model_name,
                     api_key=SecretStr(self._api_key),
                     base_url=self._base_url,
-                    temperature=self.temperature,
                     timeout=self._timeout,
+                    **self._build_temperature_option(service_cfg),
                     **self._build_llm_client_options(service_cfg),
                 )
                 self._initialize_agent_stack(max_iterations=agent_max_iterations)

@@ -12,6 +12,7 @@ from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages, Prompts
 from app.internal.agents.langsmith import get_langsmith_context
+from app.internal.agents.modelParams import supports_temperature
 from app.internal.crud import DocScore, VectorMapper
 
 # 抑制 PGVector 弃用警告
@@ -51,11 +52,20 @@ class RAGTools:
         agent_cfg: dict[str, Any] = (load_config("agent") or {}).get("closeai", {})
         if agent_cfg.get("api_key") and agent_cfg.get("base_url"):
             try:
+                hyde_model: str = str(agent_cfg.get("model_name", "gpt-3.5-turbo"))
+                # 模型已弃用 temperature 时不下发该参数，避免接口返回 400
+                hyde_options: dict[str, Any] = (
+                    {"temperature": 0.3}
+                    if supports_temperature(
+                        hyde_model, agent_cfg.get("temperature_unsupported_prefixes")
+                    )
+                    else {}
+                )
                 self.hyde_llm = ChatOpenAI(
-                    model=agent_cfg.get("model_name", "gpt-3.5-turbo"),
+                    model=hyde_model,
                     api_key=agent_cfg["api_key"],
                     base_url=agent_cfg["base_url"],
-                    temperature=0.3,
+                    **hyde_options,
                     # langchain-openai 的 max_tokens 字段别名为 max_completion_tokens，按别名传入
                     max_completion_tokens=300,
                     timeout=10,

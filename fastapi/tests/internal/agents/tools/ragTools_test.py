@@ -90,6 +90,37 @@ def test_init_isolates_hyde_client_failure(
     assert tools.hyde_llm is None
 
 
+# HyDE 客户端按模型能力决定是否下发 temperature
+@pytest.mark.parametrize(
+    ("model_name", "expects_temperature"),
+    [("claude-haiku-5-5", False), ("gpt-6-luna", True)],
+)
+def test_init_hyde_temperature_follows_model_capability(
+    monkeypatch: pytest.MonkeyPatch,
+    model_name: str,
+    expects_temperature: bool,
+) -> None:
+    fake_client = Mock(name="ChatOpenAI")
+    monkeypatch.setattr(rag_module, "ChatOpenAI", fake_client)
+    config = {
+        "embedding": AGENT_CONFIG["embedding"],
+        "closeai": {
+            "api_key": "unit-test-key",
+            "base_url": "http://llm",
+            "model_name": model_name,
+        },
+    }
+
+    tools, _ = _build_tools(monkeypatch, config=config)
+
+    assert tools.hyde_llm is fake_client.return_value
+    kwargs = fake_client.call_args.kwargs
+    assert kwargs["model"] == model_name
+    assert ("temperature" in kwargs) is expects_temperature
+    if expects_temperature:
+        assert kwargs["temperature"] == 0.3
+
+
 # 空输入去重返回空列表
 def test_deduplicate_returns_empty_for_empty_input(
     monkeypatch: pytest.MonkeyPatch,

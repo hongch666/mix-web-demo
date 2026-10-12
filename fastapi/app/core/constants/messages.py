@@ -61,6 +61,16 @@ class Messages:
         return f"{service_name}服务异常: {error_message}"
 
     @staticmethod
+    def LLM_TEMPERATURE_UNSUPPORTED(service_name: str, model_name: str) -> str:
+        return f"{service_name} 模型 {model_name} 已弃用 temperature 参数，初始化时不下发该参数"
+
+    @staticmethod
+    def LLM_STRUCTURED_OUTPUT_UNSUPPORTED(service_name: str, model_name: str) -> str:
+        return (
+            f"{service_name} 模型 {model_name} 不支持结构化输出，意图识别改用文本匹配"
+        )
+
+    @staticmethod
     def CHAT_SERVICE_ERROR(error: Exception) -> str:
         return f"对话服务异常: {error}"
 
@@ -995,9 +1005,7 @@ class Messages:
 
     @staticmethod
     def CONCURRENT_LLM_ALL_COMPLETED(duration: float, article_id: int) -> str:
-        return (
-            f"多个大模型并发调用全部完成，总耗时: {duration:.2f}秒，文章ID：{article_id}"
-        )
+        return f"多个大模型并发调用全部完成，总耗时: {duration:.2f}秒，文章ID：{article_id}"
 
     @staticmethod
     def LLM_FINAL_FAILED(service_name: str, response: Any) -> str:

@@ -1,10 +1,13 @@
 """IntentRouter 意图识别与权限校验的单元测试"""
 
-from typing import Any
+import warnings
+from typing import Any, Generic, Optional
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 from langchain_core.runnables import Runnable
+from pydantic import BaseModel
+from typing_extensions import TypeVar
 
 from app.core.constants import Messages
 from app.internal.agents import intentRouter as intent_router_module
@@ -12,6 +15,7 @@ from app.internal.agents.intentRouter import (
     IntentRouter,
     StructuredIntent,
     format_intent_expression,
+    install_serializer_warning_filter,
     is_direct_chat_intent,
     parse_intent_expression,
 )
@@ -242,6 +246,49 @@ def test_structured_output_binding_failure_is_isolated() -> None:
 
     assert router._use_structured_output is False
     assert llm.structured_calls == 1
+
+
+# ===== 第三方序列化告警过滤 =====
+
+
+_WrappedT = TypeVar("_WrappedT", default=None)
+
+
+class _Envelope(BaseModel, Generic[_WrappedT]):
+    """等价复现 openai 用 default=None 的未绑定 TypeVar 构造的 ParsedChatCompletion"""
+
+    parsed: Optional[_WrappedT] = None
+
+
+class _Payload(BaseModel):
+    value: int = 0
+
+
+def _dump_unbound_generic_envelope() -> None:
+    """绕过校验填入 parsed 再序列化，等价 langchain 对该响应的 model_dump"""
+    _Envelope[_WrappedT].model_construct(parsed=_Payload()).model_dump()
+
+
+# 结构化输出的第三方序列化告警被过滤器抑制，过滤器被删除或改坏时本用例失败
+def test_serializer_warning_filter_suppresses_unbound_generic_dump_noise() -> None:
+    with warnings.catch_warnings(record=True) as unfiltered:
+        _dump_unbound_generic_envelope()
+
+    # 未安装过滤器时确实会产生该告警，作为过滤器有效性的前置证据
+    assert [
+        item
+        for item in unfiltered
+        if "Pydantic serializer warnings" in str(item.message)
+    ]
+
+    with warnings.catch_warnings(record=True) as filtered:
+        # catch_warnings(record=True) 会把告警捕获插到过滤器最前面，需在块内重新安装
+        install_serializer_warning_filter()
+        _dump_unbound_generic_envelope()
+
+    assert not [
+        item for item in filtered if "Pydantic serializer warnings" in str(item.message)
+    ]
 
 
 # set_user_context 覆盖路由器的用户 ID 与数据库会话

@@ -258,6 +258,37 @@ def test_build_llm_client_options_reads_reasoning_effort_by_prefix() -> None:
     assert service._build_llm_client_options({}) == {}
 
 
+# 结构化输出开关由服务级默认值与模型能力共同决定
+def test_resolve_use_structured_output_follows_service_flag_and_capability() -> None:
+    service = _make_service(model_name="deepseek-v4.1-flash")
+    assert service._resolve_use_structured_output({}) is False
+    assert (
+        service._resolve_use_structured_output(
+            {"structured_output_unsupported_prefixes": "claude"}
+        )
+        is True
+    )
+
+    disabled = _make_service(model_name="gpt-6-luna", use_structured_output=False)
+    assert disabled._resolve_use_structured_output({}) is False
+
+
+# 已弃用 temperature 的模型不下发该参数，前缀表可覆盖默认判定
+def test_build_temperature_option_skips_deprecated_model() -> None:
+    service = _make_service(model_name="custom-model", temperature=0.2)
+
+    assert service._build_temperature_option({}) == {"temperature": 0.2}
+    assert (
+        service._build_temperature_option(
+            {"temperature_unsupported_prefixes": "custom"}
+        )
+        == {}
+    )
+    assert service._build_temperature_option(
+        {"temperature_unsupported_prefixes": "claude"}
+    ) == {"temperature": 0.2}
+
+
 # GLM 额外下发 thinking 参数，其它模型返回空流式选项
 def test_final_stream_options_enable_thinking_only_for_glm() -> None:
     glm = _make_service(service_name="GLM")
@@ -1318,6 +1349,48 @@ def test_init_builds_llm_client_from_config(monkeypatch: pytest.MonkeyPatch) -> 
     assert kwargs["base_url"] == "https://llm.local/v1"
     assert kwargs["timeout"] == 18
     assert kwargs["temperature"] == 0.7
+
+
+# 模型已弃用 temperature 时初始化构建客户端不下发该参数
+def test_init_skips_temperature_for_deprecated_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_client = _patch_llm_stack(
+        monkeypatch,
+        {
+            "api_key": "unit-test-value",
+            "base_url": "https://llm.local/v1",
+            "model_name": "claude-haiku-5-5",
+        },
+    )
+
+    BaseAiService(AsyncMock())
+
+    kwargs = fake_client.call_args.kwargs
+    assert kwargs["model"] == "claude-haiku-5-5"
+    assert "temperature" not in kwargs
+
+
+# 初始化按模型能力收敛结构化输出开关，避免每次意图识别先失败一次
+@pytest.mark.parametrize(
+    ("model_name", "expected"),
+    [("deepseek-v4.1-flash", False), ("glm-5.3-flash", False), ("gpt-6-luna", True)],
+)
+def test_init_resolves_structured_output_by_model_capability(
+    monkeypatch: pytest.MonkeyPatch, model_name: str, expected: bool
+) -> None:
+    _patch_llm_stack(
+        monkeypatch,
+        {
+            "api_key": "unit-test-value",
+            "base_url": "https://llm.local/v1",
+            "model_name": model_name,
+        },
+    )
+
+    service = BaseAiService(AsyncMock())
+
+    assert service.use_structured_output is expected
 
 
 # 配置缺少 api_key 时初始化重置状态且不创建客户端
