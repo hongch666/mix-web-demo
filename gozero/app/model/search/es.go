@@ -164,8 +164,10 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 			authorUserIDs = append(authorUserIDs, article.UserID)
 		}
 
-		var viewsResult, likeResult, collectResult, followResult client.Result
-		var viewsErr, likeErr, collectErr, followErr error
+		// ES 文档里的阅读量、点赞、收藏、粉丝与评分都是同步快照
+		// 检索时统一用 Spring 实时值覆盖，失败则保留 ES 文档原值作为降级
+		var viewsResult, likeResult, collectResult, followResult, commentScoreResult client.Result
+		var viewsErr, likeErr, collectErr, followErr, commentScoreErr error
 
 		_ = mr.Finish(
 			func() error {
@@ -184,40 +186,31 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 				followResult, followErr = m.springClient.GetFollowCountsByUserIDs(ctx, authorUserIDs)
 				return followErr
 			},
+			func() error {
+				commentScoreResult, commentScoreErr = m.springClient.GetCommentScoresByArticleIDs(ctx, articleIDs)
+				return commentScoreErr
+			},
 		)
 
 		// 回填失败的指标跳过覆盖，保留 ES 文档原值作为降级，不阻断搜索主链路
-		degraded := make([]string, 0, 4)
-		if viewsErr != nil {
-			degraded = append(degraded, "views")
-		}
-		if likeErr != nil {
-			degraded = append(degraded, "likes")
-		}
-		if collectErr != nil {
-			degraded = append(degraded, "collects")
-		}
-		if followErr != nil {
-			degraded = append(degraded, "author_follows")
+		metrics := constants.SEARCH_STATS_FILL_METRICS
+		errs := []error{viewsErr, likeErr, collectErr, followErr, commentScoreErr}
+		degraded := make([]string, 0, len(metrics))
+		for i, metricErr := range errs {
+			if metricErr != nil {
+				degraded = append(degraded, metrics[i])
+			}
 		}
 		if len(degraded) > 0 {
-			degradeErr := viewsErr
-			if degradeErr == nil {
-				degradeErr = likeErr
-			}
-			if degradeErr == nil {
-				degradeErr = collectErr
-			}
-			if degradeErr == nil {
-				degradeErr = followErr
-			}
-			logx.WithContext(ctx).Slow("[WARN] " + fmt.Sprintf(constants.SEARCH_STATS_FILL_DEGRADE_LOG, strings.Join(degraded, ","), degradeErr))
+			logx.WithContext(ctx).Slow("[WARN] " + fmt.Sprintf(constants.SEARCH_STATS_FILL_DEGRADE_LOG, strings.Join(degraded, ","), firstError(errs...)))
 		}
 
 		viewsMap, _ := springClient.ParseArticleViewsMap(viewsResult)
 		likeCounts, _ := springClient.ParseCountsMap(likeResult)
 		collectCounts, _ := springClient.ParseCountsMap(collectResult)
 		authorFollowCounts, _ := springClient.ParseCountsMap(followResult)
+		// 评论评分解析失败返回空 Map，对应文章保留 ES 文档原值
+		commentScores, _ := springClient.ParseCommentScoresMap(commentScoreResult)
 
 		for i := range articles {
 			if views, ok := viewsMap[articles[i].ID]; ok {
@@ -232,6 +225,7 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 			if followCount, ok := authorFollowCounts[articles[i].UserID]; ok {
 				articles[i].AuthorFollowCount = int(followCount)
 			}
+			applyCommentScores(&articles[i], commentScores[articles[i].ID])
 		}
 	}
 
@@ -249,4 +243,27 @@ func getParamName(paramMap ScriptParamMapping, weightKey string) string {
 		}
 	}
 	return weightKey
+}
+
+// firstError 返回第一个非空错误，用于降级日志记录失败原因
+func firstError(errs ...error) error {
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// applyCommentScores 用 Spring 实时评分覆盖 ES 快照中的 AI 与用户评分及其评论数
+// 某类评分缺失（没有该类评论或评分接口降级）时保留 ES 文档原值，与其它统计字段口径一致
+func applyCommentScores(article *ArticleES, scores map[string]springClient.CommentScoreVO) {
+	if aiScores, ok := scores["ai"]; ok {
+		article.AIScore = aiScores.AverageScore
+		article.AICommentCount = int(aiScores.Count)
+	}
+	if userScores, ok := scores["user"]; ok {
+		article.UserScore = userScores.AverageScore
+		article.UserCommentCount = int(userScores.Count)
+	}
 }

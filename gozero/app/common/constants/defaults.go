@@ -26,6 +26,13 @@ const (
 	SEARCH_GRAPH_CANDIDATE_LIMIT = 200
 )
 
+// 搜索统计回填指标
+// 顺序与检索时并行拉取的顺序一一对应，作为 SEARCH_STATS_FILL_DEGRADE_LOG 的 metrics 字段使用
+// 新增回填指标时同步追加，模型层按下标与回填结果对应
+var SEARCH_STATS_FILL_METRICS = []string{
+	"views", "likes", "collects", "author_follows", "comment_scores",
+}
+
 // WebSocket 相关默认值
 const (
 	// WebSocket 读缓冲区大小（字节）
