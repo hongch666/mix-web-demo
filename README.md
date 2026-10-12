@@ -74,7 +74,7 @@
 12. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
 13. 基于 FastAPI、ClickHouse 和 SQLAlchemy ORM（clickhouse-sqlalchemy + asynch 异步驱动）实现系统数据的相关分析
 14. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
-15. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL、MongoDB、Neo4j，支持 **GPT/Gemini/GLM** 进行多模型选择
+15. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL、MongoDB、Neo4j，支持 **GPT/Gemini/GLM/DeepSeek/Claude/Qwen** 进行多模型选择
 16. 基于 FastAPI、Neo4j 和 neomodel（异步 OGM）实现文章、用户、分类、标签、点赞、收藏、评论、关注等实体关系图谱，用于关系查询和图谱推荐
 17. 基于 FastAPI 和 LangSmith 实现 LLM 链路可观测性，对 AI 聊天、RAG 检索、Agent Tools 调用和向量同步任务进行全链路 Trace，支持采样率控制与敏感数据脱敏
 18. 基于 NestJS 和 Spring 实现 **GitHub OAuth 登录/注册**，NestJS 处理 GitHub 授权回调并创建/关联用户，Spring 生成站内登录票据，支持首次 GitHub 登录自动注册，前端通过一次性 ticket 换取 JWT
@@ -138,7 +138,7 @@ NestJS 模块按职责划分为两层：
 | 消息队列 | RabbitMQ                                                                                                                                                      |
 | 注册中心 | Nacos                                                                                                                                                         |
 | 运行时   | Python 3.12+                                                                                                                                                  |
-| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（neomodel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询）、多模型（GPT/Gemini/GLM）、LangSmith LLM 链路追踪 |
+| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（neomodel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询）、多模型（GPT/Gemini/GLM/DeepSeek/Claude/Qwen）、LangSmith LLM 链路追踪 |
 | 代码位置 | `fastapi/`                                                                                                                                                    |
 
 ### Apache APISIX 网关（端口 8080）
@@ -365,7 +365,7 @@ Body 参数：
       end
 
       subgraph ThirdParty["第三方服务层"]
-          LLM["LangChain 大模型 API 调用 (GPT/Gemini/GLM)"]
+          LLM["LangChain 大模型 API 调用 (GPT/Gemini/GLM/DeepSeek/Claude/Qwen)"]
           LangSmith["LangSmith 日志监控"]
           OSS["阿里云 OSS 对象存储"]
           GithubAPI["Github API 调用"]
@@ -3091,10 +3091,11 @@ SQL 工具按服务做了完全隔离：FastAPI Agent 会为每个服务加载�
 
 ### AI 说明
 
-1. GPT/Gemini/GLM 服务目前使用第三方平台 [Close AI](https://platform.closeai-asia.com/dashboard) ，根据说明文档进行配置
-2. 嵌入模型使用的是[阿里云百炼平台](https://bailian.console.aliyun.com/)的嵌入模型
-3. 上述的 API_KEY 应写在 `.env`中
-4. LangSmith 为 LLM 链路观测平台，`LANGSMITH_API_KEY` 同样配置在 `.env` 中，未配置时追踪自动关闭，详见下方"LangSmith 可观测性说明"
+1. GPT/Gemini/GLM/DeepSeek/Claude/Qwen 六种模型服务目前使用第三方平台 [Close AI](https://platform.closeai-asia.com/dashboard) ，根据说明文档进行配置
+2. 六种模型统一使用 `agent.closeai` 段中的 `base_url` 与 `api_key`，模型名分别通过 `CLOSEAI_GPT_MODEL`、`CLOSEAI_GEMINI_MODEL`、`CLOSEAI_GLM_MODEL`、`CLOSEAI_DEEPSEEK_MODEL`、`CLOSEAI_CLAUDE_MODEL`、`CLOSEAI_QWEN_MODEL` 配置，缺省值见 `fastapi/application.yaml`
+3. 嵌入模型使用的是[阿里云百炼平台](https://bailian.console.aliyun.com/)的嵌入模型
+4. 上述的 API_KEY 应写在 `.env`中
+5. LangSmith 为 LLM 链路观测平台，`LANGSMITH_API_KEY` 同样配置在 `.env` 中，未配置时追踪自动关闭，详见下方"LangSmith 可观测性说明"
 
 ### LangSmith 可观测性说明
 
@@ -3106,7 +3107,10 @@ SQL 工具按服务做了完全隔离：FastAPI Agent 会为每个服务加载�
 
 ### AI 用户说明
 
-1. AI 服务目前只有三种，对应数据库 `user` 表里面 `role` 为 `ai` 的用户，并且代码目前写死用户 id 为 1001/1002/1003；`db/mysql/spring/user.sql` 里也已补充这三条 AI 用户初始化数据，重复执行会按 `id` 跳过已有记录。
+1. AI 服务目前共六种，对应数据库 `user` 表里面 `role` 为 `ai` 的用户：GLM（1001）、Gemini（1002）、GPT（1003）、DeepSeek（1004）、Claude（1005）、Qwen（1006）
+2. FastAPI 侧评论作者身份固定在这六个 ID 上，集中登记在 `app/core/constants/aiUsers.py`，不与模型配置文件重复维护
+3. 这些 AI 用户由 Spring 启动时的 `DatabaseInitializer` 幂等创建（ID、名称、邮箱与头像定义在 `Defaults`，SQL 为 `Scripts.INSERT_AI_USER`）；`db/mysql/spring/user.sql` 里同样包含这六条 AI 用户初始化数据，重复执行会按 `id` 跳过已有记录
+4. FastAPI 生成 AI 评论时按上述 ID 调用 Spring 的评论接口写入评论，六个模型并发执行，单个模型失败时该条评论降级为对应模型的失败文案与默认分
 
 ### 分库分表说明
 
