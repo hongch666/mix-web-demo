@@ -37,11 +37,11 @@ INSERT IGNORE INTO
     )
 VALUES (
         1001,
-        'GLM',
+        'Claude',
         '******',
-        'glm@example.com',
+        'claude@example.com',
         'ai',
-        'https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/glm.png'
+        'https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/claude.png'
     ),
     (
         1002,
@@ -58,4 +58,28 @@ VALUES (
         'gpt@example.com',
         'ai',
         'https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/gpt.png'
+    ),
+    (
+        1004,
+        'DeepSeek',
+        '******',
+        'deepseek@example.com',
+        'ai',
+        'https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/deepseek.png'
+    ),
+    (
+        1005,
+        'GLM',
+        '******',
+        'glm@example.com',
+        'ai',
+        'https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/glm.png'
+    ),
+    (
+        1006,
+        'Qwen',
+        '******',
+        'qwen@example.com',
+        'ai',
+        'https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/qwen.png'
     );
