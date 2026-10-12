@@ -116,6 +116,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_ApiLogCalledCountResponse__'
+  /chat/models:
+    get:
+      tags:
+      - AI聊天模块
+      summary: 获取聊天模型列表
+      description: 返回当前支持的聊天模型枚举值列表，元素即聊天请求 service 参数的合法取值，供前端渲染模型选择项
+      operationId: get_chat_models_chat_models_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_list_str__'
   /chat/send:
     post:
       tags:
@@ -879,6 +893,9 @@ components:
       - GPT
       - Gemini
       - GLM
+      - DeepSeek
+      - Claude
+      - Qwen
       title: AIServiceType
       description: AI服务类型枚举
     ActionTrendResponse:
@@ -1644,7 +1661,7 @@ components:
           description: 会话ID
         service:
           $ref: '#/components/schemas/AIServiceType'
-          description: AI服务类型：gpt、gemini或glm
+          description: AI服务类型：gpt、gemini、glm、deepseek、claude或qwen
           default: GPT
       type: object
       required:
@@ -1727,7 +1744,7 @@ components:
           description: 会话ID
         service:
           $ref: '#/components/schemas/AIServiceType'
-          description: AI服务类型：gpt、gemini或glm
+          description: AI服务类型：gpt、gemini、glm、deepseek、claude或qwen
           default: GPT
         streamFormat:
           $ref: '#/components/schemas/StreamFormat'

@@ -111,10 +111,13 @@ agent:
   closeai:
     base_url: ${CLOSEAI_BASE_URL:https://api.openai-proxy.org/v1} # CloseAI 兼容接口地址
     api_key: ${CLOSEAI_API_KEY:} # CloseAI API Key
-    gpt_model_name: ${CLOSEAI_GPT_MODEL:gpt-5-nano} # 输入 0.05 / 输出 0.4
+    gpt_model_name: ${CLOSEAI_GPT_MODEL:gpt-6-luna} # 输入 0.05 / 输出 0.4
     gpt_reasoning_effort: none
-    gemini_model_name: ${CLOSEAI_GEMINI_MODEL:gemini-2.5-flash-lite} # 输入 0.1 / 输出 0.4
+    gemini_model_name: ${CLOSEAI_GEMINI_MODEL:gemini-3.5-flash-lite} # 输入 0.1 / 输出 0.4
     glm_model_name: ${CLOSEAI_GLM_MODEL:glm-5.3-flash} # GLM模型名称
+    deepseek_model_name: ${CLOSEAI_DEEPSEEK_MODEL:deepseek-v4.1-flash} # DeepSeek模型名称
+    claude_model_name: ${CLOSEAI_CLAUDE_MODEL:claude-haiku-5-5} # Claude模型名称
+    qwen_model_name: ${CLOSEAI_QWEN_MODEL:qwen3.8-flash} # 通义千问模型名称
     timeout: 30 # 请求超时时间（秒）
     agent_max_iterations: 20 # Agent 最大迭代轮数
     context_window_tokens: ${CHAT_CONTEXT_WINDOW_TOKENS:32768} # 模型上下文窗口，历史预算由窗口扣除提示词与预留后推导

@@ -981,7 +981,7 @@ class Messages:
 
     @staticmethod
     def CONCURRENT_LLM_AI_COMMENT_START(article_id: int) -> str:
-        return f"开始并发调用3个大模型生成AI评论，文章ID：{article_id}"
+        return f"开始并发调用多个大模型生成AI评论，文章ID：{article_id}"
 
     @staticmethod
     def LLM_CALL_COMPLETED(service_name: str, duration: float) -> str:
@@ -996,7 +996,7 @@ class Messages:
     @staticmethod
     def CONCURRENT_LLM_ALL_COMPLETED(duration: float, article_id: int) -> str:
         return (
-            f"3个大模型并发调用全部完成，总耗时: {duration:.2f}秒，文章ID：{article_id}"
+            f"多个大模型并发调用全部完成，总耗时: {duration:.2f}秒，文章ID：{article_id}"
         )
 
     @staticmethod
@@ -1065,7 +1065,7 @@ class Messages:
 
     @staticmethod
     def CONCURRENT_LLM_REFERENCE_AI_COMMENT_START(article_id: int) -> str:
-        return f"开始并发调用3个大模型生成AI评论（基于参考文本），文章ID：{article_id}"
+        return f"开始并发调用多个大模型生成AI评论（基于参考文本），文章ID：{article_id}"
 
     @staticmethod
     def LLM_REFERENCE_CALL_COMPLETED(service_name: str, duration: float) -> str:
@@ -1079,7 +1079,7 @@ class Messages:
 
     @staticmethod
     def CONCURRENT_LLM_REFERENCE_ALL_COMPLETED(duration: float, article_id: int) -> str:
-        return f"3个大模型参考文本并发调用全部完成，总耗时: {duration:.2f}秒，文章ID：{article_id}"
+        return f"多个大模型参考文本并发调用全部完成，总耗时: {duration:.2f}秒，文章ID：{article_id}"
 
     @staticmethod
     def LLM_REFERENCE_FINAL_FAILED(service_name: str, response: Any) -> str:
@@ -1981,7 +1981,11 @@ class Messages:
         r"(新增|插入|写入|创建).*(数据|记录|表|文章|用户|评论)",
     ]
 
+    CLAUDE_CALL_FAILED_ERROR: str = "Claude调用失败"
+
     DB_CACHE_MISS_QUERY_DB_MESSAGE: str = "[缓存] L1/L2 都未命中，需要查询 DB"
+
+    DEEPSEEK_CALL_FAILED_ERROR: str = "DeepSeek调用失败"
 
     GLM_AGENT_INITIALIZATION_SUCCESS: str = "GLM Agent服务初始化完成"
 
@@ -2145,6 +2149,8 @@ class Messages:
     GPT_QUOTA_EXCEEDED_ERROR: str = "GPT API 配额已用完。请稍后重试。"
 
     GPT_RATE_LIMIT_EXCEEDED_ERROR: str = "GPT API调用频率超限。请稍后重试。"
+
+    QWEN_CALL_FAILED_ERROR: str = "Qwen调用失败"
 
     GRAPH_SEARCH_PATH_CANDIDATE: str = "Article-TAGGED_AS-Tag-TAGGED_AS-Article"
 

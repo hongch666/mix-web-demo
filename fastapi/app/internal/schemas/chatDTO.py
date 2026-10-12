@@ -15,6 +15,9 @@ class AIServiceType(StrEnum):
     GPT = "GPT"
     GEMINI = "Gemini"
     GLM = "GLM"
+    DEEPSEEK = "DeepSeek"
+    CLAUDE = "Claude"
+    QWEN = "Qwen"
 
 
 class StreamFormat(StrEnum):
@@ -37,7 +40,8 @@ class ChatRequest(BaseModel):
         "conversationId", default=None, description="会话ID"
     )
     service: AIServiceType = Field(
-        default=AIServiceType.GPT, description="AI服务类型：gpt、gemini或glm"
+        default=AIServiceType.GPT,
+        description="AI服务类型：gpt、gemini、glm、deepseek、claude或qwen",
     )
 
     @field_validator("message")
@@ -54,13 +58,16 @@ class ChatRequest(BaseModel):
             AIServiceType.GPT.value,
             AIServiceType.GEMINI.value,
             AIServiceType.GLM.value,
+            AIServiceType.DEEPSEEK.value,
+            AIServiceType.CLAUDE.value,
+            AIServiceType.QWEN.value,
         }
         if isinstance(value, AIServiceType):
             return value
         if not isinstance(value, str) or value not in allowed_values:
             raise PydanticCustomError(
                 "service_invalid",
-                "AI服务类型必须是gpt、gemini或glm",
+                "AI服务类型必须是gpt、gemini、glm、deepseek、claude或qwen",
             )
         return value
 

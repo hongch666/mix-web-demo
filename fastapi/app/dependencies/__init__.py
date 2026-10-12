@@ -7,7 +7,14 @@ from .caches import (
 )
 from .clients import GozeroClientDep, NestjsClientDep, SpringClientDep
 from .database import ClickHouseSession, ClickHouseSessionFactoryDep, DbSession
-from .llm import GeminiServiceDep, GlmServiceDep, GptServiceDep
+from .llm import (
+    ClaudeServiceDep,
+    DeepseekServiceDep,
+    GeminiServiceDep,
+    GlmServiceDep,
+    GptServiceDep,
+    QwenServiceDep,
+)
 from .mappers import (
     AiHistoryMapperDep,
     ApiLogMapperDep,
@@ -20,6 +27,7 @@ from .services import (
     AlgorithmServiceDep,
     AnalyzeServiceDep,
     ApiLogServiceDep,
+    ChatServiceDep,
     GenerateServiceDep,
     GraphSearchServiceDep,
     UserServiceDep,
@@ -50,11 +58,15 @@ __all__: list[str] = [
     "GenerateServiceDep",
     "AiHistoryServiceDep",
     "ApiLogServiceDep",
+    "ChatServiceDep",
     "GraphSearchServiceDep",
     "UserServiceDep",
     "GptServiceDep",
     "GeminiServiceDep",
     "GlmServiceDep",
+    "DeepseekServiceDep",
+    "ClaudeServiceDep",
+    "QwenServiceDep",
     "VectorSearchServiceDep",
     "AgentToolFactoriesDep",
     "resolve_analyze_service",

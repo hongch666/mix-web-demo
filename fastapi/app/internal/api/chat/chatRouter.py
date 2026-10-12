@@ -28,10 +28,14 @@ from app.core.decorators import log, requireInternalToken
 from app.core.middleware import get_current_user_id
 from app.dependencies import (
     AiHistoryServiceDep,
+    ChatServiceDep,
+    ClaudeServiceDep,
     DbSession,
+    DeepseekServiceDep,
     GeminiServiceDep,
     GlmServiceDep,
     GptServiceDep,
+    QwenServiceDep,
 )
 from app.internal.agents.langsmith import (
     build_chat_metadata,
@@ -56,6 +60,22 @@ router: APIRouter = APIRouter(
 )
 
 
+@router.get(
+    "/models",
+    response_model=ApiResponse[list[str]],
+    summary="获取聊天模型列表",
+    description=(
+        "返回当前支持的聊天模型枚举值列表，元素即聊天请求 service 参数的合法取值，"
+        "供前端渲染模型选择项"
+    ),
+)
+@log("获取聊天模型列表")
+async def get_chat_models(chat_service: ChatServiceDep) -> ApiResponse:
+    """获取聊天模型列表"""
+
+    return success(data=chat_service.get_available_models())
+
+
 @router.post(
     "/send",
     response_model=ChatResponse,
@@ -71,6 +91,9 @@ async def send_message(
     gptService: GptServiceDep,
     geminiService: GeminiServiceDep,
     glmService: GlmServiceDep,
+    deepseekService: DeepseekServiceDep,
+    claudeService: ClaudeServiceDep,
+    qwenService: QwenServiceDep,
     aiHistoryService: AiHistoryServiceDep,
 ) -> ChatResponse | ApiResponse[ChatResponseData]:
     """普通发送聊天消息"""
@@ -153,6 +176,37 @@ async def send_message(
                 runnable_config=runnable_config,
                 notes=compact_notes,
             )
+        elif request.service == AIServiceType.DEEPSEEK:
+            Logger.info(
+                Messages.CHAT_SERVICE_PROCESSING("DeepSeek", actual_user_id, False)
+            )
+            response_message = await deepseekService.simple_chat(
+                message=request.message,
+                user_id=actual_user_id,
+                db=db,
+                runnable_config=runnable_config,
+                notes=compact_notes,
+            )
+        elif request.service == AIServiceType.CLAUDE:
+            Logger.info(
+                Messages.CHAT_SERVICE_PROCESSING("Claude", actual_user_id, False)
+            )
+            response_message = await claudeService.simple_chat(
+                message=request.message,
+                user_id=actual_user_id,
+                db=db,
+                runnable_config=runnable_config,
+                notes=compact_notes,
+            )
+        elif request.service == AIServiceType.QWEN:
+            Logger.info(Messages.CHAT_SERVICE_PROCESSING("Qwen", actual_user_id, False))
+            response_message = await qwenService.simple_chat(
+                message=request.message,
+                user_id=actual_user_id,
+                db=db,
+                runnable_config=runnable_config,
+                notes=compact_notes,
+            )
         else:
             Logger.info(Messages.CHAT_SERVICE_PROCESSING("GLM", actual_user_id, False))
             response_message = await glmService.simple_chat(
@@ -219,6 +273,9 @@ async def stream_message(
     gptService: GptServiceDep,
     geminiService: GeminiServiceDep,
     glmService: GlmServiceDep,
+    deepseekService: DeepseekServiceDep,
+    claudeService: ClaudeServiceDep,
+    qwenService: QwenServiceDep,
     aiHistoryService: AiHistoryServiceDep,
 ) -> StreamingResponse:
     """流式发送聊天消息"""
@@ -312,6 +369,38 @@ async def stream_message(
                         Messages.CHAT_SERVICE_PROCESSING("Gemini", actual_user_id, True)
                     )
                     stream_generator = geminiService.stream_chat(
+                        message=request.message,
+                        user_id=actual_user_id,
+                        db=db,
+                        runnable_config=runnable_config,
+                    )
+                elif request.service == AIServiceType.DEEPSEEK:
+                    Logger.info(
+                        Messages.CHAT_SERVICE_PROCESSING(
+                            "DeepSeek", actual_user_id, True
+                        )
+                    )
+                    stream_generator = deepseekService.stream_chat(
+                        message=request.message,
+                        user_id=actual_user_id,
+                        db=db,
+                        runnable_config=runnable_config,
+                    )
+                elif request.service == AIServiceType.CLAUDE:
+                    Logger.info(
+                        Messages.CHAT_SERVICE_PROCESSING("Claude", actual_user_id, True)
+                    )
+                    stream_generator = claudeService.stream_chat(
+                        message=request.message,
+                        user_id=actual_user_id,
+                        db=db,
+                        runnable_config=runnable_config,
+                    )
+                elif request.service == AIServiceType.QWEN:
+                    Logger.info(
+                        Messages.CHAT_SERVICE_PROCESSING("Qwen", actual_user_id, True)
+                    )
+                    stream_generator = qwenService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,
                         db=db,
@@ -430,6 +519,9 @@ def _resolve_model_info(service: AIServiceType) -> dict:
         AIServiceType.GPT: ("gpt", agent_cfg["gpt_model_name"]),
         AIServiceType.GEMINI: ("gemini", agent_cfg["gemini_model_name"]),
         AIServiceType.GLM: ("glm", agent_cfg["glm_model_name"]),
+        AIServiceType.DEEPSEEK: ("deepseek", agent_cfg["deepseek_model_name"]),
+        AIServiceType.CLAUDE: ("claude", agent_cfg["claude_model_name"]),
+        AIServiceType.QWEN: ("qwen", agent_cfg["qwen_model_name"]),
     }
     provider, model_name = model_map.get(service, ("unknown", ""))
     return {

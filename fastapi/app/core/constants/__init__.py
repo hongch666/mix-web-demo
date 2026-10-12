@@ -1,3 +1,4 @@
+from .aiUsers import AiUsers
 from .algorithm import AlgorithmConstants
 from .defaults import Defaults
 from .errorCodes import ErrorCodes
@@ -14,6 +15,7 @@ from .vector import VectorConstants
 from .warehouse import WarehouseScripts
 
 __all__ = [
+    "AiUsers",
     "AlgorithmConstants",
     "Messages",
     "MetricNames",

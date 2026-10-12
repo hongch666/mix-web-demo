@@ -1,21 +1,36 @@
 import asyncio
 import re
 import time
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import Any, Optional, cast
 
 import jieba.analyse
 
 from app.core.base import Logger
-from app.core.constants import HttpCode, Messages, Prompts
+from app.core.constants import AiUsers, HttpCode, Messages, Prompts
 from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
 from app.internal.clients import SpringClient, get_spring_client
 
+from ..llm.extend.claudeService import ClaudeService
+from ..llm.extend.deepseekService import DeepseekService
 from ..llm.extend.geminiService import GeminiService
 from ..llm.extend.glmService import GlmService
 from ..llm.extend.gptService import GptService
+from ..llm.extend.qwenService import QwenService
+
+
+@dataclass(frozen=True)
+class AiCommentModel:
+    """AI 评论模型登记项：服务名、评论用户 ID、降级文案与模型服务实例"""
+
+    service_name: str
+    user_id: int
+    failed_text: str
+    service: Any
 
 
 class GenerateService:
@@ -26,12 +41,18 @@ class GenerateService:
         glm_service: Optional[GlmService] = None,
         gemini_service: Optional[GeminiService] = None,
         gpt_service: Optional[GptService] = None,
+        deepseek_service: Optional[DeepseekService] = None,
+        claude_service: Optional[ClaudeService] = None,
+        qwen_service: Optional[QwenService] = None,
         spring_client: Optional[SpringClient] = None,
     ) -> None:
-        # 三个模型服务允许缺省，调用失败由各调用点按异常兜底降级，因此按 Any 持有
+        # 各模型服务允许缺省，调用失败由各调用点按异常兜底降级，因此按 Any 持有
         self.glm_service: Any = glm_service
         self.gpt_service: Any = gpt_service
         self.gemini_service: Any = gemini_service
+        self.deepseek_service: Any = deepseek_service
+        self.claude_service: Any = claude_service
+        self.qwen_service: Any = qwen_service
         self._spring_client: SpringClient = spring_client or get_spring_client()
 
     async def extract_tags(self, text: str, topK: int = 5) -> list[str]:
@@ -67,6 +88,114 @@ class GenerateService:
             "update_time": now,
         }
 
+    def _ai_comment_models(self) -> tuple[AiCommentModel, ...]:
+        """AI 评论模型登记项，新增模型只需在此登记，评论用户与降级文案随之生效"""
+        return (
+            AiCommentModel(
+                "GLM", AiUsers.GLM_ID, Messages.GLM_CALL_FAILED_ERROR, self.glm_service
+            ),
+            AiCommentModel(
+                "Gemini",
+                AiUsers.GEMINI_ID,
+                Messages.GEMINI_CALL_FAILED_ERROR,
+                self.gemini_service,
+            ),
+            AiCommentModel(
+                "GPT", AiUsers.GPT_ID, Messages.GPT_CALL_FAILED_ERROR, self.gpt_service
+            ),
+            AiCommentModel(
+                "DeepSeek",
+                AiUsers.DEEPSEEK_ID,
+                Messages.DEEPSEEK_CALL_FAILED_ERROR,
+                self.deepseek_service,
+            ),
+            AiCommentModel(
+                "Claude",
+                AiUsers.CLAUDE_ID,
+                Messages.CLAUDE_CALL_FAILED_ERROR,
+                self.claude_service,
+            ),
+            AiCommentModel(
+                "Qwen",
+                AiUsers.QWEN_ID,
+                Messages.QWEN_CALL_FAILED_ERROR,
+                self.qwen_service,
+            ),
+        )
+
+    def _build_ai_comment(
+        self,
+        article_id: int,
+        model: AiCommentModel,
+        response: Any,
+        failed_message: Callable[[str, Any], str] = Messages.LLM_FINAL_FAILED,
+    ) -> dict[str, Any]:
+        """解析模型返回并构建评论数据，异常响应降级为失败文案与默认分"""
+        if isinstance(response, Exception):
+            Logger.error(failed_message(model.service_name, response))
+            response = model.failed_text
+        content, star = self._parse_ai_comment_response(response)
+        return self._build_comment_data(article_id, model.user_id, content, star)
+
+    async def _call_models_for_comments(
+        self, models: tuple[AiCommentModel, ...], prompt: str
+    ) -> list[Any]:
+        """并发调用各模型生成评论，单模型异常按返回值透传，由构建阶段降级"""
+
+        async def call_model(model: AiCommentModel) -> Any:
+            start = time.time()
+            try:
+                result = await model.service.basic_chat(prompt)
+            except Exception as e:
+                Logger.error(
+                    Messages.LLM_CALL_FAILED_TIMED(
+                        model.service_name, time.time() - start, e
+                    )
+                )
+                return e
+            Logger.info(
+                Messages.LLM_CALL_COMPLETED(model.service_name, time.time() - start)
+            )
+            return result
+
+        responses = await asyncio.gather(
+            *(call_model(model) for model in models), return_exceptions=True
+        )
+        return list(responses)
+
+    async def _call_models_with_reference(
+        self,
+        models: tuple[AiCommentModel, ...],
+        article_content: str,
+        reference_content: str,
+    ) -> list[Any]:
+        """并发调用各模型基于参考文本生成评论，单模型异常按返回值透传"""
+
+        async def call_model(model: AiCommentModel) -> Any:
+            start = time.time()
+            try:
+                result = await model.service.with_reference_chat(
+                    article_content, reference_content
+                )
+            except Exception as e:
+                Logger.error(
+                    Messages.LLM_REFERENCE_CALL_FAILED_TIMED(
+                        model.service_name, time.time() - start, e
+                    )
+                )
+                return e
+            Logger.info(
+                Messages.LLM_REFERENCE_CALL_COMPLETED(
+                    model.service_name, time.time() - start
+                )
+            )
+            return result
+
+        responses = await asyncio.gather(
+            *(call_model(model) for model in models), return_exceptions=True
+        )
+        return list(responses)
+
     async def generate_ai_comments(self, article_id: int) -> None:
 
         # 1. 判断是否需要生成AI评论
@@ -95,102 +224,29 @@ class GenerateService:
             article_data.get("tags", ""),
             article_data.get("content", ""),
         )
-        # 2.3 异步并发调用3个大模型生成AI评论
+        # 2.3 异步并发调用所有大模型生成AI评论
         Logger.info(Messages.CONCURRENT_LLM_AI_COMMENT_START(article_id))
+        models = self._ai_comment_models()
 
         # 记录整体开始时间
         total_start_time = time.time()
-
-        # 为每个模型创建带计时的包装函数
-        async def timed_glm_call() -> Any:
-            start = time.time()
-            try:
-                result = await self.glm_service.basic_chat(prompt)
-                elapsed = time.time() - start
-                Logger.info(Messages.LLM_CALL_COMPLETED("GLM", elapsed))
-                return result
-            except Exception as e:
-                elapsed = time.time() - start
-                Logger.error(Messages.LLM_CALL_FAILED_TIMED("GLM", elapsed, e))
-                return e
-
-        async def timed_gemini_call() -> Any:
-            start = time.time()
-            try:
-                result = await self.gemini_service.basic_chat(prompt)
-                elapsed = time.time() - start
-                Logger.info(Messages.LLM_CALL_COMPLETED("Gemini", elapsed))
-                return result
-            except Exception as e:
-                elapsed = time.time() - start
-                Logger.error(Messages.LLM_CALL_FAILED_TIMED("Gemini", elapsed, e))
-                return e
-
-        async def timed_gpt_call() -> Any:
-            start = time.time()
-            try:
-                result = await self.gpt_service.basic_chat(prompt)
-                elapsed = time.time() - start
-                Logger.info(Messages.LLM_CALL_COMPLETED("GPT", elapsed))
-                return result
-            except Exception as e:
-                elapsed = time.time() - start
-                Logger.error(Messages.LLM_CALL_FAILED_TIMED("GPT", elapsed, e))
-                return e
-
-        # 使用 asyncio.gather 并发执行三个异步调用
-        responses = await asyncio.gather(
-            timed_glm_call(),
-            timed_gemini_call(),
-            timed_gpt_call(),
-            return_exceptions=True,  # 即使查个调用失败，其他调用仍继续
-        )
+        responses = await self._call_models_for_comments(models, prompt)
 
         # 记录整体结束时间
         total_elapsed = time.time() - total_start_time
         Logger.info(Messages.CONCURRENT_LLM_ALL_COMPLETED(total_elapsed, article_id))
 
-        # gather 的返回类型含 BaseException，这里按运行期值处理，异常由下方 isinstance 分支替换为降级文案
-        response_glm: Any
-        response_gemini: Any
-        response_gpt: Any
-        response_glm, response_gemini, response_gpt = responses
-
-        # 检查是否有异常返回
-        if isinstance(response_glm, Exception):
-            Logger.error(Messages.LLM_FINAL_FAILED("GLM", response_glm))
-            response_glm = Messages.GLM_CALL_FAILED_ERROR
-        if isinstance(response_gemini, Exception):
-            Logger.error(Messages.LLM_FINAL_FAILED("Gemini", response_gemini))
-            response_gemini = Messages.GEMINI_CALL_FAILED_ERROR
-        if isinstance(response_gpt, Exception):
-            Logger.error(Messages.LLM_FINAL_FAILED("GPT", response_gpt))
-            response_gpt = Messages.GPT_CALL_FAILED_ERROR
-
-        # 2.4 解析大模型返回结果
-        content_glm, star_glm = self._parse_ai_comment_response(response_glm)
-        content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
-        content_gpt, star_gpt = self._parse_ai_comment_response(response_gpt)
-        # 3. 构建AI评论对象
-        glm_ai_comment: dict[str, Any] = self._build_comment_data(
-            article_id, 1001, content_glm, star_glm
-        )
-        gemini_ai_comment: dict[str, Any] = self._build_comment_data(
-            article_id, 1002, content_gemini, star_gemini
-        )
-        gpt_ai_comment: dict[str, Any] = self._build_comment_data(
-            article_id, 1003, content_gpt, star_gpt
-        )
+        # 3. 构建AI评论对象，异常返回由构建阶段替换为降级文案
+        comments = [
+            self._build_ai_comment(article_id, model, response)
+            for model, response in zip(models, responses, strict=True)
+        ]
 
         # 4. 保存AI评论到数据库（通过Spring远程调用并行插入，互不干扰）
         async def _insert_comment(comment: dict[str, Any]) -> None:
             await self._spring_client.create_comment(comment)
 
-        await asyncio.gather(
-            _insert_comment(glm_ai_comment),
-            _insert_comment(gemini_ai_comment),
-            _insert_comment(gpt_ai_comment),
-        )
+        await asyncio.gather(*(_insert_comment(comment) for comment in comments))
         Logger.info(Messages.AI_COMMENT_GENERATED_AND_SAVED(article_id))
 
     async def generate_ai_comments_in_background(self, article_id: int) -> None:
@@ -256,6 +312,8 @@ class GenerateService:
             Logger.error(Messages.ARTICLE_NOT_FOUND_WITH_ID(article_id))
             return
         article_data = articles[0]
+        # 各模型的评论身份与降级文案在单次调用内固定
+        models = self._ai_comment_models()
 
         Logger.info(Messages.REFERENCE_BASED_AI_COMMENT_START(article_id))
 
@@ -291,65 +349,36 @@ class GenerateService:
                     ref_value = str(category_ref.get("link") or "")
                     Logger.info(Messages.REFERENCE_LINK_EXTRACTION_START(ref_value))
 
-                # 定义三个大模型的总结函数
-                async def summarize_with_glm(content: str) -> str:
+                # 定义各大模型的总结函数
+                async def summarize_with(model: AiCommentModel, content: str) -> str:
                     try:
-                        return await self.glm_service.summarize_content(
+                        return await model.service.summarize_content(
                             content, max_length=1500
                         )
                     except Exception as e:
-                        Logger.error(Messages.LLM_SUMMARIZE_FAILED("GLM", e))
-                        return content[:1500]
-
-                async def summarize_with_gemini(content: str) -> str:
-                    try:
-                        return await self.gemini_service.summarize_content(
-                            content, max_length=1500
+                        Logger.error(
+                            Messages.LLM_SUMMARIZE_FAILED(model.service_name, e)
                         )
-                    except Exception as e:
-                        Logger.error(Messages.LLM_SUMMARIZE_FAILED("Gemini", e))
                         return content[:1500]
 
-                async def summarize_with_gpt(content: str) -> str:
-                    try:
-                        return await self.gpt_service.summarize_content(
-                            content, max_length=1500
-                        )
-                    except Exception as e:
-                        Logger.error(Messages.LLM_SUMMARIZE_FAILED("GPT", e))
-                        return content[:1500]
-
-                # 并发调用三个大模型对提取的内容进行总结
+                # 并发调用各大模型对提取的内容进行总结
                 summarize_tasks = [
                     extractor.extract_reference_content(
-                        ref_type, ref_value, 3000, summarize_with_glm
-                    ),
-                    extractor.extract_reference_content(
-                        ref_type, ref_value, 3000, summarize_with_gemini
-                    ),
-                    extractor.extract_reference_content(
-                        ref_type, ref_value, 3000, summarize_with_gpt
-                    ),
+                        ref_type, ref_value, 3000, partial(summarize_with, model)
+                    )
+                    for model in models
                 ]
 
                 summary_results = await asyncio.gather(
                     *summarize_tasks, return_exceptions=True
                 )
 
-                # 合并三个大模型的总结结果
-                summaries = []
-                if isinstance(summary_results[0], str) and summary_results[0]:
-                    summaries.append(
-                        Messages.LLM_SUMMARY_RESULT_ENTRY("GLM", summary_results[0])
-                    )
-                if isinstance(summary_results[1], str) and summary_results[1]:
-                    summaries.append(
-                        Messages.LLM_SUMMARY_RESULT_ENTRY("Gemini", summary_results[1])
-                    )
-                if isinstance(summary_results[2], str) and summary_results[2]:
-                    summaries.append(
-                        Messages.LLM_SUMMARY_RESULT_ENTRY("GPT", summary_results[2])
-                    )
+                # 合并各大模型的总结结果，非字符串结果不参与合并
+                summaries = [
+                    Messages.LLM_SUMMARY_RESULT_ENTRY(model.service_name, str(result))
+                    for model, result in zip(models, summary_results, strict=True)
+                    if isinstance(result, str) and result
+                ]
 
                 if summaries:
                     reference_content = "\n\n".join(summaries)
@@ -382,65 +411,12 @@ class GenerateService:
             article_data.get("content", ""),
         )
 
-        # 6. 异步并发调用3个大模型生成AI评论
+        # 6. 异步并发调用所有大模型生成AI评论
         Logger.info(Messages.CONCURRENT_LLM_REFERENCE_AI_COMMENT_START(article_id))
 
         total_start_time = time.time()
-
-        async def timed_glm_ref_call() -> Any:
-            start = time.time()
-            try:
-                result = await self.glm_service.with_reference_chat(
-                    article_content, reference_content
-                )
-                elapsed = time.time() - start
-                Logger.info(Messages.LLM_REFERENCE_CALL_COMPLETED("GLM", elapsed))
-                return result
-            except Exception as e:
-                elapsed = time.time() - start
-                Logger.error(
-                    Messages.LLM_REFERENCE_CALL_FAILED_TIMED("GLM", elapsed, e)
-                )
-                return e
-
-        async def timed_gemini_ref_call() -> Any:
-            start = time.time()
-            try:
-                result = await self.gemini_service.with_reference_chat(
-                    article_content, reference_content
-                )
-                elapsed = time.time() - start
-                Logger.info(Messages.LLM_REFERENCE_CALL_COMPLETED("Gemini", elapsed))
-                return result
-            except Exception as e:
-                elapsed = time.time() - start
-                Logger.error(
-                    Messages.LLM_REFERENCE_CALL_FAILED_TIMED("Gemini", elapsed, e)
-                )
-                return e
-
-        async def timed_gpt_ref_call() -> Any:
-            start = time.time()
-            try:
-                result = await self.gpt_service.with_reference_chat(
-                    article_content, reference_content
-                )
-                elapsed = time.time() - start
-                Logger.info(Messages.LLM_REFERENCE_CALL_COMPLETED("GPT", elapsed))
-                return result
-            except Exception as e:
-                elapsed = time.time() - start
-                Logger.error(
-                    Messages.LLM_REFERENCE_CALL_FAILED_TIMED("GPT", elapsed, e)
-                )
-                return e
-
-        # 并发执行三个调用
-        responses = await asyncio.gather(
-            timed_glm_ref_call(),
-            timed_gemini_ref_call(),
-            timed_gpt_ref_call(),
-            return_exceptions=True,
+        responses = await self._call_models_with_reference(
+            models, article_content, reference_content
         )
 
         total_elapsed = time.time() - total_start_time
@@ -448,48 +424,19 @@ class GenerateService:
             Messages.CONCURRENT_LLM_REFERENCE_ALL_COMPLETED(total_elapsed, article_id)
         )
 
-        # gather 的返回类型含 BaseException，这里按运行期值处理，异常由下方 isinstance 分支替换为降级文案
-        response_glm: Any
-        response_gemini: Any
-        response_gpt: Any
-        response_glm, response_gemini, response_gpt = responses
+        # 7. 构建AI评论对象，异常返回由构建阶段替换为降级文案
+        comments = [
+            self._build_ai_comment(
+                article_id, model, response, Messages.LLM_REFERENCE_FINAL_FAILED
+            )
+            for model, response in zip(models, responses, strict=True)
+        ]
 
-        # 检查异常返回
-        if isinstance(response_glm, Exception):
-            Logger.error(Messages.LLM_REFERENCE_FINAL_FAILED("GLM", response_glm))
-            response_glm = Messages.GLM_CALL_FAILED_ERROR
-        if isinstance(response_gemini, Exception):
-            Logger.error(Messages.LLM_REFERENCE_FINAL_FAILED("Gemini", response_gemini))
-            response_gemini = Messages.GEMINI_CALL_FAILED_ERROR
-        if isinstance(response_gpt, Exception):
-            Logger.error(Messages.LLM_REFERENCE_FINAL_FAILED("GPT", response_gpt))
-            response_gpt = Messages.GPT_CALL_FAILED_ERROR
-
-        # 7. 解析大模型返回结果
-        content_glm, star_glm = self._parse_ai_comment_response(response_glm)
-        content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
-        content_gpt, star_gpt = self._parse_ai_comment_response(response_gpt)
-
-        # 8. 构建AI评论对象
-        glm_ai_comment: dict[str, Any] = self._build_comment_data(
-            article_id, 1001, content_glm, star_glm
-        )
-        gemini_ai_comment: dict[str, Any] = self._build_comment_data(
-            article_id, 1002, content_gemini, star_gemini
-        )
-        gpt_ai_comment: dict[str, Any] = self._build_comment_data(
-            article_id, 1003, content_gpt, star_gpt
-        )
-
-        # 9. 保存AI评论到数据库（通过Spring远程调用并行插入，互不干扰）
+        # 8. 保存AI评论到数据库（通过Spring远程调用并行插入，互不干扰）
         async def _insert_comment_ref(comment: dict[str, Any]) -> None:
             await self._spring_client.create_comment(comment)
 
-        await asyncio.gather(
-            _insert_comment_ref(glm_ai_comment),
-            _insert_comment_ref(gemini_ai_comment),
-            _insert_comment_ref(gpt_ai_comment),
-        )
+        await asyncio.gather(*(_insert_comment_ref(comment) for comment in comments))
         Logger.info(Messages.REFERENCE_AI_COMMENT_GENERATED_AND_SAVED(article_id))
 
     async def generate_authority_article_with_ai_summaries(
@@ -656,11 +603,17 @@ def get_generate_service(
     glm_service: GlmService,
     gemini_service: GeminiService,
     gpt_service: GptService,
+    deepseek_service: DeepseekService,
+    claude_service: ClaudeService,
+    qwen_service: QwenService,
     spring_client: SpringClient,
 ) -> GenerateService:
     return GenerateService(
         glm_service,
         gemini_service,
         gpt_service,
+        deepseek_service,
+        claude_service,
+        qwen_service,
         spring_client,
     )

@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.core.constants import HttpCode, Messages, Prompts
+from app.core.constants import AiUsers, HttpCode, Messages, Prompts
 from app.core.errors import BusinessException
 from app.internal.services.generate.generateService import GenerateService
 
@@ -13,13 +13,40 @@ generate_module = importlib.import_module(
 )
 
 
-def _make_service(glm=None, gemini=None, gpt=None, spring=None) -> GenerateService:
+def _make_service(
+    glm=None,
+    gemini=None,
+    gpt=None,
+    deepseek=None,
+    claude=None,
+    qwen=None,
+    spring=None,
+) -> GenerateService:
     return GenerateService(
         glm_service=glm,
         gemini_service=gemini,
         gpt_service=gpt,
+        deepseek_service=deepseek,
+        claude_service=claude,
+        qwen_service=qwen,
         spring_client=spring if spring is not None else AsyncMock(),
     )
+
+
+# 期望写入评论的 AI 用户集合，需与生成服务登记的模型一一对应
+_AI_COMMENT_USER_IDS: tuple[int, ...] = (
+    AiUsers.GLM_ID,
+    AiUsers.GEMINI_ID,
+    AiUsers.GPT_ID,
+    AiUsers.DEEPSEEK_ID,
+    AiUsers.CLAUDE_ID,
+    AiUsers.QWEN_ID,
+)
+
+
+def _all_comment_user_ids() -> set[int]:
+    """AI 评论作者集合，断言评论写入覆盖全部模型"""
+    return set(_AI_COMMENT_USER_IDS)
 
 
 def _llm_service(
@@ -136,9 +163,9 @@ def test_parse_ai_comment_response_truncates_long_unmarked_text() -> None:
 # ===== AI 评论生成 =====
 
 
-# 存在旧评论时先删除再写入三条各模型评论
+# 存在旧评论时先删除再写入各模型评论，评论作者与 AI 用户常量一一对应
 @pytest.mark.anyio
-async def test_generate_ai_comments_replaces_existing_and_saves_three() -> None:
+async def test_generate_ai_comments_replaces_existing_and_saves_all_models() -> None:
     spring = AsyncMock()
     spring.get_ai_comments_num_by_article_id.return_value = 2
     spring.get_articles_by_ids.return_value = [
@@ -147,23 +174,38 @@ async def test_generate_ai_comments_replaces_existing_and_saves_three() -> None:
     glm = _llm_service(basic_result="评价内容：g\n评分：7")
     gemini = _llm_service(basic_result="评价内容：m\n评分：8")
     gpt = _llm_service(basic_result="评价内容：p\n评分：9")
-    service = _make_service(glm=glm, gemini=gemini, gpt=gpt, spring=spring)
+    deepseek = _llm_service(basic_result="评价内容：d\n评分：7.5")
+    claude = _llm_service(basic_result="评价内容：cl\n评分：8.5")
+    qwen = _llm_service(basic_result="评价内容：q\n评分：9.5")
+    service = _make_service(
+        glm=glm,
+        gemini=gemini,
+        gpt=gpt,
+        deepseek=deepseek,
+        claude=claude,
+        qwen=qwen,
+        spring=spring,
+    )
 
     await service.generate_ai_comments(3)
 
     spring.delete_ai_comments_by_article_id.assert_awaited_once_with(3)
-    assert spring.create_comment.await_count == 3
+    assert spring.create_comment.await_count == len(_AI_COMMENT_USER_IDS)
     by_user = _comments_by_user(spring)
-    assert by_user[1001]["content"] == "g"
-    assert by_user[1001]["star"] == 7
-    assert by_user[1002]["star"] == 8
-    assert by_user[1003]["star"] == 9
+    assert set(by_user) == _all_comment_user_ids()
+    assert by_user[AiUsers.GLM_ID]["content"] == "g"
+    assert by_user[AiUsers.GLM_ID]["star"] == 7
+    assert by_user[AiUsers.GEMINI_ID]["star"] == 8
+    assert by_user[AiUsers.GPT_ID]["star"] == 9
+    assert by_user[AiUsers.DEEPSEEK_ID]["content"] == "d"
+    assert by_user[AiUsers.CLAUDE_ID]["star"] == 8.5
+    assert by_user[AiUsers.QWEN_ID]["star"] == 9.5
     assert glm.basic_chat.await_args.args[0] == Prompts.ARTICLE_EVALUATION(
         "t", "a", "c"
     )
 
 
-# 无旧评论时不执行删除，仍写入三条评论
+# 无旧评论时不执行删除，仍写入各模型评论
 @pytest.mark.anyio
 async def test_generate_ai_comments_skips_delete_without_existing() -> None:
     spring = AsyncMock()
@@ -179,7 +221,7 @@ async def test_generate_ai_comments_skips_delete_without_existing() -> None:
     await service.generate_ai_comments(3)
 
     spring.delete_ai_comments_by_article_id.assert_not_awaited()
-    assert spring.create_comment.await_count == 3
+    assert spring.create_comment.await_count == len(_AI_COMMENT_USER_IDS)
 
 
 # 文章不存在时抛出 404 文章未找到业务异常
@@ -214,14 +256,14 @@ async def test_generate_ai_comments_degrades_when_one_model_fails() -> None:
 
     await service.generate_ai_comments(3)
 
-    assert spring.create_comment.await_count == 3
+    assert spring.create_comment.await_count == len(_AI_COMMENT_USER_IDS)
     by_user = _comments_by_user(spring)
-    assert by_user[1001]["content"] == Messages.GLM_CALL_FAILED_ERROR
-    assert by_user[1001]["star"] == 6.0
-    assert by_user[1002]["star"] == 8
+    assert by_user[AiUsers.GLM_ID]["content"] == Messages.GLM_CALL_FAILED_ERROR
+    assert by_user[AiUsers.GLM_ID]["star"] == 6.0
+    assert by_user[AiUsers.GEMINI_ID]["star"] == 8
 
 
-# 模型未注入时对应评论降级为失败文案
+# 模型未注入时对应评论降级为失败文案，新增模型沿用同一降级规则
 @pytest.mark.anyio
 async def test_generate_ai_comments_degrades_when_model_not_injected() -> None:
     spring = AsyncMock()
@@ -233,14 +275,22 @@ async def test_generate_ai_comments_degrades_when_model_not_injected() -> None:
         glm=None,
         gemini=_llm_service(basic_result="评价内容：m\n评分：8"),
         gpt=_llm_service(basic_result="评价内容：p\n评分：9"),
+        deepseek=None,
+        claude=None,
+        qwen=None,
         spring=spring,
     )
 
     await service.generate_ai_comments(3)
 
     by_user = _comments_by_user(spring)
-    assert by_user[1001]["content"] == Messages.GLM_CALL_FAILED_ERROR
-    assert by_user[1002]["star"] == 8
+    assert by_user[AiUsers.GLM_ID]["content"] == Messages.GLM_CALL_FAILED_ERROR
+    assert by_user[AiUsers.GEMINI_ID]["star"] == 8
+    assert by_user[AiUsers.DEEPSEEK_ID]["content"] == (
+        Messages.DEEPSEEK_CALL_FAILED_ERROR
+    )
+    assert by_user[AiUsers.CLAUDE_ID]["content"] == Messages.CLAUDE_CALL_FAILED_ERROR
+    assert by_user[AiUsers.QWEN_ID]["content"] == Messages.QWEN_CALL_FAILED_ERROR
 
 
 # 后台评论入口转发到评论生成并透传文章 ID
@@ -274,7 +324,7 @@ async def test_generate_ai_comments_with_reference_returns_when_article_missing(
     spring.create_comment.assert_not_awaited()
 
 
-# 参考评论先摘要三模型输出再合并作为参考内容
+# 参考评论先摘要各模型输出再合并作为参考内容
 @pytest.mark.anyio
 async def test_generate_ai_comments_with_reference_summarizes_reference(
     monkeypatch: pytest.MonkeyPatch,
@@ -313,11 +363,28 @@ async def test_generate_ai_comments_with_reference_summarizes_reference(
     gpt = _llm_service(
         summarize_result="gpt-sum", reference_result="评价内容：P\n评分：9"
     )
-    service = _make_service(glm=glm, gemini=gemini, gpt=gpt, spring=spring)
+    deepseek = _llm_service(
+        summarize_result="deepseek-sum", reference_result="评价内容：D\n评分：7.5"
+    )
+    claude = _llm_service(
+        summarize_result="claude-sum", reference_result="评价内容：CL\n评分：8.5"
+    )
+    qwen = _llm_service(
+        summarize_result="qwen-sum", reference_result="评价内容：Q\n评分：9.5"
+    )
+    service = _make_service(
+        glm=glm,
+        gemini=gemini,
+        gpt=gpt,
+        deepseek=deepseek,
+        claude=claude,
+        qwen=qwen,
+        spring=spring,
+    )
 
     await service.generate_ai_comments_with_reference(3)
 
-    assert extractor.calls == [("link", "http://ref", 3000)] * 3
+    assert extractor.calls == [("link", "http://ref", 3000)] * len(_AI_COMMENT_USER_IDS)
     spring.get_category_reference_by_sub_category_id.assert_awaited_once_with(11)
     article_content, reference_content = glm.with_reference_chat.await_args.args
     assert article_content == Prompts.ARTICLE_REFERENCE_CONTENT("t", "a", "c")
@@ -326,9 +393,12 @@ async def test_generate_ai_comments_with_reference_summarizes_reference(
             Messages.LLM_SUMMARY_RESULT_ENTRY("GLM", "glm-sum"),
             Messages.LLM_SUMMARY_RESULT_ENTRY("Gemini", "gemini-sum"),
             Messages.LLM_SUMMARY_RESULT_ENTRY("GPT", "gpt-sum"),
+            Messages.LLM_SUMMARY_RESULT_ENTRY("DeepSeek", "deepseek-sum"),
+            Messages.LLM_SUMMARY_RESULT_ENTRY("Claude", "claude-sum"),
+            Messages.LLM_SUMMARY_RESULT_ENTRY("Qwen", "qwen-sum"),
         ]
     )
-    assert spring.create_comment.await_count == 3
+    assert spring.create_comment.await_count == len(_AI_COMMENT_USER_IDS)
 
 
 # 缺少子分类时不查询参考内容而使用默认提示

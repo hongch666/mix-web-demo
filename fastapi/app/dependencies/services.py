@@ -15,6 +15,7 @@ from app.internal.services import (
     AlgorithmService,
     AnalyzeService,
     ApiLogService,
+    ChatService,
     GenerateService,
     GraphSearchService,
     UserService,
@@ -23,6 +24,7 @@ from app.internal.services import (
     get_algorithm_service,
     get_analyze_service,
     get_apilog_service,
+    get_chat_service,
     get_generate_service,
     get_graph_search_service,
     get_user_service,
@@ -37,7 +39,14 @@ from .caches import (
     WordcloudCacheDep,
 )
 from .clients import NestjsClientDep, SpringClientDep
-from .llm import GeminiServiceDep, GlmServiceDep, GptServiceDep
+from .llm import (
+    ClaudeServiceDep,
+    DeepseekServiceDep,
+    GeminiServiceDep,
+    GlmServiceDep,
+    GptServiceDep,
+    QwenServiceDep,
+)
 from .mappers import (
     AiHistoryMapperDep,
     AiUserSummaryMapperDep,
@@ -51,6 +60,10 @@ from .mappers import (
 
 def provide_algorithm_service() -> AlgorithmService:
     return get_algorithm_service()
+
+
+def provide_chat_service() -> ChatService:
+    return get_chat_service()
 
 
 def provide_analyze_service(
@@ -97,12 +110,18 @@ def provide_generate_service(
     glm_service: GlmServiceDep,
     gemini_service: GeminiServiceDep,
     gpt_service: GptServiceDep,
+    deepseek_service: DeepseekServiceDep,
+    claude_service: ClaudeServiceDep,
+    qwen_service: QwenServiceDep,
     spring_client: SpringClientDep,
 ) -> GenerateService:
     return get_generate_service(
         glm_service,
         gemini_service,
         gpt_service,
+        deepseek_service,
+        claude_service,
+        qwen_service,
         spring_client,
     )
 
@@ -143,6 +162,7 @@ def provide_vector_search_service(
 
 
 AlgorithmServiceDep = Annotated[AlgorithmService, Depends(provide_algorithm_service)]
+ChatServiceDep = Annotated[ChatService, Depends(provide_chat_service)]
 AnalyzeServiceDep = Annotated[AnalyzeService, Depends(provide_analyze_service)]
 GenerateServiceDep = Annotated[GenerateService, Depends(provide_generate_service)]
 AiHistoryServiceDep = Annotated[AiHistoryService, Depends(provide_ai_history_service)]
