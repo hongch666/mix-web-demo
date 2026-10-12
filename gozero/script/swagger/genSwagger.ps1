@@ -2,7 +2,7 @@
 #
 # 流程与 genSwagger.sh 一致：
 #   1. goctl 生成 main.json，按仓库约定改名为 openapi.json
-#   2. swagger2openapi 转换为 OpenAPI 3.0（必需，未安装则自动安装）
+#   2. swagger2openapi 转换为 OpenAPI 3（必需，未安装则自动安装）
 #   3. fix.py 补中文标签、剔除易变字段与 WebSocket 路径，并由处理后的 JSON 派生 openapi.yaml
 #
 # YAML 不由 goctl 单独生成：那样会停留在 Swagger 2.0，与已是 OpenAPI 3 的 JSON 格式分叉
@@ -51,7 +51,7 @@ if (-not (Test-Path $jsonPath)) {
 }
 Write-Host "goctl 生成完成：$jsonPath"
 
-# 转换为 OpenAPI 3.0：未安装时自动安装；装完仍不在 PATH 时退化为 npx 调用
+# 转换为 OpenAPI 3：未安装时自动安装；装完仍不在 PATH 时退化为 npx 调用
 $s2o = Get-Command swagger2openapi -ErrorAction SilentlyContinue
 if ($null -eq $s2o) {
     Write-Host "未检测到 swagger2openapi，正在自动安装..."
@@ -64,7 +64,7 @@ if ($null -eq $s2o) {
     $s2o = Get-Command swagger2openapi -ErrorAction SilentlyContinue
 }
 
-Write-Host "正在转换为 OpenAPI 3.0 格式..."
+Write-Host "正在转换为 OpenAPI 3 格式..."
 if ($null -ne $s2o) {
     swagger2openapi -o $jsonPath -p $jsonPath
 } else {
@@ -77,7 +77,14 @@ if (-not (Select-String -Path $jsonPath -Pattern '"openapi"\s*:' -Quiet)) {
     Pop-Location
     exit 1
 }
-Write-Host "已转换为 OpenAPI 3.0 格式：$jsonPath"
+
+# 校验规范版本：产物留 3.1 是为了表达 type: "null"，服务内嵌的 swagger-ui 资源为 5.x，4.x 渲染不了 3.1
+if (-not (Select-String -Path $jsonPath -Pattern '"openapi": "3\.1\.0"' -Quiet)) {
+    Write-Host "错误: 产物规范版本不是 3.1.0"
+    Pop-Location
+    exit 1
+}
+Write-Host "已转换为 OpenAPI 3 格式：$jsonPath"
 
 # fix.py：补中文标签、剔除易变字段与 WebSocket 路径，并由 JSON 派生 YAML
 $pythonScript = Join-Path $scriptPath "fix.py"

@@ -47,7 +47,7 @@ if [ ! -f "$JSON_FILE" ]; then
 fi
 echo "goctl 生成完成：$JSON_FILE"
 
-# 转换为 OpenAPI 3 JSON 格式，直接覆盖 openapi.json，再于后处理中将规范标记设为 3.1
+# 转换为 OpenAPI 3 JSON 格式，直接覆盖 openapi.json，规范版本由 fix.py 后处理统一固定
 # 未安装时自动安装；装完仍不在当前 PATH 时退化为 npx 调用
 s2o=()
 if command -v swagger2openapi &> /dev/null; then
@@ -118,35 +118,14 @@ if ! "$python_cmd" "$python_script" "$JSON_FILE" "$YAML_FILE"; then
     exit 1
 fi
 
-"$python_cmd" - "$JSON_FILE" "$YAML_FILE" <<'PY'
-import json
-import sys
-
-json_path, yaml_path = sys.argv[1:]
-with open(json_path, encoding="utf-8") as source:
-    document = json.load(source)
-document["openapi"] = "3.1.0"
-with open(json_path, "w", encoding="utf-8", newline="\n") as target:
-    json.dump(document, target, ensure_ascii=False, indent=2)
-    target.write("\n")
-
-with open(yaml_path, encoding="utf-8") as source:
-    lines = source.readlines()
-if lines and lines[0].startswith("openapi:"):
-    lines[0] = "openapi: 3.1.0\n"
-else:
-    lines.insert(0, "openapi: 3.1.0\n")
-with open(yaml_path, "w", encoding="utf-8", newline="\n") as target:
-    target.writelines(lines)
-PY
-
-# 校验两份产物都是 OpenAPI 3.1
-if ! grep -q '"openapi"[[:space:]]*:' "$JSON_FILE"; then
-    echo "错误: $JSON_FILE 不是 OpenAPI 3 格式"
+# 校验两份产物的规范版本一致
+# 产物留 3.1 是为了表达 type: "null"；服务内嵌的 swagger-ui 资源为 5.x，4.x 渲染不了 3.1
+if ! grep -q '"openapi": "3.1.0"' "$JSON_FILE"; then
+    echo "错误: $JSON_FILE 的规范版本不是 3.1.0"
     exit 1
 fi
-if ! grep -q '^openapi:' "$YAML_FILE"; then
-    echo "错误: $YAML_FILE 不是 OpenAPI 3 格式"
+if ! grep -q '^openapi: 3.1.0$' "$YAML_FILE"; then
+    echo "错误: $YAML_FILE 的规范版本不是 3.1.0"
     exit 1
 fi
 

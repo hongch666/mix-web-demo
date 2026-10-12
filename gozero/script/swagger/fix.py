@@ -35,6 +35,12 @@ EMPTY_DATA_SCHEMA = {"type": "null", "description": "响应数据"}
 # 自动生成（形如 Response Stream Message Chat Stream Post），GoZero 这里显式给出帧类型名
 SSE_FRAME_SCHEMA_TITLE = "ChatSSEMessage"
 
+# 产物的规范版本：留 3.1 是为了表达 type: "null"（空数据响应，Apifox 靠它展示空值）
+# 该写法只有 3.1 合法，3.0 的 type 只接受 array/boolean/integer/number/object/string
+# 服务内嵌的 swagger-ui 资源为 5.x（支持 3.1）；4.x 只认 swagger 2.0 与 openapi 3.0.x，会直接白屏
+# 这里统一固定，顺带消除 swagger2openapi 版本差异造成的产物抖动
+OPENAPI_VERSION = "3.1.0"
+
 
 def add_chinese_tags_to_dict(swagger_data):
     """
@@ -66,6 +72,9 @@ def add_chinese_tags_to_dict(swagger_data):
             "description": "SQL 执行工具相关API，包括表结构查询与只读参数化SQL查询",
         },
     }
+
+    # 固定规范版本，保证两个生成脚本产物一致
+    swagger_data["openapi"] = OPENAPI_VERSION
 
     # 覆盖 info 标题和描述，面向 Swagger 读者；.api 的 title/desc 只给开发者看，生成时会被这里替换
     if "info" not in swagger_data:
