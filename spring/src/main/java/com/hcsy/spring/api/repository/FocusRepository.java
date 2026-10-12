@@ -9,8 +9,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import com.hcsy.spring.entity.po.Focus;
-import com.hcsy.spring.entity.projection.DateCountRow;
-import com.hcsy.spring.entity.projection.IdCountRow;
+import com.hcsy.spring.entity.vo.DateCountVO;
+import com.hcsy.spring.entity.vo.IdCountVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -37,7 +37,7 @@ public interface FocusRepository extends ReactiveCrudRepository<Focus, Long> {
         WHERE focus_id IN (:ids)
         GROUP BY focus_id
         """)
-    Flux<IdCountRow> countGroupByFocusIdIn(@Param("ids") Collection<Long> userIds);
+    Flux<IdCountVO> countGroupByFocusIdIn(@Param("ids") Collection<Long> userIds);
 
     @Query("""
         SELECT COUNT(*) FROM focus
@@ -55,7 +55,7 @@ public interface FocusRepository extends ReactiveCrudRepository<Focus, Long> {
         GROUP BY DATE(created_time)
         ORDER BY DATE(created_time)
         """)
-    Flux<DateCountRow> countDailyFollowsByUserIdAndPeriod(
+    Flux<DateCountVO> countDailyFollowsByUserIdAndPeriod(
         @Param("userId") Long userId,
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate);

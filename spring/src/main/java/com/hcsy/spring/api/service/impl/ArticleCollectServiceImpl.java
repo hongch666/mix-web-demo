@@ -22,7 +22,6 @@ import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
 import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
 import com.hcsy.spring.entity.vo.BatchCountVO;
-import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 
 import lombok.RequiredArgsConstructor;
@@ -88,8 +87,8 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
         if (articleIds == null || articleIds.isEmpty()) {
             return Mono.just(new BatchCountVO(List.of()));
         }
+        // 具体类投影：接口投影（IdCountRow）映射不出 count 列，会静默返回 null 导致计数为 0
         return articleCollectRepository.countGroupByArticleIdIn(articleIds)
-            .map(row -> new IdCountVO(row.getId(), row.getCount()))
             .collectList()
             .map(BatchCountVO::new);
     }

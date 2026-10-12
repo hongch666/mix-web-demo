@@ -2,7 +2,6 @@ package com.hcsy.spring.api.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,8 +23,8 @@ import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.entity.assembler.ArticleInteractionAssembler;
 import com.hcsy.spring.entity.po.ArticleLike;
-import com.hcsy.spring.entity.projection.IdCountRow;
 import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
+import com.hcsy.spring.entity.vo.IdCountVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -126,10 +125,8 @@ class ArticleLikeServiceImplTest {
     @Test
     @DisplayName("批量统计点赞数时把投影转换为 ID 计数项")
     void getLikeCountsMapsRows() {
-        IdCountRow row = mock(IdCountRow.class);
-        when(row.getId()).thenReturn(ARTICLE_ID);
-        when(row.getCount()).thenReturn(4L);
-        when(articleLikeRepository.countGroupByArticleIdIn(List.of(ARTICLE_ID))).thenReturn(Flux.just(row));
+        when(articleLikeRepository.countGroupByArticleIdIn(List.of(ARTICLE_ID)))
+            .thenReturn(Flux.just(new IdCountVO(ARTICLE_ID, 4L)));
 
         StepVerifier.create(articleLikeService.getLikeCountsByArticleIds(List.of(ARTICLE_ID)))
             .assertNext(counts -> {

@@ -10,8 +10,8 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.projection.ArticleExcelRow;
-import com.hcsy.spring.entity.projection.CategoryCountRow;
-import com.hcsy.spring.entity.projection.MonthlyCountRow;
+import com.hcsy.spring.entity.vo.CategoryCountVO;
+import com.hcsy.spring.entity.vo.MonthlyCountVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -84,7 +84,7 @@ public interface ArticleRepository extends ReactiveCrudRepository<Article, Long>
         GROUP BY sub_category_id
         ORDER BY count DESC
         """)
-    Flux<CategoryCountRow> countBySubCategoryIdGroupBy();
+    Flux<CategoryCountVO> countBySubCategoryIdGroupBy();
 
     @Query("""
         SELECT DATE_FORMAT(create_at, '%Y-%m') AS yearMonth, COUNT(*) AS count
@@ -93,7 +93,7 @@ public interface ArticleRepository extends ReactiveCrudRepository<Article, Long>
         GROUP BY yearMonth
         ORDER BY yearMonth DESC
         """)
-    Flux<MonthlyCountRow> countMonthlyPublished();
+    Flux<MonthlyCountVO> countMonthlyPublished();
 
     /**
      * 查询 update_at > :after 的文章，用于Neo4j增量同步

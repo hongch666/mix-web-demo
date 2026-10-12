@@ -2,7 +2,6 @@ package com.hcsy.spring.api.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,8 +28,8 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.po.User;
-import com.hcsy.spring.entity.projection.IdCountRow;
 import com.hcsy.spring.entity.vo.FocusSyncVO;
+import com.hcsy.spring.entity.vo.IdCountVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -114,10 +113,8 @@ class FocusServiceImplTest {
     @Test
     @DisplayName("批量统计被关注数时把投影转换为 ID 计数项")
     void getFollowCountsMapsRows() {
-        IdCountRow row = mock(IdCountRow.class);
-        when(row.getId()).thenReturn(TARGET_ID);
-        when(row.getCount()).thenReturn(6L);
-        when(focusRepository.countGroupByFocusIdIn(List.of(TARGET_ID))).thenReturn(Flux.just(row));
+        when(focusRepository.countGroupByFocusIdIn(List.of(TARGET_ID)))
+            .thenReturn(Flux.just(new IdCountVO(TARGET_ID, 6L)));
 
         StepVerifier.create(focusService.getFollowCountsByUserIds(List.of(TARGET_ID)))
             .assertNext(counts -> {

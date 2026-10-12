@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import com.hcsy.spring.entity.po.Comments;
-import com.hcsy.spring.entity.projection.DateCountRow;
+import com.hcsy.spring.entity.vo.DateCountVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,7 +35,7 @@ public interface CommentsRepository extends ReactiveCrudRepository<Comments, Lon
         GROUP BY DATE(create_time)
         ORDER BY DATE(create_time)
         """)
-    Flux<DateCountRow> countMonthlyByUserIdGroupByDate(
+    Flux<DateCountVO> countMonthlyByUserIdGroupByDate(
         @Param("userId") Long userId,
         @Param("firstDay") LocalDateTime firstDay,
         @Param("lastDay") LocalDateTime lastDay);

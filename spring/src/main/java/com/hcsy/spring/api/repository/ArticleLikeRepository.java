@@ -9,8 +9,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import com.hcsy.spring.entity.po.ArticleLike;
-import com.hcsy.spring.entity.projection.DateCountRow;
-import com.hcsy.spring.entity.projection.IdCountRow;
+import com.hcsy.spring.entity.vo.DateCountVO;
+import com.hcsy.spring.entity.vo.IdCountVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,7 +35,7 @@ public interface ArticleLikeRepository extends ReactiveCrudRepository<ArticleLik
         WHERE article_id IN (:ids)
         GROUP BY article_id
         """)
-    Flux<IdCountRow> countGroupByArticleIdIn(@Param("ids") Collection<Long> articleIds);
+    Flux<IdCountVO> countGroupByArticleIdIn(@Param("ids") Collection<Long> articleIds);
 
     @Query("""
         SELECT DATE(created_time) AS date, COUNT(*) AS count
@@ -44,7 +44,7 @@ public interface ArticleLikeRepository extends ReactiveCrudRepository<ArticleLik
         GROUP BY DATE(created_time)
         ORDER BY DATE(created_time)
         """)
-    Flux<DateCountRow> countMonthlyByUserIdGroupByDate(
+    Flux<DateCountVO> countMonthlyByUserIdGroupByDate(
         @Param("userId") Long userId,
         @Param("firstDay") LocalDateTime firstDay,
         @Param("lastDay") LocalDateTime lastDay);

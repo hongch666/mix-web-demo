@@ -27,7 +27,6 @@ import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.FocusSyncVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
-import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -100,8 +99,8 @@ public class FocusServiceImpl implements FocusService {
         if (userIds == null || userIds.isEmpty()) {
             return Mono.just(new BatchCountVO(List.of()));
         }
+        // 具体类投影：接口投影（IdCountRow）映射不出 count 列，会静默返回 null 导致计数为 0
         return focusRepository.countGroupByFocusIdIn(userIds)
-            .map(row -> new IdCountVO(row.getId(), row.getCount()))
             .collectList()
             .map(BatchCountVO::new);
     }
