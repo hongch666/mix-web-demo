@@ -131,7 +131,7 @@ const (
 	REDIS_CONNECT_SUCCESS                    = "Redis 连接成功: %s:%d (DB: %d)"
 	MYSQL_CLOSE_FAIL                         = "关闭 MySQL 连接失败: %v"
 	REDIS_CLOSE_FAIL                         = "关闭 Redis 连接失败: %v"
-	FASTAPI_WEIGHTS_FORMAT_ERROR             = "FastAPI 响应格式异常"
+	FASTAPI_RESPONSE_FORMAT_ERROR            = "FastAPI 响应格式异常"
 	ENSURE_CHAT_MESSAGES_TABLE_FAIL          = "确保 chat_messages 表存在失败: %v"
 	ENSURE_CHAT_MESSAGES_TABLE_SUCCESS       = "已确保 chat_messages 表存在"
 
@@ -227,12 +227,18 @@ const (
 	SAFE_GO_PANIC_RECOVERED_MESSAGE = "异步任务 %s 执行时发生 panic，已自动恢复: %v\n堆栈信息:\n%s"
 	UNIFIED_ERROR_RESPONSE_MESSAGE  = "GoZero服务器错误"
 	SEARCH_HISTORY_FAIL             = "获取搜索历史失败"
+	SEARCH_HISTORY_PARSE_FAIL       = "搜索历史解析失败，降级为空列表: %v"
 	USER_ID_LESS                    = "缺少用户ID"
 
 	// 远程调用响应解析错误
 	RESPONSE_DATA_EMPTY          = "响应数据为空"
 	RESPONSE_DATA_SERIALIZE      = "序列化响应数据失败: %w"
 	RESPONSE_DATA_DESERIALIZE    = "反序列化响应数据失败: %w"
+	RESPONSE_ITEMS_INVALID       = "响应 items 字段缺失或格式不符"
+	RESPONSE_ITEM_INVALID        = "响应 items 元素格式不符"
+	RESPONSE_ARTICLE_ID_INVALID  = "响应 items 元素缺少有效的 article_id"
+	RESPONSE_KEYWORDS_INVALID    = "响应 keywords 字段缺失或格式不符"
+	RESPONSE_KEYWORD_INVALID     = "响应 keywords 元素格式不符"
 	BATCH_QUERY_USER_FAIL        = "批量查询用户失败: %v"
 	BATCH_QUERY_SUBCATEGORY_FAIL = "批量查询子分类失败: %v"
 
@@ -275,6 +281,10 @@ const (
 	// FastAPI 客户端错误描述
 	FASTAPI_ARTICLE_IDS_EMPTY            = "文章ID列表为空"
 	FASTAPI_ARTICLE_IDS_OR_KEYWORD_EMPTY = "文章ID列表为空或关键词为空"
+	FASTAPI_WEIGHTS_INVALID              = "响应 weights 字段缺失或格式不符"
+	FASTAPI_WEIGHTS_UNKNOWN_KEY          = "FastAPI 返回未知的权重键: %s"
+	FASTAPI_SCRIPT_INVALID               = "响应 es_script 字段缺失或格式不符"
+	FASTAPI_SCRIPT_PARAMS_INVALID        = "响应 script_params 字段缺失或格式不符"
 
 	// 异步任务描述（SafeGo）
 	SAFE_GO_SYNC_ES_DATA = "同步ES数据"

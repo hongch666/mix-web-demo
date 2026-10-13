@@ -28,7 +28,8 @@ type ScriptParamItem struct {
 }
 
 // parseWeights 从 key-value 列表解析为结构化权重
-func parseWeights(items []ScoreWeightItem) search.SearchWeights {
+// 出现未知权重键时返回错误：静默忽略会让该权重长期为 0，且不会留下任何日志
+func parseWeights(items []ScoreWeightItem) (search.SearchWeights, error) {
 	w := search.SearchWeights{}
 	for _, item := range items {
 		switch item.Key {
@@ -64,9 +65,83 @@ func parseWeights(items []ScoreWeightItem) search.SearchWeights {
 			w.GraphScoreWeight = item.Value
 		case "hybrid_min_es_weight":
 			w.HybridMinESWeight = item.Value
+		default:
+			return search.SearchWeights{}, fmt.Errorf(constants.FASTAPI_WEIGHTS_UNKNOWN_KEY, item.Key)
 		}
 	}
-	return w
+	return w, nil
+}
+
+// parseSearchWeights 解析权重接口响应，weights 字段缺失或格式不符时返回错误
+func parseSearchWeights(data any) (search.SearchWeights, error) {
+	dataMap, ok := data.(map[string]any)
+	if !ok {
+		return search.SearchWeights{}, fmt.Errorf(constants.FASTAPI_RESPONSE_FORMAT_ERROR)
+	}
+
+	// weights 字段缺失时 json.Unmarshal 会得到 nil 切片且不报错，一旦放过就是 16 个权重全为 0
+	weightsValue, ok := dataMap["weights"]
+	if !ok {
+		return search.SearchWeights{}, fmt.Errorf(constants.FASTAPI_WEIGHTS_INVALID)
+	}
+
+	weightsRaw, err := json.Marshal(weightsValue)
+	if err != nil {
+		return search.SearchWeights{}, fmt.Errorf(constants.RESPONSE_DATA_SERIALIZE, err)
+	}
+
+	var items []ScoreWeightItem
+	if err := json.Unmarshal(weightsRaw, &items); err != nil {
+		return search.SearchWeights{}, fmt.Errorf(constants.RESPONSE_DATA_DESERIALIZE, err)
+	}
+
+	return parseWeights(items)
+}
+
+// parseSearchScript 解析搜索脚本接口响应，es_script 缺失、非字符串或为空时返回错误
+func parseSearchScript(data any) (search.SearchScript, error) {
+	dataMap, ok := data.(map[string]any)
+	if !ok {
+		return search.SearchScript{}, fmt.Errorf(constants.FASTAPI_RESPONSE_FORMAT_ERROR)
+	}
+
+	esScript, ok := dataMap["es_script"].(string)
+	if !ok || esScript == "" {
+		return search.SearchScript{}, fmt.Errorf(constants.FASTAPI_SCRIPT_INVALID)
+	}
+
+	return search.SearchScript{EsScript: esScript}, nil
+}
+
+// parseSearchScriptParams 解析脚本参数名映射接口响应，script_params 字段缺失或格式不符时返回错误
+func parseSearchScriptParams(data any) (search.ScriptParamMapping, error) {
+	dataMap, ok := data.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf(constants.FASTAPI_RESPONSE_FORMAT_ERROR)
+	}
+
+	paramsValue, ok := dataMap["script_params"]
+	if !ok {
+		return nil, fmt.Errorf(constants.FASTAPI_SCRIPT_PARAMS_INVALID)
+	}
+
+	paramsRaw, err := json.Marshal(paramsValue)
+	if err != nil {
+		return nil, fmt.Errorf(constants.RESPONSE_DATA_SERIALIZE, err)
+	}
+
+	var items []ScriptParamItem
+	if err := json.Unmarshal(paramsRaw, &items); err != nil {
+		return nil, fmt.Errorf(constants.RESPONSE_DATA_DESERIALIZE, err)
+	}
+
+	// 构建 weight_key → param_name 映射
+	paramMap := make(search.ScriptParamMapping, len(items))
+	for _, item := range items {
+		paramMap[item.WeightKey] = item.ParamName
+	}
+
+	return paramMap, nil
 }
 
 // 全局权重缓存
@@ -120,18 +195,11 @@ func (c *FastapiClient) GetSearchWeights(ctx context.Context) (search.SearchWeig
 		return search.SearchWeights{}, err
 	}
 
-	// 解析响应
-	dataMap, ok := result.Data.(map[string]any)
-	if !ok {
-		return search.SearchWeights{}, fmt.Errorf(constants.FASTAPI_WEIGHTS_FORMAT_ERROR)
-	}
-	weightsRaw, _ := json.Marshal(dataMap["weights"])
-	var items []ScoreWeightItem
-	if err := json.Unmarshal(weightsRaw, &items); err != nil {
+	// 解析响应：结构不符必须报错，静默取零权重会让排序失去依据
+	w, err := parseSearchWeights(result.Data)
+	if err != nil {
 		return search.SearchWeights{}, err
 	}
-
-	w := parseWeights(items)
 
 	// 写缓存
 	weightsCacheMutex.Lock()
@@ -170,14 +238,11 @@ func (c *FastapiClient) GetSearchScript(ctx context.Context) (search.SearchScrip
 		return search.SearchScript{}, err
 	}
 
-	// 解析响应
-	dataMap, ok := result.Data.(map[string]any)
-	if !ok {
-		return search.SearchScript{}, fmt.Errorf(constants.FASTAPI_WEIGHTS_FORMAT_ERROR)
+	// 解析响应：脚本缺失或为空时整条增强链路都应显式降级，而不是把空脚本交给 ES
+	s, err := parseSearchScript(result.Data)
+	if err != nil {
+		return search.SearchScript{}, err
 	}
-	esScript, _ := dataMap["es_script"].(string)
-
-	s := search.SearchScript{EsScript: esScript}
 
 	// 写缓存
 	scriptCacheMutex.Lock()
@@ -217,21 +282,10 @@ func (c *FastapiClient) GetSearchScriptParams(ctx context.Context) (search.Scrip
 		return nil, err
 	}
 
-	// 解析响应
-	dataMap, ok := result.Data.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf(constants.FASTAPI_WEIGHTS_FORMAT_ERROR)
-	}
-	paramsRaw, _ := json.Marshal(dataMap["script_params"])
-	var items []ScriptParamItem
-	if err := json.Unmarshal(paramsRaw, &items); err != nil {
+	// 解析响应：映射缺失时权重无法绑定到脚本参数，必须显式降级
+	paramMap, err := parseSearchScriptParams(result.Data)
+	if err != nil {
 		return nil, err
-	}
-
-	// 构建 weight_key → param_name 映射
-	paramMap := make(search.ScriptParamMapping, len(items))
-	for _, item := range items {
-		paramMap[item.WeightKey] = item.ParamName
 	}
 
 	// 写缓存

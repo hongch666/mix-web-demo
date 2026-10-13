@@ -307,7 +307,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 标签只做请求边界检查（非空、长度、数值范围、格式）；业务与安全规则留在 logic（如 `sqlToolsQueryLogic.validateQuery` 的只读前缀白名单、表名白名单、强制 LIMIT + 上限），避免同一规则两处维护
 - SSE / WebSocket 的 `user_id` 用 `omitempty,gt=0`：**允许缺省**（EventSource 与 WebSocket 握手无法自定义请求头，身份可能来自网关透传的 `X-User-Id`）；身份解析在 logic 的 `ResolveUserID`，handler 只负责接管连接
 - `.api` 里的长度上限是字面量（如 `maxrunes=8000`），`.api` 语法无法引用 Go 常量，**改 `constants.SqlToolsMaxQueryLength` 这类常量时必须同步标签**
-- 校验器是必需依赖：`InitValidator()` 失败直接 panic 拒绝启动；`internal/types/validate_test.go` 的 `TestHttpxParseRunsTagValidation` 专门守护「注册的校验器确实被 `httpx.Parse` 触发」这条链路，不要删
+- 校验器是必需依赖：`InitValidator()` 失败直接 panic 拒绝启动；`internal/types/types_test.go` 的 `TestHttpxParseRunsTagValidation` 专门守护「注册的校验器确实被 `httpx.Parse` 触发」这条链路，不要删
 
 ### 远程调用（httpc）
 

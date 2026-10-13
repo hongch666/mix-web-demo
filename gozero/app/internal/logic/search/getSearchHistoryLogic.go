@@ -49,8 +49,10 @@ func (l *GetSearchHistoryLogic) GetSearchHistory(req *types.GetSearchHistoryReq)
 		return nil, exceptions.NewInternalServerError(constants.SEARCH_HISTORY_FAIL, err.Error())
 	}
 
-	keywords := nestjsClient.ParseSearchHistoryResult(result.Data)
-	if keywords == nil {
+	// 解析失败是下游契约漂移的信号，记录日志后按空历史降级，不阻断用户侧接口
+	keywords, parseErr := nestjsClient.ParseSearchHistoryResult(result.Data)
+	if parseErr != nil {
+		l.Errorf(constants.SEARCH_HISTORY_PARSE_FAIL, parseErr)
 		keywords = []string{}
 	}
 

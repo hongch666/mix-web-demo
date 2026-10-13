@@ -10,8 +10,3 @@ import (
 type Client interface {
 	GetSearchHistory(context.Context, int64) (client.Result, error)
 }
-
-// SearchHistoryResponse NestJS 返回的搜索历史响应
-type SearchHistoryResponse struct {
-	Keywords []string `json:"keywords"`
-}

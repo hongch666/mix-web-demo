@@ -46,11 +46,6 @@ type GraphEnhanceItem struct {
 	MatchedPaths []string        `json:"matched_paths"`
 }
 
-// GraphEnhanceResponse 图谱增强响应
-type GraphEnhanceResponse struct {
-	Items []GraphEnhanceItem `json:"items"`
-}
-
 // VectorEnhanceRequest 向量增强请求
 type VectorEnhanceRequest struct {
 	UserID          int64    `json:"user_id"`
@@ -79,9 +74,4 @@ type VectorEnhanceItem struct {
 	VectorScore   float64              `json:"vector_score"`
 	Reason        string               `json:"reason"`
 	MatchedChunks []VectorMatchedChunk `json:"matched_chunks"`
-}
-
-// VectorEnhanceResponse 向量增强响应
-type VectorEnhanceResponse struct {
-	Items []VectorEnhanceItem `json:"items"`
 }
