@@ -2814,6 +2814,31 @@ git commit --no-verify             # Git 原生跳过方式
 
 - 机制: 装饰器读取 `X-Internal-Token`，校验并将 claims 写入 `request.state`
 
+### 内部服务令牌的获取方式（接口测试用）
+
+四个服务的内部接口只校验令牌的签名与有效期，密钥在各服务 `.env` 的 `INTERNAL_TOKEN_SECRET` 中且取值一致，因此一枚令牌对四个服务通用，不需要启动服务，也不需要跑单测打印令牌。发送时请求头必须带 `Bearer` 前缀（服务端会剥掉前缀再校验）：`X-Internal-Token: Bearer <token>`
+
+1. 命令行 `./mix token`：生成一枚令牌，写入 Apifox 变量后打印到控制台
+
+```bash
+./mix token                                             # 不指定服务时随机挑一个，写入 Apifox 全局变量 internal_token
+./mix token spring                                      # 指定用 spring 服务的令牌（只影响 claims 里的 serviceName）
+./mix token --user-id 10001 --ttl 7d                     # 换成用户身份调用、有效期 7 天
+./mix token --header                                    # 只输出一行 X-Internal-Token 请求头，便于粘贴到 curl
+./mix token --quiet                                     # 只输出裸令牌
+./mix token --json                                      # 输出令牌与 Apifox 写入结果
+./mix token --variable-scope environment                # 改写环境变量而不是全局变量
+./mix token --dry-run                                   # 只预览将要写入 Apifox 的内容
+./mix token --no-apifox                                 # 只打印令牌，不写 Apifox
+```
+
+- 只签一枚的原因: 四个服务密钥一致、也没有接口校验 `serviceName`，一枚令牌对四个服务通用，所以随机挑服务只是为了 claims 里能区分来源
+- 密钥查找顺序: `--secret` 参数、环境变量 `INTERNAL_TOKEN_SECRET`、根目录 `.env` 与各服务 `.env`
+- Apifox 侧自动写入变量（根目录 `.env` 配置了 `APIFOX_ACCESS_TOKEN` 与 `APIFOX_PROJECT_ID` 时）
+  - 全局变量: 写入「环境管理 → 全局变量 → 项目内共享」的 `internal_token`（`--variable-name` 可改），写完回读校验；对应的全局参数写 `X-Internal-Token: Bearer {{internal_token}}`
+  - `--variable-scope environment`: 改为写环境变量，先导出目标环境已有变量再增量合并，不会动手工维护的其它变量（`environment get` 不返回 `variables`，只有 `apifox export` 带该字段）
+- 生效范围: 四个服务的内部接口，网关的 `block-internal` 仍会拦截外部访问，该令牌只在直连服务端口或 Apifox 调试时使用
+
 ### 服务间调用工具
 
 1. Spring 项目使用 WebClient 客户端 `FastAPIClient`/`GoZeroClient`/`NestjsClient` 调用其他服务，`ServiceWebClient` 自动注入用户信息与内部令牌
