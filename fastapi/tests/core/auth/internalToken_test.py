@@ -1,14 +1,36 @@
 import os
 from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Optional
 
 import jwt
 import pytest
+from dotenv import dotenv_values
 
 from app.core.auth import InternalTokenUtil
 from app.core.errors import BusinessException
 
 TEST_SECRET = "unit-test-secret-32-bytes-long-key"
+
+
+def resolve_internal_token_secret() -> str:
+    """内部令牌测试密钥：优先进程环境变量，其次 .env 配置，最后回退固定假密钥"""
+    environment_secret: str = os.getenv("INTERNAL_TOKEN_SECRET", "").strip()
+    if environment_secret:
+        return environment_secret
+    return _read_secret_from_env_files() or TEST_SECRET
+
+
+def _read_secret_from_env_files() -> Optional[str]:
+    """读取 .env 中的 INTERNAL_TOKEN_SECRET，先查服务目录再查仓库根目录"""
+    for candidate in (Path.cwd() / ".env", Path.cwd().parent / ".env"):
+        if not candidate.exists():
+            continue
+        value: Optional[str] = dotenv_values(candidate).get("INTERNAL_TOKEN_SECRET")
+        if value and value.strip():
+            return value.strip()
+    return None
 
 
 @pytest.fixture(autouse=True)
@@ -26,7 +48,8 @@ def reset_internal_token_util() -> Generator[None, None, None]:
 
 # 生成的内部令牌校验通过并能提取用户 id 与服务名
 def test_generate_and_validate_internal_token_claims() -> None:
-    InternalTokenUtil._secret = os.getenv("INTERNAL_TOKEN_SECRET") or TEST_SECRET
+    # 输出到控制台的令牌需用 .env 配置的真实密钥签发，未配置时回退固定假密钥
+    InternalTokenUtil._secret = resolve_internal_token_secret()
     token_util = InternalTokenUtil()
     token = token_util.generate_internal_token(10001, "fastapi")
     claims = token_util.validate_internal_token(token)
