@@ -96,6 +96,20 @@ show_help() {
     echo "  goctl-api [args...]      - Generate GoZero API code"
     echo "  goctl-orm [args...]      - Generate GoZero ORM code"
     echo ""
+    echo "Internal Token Commands (内部服务令牌):"
+    echo "  token [service]          - 生成一枚内部令牌（不指定服务时随机挑一个），写入 Apifox 变量后打印"
+    echo "    service                - 可选：spring / gozero / nestjs / fastapi"
+    echo "    --user-id N            - 令牌里的 userId，-1 表示系统调用（默认 -1）"
+    echo "    --ttl 24h              - 有效期，支持 30s/5m/2h/7d 或纯秒数（默认 24h）"
+    echo "    --header               - 只输出一行 X-Internal-Token 请求头"
+    echo "    --quiet                - 只输出裸令牌"
+    echo "    --json                 - 以 JSON 输出令牌与 Apifox 写入结果"
+    echo "    --variable-name NAME   - 写入的 Apifox 变量名（默认 internal_token）"
+    echo "    --variable-scope SCOPE - global（默认，项目全局变量）或 environment（环境变量）"
+    echo "    --apifox-env NAME|ID   - scope=environment 时的目标环境"
+    echo "    --no-apifox            - 只打印令牌，不写 Apifox"
+    echo "    --dry-run              - 只预览将写入 Apifox 的内容"
+    echo ""
     echo "Code Style Commands (代码检查与格式化):"
     echo "  lint [services...]       - Check code style (default: all services)"
     echo "  format [services...]     - Format code (default: all services)"
@@ -142,6 +156,10 @@ show_help() {
     echo "  ./mix apifox-readme --create   # Create the doc first when no doc ID is configured"
     echo "  ./mix goctl-api                # Generate GoZero API code"
     echo "  ./mix goctl-orm                # Generate GoZero ORM code"
+    echo "  ./mix token                    # 随机挑一个服务生成令牌，写入 Apifox 全局变量 internal_token 并打印"
+    echo "  ./mix token spring             # 指定用 spring 服务的令牌"
+    echo "  ./mix token --ttl 7d --header  # 有效期 7 天，输出 X-Internal-Token 请求头"
+    echo "  ./mix token --dry-run          # 只预览将写入 Apifox 的内容"
     echo "  ./mix lint                     # Check code style of all services"
     echo "  ./mix lint spring fastapi      # Check code style of specific services"
     echo "  ./mix format                   # Format code of all services"
@@ -340,6 +358,9 @@ case $COMMAND in
     compile)
         echo "Checking compilation..."
         bash "$SCRIPTS_DIR/compile.sh" "${@:2}"
+        ;;
+    token)
+        bash "$SCRIPTS_DIR/internal-token.sh" "${@:2}"
         ;;
     hooks)
         bash "$SCRIPTS_DIR/hooks-init.sh" "${@:2}"
