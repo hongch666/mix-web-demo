@@ -3,7 +3,12 @@
 import pytest
 from pydantic import ValidationError
 
-from app.internal.schemas import ChatStreamRequest, StreamFormat
+from app.internal.schemas import (
+    AIServiceType,
+    ChatRequest,
+    ChatStreamRequest,
+    StreamFormat,
+)
 
 
 # streamFormat 是可选参数，不传时保持 native
@@ -24,3 +29,26 @@ def test_chat_stream_request_accepts_openai_format() -> None:
 def test_chat_stream_request_rejects_unknown_format() -> None:
     with pytest.raises(ValidationError):
         ChatStreamRequest(message="你好", streamFormat="sse")
+
+
+# 空白消息被 message 校验器拒绝
+def test_chat_request_rejects_blank_message() -> None:
+    with pytest.raises(ValidationError) as error:
+        ChatRequest(message="   ")
+
+    assert error.value.errors()[0]["type"] == "message_empty"
+
+
+# 白名单外的 service 值被校验拒绝
+def test_chat_request_rejects_unknown_service() -> None:
+    with pytest.raises(ValidationError) as error:
+        ChatRequest(message="你好", service="Unknown")
+
+    assert error.value.errors()[0]["type"] == "service_invalid"
+
+
+# 白名单内的合法 service 值正常放行
+def test_chat_request_accepts_whitelisted_service() -> None:
+    request = ChatRequest(message="你好", service="Qwen")
+
+    assert request.service == AIServiceType.QWEN
