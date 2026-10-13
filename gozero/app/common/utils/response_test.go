@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"app/common/constants"
@@ -14,6 +15,13 @@ type testBusinessError struct{}
 
 type testDataResponse struct {
 	Data string `json:"data"`
+}
+
+// testEmptyResponse 对应 .api 里 SyncESResp{} 这类零字段响应模型
+type testEmptyResponse struct{}
+
+type testPlainResponse struct {
+	Total int `json:"total"`
 }
 
 func (testBusinessError) Error() string           { return "business failure" }
@@ -90,5 +98,35 @@ func TestHandleErrorWithCodeUsesDefaultStatusForRegularErrors(t *testing.T) {
 	body := decodeResponse(t, recorder)
 	if body["msg"] != "invalid payload" || body["data"] != nil {
 		t.Fatalf("unexpected response body: %#v", body)
+	}
+}
+
+// 零字段响应模型（SyncESResp 这类空壳）必须输出 data 为 null，
+// 文档与 NestJS 的空数据响应都声明为 null，不能被序列化成空对象
+func TestSuccessWritesNullDataForEmptyResponseModel(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	utils.Success(recorder, &testEmptyResponse{})
+
+	// 先取原始报文再解析：解析会消费 Body 缓冲
+	raw := recorder.Body.String()
+	if !strings.Contains(raw, `"data":null`) {
+		t.Fatalf("expected raw null data in body: %s", raw)
+	}
+
+	body := decodeResponse(t, recorder)
+	if body["data"] != nil {
+		t.Fatalf("expected null data for empty response model: %#v", body)
+	}
+}
+
+// 有字段但没有 Data 字段的响应模型仍应原样输出整个结构体，不能一并置空
+func TestSuccessKeepsPlainResponseModel(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	utils.Success(recorder, &testPlainResponse{Total: 3})
+
+	body := decodeResponse(t, recorder)
+	payload, ok := body["data"].(map[string]any)
+	if !ok || payload["total"] != float64(3) {
+		t.Fatalf("expected plain payload to be kept: %#v", body)
 	}
 }

@@ -33,6 +33,11 @@ func unwrapData(data any) any {
 		return data
 	}
 
+	// 零字段结构体表示该接口不返回数据，按空值输出
+	if value.NumField() == 0 {
+		return nil
+	}
+
 	field := value.FieldByName("Data")
 	if !field.IsValid() || !field.CanInterface() {
 		return data
