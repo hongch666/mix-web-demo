@@ -8,10 +8,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.hcsy.spring.api.repository.ArticleRepository;
-import com.hcsy.spring.api.repository.CategoryRepository;
-import com.hcsy.spring.api.repository.SubCategoryRepository;
-import com.hcsy.spring.api.repository.UserRepository;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
@@ -23,6 +19,10 @@ import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
+import com.hcsy.spring.infra.persistence.repository.ArticleRepository;
+import com.hcsy.spring.infra.persistence.repository.CategoryRepository;
+import com.hcsy.spring.infra.persistence.repository.SubCategoryRepository;
+import com.hcsy.spring.infra.persistence.repository.UserRepository;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;

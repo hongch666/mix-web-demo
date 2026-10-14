@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.core.properties.InternalTokenProperties;
+import com.hcsy.spring.config.properties.InternalTokenProperties;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;

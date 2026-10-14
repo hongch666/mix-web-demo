@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.core.properties.JwtProperties;
+import com.hcsy.spring.config.properties.JwtProperties;
 
 class JwtUtilTest {
     private JwtUtil jwt;

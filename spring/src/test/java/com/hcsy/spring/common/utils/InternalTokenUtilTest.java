@@ -15,7 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.core.properties.InternalTokenProperties;
+import com.hcsy.spring.config.properties.InternalTokenProperties;
 
 class InternalTokenUtilTest {
 

@@ -29,7 +29,7 @@ import com.hcsy.spring.common.utils.InternalTokenUtil;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
-import com.hcsy.spring.core.properties.ServiceClientProperties;
+import com.hcsy.spring.config.properties.ServiceClientProperties;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryConfig;
@@ -143,7 +143,7 @@ class ServiceWebClientTest {
             CircuitBreakerRegistry.ofDefaults(),
             retryRegistry,
             new ServiceClientProperties(Duration.ofSeconds(1)),
-            mock(com.hcsy.spring.core.metrics.MetricsRecorder.class));
+            mock(com.hcsy.spring.observability.MetricsRecorder.class));
     }
 
     private ClientResponse jsonResponse(String body) {

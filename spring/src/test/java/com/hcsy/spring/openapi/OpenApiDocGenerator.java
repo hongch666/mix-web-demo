@@ -30,7 +30,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 
-import com.hcsy.spring.core.config.SwaggerConfig;
+import com.hcsy.spring.config.SwaggerConfig;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultIndenter;

@@ -1,0 +1,181 @@
+package com.hcsy.spring.application.service.impl;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
+
+import com.hcsy.spring.application.service.ArticleCollectService;
+import com.hcsy.spring.application.service.ArticleService;
+import com.hcsy.spring.common.constants.Defaults;
+import com.hcsy.spring.entity.assembler.ArticleInteractionAssembler;
+import com.hcsy.spring.entity.dto.PageDTO;
+import com.hcsy.spring.entity.po.ArticleCollect;
+import com.hcsy.spring.entity.vo.ArticleCollectVO;
+import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
+import com.hcsy.spring.entity.vo.BatchCountVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
+import com.hcsy.spring.infra.persistence.repository.ArticleCollectRepository;
+
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
+
+@Service
+@RequiredArgsConstructor
+public class ArticleCollectServiceImpl implements ArticleCollectService {
+
+    private final ArticleCollectRepository articleCollectRepository;
+    private final ArticleInteractionAssembler assembler;
+    private final TransactionalOperator transactionalOperator;
+    private final ArticleService articleService;
+
+    @Override
+    public Mono<Boolean> addCollect(Long articleId, Long userId) {
+        Mono<Boolean> operation = articleCollectRepository.existsByArticleIdAndUserId(articleId, userId)
+            .flatMap(exists -> {
+                if (exists) {
+                    return Mono.just(false);
+                }
+                ArticleCollect collect = new ArticleCollect();
+                collect.setArticleId(articleId);
+                collect.setUserId(userId);
+                collect.setCreatedTime(LocalDateTime.now());
+                return articleCollectRepository.save(collect).thenReturn(true);
+            });
+        return transactionalOperator.transactional(operation);
+    }
+
+    @Override
+    public Mono<Boolean> removeCollect(Long articleId, Long userId) {
+        return transactionalOperator.transactional(
+            articleCollectRepository.existsByArticleIdAndUserId(articleId, userId)
+                .flatMap(exists -> exists
+                    ? articleCollectRepository.deleteByArticleIdAndUserId(articleId, userId)
+                        .thenReturn(true)
+                    : Mono.just(false)));
+    }
+
+    @Override
+    public Mono<Boolean> isCollected(Long articleId, Long userId) {
+        return articleCollectRepository.existsByArticleIdAndUserId(articleId, userId);
+    }
+
+    @Override
+    public Mono<PageDTO<ArticleCollectVO>> listUserCollects(Long userId, long page, long size) {
+        Mono<List<ArticleCollectVO>> records = articleCollectRepository
+            .findByUserIdOrderByCreatedTimeDesc(userId, pageRequest(page, size))
+            .collectList()
+            .flatMap(assembler::toCollectVOs);
+        return Mono.zip(records, articleCollectRepository.countByUserId(userId))
+            .map(result -> page(page, size, result.getT2(), result.getT1()));
+    }
+
+    @Override
+    public Mono<Long> getCollectCountByArticleId(Long articleId) {
+        return articleCollectRepository.countByArticleId(articleId);
+    }
+
+    @Override
+    public Mono<BatchCountVO> getCollectCountsByArticleIds(Collection<Long> articleIds) {
+        if (articleIds == null || articleIds.isEmpty()) {
+            return Mono.just(new BatchCountVO(List.of()));
+        }
+        // 具体类投影：接口投影（IdCountRow）映射不出 count 列，会静默返回 null 导致计数为 0
+        return articleCollectRepository.countGroupByArticleIdIn(articleIds)
+            .collectList()
+            .map(BatchCountVO::new);
+    }
+
+    private PageRequest pageRequest(long page, long size) {
+        return PageRequest.of((int) Math.max(0, page - 1), (int) Math.max(1, Math.min(size, 1000)));
+    }
+
+    private PageDTO<ArticleCollectVO> page(long current, long size, long total, List<ArticleCollectVO> records) {
+        PageDTO<ArticleCollectVO> result = new PageDTO<>();
+        result.setCurrent(current);
+        result.setSize(size);
+        result.setTotal(total);
+        result.setRecords(records);
+        return result;
+    }
+
+    // ==================== 统计方法 ====================
+
+    @Override
+    public Mono<Long> getTotalCollects() {
+        return articleCollectRepository.count();
+    }
+
+    @Override
+    public Mono<Double> getAverageCollects() {
+        return Mono.zip(articleService.getTotalArticles(), getTotalCollects())
+            .flatMap(result -> {
+                long totalArticles = result.getT1();
+                long totalCollects = result.getT2();
+                if (totalArticles == 0) {
+                    return Mono.just(0.0);
+                }
+                return Mono.just(Math.round(totalCollects * 100.0 / totalArticles) / 100.0);
+            });
+    }
+
+    @Override
+    public Mono<MapDataVO> getMonthlyCollectTrend(Long userId) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime firstDay = today.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime lastDay;
+        if (today.getMonthValue() == 12) {
+            lastDay = LocalDate.of(today.getYear() + 1, 1, 1).atStartOfDay();
+        } else {
+            lastDay = LocalDate.of(today.getYear(), today.getMonthValue() + 1, 1).atStartOfDay();
+        }
+
+        return articleCollectRepository.countMonthlyByUserIdGroupByDate(userId, firstDay, lastDay)
+            .map(row -> {
+                Map<String, Object> trend = new HashMap<>();
+                trend.put("date", row.getDate().toString());
+                trend.put("count", row.getCount());
+                return trend;
+            })
+            .collectList()
+            .map(dailyTrends -> {
+                Map<String, Object> result = new HashMap<>();
+                result.put("daily_trends", dailyTrends);
+                long total = dailyTrends.stream()
+                    .mapToLong(t -> ((Number) t.get("count")).longValue())
+                    .sum();
+                result.put("total", total);
+                return new MapDataVO(result);
+            });
+    }
+
+    @Override
+    public Mono<List<ArticleRelationSyncVO>> getNeo4jSyncCollects(String updatedAfter) {
+        // 收藏表数据量可达百万级，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return articleCollectRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
+                .map(this::collectToVO)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return articleCollectRepository.findLatestAfterForSync(after, Defaults.NEO4J_SYNC_LIMIT)
+            .map(this::collectToVO)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * 收藏实体转同步视图对象，字段名与数据库列名保持一致，用于 Neo4j 同步
+     */
+    private ArticleRelationSyncVO collectToVO(ArticleCollect collect) {
+        return new ArticleRelationSyncVO(collect.getUserId(), collect.getArticleId(), collect.getCreatedTime());
+    }
+}

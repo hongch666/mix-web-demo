@@ -1,0 +1,248 @@
+package com.hcsy.spring.application.sync.aspect;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.stereotype.Component;
+
+import com.hcsy.spring.application.service.AsyncSyncService;
+import com.hcsy.spring.application.sync.annotation.ArticleSync;
+import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.SyncChangeType;
+import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.utils.RabbitMQUtil;
+import com.hcsy.spring.common.utils.Result;
+import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.common.utils.SyncEventCollector;
+import com.hcsy.spring.common.utils.UserContext;
+import com.hcsy.spring.entity.event.ChangeEvent;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
+
+@Aspect
+@Component
+@RequiredArgsConstructor
+public class ArticleSyncAspect {
+
+    private final RabbitMQUtil rabbitMQUtil;
+    private final ObjectMapper objectMapper;
+    private final SimpleLogger logger;
+    private final AsyncSyncService asyncSyncService;
+
+    @Around("@annotation(articleSync)")
+    public Object handleArticleSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync) throws Throwable {
+        Object result = joinPoint.proceed();
+
+        if (result instanceof Mono<?> monoResult) {
+            // 使用 doOnSuccess 发后即忘：主流程不等待 MQ 发送和 ES/向量库/数仓/图谱同步完成
+            return Mono.deferContextual(ctx -> {
+                Long userId = UserContext.getUserId(ctx);
+                String username = UserContext.getUsername(ctx);
+                Context syncContext = UserContext.writeContext(Context.empty(), userId, username, null, null, null);
+                return monoResult.doOnSuccess(res -> {
+                    if (isBusinessSuccess(res)) {
+                        executeSync(joinPoint, articleSync, userId, username, res)
+                            .contextWrite(syncContext)
+                            .subscribe();
+                    }
+                });
+            });
+        }
+        return result;
+    }
+
+    /**
+     * 判断业务结果是否成功，只有真正发生数据变更才触发同步
+     * 控制器在业务失败时会返回携带错误码的 Result，这类结果不能触发同步
+     */
+    private boolean isBusinessSuccess(Object result) {
+        if (result instanceof Result<?> businessResult) {
+            return businessResult.getCode() != null && businessResult.getCode() == HttpCode.OK;
+        }
+        return true;
+    }
+
+    /**
+     * 执行同步逻辑：发送 MQ 消息 + 触发 ES/向量库/数仓/Neo4j 精确同步
+     */
+    private Mono<Void> executeSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync,
+        Long userId, String username, Object result) {
+        try {
+            String action = articleSync.action();
+            String description = articleSync.description();
+            String resource = articleSync.resource() == null ? SyncResource.ARTICLES : articleSync.resource();
+            Object[] paramValues = joinPoint.getArgs();
+            if (paramValues == null) {
+                paramValues = new Object[0];
+            }
+
+            Map<String, Object> msg = new HashMap<>();
+            Map<String, Object> content = new HashMap<>();
+
+            // 根据注解类型构建消息
+            buildActionMessage(joinPoint, action, paramValues, content, msg, userId, description);
+            msg.put("action", action);
+            msg.put("resource", resource);
+            msg.put("changeType", SyncChangeType.fromAction(action).value());
+
+            // 采集精确变更事件，下发给下游实现按主键同步
+            ChangeEvent event = ChangeEvent.of(resource, SyncChangeType.fromAction(action),
+                resolveIds(joinPoint, action, paramValues, result), action);
+            event.setTriggerUserId(userId);
+            event.setTriggerUsername(username);
+
+            // 发送消息到 MQ + 触发 ES/向量库/数仓/图谱同步，并行执行
+            String json = objectMapper.writeValueAsString(msg);
+            return Mono.whenDelayError(
+                rabbitMQUtil.sendMessage("article-log-queue", msg)
+                    .doOnSuccess(ignored -> logger.info(Messages.MQ_SEND + json)),
+                asyncSyncService.syncArticleAsync(userId, username, articleSync.esSync(), articleSync.vectorSync(),
+                    event),
+                asyncSyncService.syncNeo4jAsync(joinPoint.getSignature().toShortString(), description, event))
+                .onErrorResume(error -> {
+                    logger.error(Messages.TRANSACTION_ROLLBACK + error.getMessage(), error);
+                    return Mono.empty();
+                });
+        } catch (Exception e) {
+            logger.error(Messages.TRANSACTION_ROLLBACK + e.getMessage(), e);
+            return Mono.empty();
+        }
+    }
+
+    /**
+     * 根据操作类型解析受影响主键
+     * 新增取业务返回值中的新主键，编辑、发布、浏览取入参文章 ID，删除支持单个与批量
+     */
+    private List<Long> resolveIds(ProceedingJoinPoint joinPoint, String action, Object[] paramValues, Object result) {
+        Object primaryParam = paramValues != null && paramValues.length > 0 ? paramValues[0] : null;
+        return switch (action) {
+            case "add" -> SyncEventCollector.readIdsFromResult(result);
+            case "delete" -> SyncEventCollector.readIds(primaryParam);
+            case "like", "unlike", "collect", "uncollect" -> {
+                Long articleId = readArticleRelatedId(primaryParam);
+                yield articleId == null ? List.of() : List.of(articleId);
+            }
+            case "focus", "unfocus" -> {
+                Long targetUserId = resolveFocusTarget(joinPoint, primaryParam);
+                yield targetUserId == null ? List.of() : List.of(targetUserId);
+            }
+            default -> {
+                List<Long> directIds = SyncEventCollector.readIds(primaryParam);
+                if (!directIds.isEmpty()) {
+                    yield directIds;
+                }
+                Long id = readParameterId(joinPoint, "id");
+                yield id == null ? List.of() : List.of(id);
+            }
+        };
+    }
+
+    /**
+     * 根据操作类型构建消息内容
+     * 注解作用在控制器上，入参可能是 DTO、路径变量或逗号分隔的 ID 字符串，统一按属性名解析
+     */
+    private void buildActionMessage(ProceedingJoinPoint joinPoint, String action, Object[] paramValues,
+        Map<String, Object> content, Map<String, Object> msg, Long userId, String description) {
+        Object primaryParam = paramValues != null && paramValues.length > 0 ? paramValues[0] : null;
+
+        switch (action) {
+            case "add":
+            case "edit": {
+                Long articleId = SyncEventCollector.readLong(primaryParam, "id");
+                content.put("id", articleId);
+                content.put("title", SyncEventCollector.readString(primaryParam, "title"));
+                content.put("tags", SyncEventCollector.readString(primaryParam, "tags"));
+                msg.put("articleId", articleId);
+                msg.put("msg", description);
+                break;
+            }
+            case "delete": {
+                List<Long> ids = SyncEventCollector.readIds(primaryParam);
+                if (ids.size() > 1) {
+                    content.put("ids", ids);
+                    msg.put("articleIds", ids);
+                    msg.put("msg", description + ids.size() + "篇文章");
+                } else {
+                    Long id = ids.isEmpty() ? null : ids.get(0);
+                    content.put("id", id);
+                    msg.put("articleId", id);
+                    msg.put("msg", description);
+                }
+                break;
+            }
+            case "publish":
+            case "view":
+            case "like":
+            case "unlike":
+            case "collect":
+            case "uncollect": {
+                Long articleId = readArticleRelatedId(primaryParam);
+                content.put("id", articleId);
+                msg.put("articleId", articleId);
+                msg.put("msg", description);
+                break;
+            }
+            case "focus":
+            case "unfocus": {
+                Long targetUserId = resolveFocusTarget(joinPoint, primaryParam);
+                // 关注与文章无关，articleId 传 -1 占位，与 GoZero 搜索日志的约定保持一致
+                // 双方用户 ID 放在 content 内，由数仓从 content 解析目标用户
+                content.put("id", targetUserId);
+                content.put("sourceUserId", userId);
+                content.put("targetUserId", targetUserId);
+                msg.put("articleId", -1L);
+                msg.put("msg", description);
+                break;
+            }
+            default:
+                logger.error(Messages.UNKNOWN_OPERATION + action);
+                break;
+        }
+
+        msg.put("content", content);
+        msg.put("userId", userId);
+    }
+
+    /**
+     * 解析文章关联 ID：点赞、收藏、浏览等行为取文章 ID
+     */
+    private Long readArticleRelatedId(Object target) {
+        if (target instanceof Number number) {
+            return number.longValue();
+        }
+        return SyncEventCollector.readLong(target, "articleId");
+    }
+
+    /**
+     * 解析关注行为的目标用户 ID
+     * 关注新增接口入参是 FocusDTO（userId + focusId），取消关注接口入参是两个 RequestParam（userId +
+     * focusId），
+     * 两者都需要取 focusId 作为目标用户，不能取 userId，否则会记录成关注自己
+     */
+    private Long resolveFocusTarget(ProceedingJoinPoint joinPoint, Object primaryParam) {
+        // 优先按 DTO 属性读取（POST /focus 传 FocusDTO）
+        Long focusId = SyncEventCollector.readLong(primaryParam, "focusId");
+        if (focusId != null) {
+            return focusId;
+        }
+        // 退化为按方法参数名定位（DELETE /focus 传 userId 与 focusId 两个 Long）
+        return readParameterId(joinPoint, "focusId");
+    }
+
+    /**
+     * 按方法参数名解析 Long 型参数，AspectJ 依赖只保留在切面内，采集工具保持与 AspectJ 无关
+     */
+    private Long readParameterId(ProceedingJoinPoint joinPoint, String parameterName) {
+        String[] parameterNames = ((MethodSignature) joinPoint.getSignature()).getParameterNames();
+        return SyncEventCollector.readByName(parameterNames, joinPoint.getArgs(), parameterName);
+    }
+}
