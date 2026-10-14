@@ -79,7 +79,7 @@ fi
 
 lint_spring() {
     print_info "检查 Spring 控制器返回类型（禁止匿名 Map）..."
-    lint_controller_vo "$WORKDIR/spring/src/main/java/com/hcsy/spring/api/controller" || return 1
+    lint_controller_vo "$WORKDIR/spring/src/main/java/com/hcsy/spring/web/controller" || return 1
     command -v mvn >/dev/null 2>&1 || return 2
     print_info "检查 Spring 代码格式（Spotless）..."
     (cd "$WORKDIR/spring" && mvn -q spotless:check)
