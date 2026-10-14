@@ -2423,14 +2423,14 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 
 ### 项目架构说明
 
-1. Spring 项目采用通用的三层架构，`/controller`为对应接口，`/service`为对应实际逻辑（使用接口+实现形式），`/repository`为响应式数据库操作，并且使用构造器依赖注入；加密器、客户端等基础设施由 `core/config` 的 `@Bean` 提供，业务类禁止内部 `new` 基础设施对象
+1. Spring 项目按 HTTP 入口、应用服务与数据访问分层：`web/controller` 负责接口，`application/service` 负责业务逻辑（接口与实现），`infra/persistence/repository` 负责响应式数据库操作；统一使用构造器依赖注入，基础设施 Bean 在 `config` 中装配，业务类禁止内部 `new` 基础设施对象
 2. GoZero 项目采用通用的三层架构，`/handler`为对应接口，`/logic`为对应实际逻辑，`/model`为对应数据库操作，并且使用 `svc` 组合根依赖注入；SSE/聊天 Hub 由组合根创建，队列属于 `ChatHub`，定时任务通过锁工厂注入 Redis 锁，禁止包级运行态单例
 3. NestJS 项目采用默认的 module 划分格式，每个 module 有对应的 `xxx.controller.ts`、`xxx.service.ts`、`xxx.module.ts` 文件，`/dto`、`/entities`、`/schema` 放置对应的 DTO 类、数据库实体类、Mongoose 实体类，并且使用依赖注入进行调用，其中系统业务模块放在 `module/system`，通用能力和基础设施模块放在 `module/common`；Nodemailer Transporter 和 ali-oss 客户端必须由 Module Provider 创建并注入，Service 内禁止直接创建
 4. FastAPI 项目采用官方推荐的目录结构，在 app 下实现代码，`api` 路由接口，`services` 服务逻辑，`crud` 为对应数据库操作，`core` 放置核心功能模块，并且基于 `Depends` 函数和获取实例函数进行依赖注入调用；非请求任务必须显式传入依赖，权限装饰器通过可传入的 checker 使用 Client，不在装饰器内部固定获取 Client
 
 ### 项目文件夹结构说明
 
-1. Spring 项目将三层架构代码放置在 `/api`文件夹下（`/api/controller`、`/api/service`、`/api/repository`），通用模块放置在 `/common`文件夹下（`/constants`、`/utils`、`/exceptions`），注解和配置相关放置在 `/core`文件夹下（`/annotation`、`/aspect`、`/config`、`/properties`），基础设施相关放置在 `/infra`文件夹下（`/client`、`/filter`、`/handler`、`/initializer`、`/task`），和实体相关的模块放在 `/entity`下，如 `/dto`、`/vo`、`/po`、`/event`、`/projection`
+1. Spring 项目的 HTTP 入口放在 `web/controller`，请求过滤、异常映射、权限和接口日志分别放在 `web/filter`、`web/exception`、`web/security`、`web/logging`；权限、接口日志和变更同步能力分别按 `annotation` 与 `aspect` 子目录组织。业务接口与实现放在 `application/service`，定时调度与变更同步放在 `application/scheduling`、`application/sync`；远程调用和数据库访问放在 `infra/client`、`infra/persistence`；应用启动放在 `bootstrap`，Bean 配置及参数放在 `config`，指标记录放在 `observability`。`common` 保留常量、工具与通用异常，`entity` 保留 DTO、VO、PO、事件和投影；测试目录与主代码包路径对应
 2. GoZero 项目将 `.api`设计文件放置在 `/api`文件夹下，生成脚本放置在 `/script`文件夹下（项目级脚本另有根目录 `scripts/`），goctl 代码模板放置在 `/template`文件夹下，生成的代码放置在 `/app`文件夹下；`/app/model`下放置数据库实体和操作，`/app/common`下放置通用代码模块（`/constants`、`/client`、`/utils`、`/exceptions`、`/realtime`、`/keys`），`/app/internal`下放置业务相关的代码模块，按 `/handler`、`/logic`、`/middleware`、`/svc`、`/client`、`/hub`、`/boot`、`/task`、`/config`、`/types` 划分，`/app/etc`下放配置文件，`/app/docs`下放生成的 Swagger 产物
 3. NestJS 项目的非 module 通用工具放置在 `/common` 下，和系统相关的框架能力放置在 `/framework` 下，如 `filters`、`guards`、`interceptors` 等，业务 module 放置在 `/module` 下，其中 `module/system` 放置系统业务模块，`module/common` 放置通用能力模块
 4. FastAPI 项目的核心代码放置在 `/app`下，业务代码统一在 `/app/internal`下：`api`下放置路由接口，`services`下放置服务逻辑，`crud`下放置数据库操作，`clients`下放置按目标服务拆分的远程客户端，`cache`下放置两级缓存，`tasks`下放置 APScheduler 定时任务，`agents`下放置 LangChain Agent 与工具；`/app/core`下放置核心功能模块（含 `middleware` 中间件与 `decorators` 装饰器），`/app/dependencies`下集中定义依赖别名与装配函数，`/models`下放置实体相关的模块，`/schemas`下放置 Pydantic 模型
@@ -2560,7 +2560,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 3. FastAPI 部分的 app 创建在 `app.py`的 `create_app`函数实现，lifespan 操作在 `lifespan.py`实现，主函数只进行调用和 `uvicorn`的启动
 4. GoZero 部分的初始化在 `internal/boot` 文件夹创建，main 函数只进行调用，配置相关的初始化在 `svc` 文件夹下初始化执行
 5. NestJS 项目的 app 创建在 `app`目录下的 `createApp`函数实现，main 函数只进行调用，`app`目录下包含 `app.module.ts`的 NestJS 的包初始化
-6. Spring 项目的 Main 类只进行服务启动，WebClient 等配置在 `core/config` 下使用 `@Configuration` 注解实现，R2DBC 数据库初始化在 `infra/initializer` 下通过响应式 `DatabaseClient` 执行
+6. Spring 项目的 Main 类只进行服务启动，WebClient 等配置在 `config` 下使用 `@Configuration` 注解实现，R2DBC 数据库初始化在 `infra/persistence` 下通过响应式 `DatabaseClient` 执行
 
 ### Agent 技能包（skills/mix-web-demo/）
 
