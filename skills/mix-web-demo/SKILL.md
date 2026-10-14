@@ -521,8 +521,9 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 覆盖策略默认 `AUTO_MERGE`，保留 Apifox 侧手工维护的中文名、mock 与返回示例，只按文档更新结构化内容
 - **同步默认以文档为准做全量对齐**：`APIFOX_DELETE_UNMATCHED_RESOURCES` 默认 `true`，对应开放 API 的 `options.deleteUnmatchedResources`，会删除**该服务导入目录内**（`APIFOX_FOLDER_*`）文档里没有的接口与数据模型（本地实测：只同步 fastapi 时项目接口总数 217 → 210，正好清掉 fastapi 目录内的 7 个残留，其它服务目录未受影响；Apifox 的 WebSocket 接口是独立资源类型，删除后仍完好）。所以删掉代码里的接口后，重新生成产物再同步即可自动清理，**不需要手工删 Apifox 接口**
 - 对齐是全量覆盖语义：Apifox 侧手工新增的 HTTP 接口与数据模型会在下次同步时被清掉（`WebSocket` 与 Markdown 文档不受影响）。排查期可临时关闭：`APIFOX_DELETE_UNMATCHED_RESOURCES=false ./mix apifox <service>`；删除是真实删除，可先 `apifox export --project <id> --format apifox --scope all --output <file>` 整项目备份，误删内容可从 Apifox 回收站找回
-- 导入前会为每个接口补写 Apifox 责任人扩展 `x-apifox-maintainer`（值取团队内昵称或用户账户名），默认取 `APIFOX_ACCESS_TOKEN` 对应账号的用户名；可用 `APIFOX_MAINTAINER` 显式指定，或用 `--no-maintainer` 关闭填充
-- 该扩展会被 Apifox 保留在接口 `oasExtensions` 里并在文档页多渲染一行 `x-apifox-maintainer`，脚本导入后会再导入一次不带扩展的原文档把它清掉（`APIFOX_MAINTAINER_CLEAN_EXTENSION=false` 可保留），责任人字段不受影响
+- 导入前会为**本轮文档新增**的接口补写 Apifox 责任人扩展 `x-apifox-maintainer`（值取团队内昵称或用户账户名），默认取 `APIFOX_ACCESS_TOKEN` 对应账号的用户名；可用 `APIFOX_MAINTAINER` 显式指定，或用 `--no-maintainer` 关闭填充
+- **责任人只补新增接口**：脚本先用一次 `apifox endpoint list` 取现有接口清单（`method path`），与产物求差集后只给新增接口注入扩展。原因是 Apifox 对「无差异导入」按不变处理（本地实测 `新增 0 / 更新 0 / 忽略 0 / 失败 0`），而每轮给全部接口重写扩展会让所有接口都被判定为已修改（修改时间与变更历史被刷新）；稳态下导入的就是原文档，计数全 0。要整体重写责任人时置 `APIFOX_MAINTAINER_FORCE=true`（此时退回逐接口全量注入）
+- 该扩展会被 Apifox 保留在接口 `oasExtensions` 里并在文档页多渲染一行 `x-apifox-maintainer`，**只有真的注入过**才会再导入一次不带扩展的原文档把它清掉（`APIFOX_MAINTAINER_CLEAN_EXTENSION=false` 可保留，此时按全量注入以保证每轮导入内容与 Apifox 现存一致），责任人字段不受影响
 - 令牌等同账号密码，脚本输出不回显令牌，根目录 `.env` 已被 `.gitignore` 忽略
 - `./mix apifox` 现在一次做完两件事：接口走开放 API 导入，README 走 Apifox CLI（`doc create` / `doc update`）写入 `APIFOX_README_DOC_ID` 指定的项目 Markdown 文档；README 目标未配置或未装 CLI 时该步骤跳过并提示，不影响接口导入。`--no-readme` 只同步接口，`--create-readme` 首次创建 README 文档，单独同步用 `./mix apifox-readme`
 - **WebSocket 接口走独立通道**：Apifox CLI 有 `websocket list/get/create/update/delete` 命令族（顶层 `--help` 不列出，由 `cli-schema list` 的 `websocket-create` / `websocket-update` 暴露），与 HTTP 接口的 `import-openapi` 互不影响。`apifox-sync.sh` 对 gozero 额外执行一步：读 `gozero/app/docs/websocket.json` → `websocket list` 按 `path` 匹配接口 ID → `websocket get` 取完整资源 → 只覆盖 `description` 与 `tags` → `cli-schema validate websocket-update` 校验 → `websocket update`

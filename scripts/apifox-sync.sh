@@ -8,9 +8,13 @@
 #   fastapi -> fastapi/docs/openapi.json
 #   README  -> apifox-readme-sync.sh（Apifox CLI 的 doc create / doc update，未配置文档 ID 时跳过）
 # 只读取仓库内的静态产物，不启动任何服务，也不访问本地中间件
-# 导入前会为每个接口补写 Apifox 责任人扩展 x-apifox-maintainer，默认取令牌账号的用户名
-# 该扩展会被 Apifox 保留在接口的 oasExtensions 里并在文档页多渲染一行，导入后会再导入一次原文档把它清掉
-# 依赖：curl、sed、tr、grep、awk、mktemp，均为 Git Bash / WSL / Linux 自带，不需要 Python 或 jq
+# 导入前会为「本次文档新增」的接口补写 Apifox 责任人扩展 x-apifox-maintainer，默认取令牌账号的用户名
+#   已存在接口的责任人只需写入一次：每轮对所有接口重写扩展会让全部接口被 Apifox 判定为已修改，
+#   因此先用一次 apifox endpoint list 求差集，只对新增接口注入；有注入时才再导入一次原文档清掉残留扩展行
+#   置 APIFOX_MAINTAINER_FORCE=true 可退回「每轮全量重写责任人」的行为；
+#   置 APIFOX_MAINTAINER_CLEAN_EXTENSION=false（保留扩展行）时同样按全量注入，保证每轮导入内容一致
+# 依赖：curl、sed、tr、grep、awk、mktemp，均为 Git Bash / WSL / Linux 自带；
+#   接口清单差集与 WebSocket 接口同步额外需要 Python 与 Apifox CLI，任一缺失时分别回退为全量注入 / 跳过
 # 用法：./scripts/apifox-sync.sh [service...] [--dry-run] [--no-readme] [--no-maintainer] [--create-readme]
 #   service 可选值：gozero、spring、nestjs、fastapi，不指定时同步全部
 #   --no-readme 只同步接口，不处理 README
@@ -28,6 +32,7 @@ DEFAULT_LOCALE="zh-CN"
 DEFAULT_OVERWRITE_BEHAVIOR="AUTO_MERGE"
 DEFAULT_MAINTAINER_AUTO="true"
 DEFAULT_MAINTAINER_CLEAN_EXTENSION="true"
+DEFAULT_MAINTAINER_FORCE="false"
 # 接口以代码生成的文档为唯一事实来源：默认清理目标目录下文档里没有的接口与数据模型
 DEFAULT_DELETE_UNMATCHED_RESOURCES="true"
 RETRY_TIMES=3
@@ -292,18 +297,117 @@ resolve_maintainer() {
     return 0
 }
 
-# 给每个 operation 补写 x-apifox-maintainer，导入后接口责任人即被填充
+# 拉取 Apifox 侧已存在的 HTTP 接口清单，输出「method path」行（method 统一小写）
+# 责任人只在接口首次创建时需要写入，清单用来把「本轮文档新增的接口」从已存在接口里挑出来
+# 不按目录过滤：接口以 method + path 在项目内唯一，落在哪个目录都不该重复注入
+collect_existing_endpoints() {
+    local python_bin="$1"
+    local out_file="$2"
+    local list_file="$TMP_DIR/endpoint-list.json"
+
+    if ! apifox endpoint list --project "$project_id" --access-token "$token" >"$list_file" 2>/dev/null; then
+        return 1
+    fi
+
+    "$python_bin" -c '
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    items = json.load(handle).get("data") or []
+
+with open(sys.argv[2], "w", encoding="utf-8", newline="\n") as handle:
+    for item in items:
+        method = (item.get("method") or "").strip().lower()
+        path = (item.get("path") or "").strip()
+        if method and path:
+            handle.write(method + " " + path + "\n")
+' "$list_file" "$out_file"
+}
+
+# 用产物与 Apifox 清单求差集，输出需要补写责任人的 operationId（一行一个）
+# 用 operationId 而不是 path 定位注入点，是为了让注入仍走逐行插入、产物原排版保持不变
+select_new_maintainer_targets() {
+    local python_bin="$1"
+    local spec_file="$2"
+    local existing_file="$3"
+    local out_file="$4"
+
+    "$python_bin" - "$spec_file" "$existing_file" "$out_file" <<'PY'
+import json
+import sys
+
+HTTP_METHODS = ("get", "put", "post", "delete", "options", "head", "patch", "trace")
+
+spec_file, existing_file, out_file = sys.argv[1:4]
+
+with open(existing_file, encoding="utf-8") as handle:
+    existing = {line.strip() for line in handle if line.strip()}
+
+with open(spec_file, encoding="utf-8") as handle:
+    spec = json.load(handle)
+
+targets = []
+for path, item in (spec.get("paths") or {}).items():
+    if not isinstance(item, dict):
+        continue
+    for method, operation in item.items():
+        if method not in HTTP_METHODS or not isinstance(operation, dict):
+            continue
+        if method + " " + path in existing:
+            continue
+        operation_id = operation.get("operationId")
+        if operation_id:
+            targets.append(operation_id)
+
+with open(out_file, "w", encoding="utf-8", newline="\n") as handle:
+    if targets:
+        handle.write("\n".join(targets) + "\n")
+PY
+}
+
+# 全量注入（强制模式或保留扩展行）时的目标集合：产物里所有 operationId，纯文本工具即可提取
+select_all_maintainer_targets() {
+    local spec_file="$1"
+    local out_file="$2"
+
+    grep -o '"operationId"[[:space:]]*:[[:space:]]*"[^"]*"' "$spec_file" 2>/dev/null \
+        | sed -e 's/.*"\([^"]*\)"$/\1/' > "$out_file" || true
+    return 0
+}
+
+# 给需要补责任人的 operation 补写 x-apifox-maintainer，导入后接口责任人即被填充
 # 扩展字段挂在 operationId 之后，缩进沿用该行，因此四份产物的排版差异都能正确落地
+# targets_file 里是一行一个 operationId，只有列在其中的接口才注入：
+# 已存在接口保持原样，避免「多出一行扩展」把接口每轮都判定为已修改
 inject_maintainer() {
     local spec_file="$1"
     local name="$2"
     local out_file="$3"
+    local targets_file="$4"
     local escaped
     escaped=$(printf '%s' "$name" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
 
-    awk -v maintainer="$escaped" '
+    awk -v maintainer="$escaped" -v targets="$targets_file" '
+        BEGIN {
+            if (targets != "") {
+                while ((getline line < targets) > 0) {
+                    if (line != "") {
+                        want[line] = 1
+                    }
+                }
+                close(targets)
+            }
+        }
         {
             if ($0 ~ /^[[:space:]]*"operationId"[[:space:]]*:[[:space:]]*"[^"]*"[[:space:]]*,?[[:space:]]*$/) {
+                id = $0
+                sub(/^[[:space:]]*"operationId"[[:space:]]*:[[:space:]]*"/, "", id)
+                sub(/"[[:space:]]*,?[[:space:]]*$/, "", id)
+                if (!(id in want)) {
+                    print
+                    next
+                }
                 indent = $0
                 sub(/[^[:space:]].*$/, "", indent)
                 line = $0
@@ -321,10 +425,6 @@ inject_maintainer() {
         }
     ' "$spec_file" > "$out_file"
     return 0
-}
-
-count_operations() {
-    grep -c '"operationId"[[:space:]]*:' "$1" 2>/dev/null || true
 }
 
 # ==================== 请求发送 ====================
@@ -401,6 +501,9 @@ resolve_python() {
 }
 
 # 从 websocket list 的结果里按 path 取接口 ID，不存在时输出空串
+# WS 路径（如 /ws/chat）不是文件路径，但 Git Bash（MSYS）会把传给原生程序、形如 POSIX 路径的
+# 参数与环境变量统一改写成 Windows 路径（/ws/chat -> C:/software/Git/ws/chat），按 path 匹配会
+# 永远落空；所以路径改走标准输入（内容不会被改写），参数位只留需要转换的真实文件路径
 lookup_websocket_id() {
     local python_bin="$1"
     local list_file="$2"
@@ -411,25 +514,31 @@ import sys
 
 with open(sys.argv[1], encoding="utf-8") as handle:
     data = json.load(handle).get("data") or []
-match = next((item for item in data if item.get("path") == sys.argv[2]), None)
+target_path = sys.stdin.readline().rstrip("\r\n")
+match = next((item for item in data if item.get("path") == target_path), None)
 print(match["id"] if match else "")
-' "$list_file" "$path"
+' "$list_file" <<< "$path"
 }
 
 # 用产物里的 description / tags 覆盖 get 到的完整资源
 # websocket-update 的 additionalProperties 为 false，必须剔除 id / projectId / createdAt
 # 这类只读字段，否则结构校验会失败
+# 注意：这里的 python 程序本身走标准输入，无法再借道 stdin 传路径，故路径单独落一个文件
+# 后按文件路径传参（见 lookup_websocket_id 的同源说明）
 merge_websocket_payload() {
     local python_bin="$1"
     local detail_file="$2"
     local spec_file="$3"
-    local target_path="$4"
+    local path_file="$4"
     local output_file="$5"
-    "$python_bin" - "$detail_file" "$spec_file" "$target_path" "$output_file" <<'PY'
+    "$python_bin" - "$detail_file" "$spec_file" "$path_file" "$output_file" <<'PY'
 import json
 import sys
 
-detail_file, spec_file, target_path, output_file = sys.argv[1:5]
+detail_file, spec_file, path_file, output_file = sys.argv[1:5]
+
+with open(path_file, encoding="utf-8") as handle:
+    target_path = handle.readline().rstrip("\r\n")
 
 # websocket-update schema 允许写入的字段
 ALLOWED_FIELDS = (
@@ -488,8 +597,8 @@ sync_websocket_endpoints() {
         return 0
     fi
 
-    local python_bin
-    if ! python_bin=$(resolve_python); then
+    # python_bin 由 main 统一解析（责任人的新增接口差集与这里共用），可能为空
+    if [ -z "$python_bin" ]; then
         print_warn "[$service] 未检测到 python，跳过 WebSocket 接口同步"
         return 0
     fi
@@ -533,12 +642,14 @@ print("\n".join(item["path"] for item in endpoints if item.get("path")))
 
         local detail_file="$TMP_DIR/websocket-detail.json"
         local payload_file="$TMP_DIR/websocket-payload.json"
+        local path_file="$TMP_DIR/websocket-target-path.txt"
+        printf '%s\n' "$path" > "$path_file"
         if ! apifox websocket get "$id" --project "$project_id" --access-token "$token" >"$detail_file" 2>/dev/null; then
             print_error "[$service] 获取 WebSocket 接口 $path 详情失败"
             return 1
         fi
 
-        if ! merge_websocket_payload "$python_bin" "$detail_file" "$ws_spec" "$path" "$payload_file"; then
+        if ! merge_websocket_payload "$python_bin" "$detail_file" "$ws_spec" "$path_file" "$payload_file"; then
             print_error "[$service] 构造 WebSocket 接口 $path 的更新内容失败"
             return 1
         fi
@@ -682,11 +793,33 @@ main() {
     fi
 
     clean_extension=$(env_flag APIFOX_MAINTAINER_CLEAN_EXTENSION "$DEFAULT_MAINTAINER_CLEAN_EXTENSION")
+    maintainer_force=$(env_flag APIFOX_MAINTAINER_FORCE "$DEFAULT_MAINTAINER_FORCE")
+
+    # WebSocket 接口同步与「责任人只补新增接口」的差集都要用 Python，这里统一解析一次
+    local python_bin=""
+    python_bin=$(resolve_python || true)
 
     TMP_DIR=$(mktemp -d 2>/dev/null)
     if [ -z "$TMP_DIR" ] || [ ! -d "$TMP_DIR" ]; then
         print_error "无法创建临时目录，请检查系统 mktemp 是否可用"
         return 1
+    fi
+
+    # 责任人只在接口首次创建时需要写入：重复给已存在接口注入扩展会让全部接口每轮被判定为已修改
+    # 所以先拉一次 Apifox 现有接口清单，注入时只保留文档里新增的接口（拉不到就退回全量注入）
+    local existing_endpoints_file=""
+    if [ -n "$maintainer" ] && [ "$maintainer_force" != "true" ] && [ "$clean_extension" = "true" ]; then
+        if [ -z "$python_bin" ]; then
+            print_warn "未检测到 python，无法比对 Apifox 接口清单，回退为全量重写责任人（接口会被判定为已修改）"
+        else
+            existing_endpoints_file="$TMP_DIR/endpoint-list.txt"
+            if collect_existing_endpoints "$python_bin" "$existing_endpoints_file"; then
+                print_info "责任人增量补写：Apifox 现有接口 $(wc -l < "$existing_endpoints_file" | tr -d ' ') 个，只为本轮新增接口写入"
+            else
+                existing_endpoints_file=""
+                print_warn "获取 Apifox 接口清单失败，回退为全量重写责任人（接口会被判定为已修改）"
+            fi
+        fi
     fi
 
     local services="${service_args:-$ALL_SERVICES}"
@@ -706,16 +839,37 @@ main() {
         options_json=$(build_options_json "$service")
 
         # 有责任人时先生成一份带 x-apifox-maintainer 的副本，导入用它，仓库产物保持不动
+        # 默认只给「Apifox 里还不存在」的接口注入：已存在接口重复注入扩展会让接口每轮被判定为已修改
         local import_spec="$spec_file"
         local injected_spec="false"
         if [ -n "$maintainer" ]; then
-            import_spec="$TMP_DIR/$service-spec.json"
-            inject_maintainer "$spec_file" "$maintainer" "$import_spec"
-            injected_spec="true"
-            local injected
-            injected=$(count_operations "$import_spec")
-            if [ "$injected" != "$(count_operations "$spec_file")" ]; then
-                print_warn "[$service] 责任人注入数（$injected）与接口数不一致，部分接口可能未带上责任人"
+            local targets_file="$TMP_DIR/$service-maintainer-targets.txt"
+            if [ -n "$existing_endpoints_file" ]; then
+                if ! select_new_maintainer_targets "$python_bin" "$spec_file" "$existing_endpoints_file" "$targets_file"; then
+                    print_warn "[$service] 计算责任人待补写接口失败，回退为全量重写责任人（接口会被判定为已修改）"
+                    select_all_maintainer_targets "$spec_file" "$targets_file"
+                fi
+            else
+                select_all_maintainer_targets "$spec_file" "$targets_file"
+            fi
+
+            local target_count
+            target_count=$(grep -c . "$targets_file" 2>/dev/null)
+            target_count=${target_count:-0}
+
+            if [ "$target_count" = "0" ]; then
+                print_info "[$service] 责任人已覆盖，跳过注入与扩展清理"
+            else
+                import_spec="$TMP_DIR/$service-spec.json"
+                inject_maintainer "$spec_file" "$maintainer" "$import_spec" "$targets_file"
+                injected_spec="true"
+                local injected
+                injected=$(grep -c '"x-apifox-maintainer"[[:space:]]*:' "$import_spec" 2>/dev/null)
+                injected=${injected:-0}
+                if [ "$injected" != "$target_count" ]; then
+                    print_warn "[$service] 责任人注入数（$injected）与待补写接口数（$target_count）不一致，部分接口可能未带上责任人"
+                fi
+                print_info "[$service] 责任人：为 $target_count 个新增接口补写 x-apifox-maintainer"
             fi
         fi
 
