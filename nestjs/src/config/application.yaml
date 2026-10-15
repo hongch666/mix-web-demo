@@ -4,6 +4,10 @@ server:
   port: ${SERVER_PORT:8083}
   serviceName: ${SERVER_SERVICE_NAME:nestjs}
 
+# 定时任务配置
+task:
+  enabled: ${TASK_ENABLED:true} # 定时任务开关，false 时不注册本地 @Cron 任务（改由 Dolphin 调度器触发 /task/* 接口）
+
 nacos:
   host: ${NACOS_SERVER:127.0.0.1}
   port: ${NACOS_PORT:8848}

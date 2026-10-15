@@ -9,6 +9,7 @@ import type { TypeOrmModuleOptions } from "@nestjs/typeorm";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ClsModule } from "nestjs-cls";
 import config from "src/config";
+import { isTaskEnabled } from "src/config/taskEnabled";
 import { AllExceptionsFilter } from "src/framework/filters/allException.filter";
 import { InternalTokenGuard } from "src/framework/guards/internalToken.guard";
 import { RequireAdminGuard } from "src/framework/guards/requireAdmin.guard";
@@ -91,7 +92,8 @@ interface MongoDbConfig {
       global: true,
       middleware: { mount: true },
     }),
-    ScheduleModule.forRoot(),
+    // 定时任务开关关闭时不注册 ScheduleModule，@Cron 任务不再触发（改由 Dolphin 调度器触发 /task/* 接口）
+    ...(isTaskEnabled(config) ? [ScheduleModule.forRoot()] : []),
     RedisModule.forRoot(),
     RabbitMQModule.forRootAsync({
       imports: [ConfigModule],
