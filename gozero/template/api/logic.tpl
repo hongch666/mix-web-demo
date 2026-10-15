@@ -1,5 +1,4 @@
 // Code scaffolded by goctl. Safe to edit.
-// goctl {{.version}}
 
 package {{.pkgName}}
 

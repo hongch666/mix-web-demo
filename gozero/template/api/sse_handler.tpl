@@ -1,5 +1,4 @@
 // Code scaffolded by goctl. Safe to edit.
-// goctl {{.version}}
 
 {{/*
 本模板只在 .api 路由被标记为 SSE 时才会被 goctl 加载，当前项目的 SSE 与 WebSocket 路由都是普通 get 路由，实际走 handler.tpl
