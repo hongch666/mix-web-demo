@@ -74,6 +74,11 @@
       "name": "management.metrics.tags.application",
       "type": "java.lang.String",
       "description": "应用指标统一标签"
+    },
+    {
+      "name": "task.enabled",
+      "type": "java.lang.Boolean",
+      "description": "定时任务开关，false 时不注册本地 @Scheduled 任务（改由 Dolphin 调度器触发 /task 接口）"
     }
   ]
 }

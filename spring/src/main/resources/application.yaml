@@ -75,6 +75,11 @@ logging:
     path: ${LOGGING_PATH:../logs/spring}
   level:
     "[org.springframework.r2dbc]": ${R2DBC_LOG_LEVEL:INFO}
+
+# 定时任务配置
+task:
+  enabled: ${TASK_ENABLED:true} # 定时任务开关，false 时不注册本地 @Scheduled 任务
+
 jwt:
   secret: ${JWT_SECRET:}
   access-expiration: ${JWT_ACCESS_EXPIRATION:3600000} # 毫秒数（默认1小时）

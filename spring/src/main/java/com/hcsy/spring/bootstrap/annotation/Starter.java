@@ -9,18 +9,18 @@ import java.lang.annotation.Target;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * SpringBoot应用启动组合注解
  * 整合了常用的SpringBoot相关注解
+ *
+ * 调度能力不再固定开启，改由 TaskScheduleConfig 按 task.enabled 条件启用
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @SpringBootApplication
 @ConfigurationPropertiesScan
-@EnableScheduling
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public @interface Starter {
 }
