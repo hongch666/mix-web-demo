@@ -88,7 +88,11 @@ lint_spring() {
 lint_gozero() {
     command -v golangci-lint >/dev/null 2>&1 || return 2
     print_info "检查 GoZero 代码（golangci-lint）..."
-    (cd "$WORKDIR/gozero/app" && golangci-lint run)
+    (cd "$WORKDIR/gozero/app" && golangci-lint run) || return 1
+
+    # 校验 goctl 生成产物：不允许修改的文件按模板重新生成后比对，允许编辑的文件只校验首行标记注释
+    print_info "校验 GoZero 生成产物与 gozero/template 是否一致..."
+    bash "$WORKDIR/gozero/script/goctl/checkGenerated.sh" || return 1
 }
 
 lint_nestjs() {
