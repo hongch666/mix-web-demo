@@ -36,7 +36,7 @@ from app.internal.clients import get_nestjs_client, get_spring_client
 from app.dependencies import resolve_analyze_service
 from app.internal.models import AiHistory, AiUserSummary
 from app.internal.services import AnalyzeService
-from app.internal.tasks import start_scheduler
+from app.internal.tasks import resolve_task_enabled, start_scheduler
 
 # 加载服务器配置
 server_config: dict[str, Any] = load_config("server")
@@ -77,12 +77,16 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     def db_factory() -> AsyncSession:
         return AsyncSessionLocal()
 
-    scheduler = start_scheduler(
-        analyze_service=analyze_service,
-        db_factory=db_factory,
-        nestjs_client=get_nestjs_client(),
-        spring_client=get_spring_client(),
-    )
+    # 定时任务开关关闭时不注册本地调度任务，任务改由外部调度器（DolphinScheduler）触发 /task/* 接口
+    if resolve_task_enabled(load_config("task")):
+        scheduler = start_scheduler(
+            analyze_service=analyze_service,
+            db_factory=db_factory,
+            nestjs_client=get_nestjs_client(),
+            spring_client=get_spring_client(),
+        )
+    else:
+        Logger.info(Messages.SCHEDULER_DISABLED)
 
     # 初始化跨服务调用的 httpx 长连接池（复用连接，降低延迟）
     remote_call_config: dict[str, Any] = load_config("remote_call")

@@ -7,7 +7,7 @@ from .logic.vectorSyncTask import (
     initialize_article_content_hash_cache_async,
 )
 from .logic.warehouseSyncTask import sync_warehouse_async
-from .scheduler import start_scheduler
+from .scheduler import resolve_task_enabled, start_scheduler
 
 __all__: list[str] = [
     "update_analyze_caches_async",
@@ -17,6 +17,7 @@ __all__: list[str] = [
     "sync_neo4j_changes_async",
     "build_vector_sync_dependencies",
     "initialize_article_content_hash_cache_async",
+    "resolve_task_enabled",
     "start_scheduler",
     "sync_warehouse_async",
 ]

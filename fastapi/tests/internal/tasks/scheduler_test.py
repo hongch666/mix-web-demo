@@ -150,3 +150,23 @@ def test_injects_dependencies_into_job_functions(
     warehouse_keywords = _job_task_func(jobs["sync_clickhouse_warehouse"]).keywords
     assert warehouse_keywords["spring_client"] is spring_client
     assert warehouse_keywords["nestjs_client"] is nestjs_client
+
+
+# 配置段缺失或未声明 enabled 时默认注册本地调度任务，保持既有行为
+def test_resolve_task_enabled_defaults_to_enabled() -> None:
+    assert scheduler_module.resolve_task_enabled(None) is True
+    assert scheduler_module.resolve_task_enabled({}) is True
+    assert scheduler_module.resolve_task_enabled({"enabled": True}) is True
+
+
+# enabled 显式为假值时关闭本地调度任务注册，兼容环境变量写入的字符串形式
+def test_resolve_task_enabled_respects_false() -> None:
+    assert scheduler_module.resolve_task_enabled({"enabled": False}) is False
+    assert scheduler_module.resolve_task_enabled({"enabled": "false"}) is False
+    assert scheduler_module.resolve_task_enabled({"enabled": "FALSE"}) is False
+
+
+# 字符串形式的真值同样视为启用
+def test_resolve_task_enabled_accepts_string_true() -> None:
+    assert scheduler_module.resolve_task_enabled({"enabled": "true"}) is True
+    assert scheduler_module.resolve_task_enabled({"enabled": "1"}) is True

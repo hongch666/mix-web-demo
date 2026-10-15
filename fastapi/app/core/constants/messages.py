@@ -524,6 +524,14 @@ class Messages:
         return f"Cypher 写操作失败: {error}\nCypher: {cypher}\nParams: {params}"
 
     @staticmethod
+    def NEO4J_CYPHER_DEBUG_ENABLED(slow_queries: float) -> str:
+        return f"Neo4j Cypher 调试日志已开启，慢查询阈值 {slow_queries} 秒"
+
+    @staticmethod
+    def NEO4J_CYPHER_DEBUG_CONFIG_FAILED(error: Exception) -> str:
+        return f"Neo4j Cypher 调试日志配置失败: {error}"
+
+    @staticmethod
     def POSTGRES_CONNECTION_STRING_CREATED(host: str, port: Any, database: str) -> str:
         return f"PostgreSQL 连接字符串构建成功: {host}:{port}/{database}"
 
@@ -1816,6 +1824,8 @@ class Messages:
     SCHEDULER_STARTED: str = "定时任务调度器已启动"
 
     SCHEDULER_STOPPED: str = "定时任务调度器已停止"
+
+    SCHEDULER_DISABLED: str = "定时任务开关已关闭，不注册本地调度任务"
 
     # ===== 服务降级 =====
     UNKNOWN_ERROR: str = "未知错误"

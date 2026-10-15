@@ -4,6 +4,9 @@ server:
   port: ${SERVER_PORT:8084}
   reload: ${SERVER_RELOAD:True}
 
+task:
+  enabled: ${TASK_ENABLED:True} # 定时任务开关，false 时不注册本地 APScheduler 任务
+
 nacos:
   server_addresses: ${NACOS_SERVER:127.0.0.1:8848}
   namespace: ${NACOS_NAMESPACE:public}
@@ -65,6 +68,10 @@ database:
     uri: ${NEO4J_URI:bolt://127.0.0.1:7687}
     user: ${NEO4J_USER:neo4j}
     password: ${NEO4J_PASSWORD:}
+    # Cypher 调试日志开关，开启后把 neomodel 生成的 Cypher 与参数写入项目日志
+    cypher_debug: ${NEOMODEL_CYPHER_DEBUG:False}
+    # 慢查询阈值（秒），0 表示不过滤，仅在 cypher_debug 开启时生效
+    slow_queries: ${NEOMODEL_SLOW_QUERIES:0}
 
 rabbitmq:
   host: ${RABBITMQ_HOST:127.0.0.1}

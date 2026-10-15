@@ -39,6 +39,23 @@ async def _run_measured_task(
         )
 
 
+def resolve_task_enabled(task_config: Optional[dict[str, Any]] = None) -> bool:
+    """
+    解析定时任务开关
+
+    task_config 为 application.yaml 中 task 段的解析结果，
+    配置段缺失或未声明 enabled 时默认启用，与本地调度器既有行为保持一致
+    """
+    if not isinstance(task_config, dict):
+        return True
+    enabled: Any = task_config.get("enabled")
+    if enabled is None:
+        return True
+    if isinstance(enabled, bool):
+        return enabled
+    return str(enabled).strip().lower() in {"true", "1", "yes", "on"}
+
+
 def start_scheduler(
     article_mapper: Optional[Any] = None,
     user_mapper: Optional[Any] = None,
