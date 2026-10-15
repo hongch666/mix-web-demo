@@ -11,12 +11,19 @@ import (
 type Config struct {
 	rest.RestConf
 	Prefix        string              `json:"prefix"`
+	Task          TaskConfig          `json:"task"`
 	Nacos         NacosConfig         `json:"nacos"`
 	Database      DatabaseConfig      `json:"database"`
 	MQ            MQConfig            `json:"mq"`
 	Logs          LogsConfig          `json:"logs"`
 	InternalToken InternalTokenConfig `json:"internal-token"`
 	RemoteCall    RemoteCallConfig    `json:"remote-call"`
+}
+
+// TaskConfig 定时任务调度配置
+type TaskConfig struct {
+	// Enabled 为 false 时不注册本地 cron 任务，改由外部调度器（DolphinScheduler）触发 /task/* 接口
+	Enabled bool `json:"enabled"`
 }
 
 type NacosConfig struct {

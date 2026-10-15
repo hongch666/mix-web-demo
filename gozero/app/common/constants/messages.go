@@ -210,6 +210,7 @@ const (
 	TASK_SYNC_ES_COMPLETED_MESSAGE        = "[定时任务] 同步成功"
 	TASK_SYNC_ES_FAILED_MESSAGE           = "[定时任务] 注册同步任务失败：%v"
 	TASK_SCHEDULER_STARTED_MESSAGE        = "[定时任务] 已启动"
+	TASK_SCHEDULER_DISABLED_MESSAGE       = "[定时任务] 定时任务开关已关闭，不注册本地调度任务"
 	NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE = "没有已发布的文章可同步"
 	INDEX_CHECK_ERROR_MESSAGE             = "索引判断错误"
 	INDEX_CREATION_ERROR_MESSAGE          = "索引创建错误"

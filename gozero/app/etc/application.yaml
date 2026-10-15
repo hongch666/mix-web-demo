@@ -9,6 +9,9 @@ Prometheus:
   Path: ${PROMETHEUS_PATH:/metrics}
 Prefix: ${SERVER_PREFIX:/}
 
+Task:
+  Enabled: ${TASK_ENABLED:true} # 定时任务开关，false 时不注册本地 cron 任务
+
 Telemetry:
   Name: ${OTEL_SERVICE_NAME:gozero}
   Endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:127.0.0.1:4318}

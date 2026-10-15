@@ -37,11 +37,23 @@ func CreateServer(c config.Config, ctx *svc.ServiceContext) *rest.Server {
 	// 注册所有业务处理器
 	handler.RegisterHandlers(server, ctx)
 
-	// 初始化任务调度器并挂到运行时上下文，生命周期随 ServiceContext 管理
-	ctx.TaskScheduler = task.NewTaskScheduler(ctx, utils.NewRedisDistributedLock)
+	// 按开关注册定时任务调度器，生命周期随 ServiceContext 管理
+	registerTaskScheduler(c, ctx)
 
 	// 输出启动信息
 	PrintStartupInfo(c)
 
 	return server
+}
+
+// registerTaskScheduler 按开关注册本地定时任务调度器
+// 开关关闭时不注册本地任务，改由外部调度器（DolphinScheduler）触发 /task/* 接口
+func registerTaskScheduler(c config.Config, ctx *svc.ServiceContext) {
+	if !c.Task.Enabled {
+		if ctx.Logger != nil {
+			ctx.Logger.Info(constants.TASK_SCHEDULER_DISABLED_MESSAGE)
+		}
+		return
+	}
+	ctx.TaskScheduler = task.NewTaskScheduler(ctx, utils.NewRedisDistributedLock)
 }
