@@ -131,15 +131,15 @@ NestJS 模块按职责划分为两层：
 
 ### FastAPI 服务（端口 8084）
 
-| 项目     | 说明                                                                                                                                                          |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 框架     | FastAPI + SQLAlchemy（MySQL、ClickHouse 异步 ORM）                                                                                                            |
-| 数据库   | MySQL（SQLAlchemy，ai_history 表）、ClickHouse（SQLAlchemy ORM 数仓分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（neomodel 异步 OGM 知识图谱）         |
-| 消息队列 | RabbitMQ                                                                                                                                                      |
-| 注册中心 | Nacos                                                                                                                                                         |
-| 运行时   | Python 3.12+                                                                                                                                                  |
+| 项目     | 说明                                                                                                                                                                               |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 框架     | FastAPI + SQLAlchemy（MySQL、ClickHouse 异步 ORM）                                                                                                                                 |
+| 数据库   | MySQL（SQLAlchemy，ai_history 表）、ClickHouse（SQLAlchemy ORM 数仓分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（neomodel 异步 OGM 知识图谱）                              |
+| 消息队列 | RabbitMQ                                                                                                                                                                           |
+| 注册中心 | Nacos                                                                                                                                                                              |
+| 运行时   | Python 3.12+                                                                                                                                                                       |
 | 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（neomodel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询）、多模型（GPT/Gemini/GLM/DeepSeek/Claude/Qwen）、LangSmith LLM 链路追踪 |
-| 代码位置 | `fastapi/`                                                                                                                                                    |
+| 代码位置 | `fastapi/`                                                                                                                                                                         |
 
 ### Apache APISIX 网关（端口 8080）
 
@@ -1677,37 +1677,38 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 ### 脚本说明
 
-| 脚本                        | 位置            | 功能                                                                                           | 适用系统            |
-| --------------------------- | --------------- | ---------------------------------------------------------------------------------------------- | ------------------- |
-| `mix`                       | 项目根目录      | 便捷启动器，用于快速调用 scripts/ 下的脚本                                                     | Linux/macOS         |
-| `run_multi.sh`              | scripts/        | 使用 tmux 多窗格布局启动所有服务（推荐）                                                       | Linux/macOS         |
-| `run.sh`                    | scripts/        | 使用 tmux 顺序窗口模式启动所有服务                                                             | Linux/macOS         |
-| `stop.sh`                   | scripts/        | 停止所有 tmux 服务                                                                             | Linux/macOS         |
-| `build.sh`                  | scripts/        | 编译所有服务到 dist/ 目录                                                                      | Linux/macOS         |
-| `dist-control.sh`           | scripts/        | 管理打包后的分布式服务（支持服务指定）                                                         | Linux/macOS         |
-| `docker-services.sh`        | scripts/        | 创建、启动、停止和清理基础中间件容器（读取根目录 `.env`，自动安装 ES IK 分词器）               | Linux/macOS         |
-| `docker-compose-up.sh`      | scripts/        | 使用 Docker Compose 启动应用服务                                                               | Linux/macOS         |
-| `docker-compose-down.sh`    | scripts/        | 使用 Docker Compose 停止应用服务                                                               | Linux/macOS         |
-| `build_and_run_services.sh` | scripts/        | 构建并运行服务容器                                                                             | Linux/macOS         |
-| `docker-push-images.sh`     | scripts/        | 将已构建的 Docker 镜像推送到远程仓库                                                           | Linux/macOS         |
-| `loki-control.sh`           | scripts/        | 独立管理 Loki/Promtail/Prometheus/Grafana/Tempo/Collector 观测栈，并同步 dev/dist 的 OTel 开关 | Linux/macOS         |
-| `otel-env.sh`               | scripts/        | 为 dev/dist 启动的服务注入 OTel 环境变量（Spring 侧自动下载 Java Agent）                       | Linux/macOS         |
-| `otel-env.ps1`              | scripts/        | otel-env.sh 的 PowerShell 版本                                                                 | Windows             |
-| `render-config.sh`          | gateway/apisix/ | 按 `APISIX_OTEL_ENABLED` 渲染网关配置后启动 APISIX                                             | 容器内              |
-| `gateway-cleanup.sh`        | scripts/        | 清理其他编排栈占用的网关容器，避免启动冲突                                                     | Linux/macOS         |
-| `setup.sh`                  | scripts/        | 环境初始化和依赖安装                                                                           | Linux/macOS         |
-| `swag-init.sh`              | scripts/        | 离线生成四个服务的静态 OpenAPI 文档（不启动服务、不依赖中间件）                                | Linux/macOS         |
-| `apifox-sync.sh`            | scripts/        | 将各服务 docs/ 下的静态 OpenAPI 文档同步到 Apifox（读取根目录 `.env` 中的令牌）                | Linux/macOS         |
-| `apifox-readme-sync.sh`     | scripts/        | 将根目录 README.md 同步到 Apifox 指定 Markdown 文档（走 Apifox CLI 的 doc create/update）      | Linux/macOS         |
-| `goctl-api-init.sh`         | scripts/        | 生成 GoZero API 代码，参数透传给`genApi.sh`                                                    | Linux/macOS         |
-| `goctl-orm-init.sh`         | scripts/        | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                                    | Linux/macOS         |
-| `lint.sh`                   | scripts/        | 检查四个服务的代码规范（Spotless/golangci-lint/ESLint/Prettier/Ruff）                          | Linux/macOS         |
-| `format.sh`                 | scripts/        | 格式化四个服务的代码（Spotless/golangci-lint/Prettier/Ruff）                                   | Linux/macOS         |
-| `test.sh`                   | scripts/        | 运行四个服务的单元测试（支持指定服务）                                                         | Linux/macOS         |
-| `compile.sh`                | scripts/        | 验证四个服务能否编译通过（只编译，不产出打包目录）                                             | Linux/macOS         |
-| `hooks-init.sh`             | scripts/        | 启用/停用/查看仓库的版本化 Git 提交钩子（`.githooks/`）                                        | Linux/macOS/Windows |
-| `skills-sync.sh`            | scripts/        | 把 skills/mix-web-demo 镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）     | Linux/macOS/Windows |
-| `run.ps1`                   | scripts/        | PowerShell 脚本，启动所有服务                                                                  | Windows             |
+| 脚本                        | 位置                 | 功能                                                                                           | 适用系统            |
+| --------------------------- | -------------------- | ---------------------------------------------------------------------------------------------- | ------------------- |
+| `mix`                       | 项目根目录           | 便捷启动器，用于快速调用 scripts/ 下的脚本                                                     | Linux/macOS         |
+| `run_multi.sh`              | scripts/             | 使用 tmux 多窗格布局启动所有服务（推荐）                                                       | Linux/macOS         |
+| `run.sh`                    | scripts/             | 使用 tmux 顺序窗口模式启动所有服务                                                             | Linux/macOS         |
+| `stop.sh`                   | scripts/             | 停止所有 tmux 服务                                                                             | Linux/macOS         |
+| `build.sh`                  | scripts/             | 编译所有服务到 dist/ 目录                                                                      | Linux/macOS         |
+| `dist-control.sh`           | scripts/             | 管理打包后的分布式服务（支持服务指定）                                                         | Linux/macOS         |
+| `docker-services.sh`        | scripts/             | 创建、启动、停止和清理基础中间件容器（读取根目录 `.env`，自动安装 ES IK 分词器）               | Linux/macOS         |
+| `docker-compose-up.sh`      | scripts/             | 使用 Docker Compose 启动应用服务                                                               | Linux/macOS         |
+| `docker-compose-down.sh`    | scripts/             | 使用 Docker Compose 停止应用服务                                                               | Linux/macOS         |
+| `build_and_run_services.sh` | scripts/             | 构建并运行服务容器                                                                             | Linux/macOS         |
+| `docker-push-images.sh`     | scripts/             | 将已构建的 Docker 镜像推送到远程仓库                                                           | Linux/macOS         |
+| `loki-control.sh`           | scripts/             | 独立管理 Loki/Promtail/Prometheus/Grafana/Tempo/Collector 观测栈，并同步 dev/dist 的 OTel 开关 | Linux/macOS         |
+| `otel-env.sh`               | scripts/             | 为 dev/dist 启动的服务注入 OTel 环境变量（Spring 侧自动下载 Java Agent）                       | Linux/macOS         |
+| `otel-env.ps1`              | scripts/             | otel-env.sh 的 PowerShell 版本                                                                 | Windows             |
+| `render-config.sh`          | gateway/apisix/      | 按 `APISIX_OTEL_ENABLED` 渲染网关配置后启动 APISIX                                             | 容器内              |
+| `gateway-cleanup.sh`        | scripts/             | 清理其他编排栈占用的网关容器，避免启动冲突                                                     | Linux/macOS         |
+| `setup.sh`                  | scripts/             | 环境初始化和依赖安装                                                                           | Linux/macOS         |
+| `swag-init.sh`              | scripts/             | 离线生成四个服务的静态 OpenAPI 文档（不启动服务、不依赖中间件）                                | Linux/macOS         |
+| `apifox-sync.sh`            | scripts/             | 将各服务 docs/ 下的静态 OpenAPI 文档同步到 Apifox（读取根目录 `.env` 中的令牌）                | Linux/macOS         |
+| `apifox-readme-sync.sh`     | scripts/             | 将根目录 README.md 同步到 Apifox 指定 Markdown 文档（走 Apifox CLI 的 doc create/update）      | Linux/macOS         |
+| `goctl-api-init.sh`         | scripts/             | 生成 GoZero API 代码，参数透传给`genApi.sh`                                                    | Linux/macOS         |
+| `goctl-orm-init.sh`         | scripts/             | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                                    | Linux/macOS         |
+| `checkGenerated.sh`         | gozero/script/goctl/ | 校验 goctl 生成产物是否被人工改动（按`gozero/template`重新生成后比对）                         | Linux/macOS/Windows |
+| `lint.sh`                   | scripts/             | 检查四个服务的代码规范（Spotless/golangci-lint/ESLint/Prettier/Ruff）                          | Linux/macOS         |
+| `format.sh`                 | scripts/             | 格式化四个服务的代码（Spotless/golangci-lint/Prettier/Ruff）                                   | Linux/macOS         |
+| `test.sh`                   | scripts/             | 运行四个服务的单元测试（支持指定服务）                                                         | Linux/macOS         |
+| `compile.sh`                | scripts/             | 验证四个服务能否编译通过（只编译，不产出打包目录）                                             | Linux/macOS         |
+| `hooks-init.sh`             | scripts/             | 启用/停用/查看仓库的版本化 Git 提交钩子（`.githooks/`）                                        | Linux/macOS/Windows |
+| `skills-sync.sh`            | scripts/             | 把 skills/mix-web-demo 镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）     | Linux/macOS/Windows |
+| `run.ps1`                   | scripts/             | PowerShell 脚本，启动所有服务                                                                  | Windows             |
 
 ### 服务名称
 
@@ -2276,27 +2277,27 @@ APIFOX_ACCESS_TOKEN=你的访问令牌
 APIFOX_PROJECT_ID=你的项目ID
 ```
 
-| 变量                                                                                                     | 必填 | 默认值                            | 说明                                                            |
-| -------------------------------------------------------------------------------------------------------- | ---- | --------------------------------- | --------------------------------------------------------------- |
-| `APIFOX_ACCESS_TOKEN`                                                                                    | 是   | -                                 | 访问令牌，作为 `Authorization: Bearer <token>` 发送             |
-| `APIFOX_PROJECT_ID`                                                                                      | 是   | -                                 | 项目 ID（数字），拼进 `/v1/projects/{projectId}/import-openapi` |
-| `APIFOX_BASE_URL`                                                                                        | 否   | `https://api.apifox.com`          | 开放 API 地址，私有化部署时替换域名                             |
-| `APIFOX_API_VERSION`                                                                                     | 否   | `2024-03-28`                      | 请求头 `X-Apifox-Api-Version` 的取值                            |
-| `APIFOX_LOCALE`                                                                                          | 否   | `zh-CN`                           | 请求参数 `locale`                                               |
-| `APIFOX_FOLDER_SPRING`<br/>`APIFOX_FOLDER_GOZERO`<br/>`APIFOX_FOLDER_NESTJS`<br/>`APIFOX_FOLDER_FASTAPI` | 否   | 空                                | 各服务的目标接口目录 ID（数字），留空则导入到项目根目录         |
-| `APIFOX_SCHEMA_FOLDER_ID`                                                                                | 否   | 空                                | 数据模型的目标目录 ID                                           |
-| `APIFOX_BRANCH_ID` / `APIFOX_MODULE_ID`                                                                  | 否   | 空                                | 目标分支 ID / 目标模块 ID                                       |
-| `APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR`                                                                     | 否   | `AUTO_MERGE`                      | 接口的覆盖策略，取值见下表                                      |
-| `APIFOX_SCHEMA_OVERWRITE_BEHAVIOR`                                                                       | 否   | `AUTO_MERGE`                      | 数据模型的覆盖策略，取值同上                                    |
+| 变量                                                                                                     | 必填 | 默认值                            | 说明                                                                                                                                |
+| -------------------------------------------------------------------------------------------------------- | ---- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `APIFOX_ACCESS_TOKEN`                                                                                    | 是   | -                                 | 访问令牌，作为 `Authorization: Bearer <token>` 发送                                                                                 |
+| `APIFOX_PROJECT_ID`                                                                                      | 是   | -                                 | 项目 ID（数字），拼进 `/v1/projects/{projectId}/import-openapi`                                                                     |
+| `APIFOX_BASE_URL`                                                                                        | 否   | `https://api.apifox.com`          | 开放 API 地址，私有化部署时替换域名                                                                                                 |
+| `APIFOX_API_VERSION`                                                                                     | 否   | `2024-03-28`                      | 请求头 `X-Apifox-Api-Version` 的取值                                                                                                |
+| `APIFOX_LOCALE`                                                                                          | 否   | `zh-CN`                           | 请求参数 `locale`                                                                                                                   |
+| `APIFOX_FOLDER_SPRING`<br/>`APIFOX_FOLDER_GOZERO`<br/>`APIFOX_FOLDER_NESTJS`<br/>`APIFOX_FOLDER_FASTAPI` | 否   | 空                                | 各服务的目标接口目录 ID（数字），留空则导入到项目根目录                                                                             |
+| `APIFOX_SCHEMA_FOLDER_ID`                                                                                | 否   | 空                                | 数据模型的目标目录 ID                                                                                                               |
+| `APIFOX_BRANCH_ID` / `APIFOX_MODULE_ID`                                                                  | 否   | 空                                | 目标分支 ID / 目标模块 ID                                                                                                           |
+| `APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR`                                                                     | 否   | `AUTO_MERGE`                      | 接口的覆盖策略，取值见下表                                                                                                          |
+| `APIFOX_SCHEMA_OVERWRITE_BEHAVIOR`                                                                       | 否   | `AUTO_MERGE`                      | 数据模型的覆盖策略，取值同上                                                                                                        |
 | `APIFOX_DELETE_UNMATCHED_RESOURCES`                                                                      | 否   | `true`                            | 是否以文档为准删除 Apifox 中多出的接口与数据模型（范围限于该服务的导入目录，WebSocket 接口不受影响；置 `false` 回到只增量、不清理） |
-| `APIFOX_UPDATE_FOLDER_OF_CHANGED_ENDPOINT`                                                               | 否   | `true`                            | 是否用文档中的目录信息更新已有接口的所属目录                    |
-| `APIFOX_README_DOC_ID`                                                                                   | 否   | 空                                | `./mix apifox-readme` 的目标 Markdown 文档 ID，配置后为原地更新 |
-| `APIFOX_README_DOC_NAME`                                                                                 | 否   | README 一级标题                   | 创建文档时的名称；更新时只有显式配置才会改名                    |
-| `APIFOX_README_DOC_FOLDER_ID`                                                                            | 否   | `0`                               | 文档归属的接口目录 ID，`0` 表示与接口目录同级                   |
-| `APIFOX_README_DOC_MODULE_ID`                                                                            | 否   | 空（默认模块）                    | 文档归属模块 ID，留空即默认模块，与接口同项目同模块             |
-| `APIFOX_README_BRANCH` / `APIFOX_README_FILE`                                                            | 否   | 空 / `README.md`                  | 目标分支名 / 待同步的 Markdown 文件（相对仓库根目录）           |
-| `APIFOX_CLI_REGISTRY`                                                                                    | 否   | `https://registry.npmmirror.com/` | Apifox CLI 自动安装使用的 npm 源                                |
-| `APIFOX_CLI_AUTO_INSTALL`                                                                                | 否   | `true`                            | 缺少 apifox 命令时是否自动安装 CLI                              |
+| `APIFOX_UPDATE_FOLDER_OF_CHANGED_ENDPOINT`                                                               | 否   | `true`                            | 是否用文档中的目录信息更新已有接口的所属目录                                                                                        |
+| `APIFOX_README_DOC_ID`                                                                                   | 否   | 空                                | `./mix apifox-readme` 的目标 Markdown 文档 ID，配置后为原地更新                                                                     |
+| `APIFOX_README_DOC_NAME`                                                                                 | 否   | README 一级标题                   | 创建文档时的名称；更新时只有显式配置才会改名                                                                                        |
+| `APIFOX_README_DOC_FOLDER_ID`                                                                            | 否   | `0`                               | 文档归属的接口目录 ID，`0` 表示与接口目录同级                                                                                       |
+| `APIFOX_README_DOC_MODULE_ID`                                                                            | 否   | 空（默认模块）                    | 文档归属模块 ID，留空即默认模块，与接口同项目同模块                                                                                 |
+| `APIFOX_README_BRANCH` / `APIFOX_README_FILE`                                                            | 否   | 空 / `README.md`                  | 目标分支名 / 待同步的 Markdown 文件（相对仓库根目录）                                                                               |
+| `APIFOX_CLI_REGISTRY`                                                                                    | 否   | `https://registry.npmmirror.com/` | Apifox CLI 自动安装使用的 npm 源                                                                                                    |
+| `APIFOX_CLI_AUTO_INSTALL`                                                                                | 否   | `true`                            | 缺少 apifox 命令时是否自动安装 CLI                                                                                                  |
 
 > 所有 ID 类变量必须是数字，填成目录名会直接报错；接口目录 ID 可用 `apifox-cli folder list --project <项目ID> --type endpoint` 查询（脚本报错提示中也会给出该命令）。
 
@@ -2708,6 +2709,8 @@ golangci-lint run   # 静态检查
 golangci-lint fmt   # 格式化
 ```
 
+`./mix lint gozero` 除 golangci-lint 外，还会调用 `gozero/script/goctl/checkGenerated.sh` 校验 goctl 生成产物是否被人工改动，规则见「其他说明 → GoZero 代码生成 → 生成产物校验」。
+
 ### NestJS
 
 NestJS 使用 ESLint 做静态检查、Prettier 做格式化，命令定义在 `nestjs/package.json`：
@@ -2939,7 +2942,7 @@ GoZero 代码生成统一通过根目录 `mix` 脚本调用，`mix` 会把参数
 # -> gozero/script/goctl/genOrm.sh [args...]
 ```
 
-项目内置 goctl 模板目录为 `gozero/template`，API 和 ORM 生成脚本默认都会使用该模板目录，不依赖开发机全局 goctl 模板。
+项目内置 goctl 模板目录为 `gozero/template`，API 和 ORM 生成脚本默认都会使用该模板目录，不依赖开发机全局 goctl 模板。模板与已生成文件都不包含 goctl 版本注释（`// goctl {{.version}}`、`//  goctl version: x.y.z` 已移除），同一份 `.api` 在不同 goctl 版本下生成结果一致，不产生无意义的版本 diff。
 
 常用命令：
 
@@ -2978,6 +2981,21 @@ GoZero 代码生成统一通过根目录 `mix` 脚本调用，`mix` 会把参数
 | `goctl-orm` | `--template <path>` | 指定 goctl 模板目录，默认`gozero/template`    |
 
 ORM 生成会按表名落到项目现有目录结构，例如 `sub_category.sql` 会生成到 `gozero/app/model/subCategory`。生成的 `*_gen.go` 提供结构体和基础 sqlx CRUD 实现；业务自定义查询应在对应的 model 文件中使用 sqlx 编写。
+
+### 生成产物校验
+
+`./mix lint gozero` 会调用 `gozero/script/goctl/checkGenerated.sh` 校验 goctl 生成产物是否被人工改动，全部校验都在临时目录内进行，不修改仓库文件：
+
+1. 带 `// Code generated by goctl. DO NOT EDIT.` 标记的文件不允许修改：脚本用 `gozero/template` + `gozero/api/main.api` + `gozero/script/sql` 在临时 go module 里重新生成后逐个比对内容（先 `gofmt` 归一化，只忽略格式化差异），人工改动或删除都会报错并打印 diff
+2. 带 `// Code scaffolded by goctl. Safe to edit.` 标记的文件允许编写业务代码，只校验首行标记注释未被改写或删除，文件内容不做限制；与生成骨架同名但从未带过标记的手写实现（如 `app/internal/middleware/recoveryMiddleware.go`）会跳过校验
+
+其他约定：
+
+1. 校验失败时不要手工修改生成文件，改用 `./mix goctl-api` / `./mix goctl-orm` 重新生成
+2. goctl 或 go 未安装时该步骤跳过并提示，不影响其余检查结果
+3. goctl 生成路由分组的顺序存在小概率不确定性，脚本在比对不一致时会自动重新生成最多 3 次再判定，避免把工具抖动误判成人工改动
+
+> 在仓库根目录直接执行 goctl 会污染仓库：goctl 在 Windows 下判定模块有缺陷（`go env GOMOD` 返回 `NUL` 而非 `/dev/null`），会以调用者的当前目录为基准回退执行 `go mod init`、`go work use`，从而在仓库根目录生成多余的 `go.mod` 并把 `go.work` 改成 `use (. / ./gozero/app)`。手工执行 goctl 前先 `cd` 到模块内（如 `gozero/app`）；`checkGenerated.sh` 的生成阶段已切到临时目录，不受影响。
 
 ### FastAPI Agent 工具说明
 
