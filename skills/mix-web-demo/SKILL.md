@@ -122,7 +122,7 @@ web/security/annotation|aspect  权限注解与切面
 web/logging/annotation|aspect  接口日志注解与切面
 application/service      业务接口
 application/service/impl 业务实现
-application/scheduling  定时调度
+application/task  定时调度
 application/sync/annotation|aspect  变更同步注解与切面
 infra/persistence/repository   R2DBC Repository
 infra/persistence/DatabaseInitializer  数据库初始化
@@ -140,7 +140,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 ### 硬性约定
 
 - **控制器返回类型禁止匿名 Map**：一律用 `entity/vo/` 下的 VO 并给字段加 `@Schema`，`./mix lint spring` 会检查（`scripts/controller-vo.py`）。把原先的 `Map<String, Object>` 换成 VO 时，类上必须加 `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)` 保持 `user_id`、`create_time` 这类下划线字段名，否则 FastAPI/GoZero 按原字段名解析会取不到值；只有运行时结构不固定（动态列、动态键）时才允许 Map，并在方法或其注解上方写 `// vo-exempt: 原因`，整类场景写 `// vo-exempt-class: 原因`
-- **依赖方向**：`web` 调用 `application/service`，应用服务使用 `infra` 的客户端与 Repository；`application/scheduling` 调用业务服务，`application/sync` 的切面调用同步服务。`common` 不依赖 `web` 或 `application`；`entity/assembler` 现有实现依赖 `infra/persistence/repository`，新增跨层组件前先确认依赖方向
+- **依赖方向**：`web` 调用 `application/service`，应用服务使用 `infra` 的客户端与 Repository；`application/task` 调用业务服务，`application/sync` 的切面调用同步服务。`common` 不依赖 `web` 或 `application`；`entity/assembler` 现有实现依赖 `infra/persistence/repository`，新增跨层组件前先确认依赖方向
 - ORM 是 Spring Data R2DBC，不是 MyBatisPlus：Repository 继承 `ReactiveCrudRepository<T, ID>`；自定义 SQL 用 `@Query` + `:param`，更新加 `@Modifying`；事务用 `TransactionalOperator.transactional()` 包裹，禁止 `@Transactional`
 - Controller 返回 `Mono<Result<T>>` / `Flux<Result<T>>`，Service 返回 `Mono<T>` / `Flux<T>`；禁止返回裸类型、禁止调用 `.block()`
 - 请求上下文走 Reactor Context：`UserContextWebFilter` 用 `.contextWrite()` 写入，业务用 `Mono.deferContextual(ctx -> ...)` 读取 `UserContext.getUserId(ctx)`；禁止 `ThreadLocal`、`RequestContextHolder`、`OncePerRequestFilter`、`HandlerInterceptor`
@@ -392,12 +392,12 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 「内部接口」= 只给其它服务调用、靠内部令牌 `X-Internal-Token` 鉴权、并在网关侧被 `block-internal` 挡住外部访问的接口。四个服务的识别方式与校验实现：
 
-| 服务 | 标记方式 | 校验实现 | 网关侧 |
-| --- | --- | --- | --- |
-| Spring | `@RequireInternalToken` | 切面 `InternalTokenAspect` | `block-internal` 黑名单 |
-| NestJS | `@RequireInternalToken()` | `framework/guards/internalToken.guard.ts` | 同上 |
-| FastAPI | `@requireInternalToken`（装饰器会给 wrapper 打 `requires_internal_token` 标记，供契约测试自省） | `core/decorators/requireInternalToken.py` | 同上 |
-| GoZero | `.api` 的 `@server middleware:` + `InternalServiceMiddleware` | `common/middleware/internalServiceMiddleware.go` | 同上 |
+| 服务    | 标记方式                                                                                        | 校验实现                                         | 网关侧                  |
+| ------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------ | ----------------------- |
+| Spring  | `@RequireInternalToken`                                                                         | 切面 `InternalTokenAspect`                       | `block-internal` 黑名单 |
+| NestJS  | `@RequireInternalToken()`                                                                       | `framework/guards/internalToken.guard.ts`        | 同上                    |
+| FastAPI | `@requireInternalToken`（装饰器会给 wrapper 打 `requires_internal_token` 标记，供契约测试自省） | `core/decorators/requireInternalToken.py`        | 同上                    |
+| GoZero  | `.api` 的 `@server middleware:` + `InternalServiceMiddleware`                                   | `common/middleware/internalServiceMiddleware.go` | 同上                    |
 
 ### 判定「无效内部接口」的流程（清理前逐步执行）
 
@@ -413,24 +413,24 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 ### 已清理的无效内部接口（勿重复排查）
 
-| 服务 | 已删除 | 已对外化 |
-| --- | --- | --- |
-| Spring | `GET /users/by-github-id/{githubId}`（连带 `UserService.findByGithubId` 接口+实现）、`GET /focus/statistics/monthly-trend/{userId}`（连带 `FocusService.getMonthlyFollowTrend`、`FocusRepository.countMonthlyByUserIdGroupByDate`） | — |
-| FastAPI | `POST /ai_history`、`GET/PUT/DELETE /ai_history/internal/{id}`（连带 `AiHistoryService`/`AiHistoryMapper` 各 3 个方法与 `CreateHistoryDTO`/`UpdateHistoryDTO`/`DeletedResponse`） | `POST /chat/send`：去掉 `@requireInternalToken` 作为普通聊天接口，补 `tests/internal/api/chat/chatRouter_test.py` 固化「聊天接口不带内部令牌」契约 |
-| NestJS | `POST /article-logs`、`POST /api-logs`（连带两个 Service 的 `create`） | — |
-| GoZero | 无（`/task/syncer`、`/sql-tools/tables`、`/sql-tools/query` 均有生产调用方） | — |
+| 服务    | 已删除                                                                                                                                                                                                                              | 已对外化                                                                                                                                           |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spring  | `GET /users/by-github-id/{githubId}`（连带 `UserService.findByGithubId` 接口+实现）、`GET /focus/statistics/monthly-trend/{userId}`（连带 `FocusService.getMonthlyFollowTrend`、`FocusRepository.countMonthlyByUserIdGroupByDate`） | —                                                                                                                                                  |
+| FastAPI | `POST /ai_history`、`GET/PUT/DELETE /ai_history/internal/{id}`（连带 `AiHistoryService`/`AiHistoryMapper` 各 3 个方法与 `CreateHistoryDTO`/`UpdateHistoryDTO`/`DeletedResponse`）                                                   | `POST /chat/send`：去掉 `@requireInternalToken` 作为普通聊天接口，补 `tests/internal/api/chat/chatRouter_test.py` 固化「聊天接口不带内部令牌」契约 |
+| NestJS  | `POST /article-logs`、`POST /api-logs`（连带两个 Service 的 `create`）                                                                                                                                                              | —                                                                                                                                                  |
+| GoZero  | 无（`/task/syncer`、`/sql-tools/tables`、`/sql-tools/query` 均有生产调用方）                                                                                                                                                        | —                                                                                                                                                  |
 
 ### 必须保留的接口（勿当死代码清理）
 
 `/task/*` 手动触发接口一律保留，判定「无效内部接口」时直接排除：
 
-| 服务 | 接口 | 保留理由 |
-| --- | --- | --- |
-| Spring | `POST /task/clean`（`TaskController`） | 手动触发过期 Token 清理；`TokenCleanupTask` 的 `@Scheduled(cron = "0 0 * * * *")` 是常态通道，接口是运维通道 |
-| FastAPI | `POST /task/vector`、`POST /task/sync-neo4j`、`POST /task/sync-warehouse` | 手动补跑向量 / 图谱 / 数仓同步（Spring 的同步切面也会按 ids 触发同一入口） |
-| FastAPI | `POST /task/update-analyze-caches`、`POST /task/init-hash-cache`、`POST /task/clear-analyze-caches` | 手动刷分析缓存、初始化文章内容 hash 缓存、清空分析缓存；scheduler 自动跑同一批函数，接口用于紧急修复 |
-| NestJS | `POST /task/apilog`、`POST /task/articlelog` | 手动清理超期 API 日志 / 文章日志；`TaskService` 的 `@Cron` 是常态通道 |
-| GoZero | `POST /task/syncer` | 按 ids 精确同步 ES（Spring 同步切面在用），同时是手动全量重刷入口 |
+| 服务    | 接口                                                                                                | 保留理由                                                                                                     |
+| ------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Spring  | `POST /task/clean`（`TaskController`）                                                              | 手动触发过期 Token 清理；`TokenCleanupTask` 的 `@Scheduled(cron = "0 0 * * * *")` 是常态通道，接口是运维通道 |
+| FastAPI | `POST /task/vector`、`POST /task/sync-neo4j`、`POST /task/sync-warehouse`                           | 手动补跑向量 / 图谱 / 数仓同步（Spring 的同步切面也会按 ids 触发同一入口）                                   |
+| FastAPI | `POST /task/update-analyze-caches`、`POST /task/init-hash-cache`、`POST /task/clear-analyze-caches` | 手动刷分析缓存、初始化文章内容 hash 缓存、清空分析缓存；scheduler 自动跑同一批函数，接口用于紧急修复         |
+| NestJS  | `POST /task/apilog`、`POST /task/articlelog`                                                        | 手动清理超期 API 日志 / 文章日志；`TaskService` 的 `@Cron` 是常态通道                                        |
+| GoZero  | `POST /task/syncer`                                                                                 | 按 ids 精确同步 ES（Spring 同步切面在用），同时是手动全量重刷入口                                            |
 
 **删除时容易误伤的保留项**（都已确认仍在使用，勿再删）：FastAPI 的 `create_ai_history`（流式聊天保存历史）、`update_analyze_caches_async` 与 `initialize_article_content_hash_cache_async`（scheduler / vectorSyncTask，以及恢复后的 `/task/update-analyze-caches`、`/task/init-hash-cache`）、`ChatRequest`（被 `ChatStreamRequest` 继承）、`ChatResponseData`（被 `ChatResponse` 引用）；NestJS 的 `CreateArticleLogDto` / `CreateApiLogDto`（RabbitMQ 消费者攒批 `insertMany` 在用）；各 Cache 的 `clear_all()`（被恢复的 `/task/clear-analyze-caches` 调用）。
 
@@ -568,11 +568,11 @@ FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大�
 
 | 服务    | 测试工具                                                                                        | 命令                                                             |
 | ------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| spring  | JUnit 5（Jupiter）+ Mockito + AssertJ；响应式链用 `StepVerifier`，Controller 用 `WebTestClient`  | `./mix test spring`（`cd spring && mvn test`）                    |
-| nestjs  | Jest + ts-jest（配置在 `nestjs/package.json` 的 `jest` 段）                                      | `./mix test nestjs`（`bun run test -- --runInBand`）              |
-| fastapi | pytest，异步用例用 anyio 插件的 `@pytest.mark.anyio`                                             | `./mix test fastapi`（`cd fastapi && uv run pytest -q`）          |
-| gozero  | Go 标准库 `testing` + `net/http/httptest`（当前未引入 testify / sqlmock）                        | `./mix test gozero`（`cd gozero/app && go test ./... -count=1`）  |
-| gateway | 无单元测试（配置驱动，不参与）                                                                   | `./mix test gateway` 直接跳过                                    |
+| spring  | JUnit 5（Jupiter）+ Mockito + AssertJ；响应式链用 `StepVerifier`，Controller 用 `WebTestClient` | `./mix test spring`（`cd spring && mvn test`）                   |
+| nestjs  | Jest + ts-jest（配置在 `nestjs/package.json` 的 `jest` 段）                                     | `./mix test nestjs`（`bun run test -- --runInBand`）             |
+| fastapi | pytest，异步用例用 anyio 插件的 `@pytest.mark.anyio`                                            | `./mix test fastapi`（`cd fastapi && uv run pytest -q`）         |
+| gozero  | Go 标准库 `testing` + `net/http/httptest`（当前未引入 testify / sqlmock）                       | `./mix test gozero`（`cd gozero/app && go test ./... -count=1`） |
+| gateway | 无单元测试（配置驱动，不参与）                                                                  | `./mix test gateway` 直接跳过                                    |
 
 工具未安装时该服务返回码 2 并跳过，「跳过」不能当成「通过」；只要改动了服务代码或测试，`./mix test <service>` 就是交付前必跑项（顺序见下一节）。
 
