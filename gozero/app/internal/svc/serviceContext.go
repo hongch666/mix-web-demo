@@ -53,6 +53,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		LoggerContext:         newLoggerContext(zLogger),
 		MiddlewareContext:     newMiddlewareContext(zLogger, clientCtx.SpringClient),
 	}
+	if models.ChatMessagesModel != nil {
+		serviceCtx.ChatHub.ConfigureReadMarker(models.ChatMessagesModel.MarkChatHistoryAsReadThrough)
+	}
 
 	// 实时通信组件组装到 HubContext 分域
 	setupRealtime(serviceContext, serviceCtx.HubContext, infrastructure.RedisClient, zLogger)

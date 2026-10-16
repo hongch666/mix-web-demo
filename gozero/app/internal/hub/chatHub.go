@@ -36,7 +36,8 @@ type ChatQueue struct {
 }
 
 type ChatHub struct {
-	queue *ChatQueue
+	queue    *ChatQueue
+	markRead func(context.Context, int64, int64, uint64) error
 	*utils.ZeroLogger
 }
 
@@ -46,6 +47,25 @@ func NewChatQueue() *ChatQueue {
 
 func NewChatHub(logger *utils.ZeroLogger) *ChatHub {
 	return &ChatHub{queue: NewChatQueue(), ZeroLogger: logger}
+}
+
+// ConfigureReadMarker 在服务装配阶段注入消息已读操作
+func (s *ChatHub) ConfigureReadMarker(markRead func(context.Context, int64, int64, uint64) error) {
+	s.markRead = markRead
+}
+
+// HandleWebSocketConnection 接管已升级的连接并启动读写处理
+func (s *ChatHub) HandleWebSocketConnection(conn *websocket.Conn, userID int64) {
+	client := &Client{
+		UserID:       userID,
+		ConnectionID: NewConnectionID("ws"),
+		Conn:         conn,
+		Send:         make(chan []byte, constants.WebSocketSendBufferSize),
+		MarkRead:     s.markRead,
+	}
+	s.JoinQueue(userID, client)
+	utils.SafeGo(s.ZeroLogger, "websocket_write_pump", client.WritePump)
+	utils.SafeGo(s.ZeroLogger, "websocket_read_pump", client.ReadPump)
 }
 
 // NewConnectionID 生成连接标识

@@ -7,7 +7,6 @@ import (
 
 	"app/common/constants"
 	"app/common/utils"
-	"app/internal/hub"
 	"app/internal/logic/chat"
 	"app/internal/middleware"
 	"app/internal/svc"
@@ -47,22 +46,6 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		svcCtx.Logger.Info(constants.WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE)
 
-		// 创建新的客户端并加入队列
-		client := &hub.Client{
-			UserID:       userID,
-			ConnectionID: hub.NewConnectionID("ws"),
-			Conn:         conn,
-			Send:         make(chan []byte, constants.WebSocketSendBufferSize),
-			MarkRead:     svcCtx.ChatMessagesModel.MarkChatHistoryAsReadThrough,
-		}
-		svcCtx.ChatHub.JoinQueue(userID, client)
-
-		// 启动读写协程，这里使用带 recover 的安全封装，避免子 goroutine panic 直接影响整个进程
-		utils.SafeGo(svcCtx.Logger, "websocket_write_pump", func() {
-			client.WritePump()
-		})
-		utils.SafeGo(svcCtx.Logger, "websocket_read_pump", func() {
-			client.ReadPump()
-		})
+		svcCtx.ChatHub.HandleWebSocketConnection(conn, userID)
 	}, constants.API_LOG_WEBSOCKET_CONNECTION)
 }

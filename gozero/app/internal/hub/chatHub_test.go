@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"app/common/constants"
 	"app/internal/types"
@@ -96,6 +100,55 @@ func TestHandleReadReceiptDoesNotAcknowledgeFailedPersistence(t *testing.T) {
 	}
 	if len(client.Send) != 0 {
 		t.Fatal("持久化失败后不应发送已读确认")
+	}
+}
+
+func TestHandleWebSocketConnectionUsesInjectedReadMarker(t *testing.T) {
+	hub := NewChatHub(nil)
+	type readCall struct {
+		receiver int64
+		sender   int64
+		message  uint64
+	}
+	called := make(chan readCall, 1)
+	hub.ConfigureReadMarker(func(_ context.Context, receiver, sender int64, message uint64) error {
+		called <- readCall{receiver, sender, message}
+		return nil
+	})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		hub.HandleWebSocketConnection(conn, 7)
+	}))
+	defer server.Close()
+
+	conn, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
+	if err != nil {
+		t.Fatalf("连接测试 WebSocket 失败: %v", err)
+	}
+	defer conn.Close()
+	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if err := conn.WriteJSON(types.ChatWsMessage{
+		Type: constants.READ_RECEIPT_MESSAGE, SenderId: 42, MessageId: 123,
+	}); err != nil {
+		t.Fatalf("发送已读回执失败: %v", err)
+	}
+	var ack types.ChatWsMessage
+	if err := conn.ReadJSON(&ack); err != nil {
+		t.Fatalf("读取已读确认失败: %v", err)
+	}
+	if ack.Type != constants.READ_RECEIPT_ACK || ack.ReceiverId != 7 {
+		t.Fatalf("已读确认内容错误: %+v", ack)
+	}
+	select {
+	case call := <-called:
+		if call.receiver != 7 || call.sender != 42 || call.message != 123 {
+			t.Fatalf("已读回调参数错误: %+v", call)
+		}
+	default:
+		t.Fatal("连接未调用装配的已读操作")
 	}
 }
 
