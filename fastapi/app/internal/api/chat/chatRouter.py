@@ -8,7 +8,6 @@ from typing import Any, Optional
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
-from app.core.auth import is_memory_user
 from app.core.base import (
     ApiResponse,
     Logger,
@@ -43,7 +42,10 @@ from app.internal.agents.langsmith import (
     get_langsmith_context,
     get_langsmith_context_async,
 )
-from app.internal.models import AiHistory
+from app.internal.services.chat.chatService import (
+    persist_chat_history,
+    select_chat_model,
+)
 from app.internal.schemas import (
     AIServiceType,
     ChatRequest,
@@ -152,69 +154,31 @@ async def send_message(
                     "metadata": langsmith_metadata,
                 }
 
-        # 根据请求的服务类型选择对应的AI服务
         # 记忆压缩说明由服务层写入 compact_notes，供历史记录的思考字段落库
         compact_notes: list[str] = []
-        if request.service == AIServiceType.GPT:
-            Logger.info(Messages.CHAT_SERVICE_PROCESSING("GPT", actual_user_id, False))
-            response_message: str = await gptService.simple_chat(
-                message=request.message,
-                user_id=actual_user_id,
-                db=db,
-                runnable_config=runnable_config,
-                notes=compact_notes,
+        model = select_chat_model(
+            request.service,
+            {
+                AIServiceType.GPT: gptService,
+                AIServiceType.GEMINI: geminiService,
+                AIServiceType.GLM: glmService,
+                AIServiceType.DEEPSEEK: deepseekService,
+                AIServiceType.CLAUDE: claudeService,
+                AIServiceType.QWEN: qwenService,
+            },
+        )
+        Logger.info(
+            Messages.CHAT_SERVICE_PROCESSING(
+                request.service.value, actual_user_id, False
             )
-        elif request.service == AIServiceType.GEMINI:
-            Logger.info(
-                Messages.CHAT_SERVICE_PROCESSING("Gemini", actual_user_id, False)
-            )
-            response_message = await geminiService.simple_chat(
-                message=request.message,
-                user_id=actual_user_id,
-                db=db,
-                runnable_config=runnable_config,
-                notes=compact_notes,
-            )
-        elif request.service == AIServiceType.DEEPSEEK:
-            Logger.info(
-                Messages.CHAT_SERVICE_PROCESSING("DeepSeek", actual_user_id, False)
-            )
-            response_message = await deepseekService.simple_chat(
-                message=request.message,
-                user_id=actual_user_id,
-                db=db,
-                runnable_config=runnable_config,
-                notes=compact_notes,
-            )
-        elif request.service == AIServiceType.CLAUDE:
-            Logger.info(
-                Messages.CHAT_SERVICE_PROCESSING("Claude", actual_user_id, False)
-            )
-            response_message = await claudeService.simple_chat(
-                message=request.message,
-                user_id=actual_user_id,
-                db=db,
-                runnable_config=runnable_config,
-                notes=compact_notes,
-            )
-        elif request.service == AIServiceType.QWEN:
-            Logger.info(Messages.CHAT_SERVICE_PROCESSING("Qwen", actual_user_id, False))
-            response_message = await qwenService.simple_chat(
-                message=request.message,
-                user_id=actual_user_id,
-                db=db,
-                runnable_config=runnable_config,
-                notes=compact_notes,
-            )
-        else:
-            Logger.info(Messages.CHAT_SERVICE_PROCESSING("GLM", actual_user_id, False))
-            response_message = await glmService.simple_chat(
-                message=request.message,
-                user_id=actual_user_id,
-                db=db,
-                runnable_config=runnable_config,
-                notes=compact_notes,
-            )
+        )
+        response_message: str = await model.simple_chat(
+            message=request.message,
+            user_id=actual_user_id,
+            db=db,
+            runnable_config=runnable_config,
+            notes=compact_notes,
+        )
 
     # 检查是否有错误
     if (
@@ -227,15 +191,15 @@ async def send_message(
         )
 
     # 保存AI历史记录，系统调用身份不写入记忆
-    if is_memory_user(actual_user_id):
-        history = AiHistory(
-            user_id=int(actual_user_id),
-            ask=request.message,
-            reply=response_message,
-            thinking="".join(compact_notes) or None,
-            ai_type=request.service.value,
-        )
-        await aiHistoryService.create_ai_history(history, db)
+    if await persist_chat_history(
+        aiHistoryService,
+        db,
+        actual_user_id,
+        request.message,
+        response_message,
+        "".join(compact_notes),
+        request.service,
+    ):
         Logger.info(
             Messages.AI_HISTORY_SAVED(actual_user_id, request.service.value, False)
         )
@@ -350,71 +314,28 @@ async def stream_message(
             # 在 event_generator 内部创建 db session，确保流式处理完成后立即释放
             async with aclosing(get_db()) as db_generator:
                 db = await anext(db_generator)
-                # 根据请求的服务类型选择对应的AI服务
-                if request.service == AIServiceType.GPT:
-                    Logger.info(
-                        Messages.CHAT_SERVICE_PROCESSING("GPT", actual_user_id, True)
+                model = select_chat_model(
+                    request.service,
+                    {
+                        AIServiceType.GPT: gptService,
+                        AIServiceType.GEMINI: geminiService,
+                        AIServiceType.GLM: glmService,
+                        AIServiceType.DEEPSEEK: deepseekService,
+                        AIServiceType.CLAUDE: claudeService,
+                        AIServiceType.QWEN: qwenService,
+                    },
+                )
+                Logger.info(
+                    Messages.CHAT_SERVICE_PROCESSING(
+                        request.service.value, actual_user_id, True
                     )
-                    stream_generator: AsyncGenerator[Any, None] = (
-                        gptService.stream_chat(
-                            message=request.message,
-                            user_id=actual_user_id,
-                            db=db,
-                            runnable_config=runnable_config,
-                        )
-                    )
-                elif request.service == AIServiceType.GEMINI:
-                    Logger.info(
-                        Messages.CHAT_SERVICE_PROCESSING("Gemini", actual_user_id, True)
-                    )
-                    stream_generator = geminiService.stream_chat(
-                        message=request.message,
-                        user_id=actual_user_id,
-                        db=db,
-                        runnable_config=runnable_config,
-                    )
-                elif request.service == AIServiceType.DEEPSEEK:
-                    Logger.info(
-                        Messages.CHAT_SERVICE_PROCESSING(
-                            "DeepSeek", actual_user_id, True
-                        )
-                    )
-                    stream_generator = deepseekService.stream_chat(
-                        message=request.message,
-                        user_id=actual_user_id,
-                        db=db,
-                        runnable_config=runnable_config,
-                    )
-                elif request.service == AIServiceType.CLAUDE:
-                    Logger.info(
-                        Messages.CHAT_SERVICE_PROCESSING("Claude", actual_user_id, True)
-                    )
-                    stream_generator = claudeService.stream_chat(
-                        message=request.message,
-                        user_id=actual_user_id,
-                        db=db,
-                        runnable_config=runnable_config,
-                    )
-                elif request.service == AIServiceType.QWEN:
-                    Logger.info(
-                        Messages.CHAT_SERVICE_PROCESSING("Qwen", actual_user_id, True)
-                    )
-                    stream_generator = qwenService.stream_chat(
-                        message=request.message,
-                        user_id=actual_user_id,
-                        db=db,
-                        runnable_config=runnable_config,
-                    )
-                else:
-                    Logger.info(
-                        Messages.CHAT_SERVICE_PROCESSING("GLM", actual_user_id, True)
-                    )
-                    stream_generator = glmService.stream_chat(
-                        message=request.message,
-                        user_id=actual_user_id,
-                        db=db,
-                        runnable_config=runnable_config,
-                    )
+                )
+                stream_generator: AsyncGenerator[Any, None] = model.stream_chat(
+                    message=request.message,
+                    user_id=actual_user_id,
+                    db=db,
+                    runnable_config=runnable_config,
+                )
 
                 if use_openai_format:
                     # 先声明 assistant 角色，标准客户端据此初始化消息
@@ -468,24 +389,28 @@ async def stream_message(
 
                 # 流式聊天完成后保存AI历史记录（在完成流式传输后）
                 # 系统调用身份不写入记忆，避免所有匿名请求共用同一个记忆桶
-                if message_acc and is_memory_user(actual_user_id):
-                    history = AiHistory(
-                        user_id=int(actual_user_id),
-                        ask=request.message,
-                        reply=message_acc,
-                        thinking=thinking_acc if thinking_acc else None,
-                        ai_type=request.service.value,
+                if message_acc:
+                    saved = await persist_chat_history(
+                        aiHistoryService,
+                        db,
+                        actual_user_id,
+                        request.message,
+                        message_acc,
+                        thinking_acc,
+                        request.service,
                     )
-                    await aiHistoryService.create_ai_history(history, db)
-                    Logger.info(
-                        Messages.AI_HISTORY_SAVED(
-                            actual_user_id, request.service.value, True
+                    if saved:
+                        Logger.info(
+                            Messages.AI_HISTORY_SAVED(
+                                actual_user_id, request.service.value, True
+                            )
                         )
-                    )
-                elif message_acc:
-                    Logger.info(
-                        Messages.AI_HISTORY_SKIPPED_SYSTEM_USER(actual_user_id, True)
-                    )
+                    else:
+                        Logger.info(
+                            Messages.AI_HISTORY_SKIPPED_SYSTEM_USER(
+                                actual_user_id, True
+                            )
+                        )
 
                 if use_openai_format:
                     yield build_openai_finish_frame(frame_context)
