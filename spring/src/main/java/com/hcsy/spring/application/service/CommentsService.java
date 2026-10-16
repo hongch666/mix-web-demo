@@ -2,17 +2,33 @@ package com.hcsy.spring.application.service;
 
 import java.util.List;
 
+import com.hcsy.spring.entity.dto.CommentCreateDTO;
+import com.hcsy.spring.entity.dto.CommentUpdateDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Comments;
+import com.hcsy.spring.entity.vo.AICommentsVO;
 import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
 import com.hcsy.spring.entity.vo.CommentSyncVO;
+import com.hcsy.spring.entity.vo.CommentsVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
+import com.hcsy.spring.entity.vo.PageVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface CommentsService {
+    Mono<Comments> createComment(CommentCreateDTO dto);
+
+    Mono<Comments> updateComment(CommentUpdateDTO dto);
+
+    Mono<CommentsVO> getCommentDetail(Long id);
+
+    Mono<PageVO<CommentsVO>> listCommentDetails(PageDTO<Comments> page);
+
+    Mono<List<AICommentsVO>> listAICommentDetailsByArticleId(Long articleId);
+
+    Mono<List<CommentSyncVO>> getCommentSyncByIds(java.util.Collection<Long> ids);
     Mono<PageDTO<Comments>> listCommentsWithFilter(long page, long size, CommentsQueryDTO queryDTO);
 
     Mono<PageDTO<Comments>> listAICommentsWithFilter(long page, long size, CommentsQueryDTO queryDTO);

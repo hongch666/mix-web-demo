@@ -2,7 +2,6 @@ package com.hcsy.spring.web.controller;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,9 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.application.service.ArticleService;
-import com.hcsy.spring.application.service.UserService;
 import com.hcsy.spring.application.sync.annotation.ArticleSync;
-import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
@@ -36,7 +33,6 @@ import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
 
-import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -50,21 +46,13 @@ import reactor.core.publisher.Mono;
 public class ArticleController {
 
     private final ArticleService articleService;
-    private final UserService userService;
 
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
     @ArticleSync(action = "add", esSync = true, vectorSync = true, description = "创建了1篇文章")
     @ApiLog("创建文章")
     public Mono<Result<Long>> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
-        return userService.findByUsername(dto.getUsername())
-            .flatMap(user -> {
-                Article article = BeanUtil.copyProperties(dto, Article.class);
-                article.setUserId(user.getId());
-                article.setViews(0);
-                // 返回新增文章主键，供同步切面精确下发变更事件
-                return articleService.saveArticle(article).map(saved -> Result.success(saved.getId()));
-            })
+        return articleService.createArticle(dto).map(saved -> Result.success(saved.getId()))
             .defaultIfEmpty(Result.<Long>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
     }
 
@@ -95,23 +83,8 @@ public class ArticleController {
     @Operation(summary = "获取文章详情", description = "根据ID获取文章详情")
     @ApiLog("获取文章详情")
     public Mono<Result<ArticleWithCategoryVO>> getArticleById(@PathVariable Long id) {
-        return articleService.getById(id)
-            .flatMap(article -> {
-                Long userId = article.getUserId();
-                if (userId == null) {
-                    // 文章未关联作者（userId 为空）时直接返回，避免 userRepository.findById(null) 抛异常导致 500
-                    ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
-                    vo.setUsername(Defaults.DEFAULT_USER);
-                    return Mono.just(Result.success(vo));
-                }
-                return userService.getById(userId)
-                    .map(user -> {
-                        ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
-                        vo.setUsername(user == null ? Defaults.DEFAULT_USER : user.getName());
-                        return Result.success(vo);
-                    })
-                    .defaultIfEmpty(Result.success(BeanUtil.copyProperties(article, ArticleWithCategoryVO.class)));
-            })
+        return articleService.getArticleDetail(id)
+            .map(Result::success)
             .defaultIfEmpty(Result.<ArticleWithCategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE));
     }
 
@@ -122,13 +95,7 @@ public class ArticleController {
     @ArticleSync(action = "edit", esSync = true, vectorSync = true, description = "编辑了1篇文章")
     @ApiLog("更新文章")
     public Mono<Result<Void>> updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
-        return userService.findByUsername(dto.getUsername())
-            .flatMap(user -> {
-                Article article = BeanUtil.copyProperties(dto, Article.class);
-                article.setUserId(user.getId());
-                article.setUpdateAt(java.time.LocalDateTime.now());
-                return articleService.updateArticle(article).thenReturn(Result.<Void>success());
-            })
+        return articleService.updateArticle(dto).map(ignored -> Result.<Void>success())
             .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
     }
 
@@ -191,12 +158,7 @@ public class ArticleController {
     @RequireInternalToken
     @ApiLog("内部批量查询文章")
     public Mono<Result<List<ArticleWithCategoryVO>>> getArticleByIds(@Valid @RequestBody BatchIdsDTO dto) {
-        return articleService.listByIds(dto.getIds())
-            .collectList()
-            .map(articles -> articles.stream()
-                .map(article -> BeanUtil.copyProperties(article, ArticleWithCategoryVO.class))
-                .collect(Collectors.toList()))
-            .map(Result::success);
+        return articleService.getArticleDetailsByIds(dto.getIds()).map(Result::success);
     }
 
     @GetMapping("/by-title")
@@ -204,12 +166,7 @@ public class ArticleController {
     @RequireInternalToken
     @ApiLog("内部搜索文章")
     public Mono<Result<List<ArticleWithCategoryVO>>> getArticlesByTitle(@RequestParam String title) {
-        return articleService.listAllArticlesByTitle(title)
-            .collectList()
-            .map(articles -> articles.stream()
-                .map(article -> BeanUtil.copyProperties(article, ArticleWithCategoryVO.class))
-                .collect(Collectors.toList()))
-            .map(Result::success);
+        return articleService.getArticleDetailsByTitle(title).map(Result::success);
     }
 
     @PostMapping("/views/batch")

@@ -7,6 +7,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
@@ -20,19 +23,25 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.entity.dto.CommentCreateDTO;
 import com.hcsy.spring.entity.dto.CommentScoreDTO;
+import com.hcsy.spring.entity.dto.CommentUpdateDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.AICommentsVO;
 import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
 import com.hcsy.spring.entity.vo.CommentSyncVO;
+import com.hcsy.spring.entity.vo.CommentsVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
+import com.hcsy.spring.entity.vo.PageVO;
 import com.hcsy.spring.infra.persistence.repository.ArticleRepository;
 import com.hcsy.spring.infra.persistence.repository.CommentsRepository;
 import com.hcsy.spring.infra.persistence.repository.UserRepository;
 
+import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -46,6 +55,86 @@ public class CommentsServiceImpl implements CommentsService {
     private final UserRepository userRepository;
     private final R2dbcEntityTemplate entityTemplate;
     private final TransactionalOperator transactionalOperator;
+
+    @Override
+    public Mono<Comments> createComment(CommentCreateDTO dto) {
+        return Mono.zip(articleRepository.findFirstByTitle(dto.getArticleTitle()),
+            userRepository.findByName(dto.getUsername()))
+            .flatMap(relations -> {
+                Comments comment = BeanUtil.toBean(dto, Comments.class);
+                comment.setArticleId(relations.getT1().getId());
+                comment.setUserId(relations.getT2().getId());
+                return save(comment);
+            });
+    }
+
+    @Override
+    public Mono<Comments> updateComment(CommentUpdateDTO dto) {
+        Comments comment = BeanUtil.toBean(dto, Comments.class);
+        return Mono.zip(
+            articleRepository.findFirstByTitle(dto.getArticleTitle()),
+            userRepository.findByName(dto.getUsername()))
+            .flatMap(ignored -> update(comment));
+    }
+
+    @Override
+    public Mono<CommentsVO> getCommentDetail(Long id) {
+        return getById(id).flatMap(this::toCommentsVO);
+    }
+
+    @Override
+    public Mono<PageVO<CommentsVO>> listCommentDetails(PageDTO<Comments> page) {
+        Set<Long> userIds = page.getRecords().stream().map(Comments::getUserId).collect(Collectors.toSet());
+        Set<Long> articleIds = page.getRecords().stream().map(Comments::getArticleId).collect(Collectors.toSet());
+        Mono<Map<Long, User>> users = userRepository.findAllById(userIds).collectMap(User::getId, Function.identity());
+        Mono<Map<Long, Article>> articles = articleRepository.findAllById(articleIds)
+            .collectMap(Article::getId, Function.identity());
+        return Mono.zip(users, articles).map(relations -> {
+            List<CommentsVO> records = page.getRecords().stream()
+                .map(comment -> mapComment(comment, relations.getT1().get(comment.getUserId()),
+                    relations.getT2().get(comment.getArticleId())))
+                .toList();
+            return new PageVO<>(page.getTotal(), records);
+        });
+    }
+
+    @Override
+    public Mono<List<AICommentsVO>> listAICommentDetailsByArticleId(Long articleId) {
+        return listAICommentsByArticleId(articleId).collectList().flatMap(comments -> {
+            Set<Long> userIds = comments.stream().map(Comments::getUserId).collect(Collectors.toSet());
+            return userRepository.findAllById(userIds).collectMap(User::getId, Function.identity())
+                .map(users -> comments.stream().map(comment -> {
+                    AICommentsVO vo = BeanUtil.copyProperties(comment, AICommentsVO.class);
+                    User user = users.get(comment.getUserId());
+                    vo.setAiType(user == null ? Defaults.DEFAULT_AI : user.getName());
+                    vo.setPic(user == null ? null : user.getImg());
+                    return vo;
+                }).toList());
+        });
+    }
+
+    @Override
+    public Mono<List<CommentSyncVO>> getCommentSyncByIds(Collection<Long> ids) {
+        return listByIds(ids)
+            .map(comment -> new CommentSyncVO(comment.getId(), comment.getUserId(), comment.getArticleId(),
+                comment.getStar(), comment.getCreateTime(), comment.getUpdateTime()))
+            .collectList();
+    }
+
+    private Mono<CommentsVO> toCommentsVO(Comments comment) {
+        Mono<User> user = userRepository.findById(comment.getUserId()).defaultIfEmpty(new User());
+        Mono<Article> article = articleRepository.findById(comment.getArticleId()).defaultIfEmpty(new Article());
+        return Mono.zip(user, article).map(relations -> mapComment(comment, relations.getT1(), relations.getT2()));
+    }
+
+    private CommentsVO mapComment(Comments comment, User user, Article article) {
+        CommentsVO vo = BeanUtil.copyProperties(comment, CommentsVO.class);
+        vo.setUsername(user == null || user.getName() == null ? Defaults.DEFAULT_USER : user.getName());
+        vo.setPic(user == null ? null : user.getImg());
+        vo.setArticleTitle(
+            article == null || article.getTitle() == null ? Defaults.DEFAULT_ARTICLE : article.getTitle());
+        return vo;
+    }
 
     @Override
     public Mono<PageDTO<Comments>> listCommentsWithFilter(long page, long size, CommentsQueryDTO queryDTO) {

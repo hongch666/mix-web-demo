@@ -3,6 +3,7 @@ package com.hcsy.spring.application.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,10 +19,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.entity.dto.ArticleCreateDTO;
+import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.po.Article;
+import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.infra.persistence.repository.ArticleRepository;
 import com.hcsy.spring.infra.persistence.repository.CategoryRepository;
 import com.hcsy.spring.infra.persistence.repository.SubCategoryRepository;
@@ -54,6 +59,90 @@ class ArticleServiceImplTest {
     void setUp() {
         articleService = new ArticleServiceImpl(articleRepository, userRepository, subCategoryRepository,
             categoryRepository, transactionalOperator);
+    }
+
+    @Test
+    @DisplayName("创建文章时解析作者并返回保存后的主键")
+    void createArticleResolvesAuthorAndReturnsSavedArticle() {
+        ArticleCreateDTO dto = new ArticleCreateDTO("标题", "内容", "alice", "go", 1, 2);
+        User author = new User();
+        author.setId(USER_ID);
+        when(userRepository.findByName("alice")).thenReturn(Mono.just(author));
+        when(articleRepository.save(any(Article.class)))
+            .thenAnswer(invocation -> {
+                Article saved = invocation.getArgument(0);
+                saved.setId(ARTICLE_ID);
+                return Mono.just(saved);
+            });
+        stubTransactional();
+
+        StepVerifier.create(articleService.createArticle(dto))
+            .assertNext(saved -> {
+                assertThat(saved.getId()).isEqualTo(ARTICLE_ID);
+                assertThat(saved.getUserId()).isEqualTo(USER_ID);
+                assertThat(saved.getViews()).isZero();
+            })
+            .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("创建文章时作者不存在则不写文章")
+    void createArticleSkipsSaveWhenAuthorMissing() {
+        ArticleCreateDTO dto = new ArticleCreateDTO("标题", "内容", "missing", "go", 1, 2);
+        when(userRepository.findByName("missing")).thenReturn(Mono.empty());
+
+        StepVerifier.create(articleService.createArticle(dto)).verifyComplete();
+
+        verify(articleRepository, never()).save(any(Article.class));
+    }
+
+    @Test
+    @DisplayName("文章详情作者为空时使用默认用户名")
+    void getArticleDetailUsesDefaultUsernameForMissingAuthorId() {
+        Article article = article();
+        article.setUserId(null);
+        when(articleRepository.findById(ARTICLE_ID)).thenReturn(Mono.just(article));
+
+        StepVerifier.create(articleService.getArticleDetail(ARTICLE_ID))
+            .assertNext(detail -> assertThat(detail.getUsername()).isEqualTo(Defaults.DEFAULT_USER))
+            .verifyComplete();
+
+        verify(userRepository, never()).findById(any(Long.class));
+    }
+
+    @Test
+    @DisplayName("更新文章时解析作者并传递文章主键")
+    void updateArticleResolvesAuthor() {
+        ArticleUpdateDTO dto = new ArticleUpdateDTO(ARTICLE_ID);
+        dto.setTitle("新标题");
+        dto.setContent("新内容");
+        dto.setUsername("alice");
+        dto.setStatus(1);
+        dto.setSubCategoryId(2);
+        User author = new User();
+        author.setId(USER_ID);
+        when(userRepository.findByName("alice")).thenReturn(Mono.just(author));
+        when(articleRepository.updateArticle(eq(ARTICLE_ID), eq("新标题"), eq("新内容"), eq(USER_ID),
+            any(), eq(1), eq(2), any())).thenReturn(Mono.just(1));
+        stubTransactional();
+
+        StepVerifier.create(articleService.updateArticle(dto)).expectNext(true).verifyComplete();
+
+        verify(articleRepository).updateArticle(eq(ARTICLE_ID), eq("新标题"), eq("新内容"), eq(USER_ID),
+            any(), eq(1), eq(2), any());
+    }
+
+    @Test
+    @DisplayName("内部批量文章详情保留请求文章主键")
+    void getArticleDetailsByIdsMapsArticles() {
+        when(articleRepository.findAllById(List.of(ARTICLE_ID))).thenReturn(Flux.just(article()));
+
+        StepVerifier.create(articleService.getArticleDetailsByIds(List.of(ARTICLE_ID)))
+            .assertNext(details -> {
+                assertThat(details).hasSize(1);
+                assertThat(details.get(0).getId()).isEqualTo(ARTICLE_ID);
+            })
+            .verifyComplete();
     }
 
     @Test

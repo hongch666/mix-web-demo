@@ -19,6 +19,8 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.entity.dto.ArticleCreateDTO;
+import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Category;
@@ -67,6 +69,58 @@ public class ArticleServiceImpl implements ArticleService {
     public Mono<Article> saveArticle(Article article) {
         // 返回保存后的实体，便于上层把新增文章主键用于精确同步
         return transactionalOperator.transactional(articleRepository.save(article));
+    }
+
+    @Override
+    public Mono<Article> createArticle(ArticleCreateDTO dto) {
+        return userRepository.findByName(dto.getUsername())
+            .flatMap(user -> {
+                Article article = BeanUtil.copyProperties(dto, Article.class);
+                article.setUserId(user.getId());
+                article.setViews(0);
+                return saveArticle(article);
+            });
+    }
+
+    @Override
+    public Mono<Boolean> updateArticle(ArticleUpdateDTO dto) {
+        return userRepository.findByName(dto.getUsername())
+            .flatMap(user -> {
+                Article article = BeanUtil.copyProperties(dto, Article.class);
+                article.setUserId(user.getId());
+                article.setUpdateAt(LocalDateTime.now());
+                return updateArticle(article);
+            });
+    }
+
+    @Override
+    public Mono<ArticleWithCategoryVO> getArticleDetail(Long id) {
+        return getById(id).flatMap(article -> {
+            ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
+            if (article.getUserId() == null) {
+                vo.setUsername(Defaults.DEFAULT_USER);
+                return Mono.just(vo);
+            }
+            return userRepository.findById(article.getUserId())
+                .map(user -> {
+                    vo.setUsername(user.getName());
+                    return vo;
+                })
+                .defaultIfEmpty(vo);
+        });
+    }
+
+    @Override
+    public Mono<List<ArticleWithCategoryVO>> getArticleDetailsByIds(Collection<Long> ids) {
+        return listByIds(ids).map(article -> BeanUtil.copyProperties(article, ArticleWithCategoryVO.class))
+            .collectList();
+    }
+
+    @Override
+    public Mono<List<ArticleWithCategoryVO>> getArticleDetailsByTitle(String title) {
+        return listAllArticlesByTitle(title)
+            .map(article -> BeanUtil.copyProperties(article, ArticleWithCategoryVO.class))
+            .collectList();
     }
 
     @Override

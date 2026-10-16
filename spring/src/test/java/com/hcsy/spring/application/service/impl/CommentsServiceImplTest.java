@@ -28,8 +28,12 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.entity.dto.CommentCreateDTO;
 import com.hcsy.spring.entity.dto.CommentScoreDTO;
+import com.hcsy.spring.entity.dto.CommentUpdateDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
+import com.hcsy.spring.entity.dto.PageDTO;
+import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.infra.persistence.repository.ArticleRepository;
@@ -65,6 +69,111 @@ class CommentsServiceImplTest {
     void setUp() {
         commentsService = new CommentsServiceImpl(commentsRepository, articleRepository, userRepository,
             entityTemplate, transactionalOperator);
+    }
+
+    @Test
+    @DisplayName("创建评论时解析文章与用户并保存关联主键")
+    void createCommentResolvesRelationsAndSaves() {
+        Article article = new Article();
+        article.setId(ARTICLE_ID);
+        User author = user(NORMAL_USER_ID, "user");
+        when(articleRepository.findFirstByTitle("文章")).thenReturn(Mono.just(article));
+        when(userRepository.findByName("alice")).thenReturn(Mono.just(author));
+        when(commentsRepository.save(any(Comments.class)))
+            .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        stubTransactional();
+
+        StepVerifier.create(commentsService.createComment(new CommentCreateDTO("内容", 5D, "文章", "alice")))
+            .assertNext(saved -> {
+                assertThat(saved.getArticleId()).isEqualTo(ARTICLE_ID);
+                assertThat(saved.getUserId()).isEqualTo(NORMAL_USER_ID);
+                assertThat(saved.getContent()).isEqualTo("内容");
+            })
+            .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("创建评论时文章不存在则不保存")
+    void createCommentSkipsSaveWhenArticleMissing() {
+        when(articleRepository.findFirstByTitle("不存在")).thenReturn(Mono.empty());
+        when(userRepository.findByName("alice")).thenReturn(Mono.just(user(NORMAL_USER_ID, "user")));
+
+        StepVerifier.create(commentsService.createComment(new CommentCreateDTO("内容", 5D, "不存在", "alice")))
+            .verifyComplete();
+
+        verify(commentsRepository, never()).save(any(Comments.class));
+    }
+
+    @Test
+    @DisplayName("更新评论时关联名不存在则不更新原评论")
+    void updateCommentSkipsWriteWhenRelatedNameMissing() {
+        CommentUpdateDTO dto = new CommentUpdateDTO(3);
+        dto.setArticleTitle("不存在");
+        dto.setUsername("alice");
+        dto.setContent("新内容");
+        dto.setStar(5D);
+        when(articleRepository.findFirstByTitle("不存在")).thenReturn(Mono.empty());
+        when(userRepository.findByName("alice")).thenReturn(Mono.just(user(NORMAL_USER_ID, "user")));
+
+        StepVerifier.create(commentsService.updateComment(dto)).verifyComplete();
+
+        verify(commentsRepository, never()).findById(any(Long.class));
+    }
+
+    @Test
+    @DisplayName("评论详情缺失关联数据时补默认名称")
+    void getCommentDetailUsesDefaultsForMissingRelations() {
+        when(commentsRepository.findById(COMMENT_ID)).thenReturn(Mono.just(comment(NORMAL_USER_ID)));
+        when(userRepository.findById(NORMAL_USER_ID)).thenReturn(Mono.empty());
+        when(articleRepository.findById(ARTICLE_ID)).thenReturn(Mono.empty());
+
+        StepVerifier.create(commentsService.getCommentDetail(COMMENT_ID))
+            .assertNext(detail -> {
+                assertThat(detail.getUsername()).isEqualTo(Defaults.DEFAULT_USER);
+                assertThat(detail.getArticleTitle()).isEqualTo(Defaults.DEFAULT_ARTICLE);
+            })
+            .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("评论分页详情批量补全用户与文章名称")
+    void listCommentDetailsEnrichesRelations() {
+        PageDTO<Comments> page = new PageDTO<>();
+        page.setTotal(1L);
+        page.setRecords(List.of(comment(NORMAL_USER_ID)));
+        User author = user(NORMAL_USER_ID, "user");
+        author.setName("alice");
+        Article article = new Article();
+        article.setId(ARTICLE_ID);
+        article.setTitle("文章");
+        when(userRepository.findAllById(anyIterable())).thenReturn(Flux.just(author));
+        when(articleRepository.findAllById(anyIterable())).thenReturn(Flux.just(article));
+
+        StepVerifier.create(commentsService.listCommentDetails(page))
+            .assertNext(result -> {
+                assertThat(result.getTotal()).isEqualTo(1L);
+                assertThat(result.getList()).hasSize(1);
+                assertThat(result.getList().get(0).getUsername()).isEqualTo("alice");
+                assertThat(result.getList().get(0).getArticleTitle()).isEqualTo("文章");
+            })
+            .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("内部评论同步按字段映射且保留评论主键")
+    void getCommentSyncByIdsMapsRecords() {
+        Comments source = comment(NORMAL_USER_ID);
+        source.setStar(8D);
+        when(commentsRepository.findAllById(List.of(COMMENT_ID))).thenReturn(Flux.just(source));
+
+        StepVerifier.create(commentsService.getCommentSyncByIds(List.of(COMMENT_ID)))
+            .assertNext(records -> {
+                assertThat(records).hasSize(1);
+                assertThat(records.get(0).getId()).isEqualTo(COMMENT_ID);
+                assertThat(records.get(0).getUserId()).isEqualTo(NORMAL_USER_ID);
+                assertThat(records.get(0).getArticleId()).isEqualTo(ARTICLE_ID);
+            })
+            .verifyComplete();
     }
 
     @Test

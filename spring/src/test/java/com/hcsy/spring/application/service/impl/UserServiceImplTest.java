@@ -24,6 +24,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.hcsy.spring.application.service.EmailVerificationService;
 import com.hcsy.spring.application.service.ImageCaptchaService;
 import com.hcsy.spring.application.service.TokenService;
+import com.hcsy.spring.application.service.UserService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
@@ -86,6 +87,108 @@ class UserServiceImplTest {
         userService = new UserServiceImpl(userRepository, redisUtil, tokenService, passwordEncryptor,
             new UserPasswordProperties("Default123", "Reset1234"), emailVerificationService,
             imageCaptchaService, objectMapper, transactionalOperator, cacheUtil, metricsRecorder);
+    }
+
+    @Test
+    @DisplayName("用户详情组合登录状态与在线设备数")
+    void getUserDetailCombinesStatusAndDeviceCount() {
+        when(userRepository.findById(USER_ID)).thenReturn(Mono.just(user(USERNAME)));
+        when(redisUtil.get(RedisKeys.userStatus(USER_ID))).thenReturn(Mono.just("1"));
+        when(tokenService.getUserOnlineDeviceCount(USER_ID)).thenReturn(Mono.just(2L));
+
+        StepVerifier.create(userService.getUserDetail(USER_ID))
+            .assertNext(detail -> {
+                assertThat(detail.getLoginStatus()).isEqualTo(1);
+                assertThat(detail.getOnlineDeviceCount()).isEqualTo(2L);
+            })
+            .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("强制下线不存在的用户不操作会话")
+    void forceLogoutUserSkipsUnknownUser() {
+        when(userRepository.findById(USER_ID)).thenReturn(Mono.empty());
+
+        StepVerifier.create(userService.forceLogoutUser(USER_ID)).expectNext(false).verifyComplete();
+
+        verify(tokenService, never()).forceLogoutUser(anyLong());
+    }
+
+    @Test
+    @DisplayName("强制下线存在的用户时撤销所有会话")
+    void forceLogoutUserRevokesExistingUserSessions() {
+        when(userRepository.findById(USER_ID)).thenReturn(Mono.just(user(USERNAME)));
+        when(tokenService.forceLogoutUser(USER_ID)).thenReturn(Mono.empty());
+
+        StepVerifier.create(userService.forceLogoutUser(USER_ID)).expectNext(true).verifyComplete();
+
+        verify(tokenService).forceLogoutUser(USER_ID);
+    }
+
+    @Test
+    @DisplayName("踢出其他设备后返回移除数与剩余设备数")
+    void kickOtherDevicesReturnsSessionCounts() {
+        when(tokenService.removeOtherSessions(USER_ID, "token")).thenReturn(Mono.just(2));
+        when(tokenService.getUserOnlineDeviceCount(USER_ID)).thenReturn(Mono.just(1L));
+
+        StepVerifier.create(userService.kickOtherDevices(USER_ID, "token"))
+            .assertNext(result -> {
+                assertThat(result.getUserId()).isEqualTo(USER_ID);
+                assertThat(result.getRemovedSessionCount()).isEqualTo(2);
+                assertThat(result.getOnlineDeviceCount()).isEqualTo(1L);
+            })
+            .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("发送验证码时拒绝无效邮箱和不支持的用途")
+    void sendVerificationCodeRejectsInvalidInput() {
+        StepVerifier.create(userService.sendVerificationCode("bad-email", "register"))
+            .expectNext(UserService.EmailCodeSendOutcome.INVALID_EMAIL)
+            .verifyComplete();
+        StepVerifier.create(userService.sendVerificationCode(EMAIL, "other"))
+            .expectNext(UserService.EmailCodeSendOutcome.INVALID_TYPE)
+            .verifyComplete();
+
+        verify(userRepository, never()).findByEmail(anyString());
+        verify(emailVerificationService, never()).sendVerificationCode(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("注册用途邮箱已存在时不发送验证码")
+    void sendVerificationCodeRejectsExistingRegistrationEmail() {
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Mono.just(user(USERNAME)));
+
+        StepVerifier.create(userService.sendVerificationCode(EMAIL, "register"))
+            .expectNext(UserService.EmailCodeSendOutcome.EMAIL_EXISTS)
+            .verifyComplete();
+
+        verify(emailVerificationService, never()).sendVerificationCode(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("登录用途邮箱不存在时不发送验证码")
+    void sendVerificationCodeRejectsMissingLoginEmail() {
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Mono.empty());
+
+        StepVerifier.create(userService.sendVerificationCode(EMAIL, "login"))
+            .expectNext(UserService.EmailCodeSendOutcome.EMAIL_NOT_FOUND)
+            .verifyComplete();
+
+        verify(emailVerificationService, never()).sendVerificationCode(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("登录用途邮箱存在时发送验证码")
+    void sendVerificationCodeSendsForExistingLoginEmail() {
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Mono.just(user(USERNAME)));
+        when(emailVerificationService.sendVerificationCode(EMAIL, "login")).thenReturn(Mono.empty());
+
+        StepVerifier.create(userService.sendVerificationCode(EMAIL, "login"))
+            .expectNext(UserService.EmailCodeSendOutcome.SENT)
+            .verifyComplete();
+
+        verify(emailVerificationService).sendVerificationCode(EMAIL, "login");
     }
 
     @Test

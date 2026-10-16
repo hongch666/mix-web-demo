@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.hcsy.spring.application.service.EmailVerificationService;
 import com.hcsy.spring.application.service.ImageCaptchaService;
 import com.hcsy.spring.application.service.TokenService;
 import com.hcsy.spring.application.service.UserService;
@@ -70,7 +69,6 @@ import reactor.core.publisher.Mono;
 public class UserController {
     private final UserService userService;
     private final TokenService tokenService;
-    private final EmailVerificationService emailVerificationService;
     private final ImageCaptchaService imageCaptchaService;
 
     @GetMapping()
@@ -135,16 +133,8 @@ public class UserController {
     @Operation(summary = "查询用户", description = "根据id查询用户，返回用户信息及其登录状态和设备数")
     @ApiLog("查询用户")
     public Mono<Result<UserVO>> getUserById(@PathVariable Long id) {
-        return userService.getById(id)
-            .flatMap(user -> Mono.zip(
-                userService.getUserLoginStatus(id),
-                tokenService.getUserOnlineDeviceCount(id))
-                .map(status -> {
-                    UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
-                    userVO.setLoginStatus(status.getT1());
-                    userVO.setOnlineDeviceCount(status.getT2());
-                    return Result.success(userVO);
-                }))
+        return userService.getUserDetail(id)
+            .map(Result::success)
             .defaultIfEmpty(Result.<UserVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
     }
 
@@ -247,9 +237,10 @@ public class UserController {
         "user_id" })
     @ApiLog("手动下线用户")
     public Mono<Result<Void>> forceLogoutUser(@PathVariable("user_id") Long userId) {
-        return userService.getById(userId)
-            .flatMap(user -> tokenService.forceLogoutUser(userId).thenReturn(Result.<Void>success()))
-            .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+        return userService.forceLogoutUser(userId)
+            .map(exists -> exists
+                ? Result.<Void>success()
+                : Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
     }
 
     @PostMapping("/kick-other-devices")
@@ -264,13 +255,7 @@ public class UserController {
                 return Mono.just(Result.<KickOtherDevicesVO>error(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID));
             }
 
-            return tokenService.removeOtherSessions(userId, token)
-                .flatMap(removed -> tokenService.getUserOnlineDeviceCount(userId)
-                    .map(remaining -> Result.success(KickOtherDevicesVO.builder()
-                        .userId(userId)
-                        .removedSessionCount(removed)
-                        .onlineDeviceCount(remaining)
-                        .build())));
+            return userService.kickOtherDevices(userId, token).map(Result::success);
         });
     }
 
@@ -295,25 +280,14 @@ public class UserController {
             resolvedType = resolvedType == null || resolvedType.isBlank() ? body.getType() : resolvedType;
         }
         resolvedType = resolvedType == null || resolvedType.isBlank() ? "register" : resolvedType;
-        if (resolvedEmail == null || !resolvedEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            return Mono.just(Result.error(HttpCode.UNPROCESSABLE_ENTITY, Messages.EMAIL));
-        }
-        if (!"register".equals(resolvedType) && !"login".equals(resolvedType) && !"reset".equals(resolvedType)) {
-            return Mono.just(Result.error(HttpCode.BAD_REQUEST, Messages.VERIFY_CODE_UNSUPPORT));
-        }
-
-        String finalEmail = resolvedEmail;
-        String finalType = resolvedType;
-        return userService.findByEmail(finalEmail).hasElement().flatMap(exists -> {
-            if ("register".equals(finalType) && exists) {
-                return Mono.just(Result.<Void>error(HttpCode.CONFLICT, Messages.EMAIL_REGISTER));
-            }
-            if (!"register".equals(finalType) && !exists) {
-                return Mono.just(Result.<Void>error(HttpCode.NOT_FOUND, Messages.EMAIL_UNREGISTER));
-            }
-            return emailVerificationService.sendVerificationCode(finalEmail, finalType)
-                .thenReturn(Result.<Void>success());
-        });
+        return userService.sendVerificationCode(resolvedEmail, resolvedType)
+            .map(outcome -> switch (outcome) {
+                case SENT -> Result.<Void>success();
+                case INVALID_EMAIL -> Result.<Void>error(HttpCode.UNPROCESSABLE_ENTITY, Messages.EMAIL);
+                case INVALID_TYPE -> Result.<Void>error(HttpCode.BAD_REQUEST, Messages.VERIFY_CODE_UNSUPPORT);
+                case EMAIL_EXISTS -> Result.<Void>error(HttpCode.CONFLICT, Messages.EMAIL_REGISTER);
+                case EMAIL_NOT_FOUND -> Result.<Void>error(HttpCode.NOT_FOUND, Messages.EMAIL_UNREGISTER);
+            });
     }
 
     @PostMapping("/reset-password")

@@ -14,14 +14,27 @@ import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
+import com.hcsy.spring.entity.vo.KickOtherDevicesVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserSyncVO;
+import com.hcsy.spring.entity.vo.UserVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface UserService {
+    enum EmailCodeSendOutcome {
+        SENT, INVALID_EMAIL, INVALID_TYPE, EMAIL_EXISTS, EMAIL_NOT_FOUND
+    }
+
+    Mono<UserVO> getUserDetail(Long id);
+
+    Mono<KickOtherDevicesVO> kickOtherDevices(Long userId, String accessToken);
+
+    Mono<Boolean> forceLogoutUser(Long userId);
+
+    Mono<EmailCodeSendOutcome> sendVerificationCode(String email, String type);
     Mono<UserListVO> listUsersWithFilter(long page, long size, String username);
 
     Mono<UserListVO> getAllUsers(String username);

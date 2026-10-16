@@ -3,6 +3,8 @@ package com.hcsy.spring.application.service;
 import java.util.Collection;
 import java.util.List;
 
+import com.hcsy.spring.entity.dto.ArticleCreateDTO;
+import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.vo.ArticleExportVO;
@@ -21,6 +23,16 @@ public interface ArticleService {
     Mono<PageDTO<Article>> listPublishedArticles(long page, long size);
 
     Mono<Article> saveArticle(Article article);
+
+    Mono<Article> createArticle(ArticleCreateDTO dto);
+
+    Mono<Boolean> updateArticle(ArticleUpdateDTO dto);
+
+    Mono<ArticleWithCategoryVO> getArticleDetail(Long id);
+
+    Mono<List<ArticleWithCategoryVO>> getArticleDetailsByIds(Collection<Long> ids);
+
+    Mono<List<ArticleWithCategoryVO>> getArticleDetailsByTitle(String title);
 
     Mono<Boolean> updateArticle(Article article);
 

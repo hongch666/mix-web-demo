@@ -2,10 +2,6 @@ package com.hcsy.spring.web.controller;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,11 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.hcsy.spring.application.service.ArticleService;
 import com.hcsy.spring.application.service.CommentsService;
-import com.hcsy.spring.application.service.UserService;
 import com.hcsy.spring.application.sync.annotation.DataSync;
-import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.SyncChangeType;
@@ -33,10 +26,7 @@ import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
 import com.hcsy.spring.entity.dto.CommentUpdateDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
-import com.hcsy.spring.entity.dto.PageDTO;
-import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
-import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.AICommentsVO;
 import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
 import com.hcsy.spring.entity.vo.CommentSyncVO;
@@ -47,7 +37,6 @@ import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
 
-import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -60,18 +49,13 @@ import reactor.core.publisher.Mono;
 @Tag(name = "评论模块", description = "文章评论功能相关API，包括评论发布、回复、删除、评论列表查询等")
 public class CommentsController {
     private final CommentsService commentsService;
-    private final ArticleService articleService;
-    private final UserService userService;
 
     @PostMapping
     @Operation(summary = "新增评论", description = "通过请求体创建评论信息")
     @DataSync(resource = SyncResource.COMMENTS, changeType = SyncChangeType.INSERT, description = "新增评论后同步图谱与数仓")
     @ApiLog("新增评论")
     public Mono<Result<Long>> createComment(@Valid @RequestBody CommentCreateDTO dto) {
-        return Mono.zip(
-            articleService.findByArticleTitle(dto.getArticleTitle()),
-            userService.findByUsername(dto.getUsername()))
-            .flatMap(result -> saveComment(dto, result.getT1(), result.getT2()))
+        return commentsService.createComment(dto).map(saved -> Result.success(saved.getId()))
             .defaultIfEmpty(Result.<Long>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT));
     }
 
@@ -82,15 +66,8 @@ public class CommentsController {
     @DataSync(resource = SyncResource.COMMENTS, changeType = SyncChangeType.UPDATE, description = "修改评论后同步图谱与数仓")
     @ApiLog("修改评论")
     public Mono<Result<Void>> updateComment(@Valid @RequestBody CommentUpdateDTO dto) {
-        return Mono.zip(
-            articleService.findByArticleTitle(dto.getArticleTitle()),
-            userService.findByUsername(dto.getUsername()))
-            .flatMap(result -> {
-                Comments comment = BeanUtil.toBean(dto, Comments.class);
-                comment.setArticleId(result.getT1().getId());
-                comment.setUserId(result.getT2().getId());
-                return commentsService.update(comment).thenReturn(Result.<Void>success());
-            })
+        return commentsService.updateComment(dto)
+            .map(ignored -> Result.<Void>success())
             .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT));
     }
 
@@ -120,8 +97,7 @@ public class CommentsController {
     @Operation(summary = "根据id查询评论", description = "根据id查询评论")
     @ApiLog("根据id查询评论")
     public Mono<Result<CommentsVO>> getCommentsById(@PathVariable Long id) {
-        return commentsService.getById(id)
-            .flatMap(this::toCommentsVO)
+        return commentsService.getCommentDetail(id)
             .map(Result::success)
             .defaultIfEmpty(Result.<CommentsVO>error(HttpCode.NOT_FOUND, Messages.COMMENT_ID + id));
     }
@@ -136,7 +112,7 @@ public class CommentsController {
     @ApiLog("获取普通评论信息")
     public Mono<Result<PageVO<CommentsVO>>> listComments(@ParameterObject @ModelAttribute CommentsQueryDTO query) {
         return commentsService.listCommentsWithFilter(query.getPage(), query.getSize(), query)
-            .flatMap(this::toCommentsPage)
+            .flatMap(commentsService::listCommentDetails)
             .map(Result::success);
     }
 
@@ -150,7 +126,7 @@ public class CommentsController {
     @ApiLog("获取AI评论信息")
     public Mono<Result<PageVO<CommentsVO>>> listAIComments(@ParameterObject @ModelAttribute CommentsQueryDTO query) {
         return commentsService.listAICommentsWithFilter(query.getPage(), query.getSize(), query)
-            .flatMap(this::toCommentsPage)
+            .flatMap(commentsService::listCommentDetails)
             .map(Result::success);
     }
 
@@ -162,7 +138,7 @@ public class CommentsController {
         @RequestParam(defaultValue = "10") int size,
         @RequestParam(defaultValue = "1") int page) {
         return commentsService.listCommentsByUserId(page, size, id)
-            .flatMap(this::toCommentsPage)
+            .flatMap(commentsService::listCommentDetails)
             .map(Result::success);
     }
 
@@ -178,7 +154,7 @@ public class CommentsController {
             return Mono.just(Result.error(HttpCode.BAD_REQUEST, Messages.SORT_WAY + sortWay));
         }
         return commentsService.listCommentsByArticleId(page, size, id, sortWay)
-            .flatMap(this::toCommentsPage)
+            .flatMap(commentsService::listCommentDetails)
             .map(Result::success);
     }
 
@@ -186,20 +162,7 @@ public class CommentsController {
     @Operation(summary = "根据文章id获取AI评论", description = "根据文章id获取AI评论")
     @ApiLog("根据文章id获取AI评论")
     public Mono<Result<List<AICommentsVO>>> listAICommentsByArticleId(@PathVariable Long id) {
-        return commentsService.listAICommentsByArticleId(id)
-            .collectList()
-            .flatMap(comments -> {
-                Set<Long> userIds = comments.stream().map(Comments::getUserId).collect(Collectors.toSet());
-                return userService.listByIds(userIds).collectMap(User::getId, Function.identity())
-                    .map(users -> comments.stream().map(comment -> {
-                        AICommentsVO vo = BeanUtil.copyProperties(comment, AICommentsVO.class);
-                        User user = users.get(comment.getUserId());
-                        vo.setAiType(user == null ? Defaults.DEFAULT_AI : user.getName());
-                        vo.setPic(user == null ? null : user.getImg());
-                        return vo;
-                    }).toList());
-            })
-            .map(Result::success);
+        return commentsService.listAICommentDetailsByArticleId(id).map(Result::success);
     }
 
     @PostMapping("/scores/batch")
@@ -217,16 +180,7 @@ public class CommentsController {
     @RequireInternalToken
     @ApiLog("内部批量查询评论")
     public Mono<Result<List<CommentSyncVO>>> getCommentsByIds(@Valid @RequestBody BatchIdsDTO dto) {
-        return commentsService.listByIds(dto.getIds())
-            .map(comment -> new CommentSyncVO(
-                comment.getId(),
-                comment.getUserId(),
-                comment.getArticleId(),
-                comment.getStar(),
-                comment.getCreateTime(),
-                comment.getUpdateTime()))
-            .collectList()
-            .map(Result::success);
+        return commentsService.getCommentSyncByIds(dto.getIds()).map(Result::success);
     }
 
     @GetMapping("/neo4j-sync")
@@ -270,41 +224,4 @@ public class CommentsController {
         return commentsService.getMonthlyCommentTrend(userId).map(Result::success);
     }
 
-    private Mono<Result<Long>> saveComment(CommentCreateDTO dto, Article article, User user) {
-        Comments comment = BeanUtil.toBean(dto, Comments.class);
-        comment.setArticleId(article.getId());
-        comment.setUserId(user.getId());
-        // 返回新增评论主键，供同步切面精确下发变更事件
-        return commentsService.save(comment).map(saved -> Result.success(saved.getId()));
-    }
-
-    private Mono<CommentsVO> toCommentsVO(Comments comment) {
-        Mono<User> user = userService.getById(comment.getUserId()).defaultIfEmpty(new User());
-        Mono<Article> article = articleService.getById(comment.getArticleId()).defaultIfEmpty(new Article());
-        return Mono.zip(user, article).map(relations -> mapComment(comment, relations.getT1(), relations.getT2()));
-    }
-
-    private Mono<PageVO<CommentsVO>> toCommentsPage(PageDTO<Comments> source) {
-        Set<Long> userIds = source.getRecords().stream().map(Comments::getUserId).collect(Collectors.toSet());
-        Set<Long> articleIds = source.getRecords().stream().map(Comments::getArticleId).collect(Collectors.toSet());
-        Mono<Map<Long, User>> users = userService.listByIds(userIds).collectMap(User::getId, Function.identity());
-        Mono<Map<Long, Article>> articles = articleService.listByIds(articleIds)
-            .collectMap(Article::getId, Function.identity());
-        return Mono.zip(users, articles).map(relations -> {
-            List<CommentsVO> records = source.getRecords().stream()
-                .map(comment -> mapComment(comment, relations.getT1().get(comment.getUserId()),
-                    relations.getT2().get(comment.getArticleId())))
-                .toList();
-            return new PageVO<>(source.getTotal(), records);
-        });
-    }
-
-    private CommentsVO mapComment(Comments comment, User user, Article article) {
-        CommentsVO vo = BeanUtil.copyProperties(comment, CommentsVO.class);
-        vo.setUsername(user == null || user.getName() == null ? Defaults.DEFAULT_USER : user.getName());
-        vo.setPic(user == null ? null : user.getImg());
-        vo.setArticleTitle(
-            article == null || article.getTitle() == null ? Defaults.DEFAULT_ARTICLE : article.getTitle());
-        return vo;
-    }
 }

@@ -35,6 +35,7 @@ import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
+import com.hcsy.spring.entity.vo.KickOtherDevicesVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserSyncVO;
@@ -66,6 +67,56 @@ public class UserServiceImpl implements UserService {
     private final TransactionalOperator transactionalOperator;
     private final CacheUtil cacheUtil;
     private final MetricsRecorder metricsRecorder;
+
+    @Override
+    public Mono<UserVO> getUserDetail(Long id) {
+        return getById(id).flatMap(user -> Mono.zip(
+            getUserLoginStatus(id), tokenService.getUserOnlineDeviceCount(id))
+            .map(status -> {
+                UserVO vo = BeanUtil.copyProperties(user, UserVO.class);
+                vo.setLoginStatus(status.getT1());
+                vo.setOnlineDeviceCount(status.getT2());
+                return vo;
+            }));
+    }
+
+    @Override
+    public Mono<KickOtherDevicesVO> kickOtherDevices(Long userId, String accessToken) {
+        return tokenService.removeOtherSessions(userId, accessToken)
+            .flatMap(removed -> tokenService.getUserOnlineDeviceCount(userId)
+                .map(remaining -> KickOtherDevicesVO.builder()
+                    .userId(userId)
+                    .removedSessionCount(removed)
+                    .onlineDeviceCount(remaining)
+                    .build()));
+    }
+
+    @Override
+    public Mono<Boolean> forceLogoutUser(Long userId) {
+        return getById(userId)
+            .flatMap(user -> tokenService.forceLogoutUser(userId).thenReturn(true))
+            .defaultIfEmpty(false);
+    }
+
+    @Override
+    public Mono<EmailCodeSendOutcome> sendVerificationCode(String email, String type) {
+        if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            return Mono.just(EmailCodeSendOutcome.INVALID_EMAIL);
+        }
+        if (!"register".equals(type) && !"login".equals(type) && !"reset".equals(type)) {
+            return Mono.just(EmailCodeSendOutcome.INVALID_TYPE);
+        }
+        return findByEmail(email).hasElement().flatMap(exists -> {
+            if ("register".equals(type) && exists) {
+                return Mono.just(EmailCodeSendOutcome.EMAIL_EXISTS);
+            }
+            if (!"register".equals(type) && !exists) {
+                return Mono.just(EmailCodeSendOutcome.EMAIL_NOT_FOUND);
+            }
+            return emailVerificationService.sendVerificationCode(email, type)
+                .thenReturn(EmailCodeSendOutcome.SENT);
+        });
+    }
 
     @Override
     public Mono<UserListVO> listUsersWithFilter(long page, long size, String username) {

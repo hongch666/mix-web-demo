@@ -26,8 +26,7 @@ public class TaskController {
     @RequireInternalToken
     @ApiLog("手动执行清理过期Token任务")
     public Mono<Result<Void>> executeTokenCleanup() {
-        // 后台异步执行清理，不阻塞接口响应
-        tokenCleanupTask.cleanupExpiredTokens().subscribe();
+        tokenCleanupTask.triggerCleanup();
         return Mono.just(Result.success());
     }
 }

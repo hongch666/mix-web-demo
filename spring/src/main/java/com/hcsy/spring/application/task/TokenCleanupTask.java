@@ -23,6 +23,12 @@ public class TokenCleanupTask {
     private final RedisDistributedLock distributedLock;
     private final MetricsRecorder metricsRecorder;
 
+    public void triggerCleanup() {
+        cleanupExpiredTokens()
+            .doOnError(error -> logger.error(Messages.TASK_EXCEPTION + error.getMessage(), error))
+            .subscribe();
+    }
+
     @Scheduled(cron = "0 0 * * * *")
     public Mono<Void> cleanupExpiredTokens() {
         long startedAt = System.nanoTime();
