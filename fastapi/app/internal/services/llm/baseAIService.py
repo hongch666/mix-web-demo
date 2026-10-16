@@ -1016,6 +1016,7 @@ class BaseAiService:
         db: Optional[AsyncSession] = None,
         runnable_config: Optional[dict] = None,
         notes: Optional[list[str]] = None,
+        raise_on_error: bool = False,
     ) -> str:
         """普通聊天接口
 
@@ -1031,6 +1032,8 @@ class BaseAiService:
             Logger.info(Messages.USER_SEND_MESSAGE(user_id, message))
 
             if not getattr(self, "llm", None):
+                if raise_on_error:
+                    raise RuntimeError(Messages.INITIALIZATION_ERROR)
                 return Messages.INITIALIZATION_ERROR
 
             if not self.agent_executor:
@@ -1108,12 +1111,16 @@ class BaseAiService:
                     {"input": full_input}, config=config
                 )
                 result = agent_response.get("output", Messages.MESSAGE_RETRIEVAL_ERROR)
+                if raise_on_error and "output" not in agent_response:
+                    raise RuntimeError(Messages.MESSAGE_RETRIEVAL_ERROR)
 
             Logger.info(Messages.CHAT_REPLY_LENGTH(self.service_name, len(result)))
             return result
 
         except Exception as error:
             Logger.error(Messages.CHAT_EXCEPTION(self.service_name, str(error)))
+            if raise_on_error:
+                raise
             return self._resolve_service_error_message(str(error))
 
     async def stream_chat(

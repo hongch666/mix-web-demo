@@ -1,9 +1,6 @@
 from app.core.constants import AlgorithmConstants, Scripts
 from app.internal.schemas import ScoreWeightItem, ScriptParamItem
-from app.internal.services.algorithm.algorithmService import (
-    AlgorithmService,
-    get_algorithm_service,
-)
+from app.internal.services.algorithm import AlgorithmService, get_algorithm_service
 
 
 # 权重列表与 WEIGHT_DEFINITIONS 的数量、键值和描述一致

@@ -46,6 +46,38 @@ def _fake_dependencies(
     )
 
 
+@pytest.mark.anyio
+async def test_manual_vector_sync_selects_exact_sync_when_ids_present(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    exact = AsyncMock()
+    regular = AsyncMock()
+    monkeypatch.setattr(task, "export_article_vectors_by_changes_async", exact)
+    monkeypatch.setattr(task, "export_article_vectors_to_postgres_async", regular)
+    dependencies = _fake_dependencies()
+
+    await task.sync_article_vectors_manually_async("update", [3], dependencies)
+
+    exact.assert_awaited_once_with("update", [3], dependencies)
+    regular.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_manual_vector_sync_selects_regular_sync_without_ids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    exact = AsyncMock()
+    regular = AsyncMock()
+    monkeypatch.setattr(task, "export_article_vectors_by_changes_async", exact)
+    monkeypatch.setattr(task, "export_article_vectors_to_postgres_async", regular)
+    dependencies = _fake_dependencies()
+
+    await task.sync_article_vectors_manually_async("", [], dependencies)
+
+    regular.assert_awaited_once_with(dependencies=dependencies)
+    exact.assert_not_awaited()
+
+
 def _patch_sources(
     monkeypatch: pytest.MonkeyPatch,
     *,

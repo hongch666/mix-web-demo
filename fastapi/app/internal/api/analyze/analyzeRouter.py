@@ -69,8 +69,7 @@ async def get_excel(
 ) -> ApiResponse:
     """获取文章数据Excel接口"""
 
-    file_path: str = await analyzeService.export_articles_to_excel(db)
-    oss_url: str = await analyzeService.upload_excel_to_oss(file_path)
+    oss_url: str = await analyzeService.export_and_upload_articles_excel(db)
     return success(oss_url)
 
 

@@ -8,7 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from app.core.constants import Messages, Prompts
 from app.internal.agents import AgentToolFactories
-from app.internal.services.llm.baseAIService import (
+from app.internal.services.llm import (
     BaseAiService,
     get_agent_prompt,
     initialize_ai_tools,
@@ -1047,6 +1047,37 @@ async def test_simple_chat_wraps_unexpected_error() -> None:
     result = await service.simple_chat("问题")
 
     assert result == Messages.LLM_INVALID_API_KEY("AI")
+
+
+@pytest.mark.anyio
+async def test_simple_chat_strict_mode_raises_when_llm_missing() -> None:
+    service = _make_service()
+
+    with pytest.raises(RuntimeError, match=Messages.INITIALIZATION_ERROR):
+        await service.simple_chat("问题", raise_on_error=True)
+
+
+@pytest.mark.anyio
+async def test_simple_chat_strict_mode_propagates_model_error() -> None:
+    service = _make_service(
+        llm=_FakeStreamingLLM(invoke_error=RuntimeError("unit failure"))
+    )
+
+    with pytest.raises(RuntimeError, match="unit failure"):
+        await service.simple_chat("问题", raise_on_error=True)
+
+
+@pytest.mark.anyio
+async def test_simple_chat_strict_mode_rejects_missing_agent_output() -> None:
+    router = _FakeIntentRouter(route_result=("log_analysis", "structured"))
+    service = _make_service(
+        llm=_FakeStreamingLLM(),
+        intent_router=router,
+        agent_executor=_FakeAgentExecutor(invoke_result={}),
+    )
+
+    with pytest.raises(RuntimeError, match=Messages.MESSAGE_RETRIEVAL_ERROR):
+        await service.simple_chat("查日志", raise_on_error=True)
 
 
 # ===== stream_chat =====

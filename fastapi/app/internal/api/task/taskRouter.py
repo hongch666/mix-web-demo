@@ -1,28 +1,23 @@
-import asyncio
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Body, Query, Request
 
 from app.core.base import ApiResponse, success
 from app.core.decorators import log, requireInternalToken
-from app.dependencies import NestjsClientDep, SpringClientDep
-from app.internal.cache import (
-    get_article_cache,
-    get_category_cache,
-    get_publish_time_cache,
-    get_statistics_cache,
-    get_wordcloud_cache,
+from app.dependencies import (
+    AnalyzeServiceDep,
+    DbSessionFactoryDep,
+    NestjsClientDep,
+    SpringClientDep,
 )
 from app.internal.schemas import Neo4jSyncDTO, VectorSyncDTO, WarehouseSyncDTO
 from app.internal.tasks import (
     build_vector_sync_dependencies,
-    export_article_vectors_by_changes_async,
-    export_article_vectors_to_postgres_async,
     initialize_article_content_hash_cache_async,
-    sync_mysql_to_neo4j_async,
-    sync_neo4j_changes_async,
+    sync_article_vectors_manually_async,
+    sync_neo4j_manually_async,
     sync_warehouse_async,
-    update_analyze_caches_async,
+    update_analyze_caches_manually_async,
 )
 
 router: APIRouter = APIRouter(
@@ -41,11 +36,16 @@ router: APIRouter = APIRouter(
 @requireInternalToken
 @log("手动触发更新分析接口缓存任务")
 async def task_update_analyze_caches(
-    request: Request, background_tasks: BackgroundTasks
+    request: Request,
+    background_tasks: BackgroundTasks,
+    analyze_service: AnalyzeServiceDep,
+    db_factory: DbSessionFactoryDep,
 ) -> ApiResponse:
     """手动触发更新分析接口缓存任务接口"""
 
-    background_tasks.add_task(update_analyze_caches_async)
+    background_tasks.add_task(
+        update_analyze_caches_manually_async, analyze_service, db_factory
+    )
     return success()
 
 
@@ -68,18 +68,11 @@ async def task_export_vector(
     携带文章主键时按主键精确同步，否则执行全量增量同步
     """
 
-    if payload is not None and payload.ids:
-        background_tasks.add_task(
-            export_article_vectors_by_changes_async,
-            payload.change_type,
-            payload.ids,
-            build_vector_sync_dependencies(),
-        )
-        return success()
-
     background_tasks.add_task(
-        export_article_vectors_to_postgres_async,
-        dependencies=build_vector_sync_dependencies(),
+        sync_article_vectors_manually_async,
+        payload.change_type if payload else "",
+        payload.ids if payload else [],
+        build_vector_sync_dependencies(),
     )
     return success()
 
@@ -115,21 +108,13 @@ async def task_init_hash_cache(
 @requireInternalToken
 @log("清除分析相关缓存")
 async def task_clear_analyze_caches(
-    request: Request, background_tasks: BackgroundTasks
+    request: Request,
+    background_tasks: BackgroundTasks,
+    analyze_service: AnalyzeServiceDep,
 ) -> ApiResponse:
     """清除所有分析相关缓存接口"""
 
-    async def _clear_caches() -> None:
-        # 5个缓存清除操作相互独立，gather 并行降低延迟
-        await asyncio.gather(
-            get_article_cache().clear_all(),
-            get_category_cache().clear_all(),
-            get_publish_time_cache().clear_all(),
-            get_statistics_cache().clear_all(),
-            get_wordcloud_cache().clear_all(),
-        )
-
-    background_tasks.add_task(_clear_caches)
+    background_tasks.add_task(analyze_service.clear_analyze_caches)
     return success()
 
 
@@ -157,11 +142,7 @@ async def task_sync_neo4j(
 
     events = [event.model_dump() for event in (payload.events if payload else [])]
     full_sync = force_full or bool(payload and payload.force_full)
-    if events and not full_sync:
-        background_tasks.add_task(sync_neo4j_changes_async, events)
-        return success()
-
-    background_tasks.add_task(sync_mysql_to_neo4j_async, force_full=full_sync)
+    background_tasks.add_task(sync_neo4j_manually_async, events, full_sync)
     return success()
 
 

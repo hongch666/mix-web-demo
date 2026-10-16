@@ -1024,6 +1024,17 @@ async def sync_neo4j_changes_async(events: list[dict[str, Any]]) -> None:
         await redis_client.unlock(lock_key, lock_value)
 
 
+async def sync_neo4j_manually_async(
+    events: list[dict[str, Any]], force_full: bool
+) -> None:
+    """根据手动触发请求选择精确同步或常规同步。"""
+    if events and not force_full:
+        await sync_neo4j_changes_async(events)
+        return
+
+    await sync_mysql_to_neo4j_async(force_full=force_full)
+
+
 async def _save_sync_time(sync_time: datetime) -> None:
     """将 Neo4j 同步时间保存到 Redis"""
     try:

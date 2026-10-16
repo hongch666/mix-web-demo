@@ -2,8 +2,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from app.internal.services.apiLog import apiLogService as service_module
-from app.internal.services.apiLog.apiLogService import ApiLogService
+from app.internal.services.apiLog import ApiLogService, apiLogService as service_module
 
 
 @pytest.fixture(autouse=True)

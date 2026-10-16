@@ -736,3 +736,16 @@ async def export_article_vectors_by_changes_async(
         await _sync_changed_articles(resolved_dependencies, change_type, ids)
     finally:
         await redis_client.unlock(lock_key, lock_value)
+
+
+async def sync_article_vectors_manually_async(
+    change_type: str,
+    ids: list[int],
+    dependencies: VectorSyncDependencies,
+) -> None:
+    """根据手动触发请求选择精确同步或常规同步。"""
+    if ids:
+        await export_article_vectors_by_changes_async(change_type, ids, dependencies)
+        return
+
+    await export_article_vectors_to_postgres_async(dependencies=dependencies)

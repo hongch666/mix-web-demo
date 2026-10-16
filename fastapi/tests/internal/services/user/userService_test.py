@@ -4,8 +4,11 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from dateutil.relativedelta import relativedelta
 
-from app.internal.services.user import userService as service_module
-from app.internal.services.user.userService import UserService, get_user_service
+from app.internal.services.user import (
+    UserService,
+    get_user_service,
+    userService as service_module,
+)
 
 
 @pytest.fixture

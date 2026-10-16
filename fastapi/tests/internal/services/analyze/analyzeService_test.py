@@ -6,7 +6,7 @@ import pytest
 
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
-from app.internal.services.analyze.analyzeService import AnalyzeService
+from app.internal.services.analyze import AnalyzeService
 
 analyze_module = importlib.import_module("app.internal.services.analyze.analyzeService")
 
@@ -15,6 +15,7 @@ def _fake_cache(return_value=None) -> MagicMock:
     cache = MagicMock()
     cache.get = AsyncMock(return_value=return_value)
     cache.set = AsyncMock()
+    cache.clear_all = AsyncMock()
     return cache
 
 
@@ -31,6 +32,52 @@ def _make_service(**overrides) -> AnalyzeService:
     }
     defaults.update(overrides)
     return AnalyzeService(**defaults)
+
+
+@pytest.mark.anyio
+async def test_clear_analyze_caches_clears_all_five_cache_types() -> None:
+    service = _make_service()
+
+    await service.clear_analyze_caches()
+
+    for cache in (
+        service._article_cache,
+        service._category_cache,
+        service._publish_time_cache,
+        service._statistics_cache,
+        service._wordcloud_cache,
+    ):
+        cache.clear_all.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_export_and_upload_articles_excel_passes_exported_path() -> None:
+    service = _make_service()
+    service.export_articles_to_excel = AsyncMock(return_value="/tmp/articles.xlsx")
+    service.upload_excel_to_oss = AsyncMock(
+        return_value="https://unit.example/articles.xlsx"
+    )
+    db = MagicMock()
+
+    url = await service.export_and_upload_articles_excel(db)
+
+    assert url == "https://unit.example/articles.xlsx"
+    service.export_articles_to_excel.assert_awaited_once_with(db)
+    service.upload_excel_to_oss.assert_awaited_once_with("/tmp/articles.xlsx")
+
+
+@pytest.mark.anyio
+async def test_export_and_upload_articles_excel_skips_upload_after_export_failure() -> (
+    None
+):
+    service = _make_service()
+    service.export_articles_to_excel = AsyncMock(side_effect=RuntimeError("导出失败"))
+    service.upload_excel_to_oss = AsyncMock()
+
+    with pytest.raises(RuntimeError, match="导出失败"):
+        await service.export_and_upload_articles_excel(MagicMock())
+
+    service.upload_excel_to_oss.assert_not_awaited()
 
 
 # ===== singleflight =====

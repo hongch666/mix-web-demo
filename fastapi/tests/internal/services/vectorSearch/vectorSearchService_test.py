@@ -5,10 +5,10 @@ import pytest
 
 from app.core.constants import Messages
 from app.internal.schemas import VectorSearchEnhanceReq
-from app.internal.services.vectorSearch import vectorSearchService as service_module
-from app.internal.services.vectorSearch.vectorSearchService import (
+from app.internal.services.vectorSearch import (
     VectorSearchService,
     get_vector_search_service,
+    vectorSearchService as service_module,
 )
 
 

@@ -6,7 +6,7 @@ import pytest
 
 from app.core.constants import AiUsers, HttpCode, Messages, Prompts
 from app.core.errors import BusinessException
-from app.internal.services.generate.generateService import GenerateService
+from app.internal.services.generate import GenerateService
 
 generate_module = importlib.import_module(
     "app.internal.services.generate.generateService"

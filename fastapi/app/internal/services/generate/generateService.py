@@ -15,12 +15,14 @@ from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
 from app.internal.clients import SpringClient, get_spring_client
 
-from ..llm.extend.claudeService import ClaudeService
-from ..llm.extend.deepseekService import DeepseekService
-from ..llm.extend.geminiService import GeminiService
-from ..llm.extend.glmService import GlmService
-from ..llm.extend.gptService import GptService
-from ..llm.extend.qwenService import QwenService
+from ..llm.extend import (
+    ClaudeService,
+    DeepseekService,
+    GeminiService,
+    GlmService,
+    GptService,
+    QwenService,
+)
 
 
 @dataclass(frozen=True)

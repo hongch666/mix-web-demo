@@ -6,10 +6,7 @@ import pytest
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 from app.internal.models import AiHistory
-from app.internal.services.aiHistory.aiHistoryService import (
-    AiHistoryService,
-    get_ai_history_service,
-)
+from app.internal.services.aiHistory import AiHistoryService, get_ai_history_service
 
 
 def _make_service_with_summary() -> tuple[

@@ -41,6 +41,37 @@ def _build_service(
     return task.KnowledgeGraphSyncService(neo4j_client, Mock())
 
 
+@pytest.mark.anyio
+async def test_manual_neo4j_sync_selects_changes_without_full_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    changes = AsyncMock()
+    regular = AsyncMock()
+    monkeypatch.setattr(task, "sync_neo4j_changes_async", changes)
+    monkeypatch.setattr(task, "sync_mysql_to_neo4j_async", regular)
+    events = [{"resource": "articles", "ids": [1]}]
+
+    await task.sync_neo4j_manually_async(events, False)
+
+    changes.assert_awaited_once_with(events)
+    regular.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_manual_neo4j_sync_full_flag_overrides_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    changes = AsyncMock()
+    regular = AsyncMock()
+    monkeypatch.setattr(task, "sync_neo4j_changes_async", changes)
+    monkeypatch.setattr(task, "sync_mysql_to_neo4j_async", regular)
+
+    await task.sync_neo4j_manually_async([{"ids": [1]}], True)
+
+    regular.assert_awaited_once_with(force_full=True)
+    changes.assert_not_awaited()
+
+
 # 时间格式化对 datetime 取 ISO 串、字符串直通、None 用当前时间
 def test_format_datetime_handles_datetime_text_and_empty() -> None:
     fixed = datetime(2026, 9, 1, 12, 0, 0)

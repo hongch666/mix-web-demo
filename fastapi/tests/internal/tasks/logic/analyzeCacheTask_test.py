@@ -32,6 +32,20 @@ def _build_analyze_service() -> Mock:
     return service
 
 
+@pytest.mark.anyio
+async def test_manual_update_passes_injected_service_and_session_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    update = AsyncMock()
+    monkeypatch.setattr(task, "update_analyze_caches_async", update)
+    service = _build_analyze_service()
+    db_factory = Mock()
+
+    await task.update_analyze_caches_manually_async(service, db_factory)
+
+    update.assert_awaited_once_with(service, db_factory)
+
+
 # 未获取到分布式锁时跳过缓存更新且不释放锁
 @pytest.mark.anyio
 async def test_skips_update_when_lock_is_not_acquired(

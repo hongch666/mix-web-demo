@@ -9,6 +9,13 @@ from app.core.constants import Messages, RedisKeys
 from app.core.db import get_redis_client
 
 
+async def update_analyze_caches_manually_async(
+    analyze_service: Any, db_factory: Callable[[], AsyncSession]
+) -> None:
+    """使用请求注入的分析服务执行手动缓存更新"""
+    await update_analyze_caches_async(analyze_service, db_factory)
+
+
 async def _update_analyze_caches_async(
     analyze_service: Optional[Any] = None,
     db_factory: Optional[Callable[[], AsyncSession]] = None,

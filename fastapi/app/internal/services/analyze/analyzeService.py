@@ -69,6 +69,16 @@ class AnalyzeService:
         self._nestjs_client: NestjsClient = nestjs_client or get_nestjs_client()
         self._spring_client: SpringClient = spring_client or get_spring_client()
 
+    async def clear_analyze_caches(self) -> None:
+        """并行清除分析接口使用的五类缓存"""
+        await asyncio.gather(
+            self._article_cache.clear_all(),
+            self._category_cache.clear_all(),
+            self._publish_time_cache.clear_all(),
+            self._statistics_cache.clear_all(),
+            self._wordcloud_cache.clear_all(),
+        )
+
     async def _get_singleflight_lock(self, key: str) -> asyncio.Lock:
         async with self._singleflight_guard:
             lock: Optional[asyncio.Lock] = self._singleflight_locks.get(key)
@@ -472,6 +482,10 @@ class AnalyzeService:
             oss_path=f"excel/{random_filename}",
         )
         return oss_url
+
+    async def export_and_upload_articles_excel(self, db: AsyncSession) -> str:
+        file_path = await self.export_articles_to_excel(db)
+        return await self.upload_excel_to_oss(file_path)
 
     async def get_article_statistics_service(self, db: AsyncSession) -> dict[str, Any]:
         """

@@ -15,6 +15,7 @@ from app.internal.services import (
     AlgorithmService,
     AnalyzeService,
     ApiLogService,
+    ChatApplicationService,
     ChatService,
     GenerateService,
     GraphSearchService,
@@ -24,6 +25,7 @@ from app.internal.services import (
     get_algorithm_service,
     get_analyze_service,
     get_apilog_service,
+    get_chat_application_service,
     get_chat_service,
     get_generate_service,
     get_graph_search_service,
@@ -166,6 +168,31 @@ ChatServiceDep = Annotated[ChatService, Depends(provide_chat_service)]
 AnalyzeServiceDep = Annotated[AnalyzeService, Depends(provide_analyze_service)]
 GenerateServiceDep = Annotated[GenerateService, Depends(provide_generate_service)]
 AiHistoryServiceDep = Annotated[AiHistoryService, Depends(provide_ai_history_service)]
+
+
+def provide_chat_application_service(
+    gpt_service: GptServiceDep,
+    gemini_service: GeminiServiceDep,
+    glm_service: GlmServiceDep,
+    deepseek_service: DeepseekServiceDep,
+    claude_service: ClaudeServiceDep,
+    qwen_service: QwenServiceDep,
+    history_service: AiHistoryServiceDep,
+) -> ChatApplicationService:
+    return get_chat_application_service(
+        gpt_service,
+        gemini_service,
+        glm_service,
+        deepseek_service,
+        claude_service,
+        qwen_service,
+        history_service,
+    )
+
+
+ChatApplicationServiceDep = Annotated[
+    ChatApplicationService, Depends(provide_chat_application_service)
+]
 ApiLogServiceDep = Annotated[ApiLogService, Depends(provide_api_log_service)]
 GraphSearchServiceDep = Annotated[
     GraphSearchService, Depends(provide_graph_search_service)

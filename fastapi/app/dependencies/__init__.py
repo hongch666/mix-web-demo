@@ -6,7 +6,12 @@ from .caches import (
     WordcloudCacheDep,
 )
 from .clients import GozeroClientDep, NestjsClientDep, SpringClientDep
-from .database import ClickHouseSession, ClickHouseSessionFactoryDep, DbSession
+from .database import (
+    ClickHouseSession,
+    ClickHouseSessionFactoryDep,
+    DbSession,
+    DbSessionFactoryDep,
+)
 from .llm import (
     ClaudeServiceDep,
     DeepseekServiceDep,
@@ -27,6 +32,7 @@ from .services import (
     AlgorithmServiceDep,
     AnalyzeServiceDep,
     ApiLogServiceDep,
+    ChatApplicationServiceDep,
     ChatServiceDep,
     GenerateServiceDep,
     GraphSearchServiceDep,
@@ -38,6 +44,7 @@ from .tools import AgentToolFactoriesDep
 
 __all__: list[str] = [
     "DbSession",
+    "DbSessionFactoryDep",
     "ClickHouseSession",
     "ClickHouseSessionFactoryDep",
     "AiHistoryMapperDep",
@@ -59,6 +66,7 @@ __all__: list[str] = [
     "AiHistoryServiceDep",
     "ApiLogServiceDep",
     "ChatServiceDep",
+    "ChatApplicationServiceDep",
     "GraphSearchServiceDep",
     "UserServiceDep",
     "GptServiceDep",
