@@ -37,6 +37,7 @@ public class ServiceWebClient {
     private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
     private static final String USER_ID_HEADER = HeaderNames.USER_ID;
     private static final String USERNAME_HEADER = HeaderNames.USERNAME;
+    private static final String SESSION_ID_HEADER = HeaderNames.SESSION_ID;
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String SERVICE_NAME = "spring";
     private static final ParameterizedTypeReference<Result<Object>> RESULT_TYPE = new ParameterizedTypeReference<>() {
@@ -80,6 +81,8 @@ public class ServiceWebClient {
             long startedAt = System.nanoTime();
             Long userId = UserContext.getUserId(context);
             String username = UserContext.getUsername(context);
+            String sessionId = UserContext.getSessionId(context);
+            String accessToken = UserContext.getToken(context);
             String token = internalTokenUtil.generateInternalToken(userId == null ? -1L : userId, SERVICE_NAME);
 
             WebClient.RequestBodySpec request = webClientBuilder.build()
@@ -88,7 +91,7 @@ public class ServiceWebClient {
                     uriBuilder, serviceName, path, requestOptions.getQueryParameters(),
                     requestOptions.getPathVariables()))
                 .headers(requestHeaders -> applyHeaders(
-                    requestHeaders, requestOptions.getHeaders(), userId, username, token));
+                    requestHeaders, requestOptions.getHeaders(), userId, username, sessionId, accessToken, token));
             WebClient.RequestHeadersSpec<?> requestSpec = requestOptions.getBody() == null
                 ? request
                 : request.bodyValue(requestOptions.getBody());
@@ -145,6 +148,8 @@ public class ServiceWebClient {
         HttpHeaders customHeaders,
         Long userId,
         String username,
+        String sessionId,
+        String accessToken,
         String internalToken) {
         if (customHeaders != null) {
             requestHeaders.addAll(customHeaders);
@@ -154,6 +159,9 @@ public class ServiceWebClient {
         requestHeaders.set(INTERNAL_TOKEN_HEADER, BEARER_PREFIX + internalToken);
         setOrRemove(requestHeaders, USER_ID_HEADER, userId == null ? null : userId.toString());
         setOrRemove(requestHeaders, USERNAME_HEADER, username);
+        setOrRemove(requestHeaders, SESSION_ID_HEADER, sessionId);
+        setOrRemove(requestHeaders, HttpHeaders.AUTHORIZATION,
+            accessToken == null || accessToken.isBlank() ? null : BEARER_PREFIX + accessToken);
     }
 
     private void setOrRemove(HttpHeaders headers, String name, String value) {

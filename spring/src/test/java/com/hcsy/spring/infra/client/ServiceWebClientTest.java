@@ -1,6 +1,7 @@
 package com.hcsy.spring.infra.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -15,6 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -58,7 +60,9 @@ class ServiceWebClientTest {
             HttpMethod.GET, "fastapi", "/health", ServiceRequestOptions.empty(), "fallback")
             .contextWrite(Context.of(
                 UserContext.CONTEXT_KEY_USER_ID, 7L,
-                UserContext.CONTEXT_KEY_USERNAME, "alice"));
+                UserContext.CONTEXT_KEY_USERNAME, "alice",
+                UserContext.CONTEXT_KEY_SESSION_ID, "session-7",
+                UserContext.CONTEXT_KEY_TOKEN, "access-token"));
 
         StepVerifier.create(response)
             .assertNext(result -> assertEquals(HttpCode.OK, result.getCode()))
@@ -67,6 +71,8 @@ class ServiceWebClientTest {
         assertEquals("http://fastapi/health", captured.get().url().toString());
         assertEquals("7", captured.get().headers().getFirst(HeaderNames.USER_ID));
         assertEquals("alice", captured.get().headers().getFirst(HeaderNames.USERNAME));
+        assertEquals("session-7", captured.get().headers().getFirst(HeaderNames.SESSION_ID));
+        assertEquals("Bearer access-token", captured.get().headers().getFirst(HttpHeaders.AUTHORIZATION));
         assertEquals("Bearer internal-token", captured.get().headers().getFirst("X-Internal-Token"));
         verify(tokenUtil).generateInternalToken(7L, "spring");
     }
@@ -76,10 +82,14 @@ class ServiceWebClientTest {
     @Test
     @DisplayName("未登录系统调用使用 userId=-1 的内部 Token")
     void generatesSystemInternalTokenWithoutUserContext() {
+        AtomicReference<ClientRequest> captured = new AtomicReference<>();
         InternalTokenUtil tokenUtil = mock(InternalTokenUtil.class);
         when(tokenUtil.generateInternalToken(-1L, "spring")).thenReturn("system-token");
         ServiceWebClient client = createClient(
-            request -> Mono.just(jsonResponse("{\"code\":200,\"message\":\"ok\",\"data\":null}")),
+            request -> {
+                captured.set(request);
+                return Mono.just(jsonResponse("{\"code\":200,\"message\":\"ok\",\"data\":null}"));
+            },
             tokenUtil,
             RetryRegistry.ofDefaults());
 
@@ -89,6 +99,8 @@ class ServiceWebClientTest {
             .verifyComplete();
 
         verify(tokenUtil).generateInternalToken(-1L, "spring");
+        assertNull(captured.get().headers().getFirst(HeaderNames.SESSION_ID));
+        assertNull(captured.get().headers().getFirst(HttpHeaders.AUTHORIZATION));
     }
 
     // 验证该场景的预期行为
