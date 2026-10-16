@@ -111,6 +111,8 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
 17. **业务配置统一经 YAML 导入环境变量**：服务配置值在对应 `application.yaml` 中声明 `${ENV_NAME:default}`，业务代码通过项目配置加载器或框架配置服务读取；禁止在业务模块直接调用 `os.getenv`、`process.env`、`System.getenv`、`os.LookupEnv` 等绕过 YAML。环境变量直接读取仅保留在配置加载器/启动引导，以及第三方库必须从标准进程环境读取且 YAML 无法替代的场景（如 HTTP 代理变量），新增例外需说明原因。可选变量当前不启用时，在 `.env`、`.env.example`、`.env.docker` 中注释变量行，并注明未配置时的默认行为；不要用空值赋值伪装成已配置
 18. **接口响应必须使用具名结构，禁止匿名 Map**：控制器/路由的返回类型要有明确的结构定义并携带字段说明，便于 Swagger 呈现与下游解析。各服务落地：Spring 用 `entity/vo/` 下的 VO（字段加 `@Schema`）、NestJS 用 `common/utils/swaggerResponse.ts` 的 `SchemaObject` 加响应 DTO、FastAPI 用 `internal/schemas/` 的 Pydantic 模型、GoZero 用 `.api" 里的具名 `type`。**Spring 额外硬性要求**：禁止 `Map<String, Object>`（含 `java.util.Map`）作为控制器返回类型，`./mix lint spring`会检测；用于替换匿名 Map 的 VO 必须保持原有下划线字段名（类上加`@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)`），否则下游 FastAPI/GoZero 会解析不到字段；确实只能使用 Map 的场景（如列由运行时决定的动态查询结果）必须显式豁免：方法或其注解上方写 `// vo-exempt: 原因`，整个控制器写 `// vo-exempt-class: 原因`
 
+19. **接口层只处理协议边界**：Controller、Handler、Router 负责参数绑定与校验、读取请求身份、调用面向用例的 Service/Logic、包装响应；可保留分页包装、简单 DTO/VO 转换、重定向和连接升级。关联查询、业务条件判断、多个业务服务的顺序编排、落库决策、缓存批量操作和异步任务执行放在应用服务、Logic 或任务组件。检查方法体内多个业务依赖调用、直接访问 Repository/Model/Cache、手工创建 DB 会话或自行维护聊天状态的情况
+
 ## Spring 服务（spring/，WebFlux 响应式栈）
 
 ### 目录组织（入口、应用、基础设施与横切）
@@ -141,6 +143,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 
 - **控制器返回类型禁止匿名 Map**：一律用 `entity/vo/` 下的 VO 并给字段加 `@Schema`，`./mix lint spring` 会检查（`scripts/controller-vo.py`）。把原先的 `Map<String, Object>` 换成 VO 时，类上必须加 `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)` 保持 `user_id`、`create_time` 这类下划线字段名，否则 FastAPI/GoZero 按原字段名解析会取不到值；只有运行时结构不固定（动态列、动态键）时才允许 Map，并在方法或其注解上方写 `// vo-exempt: 原因`，整类场景写 `// vo-exempt-class: 原因`
 - **依赖方向**：`web` 调用 `application/service`，应用服务使用 `infra` 的客户端与 Repository；`application/task` 调用业务服务，`application/sync` 的切面调用同步服务。`common` 不依赖 `web` 或 `application`；`entity/assembler` 现有实现依赖 `infra/persistence/repository`，新增跨层组件前先确认依赖方向
+- 文章创建/更新的作者解析、评论创建/更新的关联规则与评论列表补全由应用服务执行；Controller 只映射原接口的成功或缺失响应。定时任务的异步订阅由任务组件启动，Controller 只触发任务。保留 `@ArticleSync` / `@DataSync` 所需的创建主键与成功结果形态
 - ORM 是 Spring Data R2DBC，不是 MyBatisPlus：Repository 继承 `ReactiveCrudRepository<T, ID>`；自定义 SQL 用 `@Query` + `:param`，更新加 `@Modifying`；事务用 `TransactionalOperator.transactional()` 包裹，禁止 `@Transactional`
 - Controller 返回 `Mono<Result<T>>` / `Flux<Result<T>>`，Service 返回 `Mono<T>` / `Flux<T>`；禁止返回裸类型、禁止调用 `.block()`
 - 请求上下文走 Reactor Context：`UserContextWebFilter` 用 `.contextWrite()` 写入，业务用 `Mono.deferContextual(ctx -> ...)` 读取 `UserContext.getUserId(ctx)`；禁止 `ThreadLocal`、`RequestContextHolder`、`OncePerRequestFilter`、`HandlerInterceptor`
@@ -200,6 +203,8 @@ module/system/    系统业务模块（apiLog、articleLog、sqlTools 等）
 
 ## FastAPI 服务（fastapi/）
 
+聊天路由只保留请求绑定与 `StreamingResponse`：模型选择、用户身份兜底、LangSmith 生命周期、聊天历史保存、流式累计状态和 SSE 帧格式转换归 `ChatApplicationService`，路由直接调用该服务的 `stream_frames`。流式格式测试与聊天用例测试统一放在 `tests/internal/services/chat/chatApplicationService_test.py`。模型失败以异常或明确状态传递，不能通过回复文本是否含“错误”“失败”等词判断。手动任务路由只登记后台任务，同步模式选择归 `tasks/logic/`；缓存清理清单与并发执行由注入的分析 Service 负责，导出并上传等连续业务步骤也由 Service 封装
+
 ### 目录组织
 
 ```
@@ -227,6 +232,7 @@ app/internal/agents     LangChain Agent 与工具
 - 全异步：接口必须 `async def`；优先用 asyncio 生态；同步阻塞库（clickhouse_driver、连接池同步接口）用 `asyncio.to_thread(...)` 包裹后 `await`
 - 并行：独立 IO 用 `asyncio.gather`；循环内并行把每次迭代封装为内部 async 函数后 gather
 - `__init__.py` 导出：包内有 `__init__.py` 导出的功能，导入一律走包路径（`from app.internal.crud import UserAnalysisMapper`），禁止深入到文件路径；新增模块必须同步更新 `__init__.py` 导出。该约定由 `./mix lint` 里的 `scripts/package-imports.py` 检查（目标目录没有 `__init__.py`、与目标同包、或导入方位于目标包导入链上时不受约束），历史违规可执行 `python scripts/package-imports.py --fix fastapi` 批量整理
+- `internal/services` 每个业务子目录及 `llm/extend` 都在自身 `__init__.py` 导出公开类和工厂；顶层 `services/__init__.py` 只从子包聚合导出，避免跨层直接指向具体服务文件。新增业务服务时同步维护子包与顶层两级导出
 - 类型标注全覆盖；`import` 全部在文件顶部，禁止逻辑中导入；生成后检查并删除未使用的 import
 - **入参校验用 Pydantic 模型**（放 `internal/schemas/`，文件名 `xxxDTO.py`）：字段用 `Field(...)` 声明，单字段规则用 `@field_validator` + `PydanticCustomError`（中文消息，参考 `createHistoryDTO.py`），请求体禁止用裸 `dict` / `Any` 接收；新增接口必须带校验（通用规则 13）
 - **统一响应模型使用泛型**：`core/base/response.py` 的 `ApiResponse[T]` 负责声明 `code`、`msg` 和 `data`，路由必须通过 `response_model=ApiResponse[具体类型]` 暴露返回结构。已知结构使用领域 DTO、列表或字典泛型；只有运行时结构确实不固定时才使用 `ApiResponse[object]`，禁止退回不带类型参数的 `ApiResponse`
@@ -340,7 +346,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 - **帧结构的单一来源是 `.api`**：`ChatSSEMessage`、`ChatWsMessage` 声明在 `api/chat/stream.api`，接口的 `returns` 直接指向它们，**不要**再建空的 `XxxConnectResp` 占位类型。goctl 生成类型用 `Id / UserId / SenderId / ReceiverId / MessageId` 命名，与手写结构旧的 `ID / UserID / ...` 不同，跨用时需改字段名并把 `uint` 改 `uint64`
 - hub 与实时分发在 `internal/hub`（`chatHub`、`sseHub`、`chatRealtimeDispatcher`、`realtimeTypes`）：本机连接管理 + 跨 Pod 事件分发。内部信封 `ChatRealtimeEvent` 只在对内使用，**不进 `.api`**
-- **不要采用 `sse_handler.tpl` 的「每请求 chan + handler 内 flush 循环」单机模式**：跨实例广播依赖 `internal/hub` + `common/pubsub/redisPubSub.go` 的 Redis Pub/Sub，照模板改会丢掉多副本下的消息投递。连接接管（`HandleConnection` / `upgrader.Upgrade`）必须留在 handler，且接管前不得写 `w`。该模板内已加警示注释；当前 `.api` 的 `/sse/chat` 与 `/ws/chat` 都是普通 `get` 路由，goctl 实际走 `handler.tpl` 生成，两个 handler 都已手工改为委托 hub
+- **不要采用 `sse_handler.tpl` 的「每请求 chan + handler 内 flush 循环」单机模式**：跨实例广播依赖 `internal/hub` + `common/pubsub/redisPubSub.go` 的 Redis Pub/Sub，照模板改会丢掉多副本下的消息投递。Handler 保留 `upgrader.Upgrade` 与升级前的身份解析，升级后将连接交给 Hub；SSE Handler 将连接生命周期交给 `SSEHub.HandleConnection`。Hub 的消息已读回调由 `ServiceContext` 装配，不让 Handler 直接接触数据模型；接管前不得写 `w`。当前 `.api` 的 `/sse/chat` 与 `/ws/chat` 都是普通 `get` 路由，goctl 实际走 `handler.tpl` 生成
 - **`common/pubsub.RedisPubSub` 是「一个实例一个频道」**：频道在 `NewRedisPubSub(client, logger, channel)` 构造时绑定，`Publish` / `Start` 都不收频道参数。内部只持有单个 `*redis.PubSub` 引用，所以**同一个实例不能订阅第二个频道**（会覆盖前一个订阅的引用、造成连接泄漏与丢消息）。需要新频道就新建实例，频道常量统一放 `common/constants/redisKeys.go`
 - 心跳与初始帧属协议内容：SSE 连接建立时下发 `{"type":"connected"}`，WS 收到 `{"type":"ping"}` 回 `{"type":"pong"}`
 
