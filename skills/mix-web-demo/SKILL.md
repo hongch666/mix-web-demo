@@ -126,12 +126,11 @@ web/sync/annotation|aspect  变更同步注解与切面
 application/service      业务接口
 application/service/impl 业务实现
 application/task  定时调度
-infra/persistence/repository   R2DBC Repository
-infra/persistence/DatabaseInitializer  数据库初始化
+infra/repository R2DBC Repository
 entity/po|vo|dto|event|projection  实体、视图对象、领域事件与投影（跨服务变更事件放 entity/event）
-entity/assembler 实体到 VO 的装配器（依赖 infra/persistence/repository，供 service/impl 复用，跨包调用需 public）
+entity/assembler 实体到 VO 的装配器（依赖 infra/repository，供 service/impl 复用，跨包调用需 public）
 infra/client     远程调用客户端（ServiceWebClient）
-bootstrap       启动环境与初始化消息（Starter、DotenvInitializer、InitMessageInitializer）
+bootstrap       启动环境与初始化（Starter、DotenvInitializer、InitMessageInitializer、DatabaseInitializer）
 config|config/properties  Bean 配置与配置属性
 observability   指标记录（MetricsRecorder）
 common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
@@ -142,7 +141,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 ### 硬性约定
 
 - **控制器返回类型禁止匿名 Map**：一律用 `entity/vo/` 下的 VO 并给字段加 `@Schema`，`./mix lint spring` 会检查（`scripts/controller-vo.py`）。把原先的 `Map<String, Object>` 换成 VO 时，类上必须加 `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)` 保持 `user_id`、`create_time` 这类下划线字段名，否则 FastAPI/GoZero 按原字段名解析会取不到值；只有运行时结构不固定（动态列、动态键）时才允许 Map，并在方法或其注解上方写 `// vo-exempt: 原因`，整类场景写 `// vo-exempt-class: 原因`
-- **依赖方向**：`web` 调用 `application/service`，应用服务使用 `infra` 的客户端与 Repository；`application/task` 调用业务服务，`web/sync` 的切面调用同步服务。`common` 不依赖 `web` 或 `application`；`entity/assembler` 现有实现依赖 `infra/persistence/repository`，新增跨层组件前先确认依赖方向
+- **依赖方向**：`web` 调用 `application/service`，应用服务使用 `infra` 的客户端与 Repository；`application/task` 调用业务服务，`web/sync` 的切面调用同步服务。`common` 不依赖 `web` 或 `application`；`entity/assembler` 现有实现依赖 `infra/repository`，新增跨层组件前先确认依赖方向
 - 文章创建/更新的作者解析、评论创建/更新的关联规则与评论列表补全由应用服务执行；Controller 只映射原接口的成功或缺失响应。定时任务的异步订阅由任务组件启动，Controller 只触发任务。保留 `@ArticleSync` / `@DataSync` 所需的创建主键与成功结果形态
 - ORM 是 Spring Data R2DBC，不是 MyBatisPlus：Repository 继承 `ReactiveCrudRepository<T, ID>`；自定义 SQL 用 `@Query` + `:param`，更新加 `@Modifying`；事务用 `TransactionalOperator.transactional()` 包裹，禁止 `@Transactional`
 - Controller 返回 `Mono<Result<T>>` / `Flux<Result<T>>`，Service 返回 `Mono<T>` / `Flux<T>`；禁止返回裸类型、禁止调用 `.block()`
