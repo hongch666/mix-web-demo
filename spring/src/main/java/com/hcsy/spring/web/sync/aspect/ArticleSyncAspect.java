@@ -1,4 +1,4 @@
-package com.hcsy.spring.application.sync.aspect;
+package com.hcsy.spring.web.sync.aspect;
 
 import java.util.List;
 
@@ -10,7 +10,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.application.service.AsyncSyncService;
-import com.hcsy.spring.application.sync.annotation.ArticleSync;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RabbitQueues;
 import com.hcsy.spring.common.constants.SyncAction;
@@ -20,6 +19,7 @@ import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.SyncEventCollector;
 import com.hcsy.spring.entity.event.ArticleLogMessage;
 import com.hcsy.spring.entity.event.ChangeEvent;
+import com.hcsy.spring.web.sync.annotation.ArticleSync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

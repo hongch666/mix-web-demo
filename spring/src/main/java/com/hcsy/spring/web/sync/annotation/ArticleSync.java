@@ -1,4 +1,4 @@
-package com.hcsy.spring.application.sync.annotation;
+package com.hcsy.spring.web.sync.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

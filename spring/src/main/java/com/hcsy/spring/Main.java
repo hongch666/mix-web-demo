@@ -3,7 +3,7 @@ package com.hcsy.spring;
 import org.springframework.boot.SpringApplication;
 
 import com.hcsy.spring.bootstrap.DotenvInitializer;
-import com.hcsy.spring.bootstrap.annotation.Starter;
+import com.hcsy.spring.bootstrap.Starter;
 
 @Starter
 public class Main {

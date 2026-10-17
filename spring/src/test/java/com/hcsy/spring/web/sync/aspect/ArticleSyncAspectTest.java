@@ -1,4 +1,4 @@
-package com.hcsy.spring.application.sync.aspect;
+package com.hcsy.spring.web.sync.aspect;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -27,7 +27,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hcsy.spring.application.service.AsyncSyncService;
-import com.hcsy.spring.application.sync.annotation.ArticleSync;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.RabbitQueues;
 import com.hcsy.spring.common.constants.SyncAction;
@@ -43,6 +42,7 @@ import com.hcsy.spring.entity.dto.ArticleLikeDTO;
 import com.hcsy.spring.entity.dto.FocusDTO;
 import com.hcsy.spring.entity.event.ArticleLogMessage;
 import com.hcsy.spring.entity.event.ChangeEvent;
+import com.hcsy.spring.web.sync.annotation.ArticleSync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Mono;

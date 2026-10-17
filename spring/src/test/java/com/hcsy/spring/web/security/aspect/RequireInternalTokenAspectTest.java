@@ -18,7 +18,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import reactor.util.context.Context;
 
-class InternalTokenAspectTest {
+class RequireInternalTokenAspectTest {
     // 验证该场景的预期行为
     @Test
     @DisplayName("缺少内部令牌时拒绝请求")
@@ -27,7 +27,7 @@ class InternalTokenAspectTest {
         ProceedingJoinPoint point = mock(ProceedingJoinPoint.class);
         when(point.proceed()).thenReturn(Mono.just("ok"));
         RequireInternalToken annotation = mock(RequireInternalToken.class);
-        Mono<?> result = (Mono<?>) new InternalTokenAspect(tokens, mock(SimpleLogger.class))
+        Mono<?> result = (Mono<?>) new RequireInternalTokenAspect(tokens, mock(SimpleLogger.class))
             .validateInternalToken(point, annotation);
         StepVerifier.create(result)
             .expectErrorMatches(e -> e instanceof BusinessException b && b.getHttpStatus() == HttpCode.UNAUTHORIZED)
@@ -44,7 +44,7 @@ class InternalTokenAspectTest {
         when(point.proceed()).thenReturn(Mono.just("ok"));
         when(point.getSignature()).thenReturn(mock(Signature.class));
         RequireInternalToken annotation = mock(RequireInternalToken.class);
-        Mono<?> result = (Mono<?>) new InternalTokenAspect(tokens, mock(SimpleLogger.class))
+        Mono<?> result = (Mono<?>) new RequireInternalTokenAspect(tokens, mock(SimpleLogger.class))
             .validateInternalToken(point, annotation);
         StepVerifier.create(result.contextWrite(Context.of(UserContext.CONTEXT_KEY_INTERNAL_TOKEN, "token")))
             .expectNextMatches("ok"::equals).verifyComplete();

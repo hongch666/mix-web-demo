@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hcsy.spring.application.service.ImageCaptchaService;
 import com.hcsy.spring.application.service.TokenService;
 import com.hcsy.spring.application.service.UserService;
-import com.hcsy.spring.application.sync.annotation.DataSync;
 import com.hcsy.spring.common.constants.BusinessType;
 import com.hcsy.spring.common.constants.HeaderNames;
 import com.hcsy.spring.common.constants.HttpCode;
@@ -56,6 +55,7 @@ import com.hcsy.spring.entity.vo.UserVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.sync.annotation.DataSync;
 
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;

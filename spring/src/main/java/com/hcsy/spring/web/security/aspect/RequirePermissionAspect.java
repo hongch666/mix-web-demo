@@ -37,7 +37,7 @@ import reactor.core.publisher.Mono;
 @Component
 @Order(20)
 @RequiredArgsConstructor
-public class PermissionValidationAspect {
+public class RequirePermissionAspect {
 
     private final PermissionChecker permissionChecker;
     private final SimpleLogger logger;

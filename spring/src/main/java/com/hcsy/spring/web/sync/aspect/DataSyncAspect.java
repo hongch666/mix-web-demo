@@ -1,4 +1,4 @@
-package com.hcsy.spring.application.sync.aspect;
+package com.hcsy.spring.web.sync.aspect;
 
 import java.util.Set;
 
@@ -9,9 +9,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.application.service.AsyncSyncService;
-import com.hcsy.spring.application.sync.annotation.DataSync;
 import com.hcsy.spring.common.utils.SyncEventCollector;
 import com.hcsy.spring.entity.event.ChangeEvent;
+import com.hcsy.spring.web.sync.annotation.DataSync;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

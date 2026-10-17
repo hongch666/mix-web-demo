@@ -1,4 +1,4 @@
-package com.hcsy.spring.application.sync.aspect;
+package com.hcsy.spring.web.sync.aspect;
 
 import java.lang.annotation.Annotation;
 

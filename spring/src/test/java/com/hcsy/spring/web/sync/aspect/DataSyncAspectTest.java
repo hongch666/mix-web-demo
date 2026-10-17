@@ -1,4 +1,4 @@
-package com.hcsy.spring.application.sync.aspect;
+package com.hcsy.spring.web.sync.aspect;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,13 +23,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hcsy.spring.application.service.AsyncSyncService;
-import com.hcsy.spring.application.sync.annotation.DataSync;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.event.ChangeEvent;
+import com.hcsy.spring.web.sync.annotation.DataSync;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;

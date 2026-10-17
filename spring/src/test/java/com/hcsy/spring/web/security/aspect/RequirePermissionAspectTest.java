@@ -37,18 +37,18 @@ import reactor.test.StepVerifier;
 import reactor.util.context.Context;
 
 @ExtendWith(MockitoExtension.class)
-class PermissionValidationAspectTest {
+class RequirePermissionAspectTest {
 
     @Mock
     private PermissionChecker permissionChecker;
     @Mock
     private SimpleLogger logger;
 
-    private PermissionValidationAspect aspect;
+    private RequirePermissionAspect aspect;
 
     @BeforeEach
     void setUp() {
-        aspect = new PermissionValidationAspect(permissionChecker, logger);
+        aspect = new RequirePermissionAspect(permissionChecker, logger);
     }
 
     // 验证该场景的预期行为

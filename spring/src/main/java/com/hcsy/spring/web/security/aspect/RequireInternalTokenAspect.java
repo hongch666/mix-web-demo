@@ -27,7 +27,7 @@ import reactor.core.publisher.Mono;
 @Component
 @Order(10)
 @RequiredArgsConstructor
-public class InternalTokenAspect {
+public class RequireInternalTokenAspect {
 
     private final InternalTokenUtil internalTokenUtil;
     private final SimpleLogger logger;

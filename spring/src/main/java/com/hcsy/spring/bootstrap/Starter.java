@@ -1,4 +1,4 @@
-package com.hcsy.spring.bootstrap.annotation;
+package com.hcsy.spring.bootstrap;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
