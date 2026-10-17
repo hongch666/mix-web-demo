@@ -24,7 +24,7 @@ import com.hcsy.spring.entity.assembler.ArticleInteractionAssembler;
 import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
 import com.hcsy.spring.entity.vo.IdCountVO;
-import com.hcsy.spring.infra.persistence.repository.ArticleCollectRepository;
+import com.hcsy.spring.infra.repository.ArticleCollectRepository;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

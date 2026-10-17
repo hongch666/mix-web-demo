@@ -27,10 +27,10 @@ import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.User;
-import com.hcsy.spring.infra.persistence.repository.ArticleRepository;
-import com.hcsy.spring.infra.persistence.repository.CategoryRepository;
-import com.hcsy.spring.infra.persistence.repository.SubCategoryRepository;
-import com.hcsy.spring.infra.persistence.repository.UserRepository;
+import com.hcsy.spring.infra.repository.ArticleRepository;
+import com.hcsy.spring.infra.repository.CategoryRepository;
+import com.hcsy.spring.infra.repository.SubCategoryRepository;
+import com.hcsy.spring.infra.repository.UserRepository;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

@@ -18,7 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hcsy.spring.entity.po.Article;
-import com.hcsy.spring.infra.persistence.repository.WarehouseSyncRepository;
+import com.hcsy.spring.infra.repository.WarehouseSyncRepository;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

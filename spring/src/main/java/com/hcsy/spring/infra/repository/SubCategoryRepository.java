@@ -1,4 +1,4 @@
-package com.hcsy.spring.infra.persistence.repository;
+package com.hcsy.spring.infra.repository;
 
 import java.time.LocalDateTime;
 

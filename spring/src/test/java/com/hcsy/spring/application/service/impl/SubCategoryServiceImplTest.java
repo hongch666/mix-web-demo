@@ -14,7 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hcsy.spring.entity.po.SubCategory;
-import com.hcsy.spring.infra.persistence.repository.SubCategoryRepository;
+import com.hcsy.spring.infra.repository.SubCategoryRepository;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

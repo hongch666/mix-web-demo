@@ -1,4 +1,4 @@
-package com.hcsy.spring.infra.persistence;
+package com.hcsy.spring.bootstrap;
 
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;

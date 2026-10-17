@@ -28,8 +28,8 @@ import com.hcsy.spring.entity.vo.CategoryVO;
 import com.hcsy.spring.entity.vo.SubCategorySyncVO;
 import com.hcsy.spring.entity.vo.SubCategoryVO;
 import com.hcsy.spring.entity.vo.SubCategoryWithParentVO;
-import com.hcsy.spring.infra.persistence.repository.CategoryRepository;
-import com.hcsy.spring.infra.persistence.repository.SubCategoryRepository;
+import com.hcsy.spring.infra.repository.CategoryRepository;
+import com.hcsy.spring.infra.repository.SubCategoryRepository;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;

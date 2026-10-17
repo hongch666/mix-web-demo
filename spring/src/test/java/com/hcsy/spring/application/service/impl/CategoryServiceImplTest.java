@@ -31,8 +31,8 @@ import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
-import com.hcsy.spring.infra.persistence.repository.CategoryRepository;
-import com.hcsy.spring.infra.persistence.repository.SubCategoryRepository;
+import com.hcsy.spring.infra.repository.CategoryRepository;
+import com.hcsy.spring.infra.repository.SubCategoryRepository;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

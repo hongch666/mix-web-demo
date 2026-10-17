@@ -22,7 +22,7 @@ import com.hcsy.spring.entity.vo.ArticleCollectVO;
 import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
 import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
-import com.hcsy.spring.infra.persistence.repository.ArticleCollectRepository;
+import com.hcsy.spring.infra.repository.ArticleCollectRepository;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

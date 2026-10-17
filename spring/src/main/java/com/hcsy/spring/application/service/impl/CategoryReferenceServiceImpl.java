@@ -11,8 +11,8 @@ import com.hcsy.spring.entity.dto.CategoryReferenceCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryReferenceUpdateDTO;
 import com.hcsy.spring.entity.po.CategoryReference;
 import com.hcsy.spring.entity.vo.CategoryReferenceVO;
-import com.hcsy.spring.infra.persistence.repository.CategoryReferenceRepository;
-import com.hcsy.spring.infra.persistence.repository.SubCategoryRepository;
+import com.hcsy.spring.infra.repository.CategoryReferenceRepository;
+import com.hcsy.spring.infra.repository.SubCategoryRepository;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

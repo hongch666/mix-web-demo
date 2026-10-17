@@ -26,8 +26,8 @@ import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.FocusSyncVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
-import com.hcsy.spring.infra.persistence.repository.FocusRepository;
-import com.hcsy.spring.infra.persistence.repository.UserRepository;
+import com.hcsy.spring.infra.repository.FocusRepository;
+import com.hcsy.spring.infra.repository.UserRepository;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;

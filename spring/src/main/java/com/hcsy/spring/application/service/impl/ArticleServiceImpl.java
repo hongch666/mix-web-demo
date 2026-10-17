@@ -32,10 +32,10 @@ import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 import com.hcsy.spring.entity.vo.CategoryArticleCountVO;
 import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MonthlyPublishCountVO;
-import com.hcsy.spring.infra.persistence.repository.ArticleRepository;
-import com.hcsy.spring.infra.persistence.repository.CategoryRepository;
-import com.hcsy.spring.infra.persistence.repository.SubCategoryRepository;
-import com.hcsy.spring.infra.persistence.repository.UserRepository;
+import com.hcsy.spring.infra.repository.ArticleRepository;
+import com.hcsy.spring.infra.repository.CategoryRepository;
+import com.hcsy.spring.infra.repository.SubCategoryRepository;
+import com.hcsy.spring.infra.repository.UserRepository;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;

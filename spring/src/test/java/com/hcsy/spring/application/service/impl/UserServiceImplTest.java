@@ -39,7 +39,7 @@ import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.UserLoginVO;
-import com.hcsy.spring.infra.persistence.repository.UserRepository;
+import com.hcsy.spring.infra.repository.UserRepository;
 import com.hcsy.spring.observability.MetricsRecorder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

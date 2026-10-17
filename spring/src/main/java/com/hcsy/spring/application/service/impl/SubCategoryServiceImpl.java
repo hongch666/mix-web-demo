@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.hcsy.spring.application.service.SubCategoryService;
 import com.hcsy.spring.entity.po.SubCategory;
-import com.hcsy.spring.infra.persistence.repository.SubCategoryRepository;
+import com.hcsy.spring.infra.repository.SubCategoryRepository;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;

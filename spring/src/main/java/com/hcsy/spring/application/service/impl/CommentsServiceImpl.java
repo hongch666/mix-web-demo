@@ -37,9 +37,9 @@ import com.hcsy.spring.entity.vo.CommentSyncVO;
 import com.hcsy.spring.entity.vo.CommentsVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.vo.PageVO;
-import com.hcsy.spring.infra.persistence.repository.ArticleRepository;
-import com.hcsy.spring.infra.persistence.repository.CommentsRepository;
-import com.hcsy.spring.infra.persistence.repository.UserRepository;
+import com.hcsy.spring.infra.repository.ArticleRepository;
+import com.hcsy.spring.infra.repository.CommentsRepository;
+import com.hcsy.spring.infra.repository.UserRepository;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;

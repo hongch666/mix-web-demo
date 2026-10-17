@@ -41,7 +41,7 @@ import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserSyncVO;
 import com.hcsy.spring.entity.vo.UserVO;
-import com.hcsy.spring.infra.persistence.repository.UserRepository;
+import com.hcsy.spring.infra.repository.UserRepository;
 import com.hcsy.spring.observability.MetricsRecorder;
 
 import cn.hutool.core.bean.BeanUtil;

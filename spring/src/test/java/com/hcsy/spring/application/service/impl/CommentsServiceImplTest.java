@@ -36,9 +36,9 @@ import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
-import com.hcsy.spring.infra.persistence.repository.ArticleRepository;
-import com.hcsy.spring.infra.persistence.repository.CommentsRepository;
-import com.hcsy.spring.infra.persistence.repository.UserRepository;
+import com.hcsy.spring.infra.repository.ArticleRepository;
+import com.hcsy.spring.infra.repository.CommentsRepository;
+import com.hcsy.spring.infra.repository.UserRepository;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

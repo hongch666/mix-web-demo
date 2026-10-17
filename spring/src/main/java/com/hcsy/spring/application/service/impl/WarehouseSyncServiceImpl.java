@@ -10,7 +10,7 @@ import com.hcsy.spring.application.service.WarehouseSyncService;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.WarehouseResources;
 import com.hcsy.spring.common.constants.WarehouseResources.ResourceSpec;
-import com.hcsy.spring.infra.persistence.repository.WarehouseSyncRepository;
+import com.hcsy.spring.infra.repository.WarehouseSyncRepository;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

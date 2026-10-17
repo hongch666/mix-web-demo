@@ -28,8 +28,8 @@ import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.FocusSyncVO;
 import com.hcsy.spring.entity.vo.IdCountVO;
-import com.hcsy.spring.infra.persistence.repository.FocusRepository;
-import com.hcsy.spring.infra.persistence.repository.UserRepository;
+import com.hcsy.spring.infra.repository.FocusRepository;
+import com.hcsy.spring.infra.repository.UserRepository;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
