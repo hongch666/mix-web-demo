@@ -3264,16 +3264,28 @@ ES 内部权重总和为 1.0，确保评分结果的可比性和公平性。
 
 #### 2. 向量与图谱增强后的最终融合评分
 
-ES 返回当前页候选文章后，GoZero 会对当前页候选进行二阶段增强：
+ES 按召回窗口返回候选集后，GoZero 对**整个召回候选集**进行二阶段增强：
 
 - 向量增强：调用 FastAPI `/vector-search/enhance`，基于 PostgreSQL + pgvector + LangChain 计算候选文章与搜索词的语义相似度，返回 `vectorScore`、`semanticReason`、`matchedChunks`。
 - 图谱增强：调用 FastAPI `/graph-search/enhance`，基于 Neo4j 的用户兴趣、关注作者、同分类、候选标签相似、关键词标签命中等信号返回 `graphScore`、`reason`、`relations`。
-- 融合重排：GoZero 只对 ES 当前页候选重排，不改变 `total`。
+- 融合重排：GoZero 对整个召回候选集重排，再按 `page` / `size` 切出目标页；`total` 始终取 ES 命中总数，不受重排影响。
 
-融合前先对 ES 原始分做当前候选集归一化：
+**召回窗口**由 `resolveRecallWindow` 计算：请求页码与页大小先折算成 `page × size`，再按 `SEARCH_RECALL_STEP_SIZE`（默认 100）向上取整作为 ES 实际召回条数，上限为 `SEARCH_RECALL_MAX_SIZE`（默认 200）。因此默认请求 `page=1&size=10` 实际召回 100 条而非 10 条，二阶段增强与融合重排都作用在这 100 条上，最后才切出前 10 条返回。
+
+档位取整的目的是让**同一档位内的各页共享同一候选集**，归一化分母保持一致，跨页的 `FinalScore` 因此可比。当 `page × size` 超过上限 200 时，退化为按目标页直接查询、在窗口内重排，避免深分页拖垮 ES 与增强服务。
+
+| 请求（`size=10`） | `page × size` | ES 实际召回 | 是否切页 |
+| --- | --- | --- | --- |
+| `page=1` | 10 | 100 条 | 是 |
+| `page=10` | 100 | 100 条 | 是 |
+| `page=11` | 110 | 200 条 | 是 |
+| `page=20` | 200 | 200 条 | 是 |
+| `page=21` | 210 | 10 条（该页） | 否，窗口内重排 |
+
+融合前先对 ES 原始分做本次召回候选集归一化（分母为同一召回窗口内的最大 ES 原始分）：
 
 $$
-S_{esNorm} = \frac{\text{ESRawScore}}{\max(\text{ESRawScore in current candidates})}
+S_{esNorm} = \frac{\text{ESRawScore}}{\max(\text{ESRawScore in recall window})}
 $$
 
 最终融合公式：
