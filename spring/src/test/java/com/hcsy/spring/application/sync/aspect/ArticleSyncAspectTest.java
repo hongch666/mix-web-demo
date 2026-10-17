@@ -1,7 +1,8 @@
 package com.hcsy.spring.application.sync.aspect;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -14,7 +15,6 @@ import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Map;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -29,15 +29,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.hcsy.spring.application.service.AsyncSyncService;
 import com.hcsy.spring.application.sync.annotation.ArticleSync;
 import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.constants.RabbitQueues;
+import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.dto.ArticleCollectDTO;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
 import com.hcsy.spring.entity.dto.FocusDTO;
+import com.hcsy.spring.entity.event.ArticleLogMessage;
 import com.hcsy.spring.entity.event.ChangeEvent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -73,12 +77,12 @@ class ArticleSyncAspectTest {
     @Test
     @DisplayName("业务成功时触发 MQ 与下游精确同步")
     void triggersSyncOnBusinessSuccess() throws Throwable {
-        Mono<?> result = invoke("likeSuccess", "like", new Class<?>[] { ArticleLikeDTO.class },
+        Mono<?> result = invoke("likeSuccess", SyncAction.LIKE, new Class<?>[] { ArticleLikeDTO.class },
             new ArticleLikeDTO(21L, 7L));
 
         StepVerifier.create(result).expectNextCount(1).verifyComplete();
 
-        verify(rabbitMQUtil).sendMessage(eq("article-log-queue"), any());
+        verify(rabbitMQUtil).sendMessage(eq(RabbitQueues.ARTICLE_LOG), any());
         verify(asyncSyncService).syncArticleAsync(any(), any(), eq(false), eq(false), any());
         verify(asyncSyncService).syncNeo4jAsync(anyString(), anyString(), any());
     }
@@ -86,7 +90,7 @@ class ArticleSyncAspectTest {
     @Test
     @DisplayName("业务失败时不触发任何同步")
     void skipsSyncOnBusinessFailure() throws Throwable {
-        Mono<?> result = invoke("likeConflict", "like", new Class<?>[] { ArticleLikeDTO.class },
+        Mono<?> result = invoke("likeConflict", SyncAction.LIKE, new Class<?>[] { ArticleLikeDTO.class },
             new ArticleLikeDTO(21L, 7L));
 
         StepVerifier.create(result).expectNextCount(1).verifyComplete();
@@ -99,7 +103,7 @@ class ArticleSyncAspectTest {
     @Test
     @DisplayName("文章新增开启 ES 与向量库同步开关")
     void passesSyncSwitchesFromAnnotation() throws Throwable {
-        Mono<?> result = invoke("addWithSwitches", "add", new Class<?>[] { ArticleLikeDTO.class },
+        Mono<?> result = invoke("addWithSwitches", SyncAction.ADD, new Class<?>[] { ArticleLikeDTO.class },
             new ArticleLikeDTO(21L, 7L));
 
         StepVerifier.create(result).expectNextCount(1).verifyComplete();
@@ -110,74 +114,74 @@ class ArticleSyncAspectTest {
     @Test
     @DisplayName("点赞按 DTO 属性解析文章 ID 写入消息")
     void resolvesArticleIdFromLikeDto() throws Throwable {
-        subscribe("likeSuccess", "like", new Class<?>[] { ArticleLikeDTO.class },
+        subscribe("likeSuccess", SyncAction.LIKE, new Class<?>[] { ArticleLikeDTO.class },
             new ArticleLikeDTO(21L, 7L));
 
-        Map<String, Object> message = captureSentMessage();
-        assertEquals(21L, message.get("articleId"));
+        ArticleLogMessage message = captureSentMessage();
+        assertEquals(21L, message.getArticleId());
+        assertEquals(21L, message.getContent().getId());
+        assertEquals(SyncAction.LIKE, message.getAction());
+        assertNull(message.getContent().getTitle());
     }
 
     @Test
     @DisplayName("收藏按 DTO 属性解析文章 ID 写入消息")
     void resolvesArticleIdFromCollectDto() throws Throwable {
-        subscribe("collectSuccess", "collect", new Class<?>[] { ArticleCollectDTO.class },
+        subscribe("collectSuccess", SyncAction.COLLECT, new Class<?>[] { ArticleCollectDTO.class },
             new ArticleCollectDTO(33L, 7L));
 
-        Map<String, Object> message = captureSentMessage();
-        assertEquals(33L, message.get("articleId"));
+        assertEquals(33L, captureSentMessage().getArticleId());
     }
 
     @Test
     @DisplayName("关注把双方用户写入 content，articleId 用 -1 占位")
     void recordsBothUsersInContentForFocus() throws Throwable {
-        subscribe("focusSuccess", "focus", new Class<?>[] { FocusDTO.class },
+        subscribe("focusSuccess", SyncAction.FOCUS, new Class<?>[] { FocusDTO.class },
             new FocusDTO(7L, 200L));
 
-        Map<String, Object> message = captureSentMessage();
-        assertEquals(7L, message.get("userId"));
-        assertEquals(-1L, message.get("articleId"));
-        assertFalse(message.containsKey("targetUserId"));
-
-        Map<String, Object> content = (Map<String, Object>) message.get("content");
-        assertEquals(200L, content.get("id"));
-        assertEquals(7L, content.get("sourceUserId"));
-        assertEquals(200L, content.get("targetUserId"));
+        ArticleLogMessage message = captureSentMessage();
+        assertEquals(7L, message.getUserId());
+        assertEquals(-1L, message.getArticleId());
+        assertEquals(200L, message.getContent().getId());
+        assertEquals(7L, message.getContent().getSourceUserId());
+        assertEquals(200L, message.getContent().getTargetUserId());
     }
 
     @Test
     @DisplayName("关注不能把发起者当成被关注者")
     void focusDoesNotFallbackToSourceUser() throws Throwable {
-        subscribe("focusSuccess", "focus", new Class<?>[] { FocusDTO.class },
+        subscribe("focusSuccess", SyncAction.FOCUS, new Class<?>[] { FocusDTO.class },
             new FocusDTO(7L, 200L));
 
-        Map<String, Object> content = (Map<String, Object>) captureSentMessage().get("content");
-        assertFalse(content.get("targetUserId").equals(content.get("sourceUserId")));
-        assertEquals(200L, content.get("targetUserId"));
+        ArticleLogMessage.Content content = captureSentMessage().getContent();
+        assertNotEquals(content.getSourceUserId(), content.getTargetUserId());
+        assertEquals(200L, content.getTargetUserId());
     }
 
     @Test
     @DisplayName("批量删除按逗号分隔字符串解析出多个 ID")
     void resolvesBatchDeleteIds() throws Throwable {
-        subscribe("deleteBatch", "delete", new Class<?>[] { String.class }, "21,22,23");
+        subscribe("deleteBatch", SyncAction.DELETE, new Class<?>[] { String.class }, "21,22,23");
 
-        Map<String, Object> message = captureSentMessage();
-        assertEquals(3, ((List<?>) message.get("articleIds")).size());
+        ArticleLogMessage message = captureSentMessage();
+        assertEquals(3, message.getArticleIds().size());
+        assertEquals(List.of(21L, 22L, 23L), message.getContent().getIds());
     }
 
     @Test
     @DisplayName("单个删除只写入单个文章 ID")
     void resolvesSingleDeleteId() throws Throwable {
-        subscribe("deleteSingle", "delete", new Class<?>[] { Long.class }, 21L);
+        subscribe("deleteSingle", SyncAction.DELETE, new Class<?>[] { Long.class }, 21L);
 
-        Map<String, Object> message = captureSentMessage();
-        assertEquals(21L, message.get("articleId"));
-        assertFalse(message.containsKey("articleIds"));
+        ArticleLogMessage message = captureSentMessage();
+        assertEquals(21L, message.getArticleId());
+        assertNull(message.getArticleIds());
     }
 
     @Test
     @DisplayName("删除精确下发受影响主键与变更类型")
     void dispatchesExactDeleteEvent() throws Throwable {
-        subscribe("deleteBatch", "delete", new Class<?>[] { String.class }, "21,22,23");
+        subscribe("deleteBatch", SyncAction.DELETE, new Class<?>[] { String.class }, "21,22,23");
 
         ChangeEvent event = captureSentEvent();
         assertEquals(SyncChangeType.DELETE.value(), event.getChangeType());
@@ -188,7 +192,7 @@ class ArticleSyncAspectTest {
     @Test
     @DisplayName("新增文章从业务返回值解析新主键并精确下发")
     void dispatchesInsertEventFromResultId() throws Throwable {
-        subscribe("addArticle", "add", new Class<?>[] { ArticleCreateDTO.class }, new ArticleCreateDTO());
+        subscribe("addArticle", SyncAction.ADD, new Class<?>[] { ArticleCreateDTO.class }, new ArticleCreateDTO());
 
         ChangeEvent event = captureSentEvent();
         assertEquals(SyncChangeType.INSERT.value(), event.getChangeType());
@@ -198,7 +202,7 @@ class ArticleSyncAspectTest {
     @Test
     @DisplayName("点赞事件携带触发用户与目标文章主键")
     void dispatchesLikeEventWithTriggerUser() throws Throwable {
-        subscribe("likeSuccess", "like", new Class<?>[] { ArticleLikeDTO.class },
+        subscribe("likeSuccess", SyncAction.LIKE, new Class<?>[] { ArticleLikeDTO.class },
             new ArticleLikeDTO(21L, 7L));
 
         ChangeEvent event = captureSentEvent();
@@ -206,16 +210,16 @@ class ArticleSyncAspectTest {
         assertEquals(7L, event.getTriggerUserId());
     }
 
-    private void subscribe(String methodName, String action, Class<?>[] parameterTypes,
+    private void subscribe(String methodName, SyncAction action, Class<?>[] parameterTypes,
         Object... arguments) throws Throwable {
         StepVerifier.create(invoke(methodName, action, parameterTypes, arguments))
             .expectNextCount(1)
             .verifyComplete();
     }
 
-    private Map<String, Object> captureSentMessage() throws Throwable {
-        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
-        verify(rabbitMQUtil).sendMessage(eq("article-log-queue"), captor.capture());
+    private ArticleLogMessage captureSentMessage() {
+        ArgumentCaptor<ArticleLogMessage> captor = ArgumentCaptor.forClass(ArticleLogMessage.class);
+        verify(rabbitMQUtil).sendMessage(eq(RabbitQueues.ARTICLE_LOG), captor.capture());
         return captor.getValue();
     }
 
@@ -225,7 +229,7 @@ class ArticleSyncAspectTest {
         return captor.getValue();
     }
 
-    private Mono<?> invoke(String methodName, String action, Class<?>[] parameterTypes,
+    private Mono<?> invoke(String methodName, SyncAction action, Class<?>[] parameterTypes,
         Object... arguments) throws Throwable {
         Method method = Fixture.class.getDeclaredMethod(methodName, parameterTypes);
         ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
@@ -244,8 +248,8 @@ class ArticleSyncAspectTest {
 
         Mono<?> result = (Mono<?>) aspect.handleArticleSync(joinPoint, articleSync);
         return result.contextWrite(Context.of(
-            com.hcsy.spring.common.utils.UserContext.CONTEXT_KEY_USER_ID, 7L,
-            com.hcsy.spring.common.utils.UserContext.CONTEXT_KEY_USERNAME, "tester"));
+            UserContext.CONTEXT_KEY_USER_ID, 7L,
+            UserContext.CONTEXT_KEY_USERNAME, "tester"));
     }
 
     private Result<?> businessResult(Method method) {

@@ -5,6 +5,8 @@ import org.springframework.amqp.rabbit.connection.AbstractConnectionFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.hcsy.spring.common.constants.RabbitQueues;
+
 import reactor.rabbitmq.RabbitFlux;
 import reactor.rabbitmq.Sender;
 import reactor.rabbitmq.SenderOptions;
@@ -14,12 +16,12 @@ public class RabbitMQConfig {
 
     @Bean
     Queue apiLogQueue() {
-        return new Queue("api-log-queue", true); // 持久化队列
+        return new Queue(RabbitQueues.API_LOG, true); // 持久化队列
     }
 
     @Bean
     Queue logQueue() {
-        return new Queue("article-log-queue", true); // 持久化队列
+        return new Queue(RabbitQueues.ARTICLE_LOG, true); // 持久化队列
     }
 
     @Bean(destroyMethod = "close")

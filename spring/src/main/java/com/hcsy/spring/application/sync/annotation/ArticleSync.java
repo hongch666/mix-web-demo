@@ -6,6 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
 
 /**
@@ -18,10 +19,9 @@ import com.hcsy.spring.common.constants.SyncResource;
 public @interface ArticleSync {
 
     /**
-     * 操作类型：add(新增)、edit(编辑)、delete(删除)、publish(发布)、view(浏览)、like(点赞)、unlike(取消点赞)、
-     * collect(收藏)、uncollect(取消收藏)、focus(关注)、unfocus(取消关注)
+     * 操作类型，见 SyncAction
      */
-    String action();
+    SyncAction action();
 
     /**
      * 资源名，精确同步时下发给下游用于定位源表，默认为文章

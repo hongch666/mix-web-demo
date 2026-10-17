@@ -5,20 +5,16 @@ import java.util.Set;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.application.service.AsyncSyncService;
 import com.hcsy.spring.application.sync.annotation.DataSync;
-import com.hcsy.spring.common.constants.HttpCode;
-import com.hcsy.spring.common.constants.SyncChangeType;
-import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SyncEventCollector;
-import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.event.ChangeEvent;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
-import reactor.util.context.Context;
 
 /**
  * 数据同步切面
@@ -27,55 +23,29 @@ import reactor.util.context.Context;
  */
 @Aspect
 @Component
+@Order(30)
 @RequiredArgsConstructor
-public class DataSyncAspect {
+public class DataSyncAspect extends AbstractSyncAspect<DataSync> {
 
     private final AsyncSyncService asyncSyncService;
 
     @Around("@annotation(dataSync)")
     public Object handleDataSync(ProceedingJoinPoint joinPoint, DataSync dataSync) throws Throwable {
-        Object result = joinPoint.proceed();
-        if (result instanceof Mono<?> monoResult) {
-            // 使用 doOnSuccess 发后即忘：主流程不等待图谱与数仓同步完成
-            return Mono.deferContextual(ctx -> {
-                Long userId = UserContext.getUserId(ctx);
-                String username = UserContext.getUsername(ctx);
-                Context syncContext = UserContext.writeContext(Context.empty(), userId, username, null, null, null);
-                return monoResult.doOnSuccess(value -> {
-                    if (isBusinessSuccess(value)) {
-                        triggerSync(joinPoint, dataSync, userId, username, value)
-                            .contextWrite(syncContext)
-                            .subscribe();
-                    }
-                });
-            });
-        }
-        return result;
+        return aroundSync(joinPoint, dataSync);
     }
 
-    private boolean isBusinessSuccess(Object result) {
-        if (result instanceof Result<?> businessResult) {
-            return businessResult.getCode() != null && businessResult.getCode() == HttpCode.OK;
-        }
-        return true;
-    }
-
-    /**
-     * 并行触发图谱同步与数仓同步
-     * 两个同步服务各自记录失败日志，此处吞掉异常避免影响主流程
-     */
-    private Mono<Void> triggerSync(ProceedingJoinPoint joinPoint, DataSync dataSync,
-        Long userId, String username, Object result) {
+    @Override
+    protected Mono<Void> trigger(ProceedingJoinPoint joinPoint, DataSync dataSync, Object result,
+        Long userId, String username) {
         String resource = dataSync.resource();
-        SyncChangeType changeType = dataSync.changeType() == null ? SyncChangeType.UPDATE : dataSync.changeType();
         Object[] paramValues = joinPoint.getArgs();
         Object primaryParam = paramValues != null && paramValues.length > 0 ? paramValues[0] : null;
 
-        ChangeEvent event = SyncEventCollector.collect(resource, changeType, primaryParam, result);
+        ChangeEvent event = SyncEventCollector.collect(resource, dataSync.changeType(), primaryParam, result);
         event.setTriggerUserId(userId);
         event.setTriggerUsername(username);
 
-        Set<String> resources = resource == null || resource.isBlank() ? Set.of() : Set.of(resource);
+        Set<String> resources = resource.isBlank() ? Set.of() : Set.of(resource);
         return Mono.whenDelayError(
             asyncSyncService.syncNeo4jAsync(joinPoint.getSignature().toShortString(), dataSync.description(), event),
             asyncSyncService.syncWarehouseAsync(userId, username, resources))

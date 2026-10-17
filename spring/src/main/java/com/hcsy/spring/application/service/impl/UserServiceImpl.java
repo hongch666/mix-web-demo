@@ -23,6 +23,7 @@ import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.CacheUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
+import com.hcsy.spring.common.utils.UserRoleCache;
 import com.hcsy.spring.config.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
@@ -163,7 +164,8 @@ public class UserServiceImpl implements UserService {
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
             .flatMap(userRepository::delete);
         return transactionalOperator.transactional(databaseOperation)
-            .then(Mono.when(evictAllUsersCache(), redisUtil.delete(RedisKeys.userStatus(id))).then());
+            .then(Mono.when(evictAllUsersCache(), redisUtil.delete(RedisKeys.userStatus(id)),
+                UserRoleCache.evict(cacheUtil, id)));
     }
 
     @Override
@@ -180,8 +182,11 @@ public class UserServiceImpl implements UserService {
         Mono<Void> clearStatuses = Flux.fromIterable(distinctIds)
             .flatMap(id -> redisUtil.delete(RedisKeys.userStatus(id)), 8)
             .then();
+        Mono<Void> clearRoles = Flux.fromIterable(distinctIds)
+            .flatMap(id -> UserRoleCache.evict(cacheUtil, id), 8)
+            .then();
         return transactionalOperator.transactional(databaseOperation)
-            .then(Mono.when(evictAllUsersCache(), clearStatuses));
+            .then(Mono.when(evictAllUsersCache(), clearStatuses, clearRoles));
     }
 
     @Override

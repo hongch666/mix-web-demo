@@ -91,13 +91,6 @@ public class InternalTokenUtil {
     }
 
     /**
-     * 从令牌中提取服务名称
-     */
-    public String extractServiceName(String token) {
-        return getClaims(token).get("serviceName", String.class);
-    }
-
-    /**
      * 私有方法：解析令牌获取Claims
      */
     private Claims getClaims(String token) {

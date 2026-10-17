@@ -13,8 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.application.service.ArticleLikeService;
 import com.hcsy.spring.application.sync.annotation.ArticleSync;
+import com.hcsy.spring.common.constants.BusinessType;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.ParamSource;
+import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
@@ -47,10 +50,11 @@ public class ArticleLikeController {
 
     @PostMapping
     @Operation(summary = "添加点赞", description = "为文章添加点赞")
-    @ArticleSync(action = "like", resource = SyncResource.LIKES, description = "点赞了1篇文章")
+    @ArticleSync(action = SyncAction.LIKE, resource = SyncResource.LIKES, description = "点赞了1篇文章")
     @ApiLog("添加点赞")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "body",
-        paramNames = { "userId" })
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+        paramSource = ParamSource.BODY,
+        paramName = "userId")
     public Mono<Result<Void>> addLike(@Valid @RequestBody ArticleLikeDTO dto) {
         return articleLikeService.addLike(dto.getArticleId(), dto.getUserId())
             .map(success -> success
@@ -60,10 +64,11 @@ public class ArticleLikeController {
 
     @DeleteMapping
     @Operation(summary = "取消点赞", description = "取消对文章的点赞")
-    @ArticleSync(action = "unlike", resource = SyncResource.LIKES, description = "取消点赞了1篇文章")
+    @ArticleSync(action = SyncAction.UNLIKE, resource = SyncResource.LIKES, description = "取消点赞了1篇文章")
     @ApiLog("取消点赞")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
-        paramNames = { "user_id" })
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+        paramSource = ParamSource.QUERY,
+        paramName = "user_id")
     public Mono<Result<Void>> removeLike(
         @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id",
             required = true) Long articleId,
@@ -78,8 +83,9 @@ public class ArticleLikeController {
     @GetMapping("/user/{user_id}")
     @Operation(summary = "查询用户的所有点赞", description = "分页查询某个用户的所有点赞记录（包含文章详情）")
     @ApiLog("查询用户点赞")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "path_single",
-        paramNames = { "user_id" })
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+        paramSource = ParamSource.PATH_SINGLE,
+        paramName = "user_id")
     public Mono<Result<PageVO<ArticleLikeVO>>> listUserLikes(
         @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
         @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
@@ -91,8 +97,9 @@ public class ArticleLikeController {
     @GetMapping("/check")
     @Operation(summary = "检查用户是否点赞", description = "查询用户是否点赞过某篇文章")
     @ApiLog("检查点赞状态")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
-        paramNames = { "user_id" })
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+        paramSource = ParamSource.QUERY,
+        paramName = "user_id")
     public Mono<Result<LikeCheckVO>> isLiked(
         @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id",
             required = true) Long articleId,

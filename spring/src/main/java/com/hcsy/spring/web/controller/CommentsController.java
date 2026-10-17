@@ -17,8 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.application.service.CommentsService;
 import com.hcsy.spring.application.sync.annotation.DataSync;
+import com.hcsy.spring.common.constants.BusinessType;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
@@ -62,7 +64,8 @@ public class CommentsController {
     @PutMapping
     @Operation(summary = "修改评论", description = "通过请求体修改评论信息")
     @RequirePermission(roles = {
-        "admin" }, allowSelf = true, businessType = "comment", paramSource = "body", paramNames = { "id" })
+        "admin" }, allowSelf = true, businessType = BusinessType.COMMENT, paramSource = ParamSource.BODY,
+        paramName = "id")
     @DataSync(resource = SyncResource.COMMENTS, changeType = SyncChangeType.UPDATE, description = "修改评论后同步图谱与数仓")
     @ApiLog("修改评论")
     public Mono<Result<Void>> updateComment(@Valid @RequestBody CommentUpdateDTO dto) {
@@ -74,7 +77,8 @@ public class CommentsController {
     @DeleteMapping("/{id}")
     @Operation(summary = "删除评论", description = "根据id删除评论")
     @RequirePermission(roles = {
-        "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "id" })
+        "admin" }, allowSelf = true, businessType = BusinessType.COMMENT, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "id")
     @DataSync(resource = SyncResource.COMMENTS, changeType = SyncChangeType.DELETE, description = "删除评论后同步图谱与数仓")
     @ApiLog("删除评论")
     public Mono<Result<Void>> deleteComment(@PathVariable Long id) {
@@ -84,7 +88,8 @@ public class CommentsController {
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除评论", description = "根据id数组批量删除评论，多个id用英文逗号分隔")
     @RequirePermission(roles = {
-        "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "ids" })
+        "admin" }, allowSelf = true, businessType = BusinessType.COMMENT, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "ids")
     @DataSync(resource = SyncResource.COMMENTS, changeType = SyncChangeType.DELETE, description = "批量删除评论后同步图谱与数仓")
     @ApiLog("批量删除评论")
     public Mono<Result<Void>> deleteComments(@PathVariable String ids) {
@@ -104,11 +109,7 @@ public class CommentsController {
 
     @GetMapping
     @Operation(summary = "获取普通评论信息", description = "分页获取普通评论信息列表，并支持用户名和文章标题模糊查询")
-    @RequirePermission(roles = { "admin" }, businessType = "comment", paramSource = "query", paramNames = {
-        "page",
-        "size",
-        "username",
-        "article_title" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.COMMENT, paramSource = ParamSource.QUERY)
     @ApiLog("获取普通评论信息")
     public Mono<Result<PageVO<CommentsVO>>> listComments(@ParameterObject @ModelAttribute CommentsQueryDTO query) {
         return commentsService.listCommentsWithFilter(query.getPage(), query.getSize(), query)
@@ -118,11 +119,7 @@ public class CommentsController {
 
     @GetMapping("/ai")
     @Operation(summary = "获取AI评论信息", description = "分页获取AI评论信息列表，并支持AI类型和文章标题模糊查询")
-    @RequirePermission(roles = { "admin" }, businessType = "comment", paramSource = "query", paramNames = {
-        "page",
-        "size",
-        "ai_type",
-        "article_title" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.COMMENT, paramSource = ParamSource.QUERY)
     @ApiLog("获取AI评论信息")
     public Mono<Result<PageVO<CommentsVO>>> listAIComments(@ParameterObject @ModelAttribute CommentsQueryDTO query) {
         return commentsService.listAICommentsWithFilter(query.getPage(), query.getSize(), query)

@@ -134,14 +134,14 @@ public class Messages {
     public static final String API_EXCEPTION = "API方法执行异常";
     public static final String PARAM_EXPIRED = "参数解析失败";
     public static final String FORMAT_PARAM = "格式化参数值失败";
-    public static final String OBJECT_TO_MAP = "对象转Map失败";
     public static final String PATH_PARAM = "提取路径参数失败";
     public static final String BODY_PARAM = "提取请求体失败";
     public static final String TRANSACTION_ROLLBACK = "事务执行失败，已回滚";
-    public static final String UNKNOWN_OPERATION = "AOP识别失败：未知的操作类型";
     public static final String UNLOGIN_DEFAULT = "用户未登录，使用默认用户ID: -1";
+    public static final String UNKNOWN_USERNAME = "unknown";
+    public static final String UNKNOWN_HTTP_METHOD = "UNKNOWN";
     public static final String ADMIN_PASS = "用户具有管理员权限，直接通过";
-    public static final String NO_PERMISION = "权限不足，无法执行此操作";
+    public static final String NO_PERMISSION = "权限不足，无法执行此操作";
     public static final String TARGET_FAIL = "获取目标资源ID失败: ";
     public static final String COMMENT_ID = "评论ID不存在: ";
     public static final String NO_SOURCE = "目标资源ID为空，无法检查所有权";
@@ -192,7 +192,6 @@ public class Messages {
     public static final String INTERNAL_TOKEN_EXPIRED = "内部服务令牌已过期";
     public static final String INTERNAL_TOKEN_INVALID = "内部服务令牌无效";
     public static final String INTERNAL_TOKEN_VALIDATION_FAIL = "内部服务令牌验证失败: ";
-    public static final String SERVICE_NAME_MISMATCH = "服务名称不匹配，期望: %s，获得: %s";
     public static final String INTERNAL_TOKEN_VALIDATE_METHOD = "内部服务令牌验证成功，方法: ";
 
     // ===== 服务降级 =====

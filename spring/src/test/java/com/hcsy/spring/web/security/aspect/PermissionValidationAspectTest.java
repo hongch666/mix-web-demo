@@ -1,5 +1,6 @@
 package com.hcsy.spring.web.security.aspect;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -21,18 +22,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.hcsy.spring.application.service.ArticleService;
-import com.hcsy.spring.application.service.CommentsService;
-import com.hcsy.spring.application.service.UserService;
+import com.hcsy.spring.application.service.PermissionChecker;
+import com.hcsy.spring.common.constants.BusinessType;
 import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
-import com.hcsy.spring.entity.po.Article;
-import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import reactor.util.context.Context;
@@ -41,11 +40,7 @@ import reactor.util.context.Context;
 class PermissionValidationAspectTest {
 
     @Mock
-    private UserService userService;
-    @Mock
-    private ArticleService articleService;
-    @Mock
-    private CommentsService commentsService;
+    private PermissionChecker permissionChecker;
     @Mock
     private SimpleLogger logger;
 
@@ -53,7 +48,7 @@ class PermissionValidationAspectTest {
 
     @BeforeEach
     void setUp() {
-        aspect = new PermissionValidationAspect(userService, articleService, commentsService, logger);
+        aspect = new PermissionValidationAspect(permissionChecker, logger);
     }
 
     // 验证该场景的预期行为
@@ -66,7 +61,7 @@ class PermissionValidationAspectTest {
         StepVerifier.create(result)
             .expectErrorMatches(error -> hasStatus(error, HttpCode.FORBIDDEN))
             .verify();
-        verify(userService, never()).getById(anyLong());
+        verify(permissionChecker, never()).hasAnyRole(anyLong(), any());
     }
 
     // 验证该场景的预期行为
@@ -74,7 +69,8 @@ class PermissionValidationAspectTest {
     @Test
     @DisplayName("本人访问时无需管理员角色即可放行")
     void allowsSelfAccess() throws Throwable {
-        when(userService.getById(7L)).thenReturn(Mono.just(user(7L, "user")));
+        when(permissionChecker.hasAnyRole(7L, new String[] { "admin" })).thenReturn(Mono.just(false));
+        when(permissionChecker.isOwner(7L, 7L, BusinessType.USER)).thenReturn(Mono.just(true));
 
         Mono<?> result = invoke("userQuery", new Class<?>[] { Long.class }, 7L)
             .contextWrite(Context.of(UserContext.CONTEXT_KEY_USER_ID, 7L));
@@ -87,14 +83,13 @@ class PermissionValidationAspectTest {
     @Test
     @DisplayName("管理员可以访问其他用户")
     void allowsAdminAccess() throws Throwable {
-        when(userService.getById(7L)).thenReturn(Mono.just(user(7L, "admin")));
+        when(permissionChecker.hasAnyRole(7L, new String[] { "admin" })).thenReturn(Mono.just(true));
 
         Mono<?> result = invoke("userQuery", new Class<?>[] { Long.class }, 8L)
             .contextWrite(Context.of(UserContext.CONTEXT_KEY_USER_ID, 7L));
 
         StepVerifier.create(result).expectNextMatches("ok"::equals).verifyComplete();
-        verify(articleService, never()).getById(anyLong());
-        verify(commentsService, never()).getById(anyLong());
+        verify(permissionChecker, never()).isOwner(anyLong(), anyLong(), any());
     }
 
     // 验证该场景的预期行为
@@ -102,7 +97,8 @@ class PermissionValidationAspectTest {
     @Test
     @DisplayName("普通用户不能访问其他用户")
     void rejectsOtherUserAccess() throws Throwable {
-        when(userService.getById(7L)).thenReturn(Mono.just(user(7L, "user")));
+        when(permissionChecker.hasAnyRole(7L, new String[] { "admin" })).thenReturn(Mono.just(false));
+        when(permissionChecker.isOwner(7L, 8L, BusinessType.USER)).thenReturn(Mono.just(false));
 
         Mono<?> result = invoke("userQuery", new Class<?>[] { Long.class }, 8L)
             .contextWrite(Context.of(UserContext.CONTEXT_KEY_USER_ID, 7L));
@@ -117,8 +113,8 @@ class PermissionValidationAspectTest {
     @Test
     @DisplayName("文章所有者可以通过路径参数访问自己的文章")
     void allowsArticleOwner() throws Throwable {
-        when(userService.getById(7L)).thenReturn(Mono.just(user(7L, "user")));
-        when(articleService.getById(21L)).thenReturn(Mono.just(article(21L, 7L)));
+        when(permissionChecker.hasAnyRole(7L, new String[] { "admin" })).thenReturn(Mono.just(false));
+        when(permissionChecker.isOwner(7L, 21L, BusinessType.ARTICLE)).thenReturn(Mono.just(true));
 
         Mono<?> result = invoke("articlePath", new Class<?>[] { Long.class }, 21L)
             .contextWrite(Context.of(UserContext.CONTEXT_KEY_USER_ID, 7L));
@@ -131,9 +127,10 @@ class PermissionValidationAspectTest {
     @Test
     @DisplayName("批量文章属于不同用户时拒绝操作")
     void rejectsBatchWithDifferentOwners() throws Throwable {
-        when(userService.getById(7L)).thenReturn(Mono.just(user(7L, "user")));
-        when(articleService.listByIds(List.of(21L, 22L)))
-            .thenReturn(Flux.just(article(21L, 7L), article(22L, 8L)));
+        when(permissionChecker.hasAnyRole(7L, new String[] { "admin" })).thenReturn(Mono.just(false));
+        when(permissionChecker.resolveSharedOwner(List.of(21L, 22L), BusinessType.ARTICLE))
+            .thenReturn(Mono.error(BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST)
+                .errorMessage(Messages.MULTIPLE_RESOURCE_OWNERS).build()));
 
         Mono<?> result = invoke("articleBatch", new Class<?>[] { String.class }, "21,22")
             .contextWrite(Context.of(UserContext.CONTEXT_KEY_USER_ID, 7L));
@@ -141,6 +138,7 @@ class PermissionValidationAspectTest {
         StepVerifier.create(result)
             .expectErrorMatches(error -> hasStatus(error, HttpCode.BAD_REQUEST))
             .verify();
+        verify(permissionChecker, never()).isOwner(anyLong(), anyLong(), any());
     }
 
     private Mono<?> invoke(String methodName, Class<?>[] parameterTypes, Object... arguments) throws Throwable {
@@ -160,35 +158,22 @@ class PermissionValidationAspectTest {
             && businessException.getHttpStatus() == status;
     }
 
-    private User user(Long id, String role) {
-        User user = new User();
-        user.setId(id);
-        user.setRole(role);
-        return user;
-    }
-
-    private Article article(Long id, Long userId) {
-        Article article = new Article();
-        article.setId(id);
-        article.setUserId(userId);
-        return article;
-    }
-
     private static final class EndpointFixture {
-        @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user",
-            paramSource = "query", paramNames = { "user_id" })
+
+        @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+            paramSource = ParamSource.QUERY, paramName = "user_id")
         Mono<String> userQuery(@RequestParam("user_id") Long userId) {
             return Mono.just("ok");
         }
 
-        @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "article",
-            paramSource = "path_single", paramNames = { "id" })
+        @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.ARTICLE,
+            paramSource = ParamSource.PATH_SINGLE, paramName = "id")
         Mono<String> articlePath(@PathVariable("id") Long id) {
             return Mono.just("ok");
         }
 
-        @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "article",
-            paramSource = "path_single", paramNames = { "ids" })
+        @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.ARTICLE,
+            paramSource = ParamSource.PATH_SINGLE, paramName = "ids")
         Mono<String> articleBatch(@PathVariable("ids") String ids) {
             return Mono.just("ok");
         }

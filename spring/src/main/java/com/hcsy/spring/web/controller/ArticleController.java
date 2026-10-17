@@ -15,8 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.application.service.ArticleService;
 import com.hcsy.spring.application.sync.annotation.ArticleSync;
+import com.hcsy.spring.common.constants.BusinessType;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.ParamSource;
+import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
@@ -49,7 +52,7 @@ public class ArticleController {
 
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
-    @ArticleSync(action = "add", esSync = true, vectorSync = true, description = "创建了1篇文章")
+    @ArticleSync(action = SyncAction.ADD, esSync = true, vectorSync = true, description = "创建了1篇文章")
     @ApiLog("创建文章")
     public Mono<Result<Long>> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
         return articleService.createArticle(dto).map(saved -> Result.success(saved.getId()))
@@ -91,8 +94,9 @@ public class ArticleController {
     @PutMapping
     @Operation(summary = "更新文章", description = "根据DTO更新文章信息")
     @RequirePermission(roles = {
-        "admin" }, allowSelf = true, businessType = "article", paramSource = "body", paramNames = { "id" })
-    @ArticleSync(action = "edit", esSync = true, vectorSync = true, description = "编辑了1篇文章")
+        "admin" }, allowSelf = true, businessType = BusinessType.ARTICLE, paramSource = ParamSource.BODY,
+        paramName = "id")
+    @ArticleSync(action = SyncAction.EDIT, esSync = true, vectorSync = true, description = "编辑了1篇文章")
     @ApiLog("更新文章")
     public Mono<Result<Void>> updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         return articleService.updateArticle(dto).map(ignored -> Result.<Void>success())
@@ -102,8 +106,9 @@ public class ArticleController {
     @DeleteMapping("/{id}")
     @Operation(summary = "删除文章", description = "根据ID删除文章")
     @RequirePermission(roles = {
-        "admin" }, allowSelf = true, businessType = "article", paramSource = "path_single", paramNames = { "id" })
-    @ArticleSync(action = "delete", esSync = true, vectorSync = true, description = "删除了1篇文章")
+        "admin" }, allowSelf = true, businessType = BusinessType.ARTICLE, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "id")
+    @ArticleSync(action = SyncAction.DELETE, esSync = true, vectorSync = true, description = "删除了1篇文章")
     @ApiLog("删除文章")
     public Mono<Result<Void>> deleteArticle(@PathVariable Long id) {
         return articleService.deleteArticle(id).thenReturn(Result.<Void>success());
@@ -111,9 +116,9 @@ public class ArticleController {
 
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除文章", description = "根据ID数组批量删除文章，多个ID用英文逗号分隔")
-    @RequirePermission(roles = { "admin" }, businessType = "article", paramSource = "path_single", paramNames = {
-        "ids" })
-    @ArticleSync(action = "delete", esSync = true, vectorSync = true, description = "批量删除文章")
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.ARTICLE, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "ids")
+    @ArticleSync(action = SyncAction.DELETE, esSync = true, vectorSync = true, description = "批量删除文章")
     @ApiLog("批量删除文章")
     public Mono<Result<Void>> deleteArticles(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -126,9 +131,9 @@ public class ArticleController {
 
     @PutMapping("/publish/{id}")
     @Operation(summary = "发布文章", description = "将文章状态修改为发布")
-    @RequirePermission(roles = { "admin" }, businessType = "article", paramSource = "path_single", paramNames = {
-        "id" })
-    @ArticleSync(action = "publish", esSync = true, vectorSync = true, description = "发布了1篇文章")
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.ARTICLE, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "id")
+    @ArticleSync(action = SyncAction.PUBLISH, esSync = true, vectorSync = true, description = "发布了1篇文章")
     @ApiLog("发布文章")
     public Mono<Result<Void>> publishArticle(@PathVariable Long id) {
         return articleService.publishArticle(id).thenReturn(Result.<Void>success());
@@ -136,7 +141,7 @@ public class ArticleController {
 
     @PutMapping("/view/{id}")
     @Operation(summary = "增加文章阅读量", description = "增加文章阅读量")
-    @ArticleSync(action = "view", description = "浏览了1篇文章")
+    @ArticleSync(action = SyncAction.VIEW, description = "浏览了1篇文章")
     @ApiLog("增加文章阅读量")
     public Mono<Result<Void>> addViewArticle(@PathVariable Long id) {
         return articleService.addViewArticle(id).thenReturn(Result.<Void>success());
@@ -144,7 +149,7 @@ public class ArticleController {
 
     @GetMapping("/unpublished/list")
     @Operation(summary = "获取所有未发布文章", description = "返回所有未发布的文章，支持分页")
-    @RequirePermission(roles = { "admin" }, businessType = "article")
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.ARTICLE)
     @ApiLog("获取未发布文章列表")
     public Mono<Result<PageVO<ArticleWithCategoryVO>>> getUnpublishedArticles(
         @RequestParam(defaultValue = "1") int page,

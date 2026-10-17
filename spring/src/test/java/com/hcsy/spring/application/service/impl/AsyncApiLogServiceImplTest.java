@@ -8,8 +8,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.entity.event.ApiLogEvent;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -42,26 +41,26 @@ class AsyncApiLogServiceImplTest {
     }
 
     @Test
-    @DisplayName("发送接口日志时按固定队列投递原始报文")
+    @DisplayName("发送接口日志时按固定队列投递具名事件")
     void sendAsyncPublishesToApiLogQueue() {
-        Map<String, Object> message = Map.of("path", "/articles", "status", 200);
+        ApiLogEvent event = ApiLogEvent.builder().apiPath("/articles").apiMethod("GET").build();
         when(rabbitMQUtil.sendMessage(eq(QUEUE_NAME), any())).thenReturn(Mono.empty());
 
-        StepVerifier.create(asyncApiLogService.sendAsync(message)).verifyComplete();
+        StepVerifier.create(asyncApiLogService.sendAsync(event)).verifyComplete();
 
         ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
         verify(rabbitMQUtil).sendMessage(eq(QUEUE_NAME), payloadCaptor.capture());
-        assertThat(payloadCaptor.getValue()).isEqualTo(message);
+        assertThat(payloadCaptor.getValue()).isSameAs(event);
     }
 
     @Test
     @DisplayName("投递失败时降级为完成而不是向外抛错")
     void sendAsyncSwallowsMQFailure() {
-        Map<String, Object> message = Map.of("path", "/articles");
+        ApiLogEvent event = ApiLogEvent.builder().apiPath("/articles").apiMethod("GET").build();
         when(rabbitMQUtil.sendMessage(eq(QUEUE_NAME), any()))
             .thenReturn(Mono.error(new IllegalStateException("mq down")));
 
-        StepVerifier.create(asyncApiLogService.sendAsync(message)).verifyComplete();
+        StepVerifier.create(asyncApiLogService.sendAsync(event)).verifyComplete();
 
         verify(rabbitMQUtil).sendMessage(eq(QUEUE_NAME), any());
     }
@@ -71,7 +70,8 @@ class AsyncApiLogServiceImplTest {
     void sendAsyncDoesNotLogErrorOnSuccess() {
         when(rabbitMQUtil.sendMessage(anyString(), any())).thenReturn(Mono.empty());
 
-        StepVerifier.create(asyncApiLogService.sendAsync(Map.of("path", "/articles"))).verifyComplete();
+        StepVerifier.create(asyncApiLogService.sendAsync(ApiLogEvent.builder().apiPath("/articles").build()))
+            .verifyComplete();
 
         verify(logger, never()).error(anyString());
     }

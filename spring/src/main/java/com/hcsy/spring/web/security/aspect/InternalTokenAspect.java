@@ -3,6 +3,7 @@ package com.hcsy.spring.web.security.aspect;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.common.constants.HttpCode;
@@ -24,6 +25,7 @@ import reactor.core.publisher.Mono;
  */
 @Aspect
 @Component
+@Order(10)
 @RequiredArgsConstructor
 public class InternalTokenAspect {
 
@@ -38,13 +40,12 @@ public class InternalTokenAspect {
         throws Throwable {
         Object result = pjp.proceed();
         if (result instanceof Mono<?> monoResult) {
-            return Mono.deferContextual(ctx -> validate(ctx, pjp, requireInternalToken).then(monoResult));
+            return Mono.deferContextual(ctx -> validate(ctx, pjp).then(monoResult));
         }
         return result;
     }
 
-    private Mono<Void> validate(reactor.util.context.ContextView ctx, ProceedingJoinPoint pjp,
-        RequireInternalToken requireInternalToken) {
+    private Mono<Void> validate(reactor.util.context.ContextView ctx, ProceedingJoinPoint pjp) {
         try {
             String internalToken = UserContext.getInternalToken(ctx);
             if (internalToken == null || internalToken.isEmpty()) {
@@ -53,17 +54,6 @@ public class InternalTokenAspect {
                     .errorMessage(Messages.INTERNAL_TOKEN_MISSING).build());
             }
             internalTokenUtil.validateInternalToken(internalToken);
-            String requiredServiceName = requireInternalToken.value();
-            if (requiredServiceName != null && !requiredServiceName.isEmpty()) {
-                String tokenServiceName = internalTokenUtil.extractServiceName(internalToken);
-                if (!requiredServiceName.equals(tokenServiceName)) {
-                    String mismatchMessage = String.format(Messages.SERVICE_NAME_MISMATCH, requiredServiceName,
-                        tokenServiceName);
-                    logger.error(Messages.SERVICE_NAME_MISMATCH, requiredServiceName, tokenServiceName);
-                    return Mono.error(BusinessException.builder().httpStatus(HttpCode.FORBIDDEN)
-                        .errorMessage(mismatchMessage).build());
-                }
-            }
             logger.debug(Messages.INTERNAL_TOKEN_VALIDATE_METHOD + pjp.getSignature().getName());
             return Mono.empty();
         } catch (BusinessException error) {

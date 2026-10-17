@@ -13,8 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.application.service.FocusService;
 import com.hcsy.spring.application.sync.annotation.ArticleSync;
+import com.hcsy.spring.common.constants.BusinessType;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.ParamSource;
+import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
@@ -47,10 +50,11 @@ public class FocusController {
 
     @PostMapping
     @Operation(summary = "新增关注", description = "用户关注另一个用户")
-    @ArticleSync(action = "focus", resource = SyncResource.FOCUS, description = "关注了1个用户")
+    @ArticleSync(action = SyncAction.FOCUS, resource = SyncResource.FOCUS, description = "关注了1个用户")
     @ApiLog("新增关注")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "body",
-        paramNames = { "userId" })
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+        paramSource = ParamSource.BODY,
+        paramName = "userId")
     public Mono<Result<Void>> addFocus(@Valid @RequestBody FocusDTO dto) {
         return focusService.addFocus(dto.getUserId(), dto.getFocusId())
             .map(success -> success
@@ -60,10 +64,11 @@ public class FocusController {
 
     @DeleteMapping
     @Operation(summary = "取消关注", description = "用户取消关注另一个用户")
-    @ArticleSync(action = "unfocus", resource = SyncResource.FOCUS, description = "取消关注了1个用户")
+    @ArticleSync(action = SyncAction.UNFOCUS, resource = SyncResource.FOCUS, description = "取消关注了1个用户")
     @ApiLog("取消关注")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
-        paramNames = { "user_id" })
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+        paramSource = ParamSource.QUERY,
+        paramName = "user_id")
     public Mono<Result<Void>> removeFocus(
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
         @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id",
@@ -77,8 +82,9 @@ public class FocusController {
     @GetMapping("/check")
     @Operation(summary = "检查关注状态", description = "查询用户是否关注了某个用户")
     @ApiLog("检查关注状态")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
-        paramNames = { "user_id" })
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+        paramSource = ParamSource.QUERY,
+        paramName = "user_id")
     public Mono<Result<FocusCheckVO>> isFocused(
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
         @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id",

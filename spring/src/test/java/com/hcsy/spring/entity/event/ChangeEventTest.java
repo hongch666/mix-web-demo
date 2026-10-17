@@ -7,6 +7,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.constants.SyncResource;
 
@@ -35,11 +36,11 @@ class ChangeEventTest {
     @Test
     @DisplayName("变更类型由操作类型推导，删除与新增语义正确")
     void resolvesChangeTypeFromAction() {
-        assertTrue(SyncChangeType.fromAction("add") == SyncChangeType.INSERT);
-        assertTrue(SyncChangeType.fromAction("like") == SyncChangeType.INSERT);
-        assertTrue(SyncChangeType.fromAction("edit") == SyncChangeType.UPDATE);
-        assertTrue(SyncChangeType.fromAction("publish") == SyncChangeType.UPDATE);
-        assertTrue(SyncChangeType.fromAction("delete") == SyncChangeType.DELETE);
-        assertTrue(SyncChangeType.fromAction("unlike") == SyncChangeType.DELETE);
+        assertTrue(SyncChangeType.fromAction(SyncAction.ADD) == SyncChangeType.INSERT);
+        assertTrue(SyncChangeType.fromAction(SyncAction.LIKE) == SyncChangeType.INSERT);
+        assertTrue(SyncChangeType.fromAction(SyncAction.EDIT) == SyncChangeType.UPDATE);
+        assertTrue(SyncChangeType.fromAction(SyncAction.PUBLISH) == SyncChangeType.UPDATE);
+        assertTrue(SyncChangeType.fromAction(SyncAction.DELETE) == SyncChangeType.DELETE);
+        assertTrue(SyncChangeType.fromAction(SyncAction.UNLIKE) == SyncChangeType.DELETE);
     }
 }

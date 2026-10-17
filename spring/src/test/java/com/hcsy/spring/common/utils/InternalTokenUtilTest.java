@@ -39,7 +39,6 @@ class InternalTokenUtilTest {
 
         assertTrue(configuredTokenUtil.validateInternalToken(token));
         assertEquals(10001L, configuredTokenUtil.extractUserId(token));
-        assertEquals("spring", configuredTokenUtil.extractServiceName(token));
         assertTrue(configuredTokenUtil.getRemainingTime(token) > 0);
     }
 

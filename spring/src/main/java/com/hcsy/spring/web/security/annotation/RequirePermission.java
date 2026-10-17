@@ -1,15 +1,25 @@
 package com.hcsy.spring.web.security.annotation;
 
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.hcsy.spring.common.constants.BusinessType;
+import com.hcsy.spring.common.constants.ParamSource;
+
+/**
+ * 声明式权限校验注解
+ * 切面先校验角色，角色不匹配时按 allowSelf 判断当前用户是否为目标资源所有者
+ */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
+@Documented
 public @interface RequirePermission {
+
     /**
-     * 需要的角色
+     * 允许访问的角色，为空表示只校验所有权
      */
     String[] roles() default {};
 
@@ -19,21 +29,17 @@ public @interface RequirePermission {
     boolean allowSelf() default false;
 
     /**
-     * 业务类型：user, article, comment, category, subcategory 等
+     * 业务资源类型，决定归属校验查询哪张资源表
      */
-    String businessType() default "user";
+    BusinessType businessType() default BusinessType.USER;
 
     /**
-     * 参数来源：path_single, path_multi, body
-     * path_single: 路径单个参数如 /users/{id}
-     * path_multi: 路径多个参数如 /article/{articleId}/comment/{commentId}
-     * body: 请求体中的参数如 UserUpdateDTO
+     * 目标资源标识的参数来源
      */
-    String paramSource() default "path_single";
+    ParamSource paramSource() default ParamSource.PATH_SINGLE;
 
     /**
-     * 参数名称（可以是路径参数名或请求体属性名）
-     * 如 id, articleId, commentId, username 等
+     * 目标资源标识的参数名称，可以是路径参数名、查询参数名或请求体属性名
      */
-    String[] paramNames() default { "id" };
+    String paramName() default "id";
 }

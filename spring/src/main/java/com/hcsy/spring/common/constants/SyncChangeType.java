@@ -22,13 +22,13 @@ public enum SyncChangeType {
      * 根据文章操作类型推导变更类型
      * 点赞、收藏、关注等关系类新增为 INSERT，取消除外；浏览与发布为 UPDATE；新增为 INSERT
      */
-    public static SyncChangeType fromAction(String action) {
+    public static SyncChangeType fromAction(SyncAction action) {
         if (action == null) {
             return UPDATE;
         }
         return switch (action) {
-            case "add", "like", "collect", "focus" -> INSERT;
-            case "delete", "unlike", "uncollect", "unfocus" -> DELETE;
+            case ADD, LIKE, COLLECT, FOCUS -> INSERT;
+            case DELETE, UNLIKE, UNCOLLECT, UNFOCUS -> DELETE;
             default -> UPDATE;
         };
     }

@@ -24,9 +24,20 @@ public final class RedisKeys {
 
     // ===== 全量用户列表缓存 =====
     private static final String ALL_USERS_CACHE_KEY = "user:page:all-users";
+    private static final String USER_ROLE_PREFIX = "user:role:";
+    private static final String USER_ROLE_CACHE_NAME = "user-role";
 
     public static String allUsersCache() {
         return ALL_USERS_CACHE_KEY;
+    }
+
+    // ===== 用户角色缓存 =====
+    public static String userRole(Long userId) {
+        return USER_ROLE_PREFIX + userId;
+    }
+
+    public static String userRoleCacheName() {
+        return USER_ROLE_CACHE_NAME;
     }
 
     // ===== 本地缓存失效通知（channel 名称） =====

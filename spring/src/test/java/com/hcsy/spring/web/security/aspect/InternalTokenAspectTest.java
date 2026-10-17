@@ -27,7 +27,6 @@ class InternalTokenAspectTest {
         ProceedingJoinPoint point = mock(ProceedingJoinPoint.class);
         when(point.proceed()).thenReturn(Mono.just("ok"));
         RequireInternalToken annotation = mock(RequireInternalToken.class);
-        when(annotation.value()).thenReturn("");
         Mono<?> result = (Mono<?>) new InternalTokenAspect(tokens, mock(SimpleLogger.class))
             .validateInternalToken(point, annotation);
         StepVerifier.create(result)
@@ -41,12 +40,10 @@ class InternalTokenAspectTest {
     @DisplayName("有效内部令牌允许业务继续执行")
     void acceptsValidToken() throws Throwable {
         InternalTokenUtil tokens = mock(InternalTokenUtil.class);
-        when(tokens.extractServiceName("token")).thenReturn("orders");
         ProceedingJoinPoint point = mock(ProceedingJoinPoint.class);
         when(point.proceed()).thenReturn(Mono.just("ok"));
         when(point.getSignature()).thenReturn(mock(Signature.class));
         RequireInternalToken annotation = mock(RequireInternalToken.class);
-        when(annotation.value()).thenReturn("orders");
         Mono<?> result = (Mono<?>) new InternalTokenAspect(tokens, mock(SimpleLogger.class))
             .validateInternalToken(point, annotation);
         StepVerifier.create(result.contextWrite(Context.of(UserContext.CONTEXT_KEY_INTERNAL_TOKEN, "token")))

@@ -23,9 +23,11 @@ import com.hcsy.spring.application.service.ImageCaptchaService;
 import com.hcsy.spring.application.service.TokenService;
 import com.hcsy.spring.application.service.UserService;
 import com.hcsy.spring.application.sync.annotation.DataSync;
+import com.hcsy.spring.common.constants.BusinessType;
 import com.hcsy.spring.common.constants.HeaderNames;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
@@ -73,10 +75,7 @@ public class UserController {
 
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "query", paramNames = {
-        "page",
-        "size",
-        "username" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.USER, paramSource = ParamSource.QUERY)
     @ApiLog("获取用户信息")
     public Mono<Result<UserListVO>> listUsers(@ParameterObject @ModelAttribute UserQueryDTO queryDTO) {
         return userService.listUsersWithFilter(queryDTO.getPage(), queryDTO.getSize(), queryDTO.getUsername())
@@ -99,7 +98,8 @@ public class UserController {
 
     @PostMapping
     @Operation(summary = "新增用户", description = "创建新用户，如果不传密码则使用配置中的默认密码")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.USER, paramSource = ParamSource.BODY,
+        paramName = "id")
     @DataSync(resource = SyncResource.USER, changeType = SyncChangeType.INSERT, description = "新增用户后同步图谱与数仓")
     @ApiLog(value = "新增用户", excludeFields = { "password" })
     public Mono<Result<Long>> addUser(@Valid @RequestBody UserCreateDTO userDto) {
@@ -108,7 +108,8 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除用户", description = "根据id删除用户")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "id" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.USER, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "id")
     @DataSync(resource = SyncResource.USER, changeType = SyncChangeType.DELETE, description = "删除用户后同步图谱与数仓")
     @ApiLog("删除用户")
     public Mono<Result<Void>> deleteUser(@PathVariable Long id) {
@@ -117,7 +118,8 @@ public class UserController {
 
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除用户", description = "根据id数组批量删除用户，多个id用英文逗号分隔")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "ids" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.USER, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "ids")
     @DataSync(resource = SyncResource.USER, changeType = SyncChangeType.DELETE, description = "批量删除用户后同步图谱与数仓")
     @ApiLog("批量删除用户")
     public Mono<Result<Void>> deleteUsers(@PathVariable String ids) {
@@ -141,7 +143,7 @@ public class UserController {
     @PutMapping
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
     @RequirePermission(roles = {
-        "admin" }, allowSelf = true, businessType = "user", paramSource = "body", paramNames = { "id" })
+        "admin" }, allowSelf = true, businessType = BusinessType.USER, paramSource = ParamSource.BODY, paramName = "id")
     @DataSync(resource = SyncResource.USER, changeType = SyncChangeType.UPDATE, description = "修改用户后同步图谱与数仓")
     @ApiLog("修改用户")
     public Mono<Result<Void>> updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
@@ -151,7 +153,8 @@ public class UserController {
     @PutMapping("/status/{id}")
     @Operation(summary = "修改用户状态", description = "根据用户ID修改用户状态（存储在Redis中）")
     @RequirePermission(roles = {
-        "admin" }, allowSelf = true, businessType = "user", paramSource = "path_single", paramNames = { "id" })
+        "admin" }, allowSelf = true, businessType = BusinessType.USER, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "id")
     @ApiLog("修改用户状态")
     public Mono<Result<Void>> updateUserStatus(@PathVariable Long id, @RequestParam String status) {
         return userService.updateUserStatus(id, status).thenReturn(Result.<Void>success());
@@ -233,8 +236,8 @@ public class UserController {
      */
     @PostMapping("/force-logout/{user_id}")
     @Operation(summary = "手动下线用户", description = "管理员操作：将指定用户的所有登录会话强制下线")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
-        "user_id" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.USER, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "user_id")
     @ApiLog("手动下线用户")
     public Mono<Result<Void>> forceLogoutUser(@PathVariable("user_id") Long userId) {
         return userService.forceLogoutUser(userId)
@@ -299,7 +302,8 @@ public class UserController {
 
     @PostMapping("/admin/reset-all-passwords")
     @Operation(summary = "管理员重置所有用户密码", description = "管理员操作：将所有用户密码重置为配置中的重置密码")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.USER, paramSource = ParamSource.BODY,
+        paramName = "id")
     @ApiLog("重置所有用户密码")
     public Mono<Result<Void>> resetAllPasswords() {
         return userService.resetAllPasswords().thenReturn(Result.<Void>success());
@@ -307,8 +311,8 @@ public class UserController {
 
     @PostMapping("/admin/reset-password/{user_id}")
     @Operation(summary = "管理员重置指定用户密码", description = "管理员操作：将指定用户ID的密码重置为配置中的重置密码")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
-        "user_id" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.USER, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "user_id")
     @ApiLog("重置指定用户密码")
     public Mono<Result<Void>> resetUserPassword(@PathVariable("user_id") Long userId) {
         return userService.resetUserPassword(userId).thenReturn(Result.<Void>success());

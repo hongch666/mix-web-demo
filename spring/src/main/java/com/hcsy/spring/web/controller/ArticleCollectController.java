@@ -13,8 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.application.service.ArticleCollectService;
 import com.hcsy.spring.application.sync.annotation.ArticleSync;
+import com.hcsy.spring.common.constants.BusinessType;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.ParamSource;
+import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleCollectDTO;
@@ -47,10 +50,11 @@ public class ArticleCollectController {
 
     @PostMapping
     @Operation(summary = "添加收藏", description = "为文章添加收藏")
-    @ArticleSync(action = "collect", resource = SyncResource.COLLECTS, description = "收藏了1篇文章")
+    @ArticleSync(action = SyncAction.COLLECT, resource = SyncResource.COLLECTS, description = "收藏了1篇文章")
     @ApiLog("添加收藏")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "body",
-        paramNames = { "userId" })
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+        paramSource = ParamSource.BODY,
+        paramName = "userId")
     public Mono<Result<Void>> addCollect(@Valid @RequestBody ArticleCollectDTO dto) {
         return articleCollectService.addCollect(dto.getArticleId(), dto.getUserId())
             .map(success -> success
@@ -60,10 +64,11 @@ public class ArticleCollectController {
 
     @DeleteMapping
     @Operation(summary = "取消收藏", description = "取消对文章的收藏")
-    @ArticleSync(action = "uncollect", resource = SyncResource.COLLECTS, description = "取消收藏了1篇文章")
+    @ArticleSync(action = SyncAction.UNCOLLECT, resource = SyncResource.COLLECTS, description = "取消收藏了1篇文章")
     @ApiLog("取消收藏")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
-        paramNames = { "user_id" })
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+        paramSource = ParamSource.QUERY,
+        paramName = "user_id")
     public Mono<Result<Void>> removeCollect(
         @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id",
             required = true) Long articleId,
@@ -78,8 +83,9 @@ public class ArticleCollectController {
     @GetMapping("/user/{user_id}")
     @Operation(summary = "查询用户的所有收藏", description = "分页查询某个用户的所有收藏记录（包含文章详情）")
     @ApiLog("查询用户收藏")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "path_single",
-        paramNames = { "user_id" })
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+        paramSource = ParamSource.PATH_SINGLE,
+        paramName = "user_id")
     public Mono<Result<PageVO<ArticleCollectVO>>> listUserCollects(
         @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
         @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
@@ -91,8 +97,9 @@ public class ArticleCollectController {
     @GetMapping("/check")
     @Operation(summary = "检查用户是否收藏", description = "查询用户是否收藏过某篇文章")
     @ApiLog("检查收藏状态")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
-        paramNames = { "user_id" })
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
+        paramSource = ParamSource.QUERY,
+        paramName = "user_id")
     public Mono<Result<CollectCheckVO>> isCollected(
         @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id",
             required = true) Long articleId,

@@ -1,6 +1,6 @@
 package com.hcsy.spring.application.service;
 
-import java.util.Map;
+import com.hcsy.spring.entity.event.ApiLogEvent;
 
 import reactor.core.publisher.Mono;
 
@@ -14,8 +14,8 @@ public interface AsyncApiLogService {
      * 异步发送 API 日志到消息队列
      * 此方法会在后台线程池中执行，不阻塞主流程
      *
-     * @param apiLogMessage
-     *                          API 日志消息 Map
+     * @param apiLogEvent
+     *                        接口日志事件
      */
-    Mono<Void> sendAsync(Map<String, Object> apiLogMessage);
+    Mono<Void> sendAsync(ApiLogEvent apiLogEvent);
 }

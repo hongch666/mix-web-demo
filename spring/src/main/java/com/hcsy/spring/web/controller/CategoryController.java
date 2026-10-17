@@ -16,8 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.application.service.CategoryService;
 import com.hcsy.spring.application.sync.annotation.DataSync;
+import com.hcsy.spring.common.constants.BusinessType;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
@@ -52,7 +54,8 @@ public class CategoryController {
 
     @Operation(summary = "新增分类", description = "管理员新增文章分类，分类信息同步写入 Neo4j 图谱并记录操作日志")
     @PostMapping()
-    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.CATEGORY, paramSource = ParamSource.BODY,
+        paramName = "id")
     @DataSync(resource = SyncResource.CATEGORY, changeType = SyncChangeType.INSERT, description = "新增分类后同步图谱与数仓")
     @ApiLog("新增分类")
     public Mono<Result<Long>> addCategory(@Validated @RequestBody CategoryCreateDTO dto) {
@@ -61,7 +64,8 @@ public class CategoryController {
 
     @Operation(summary = "修改分类", description = "管理员修改文章分类信息，修改结果同步更新 Neo4j 图谱并记录操作日志")
     @PutMapping()
-    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.CATEGORY, paramSource = ParamSource.BODY,
+        paramName = "id")
     @DataSync(resource = SyncResource.CATEGORY, changeType = SyncChangeType.UPDATE, description = "修改分类后同步图谱与数仓")
     @ApiLog("修改分类")
     public Mono<Result<Void>> updateCategory(@Validated @RequestBody CategoryUpdateDTO dto) {
@@ -70,8 +74,8 @@ public class CategoryController {
 
     @Operation(summary = "删除分类（级联删除子分类）", description = "管理员删除指定分类，级联删除其下所有子分类，并同步删除 Neo4j 图谱中的对应节点")
     @DeleteMapping("/{id}")
-    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
-        "id" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.CATEGORY, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "id")
     @DataSync(resource = SyncResource.CATEGORY, changeType = SyncChangeType.DELETE, description = "删除分类后同步图谱与数仓")
     @ApiLog("删除分类")
     public Mono<Result<Void>> deleteCategory(@PathVariable Long id) {
@@ -80,8 +84,8 @@ public class CategoryController {
 
     @Operation(summary = "批量删除分类（级联删除子分类）", description = "管理员按逗号分隔的ID列表批量删除分类，逐个级联删除子分类，并同步删除 Neo4j 图谱节点")
     @DeleteMapping("/batch/{ids}")
-    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
-        "ids" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.CATEGORY, paramSource = ParamSource.PATH_SINGLE,
+        paramName = "ids")
     @DataSync(resource = SyncResource.CATEGORY, changeType = SyncChangeType.DELETE, description = "批量删除分类后同步图谱与数仓")
     @ApiLog("批量删除分类")
     public Mono<Result<Void>> deleteCategories(@PathVariable String ids) {
@@ -95,7 +99,8 @@ public class CategoryController {
 
     @Operation(summary = "新增子分类", description = "管理员在指定分类下新增子分类，同步写入 Neo4j 图谱并记录操作日志")
     @PostMapping("/sub")
-    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.SUB_CATEGORY, paramSource = ParamSource.BODY,
+        paramName = "id")
     @DataSync(resource = SyncResource.SUB_CATEGORY, changeType = SyncChangeType.INSERT, description = "新增子分类后同步图谱与数仓")
     @ApiLog("新增子分类")
     public Mono<Result<Long>> addSubCategory(@Validated @RequestBody SubCategoryCreateDTO dto) {
@@ -104,7 +109,8 @@ public class CategoryController {
 
     @Operation(summary = "修改子分类", description = "管理员修改指定子分类信息，修改结果同步更新 Neo4j 图谱并记录操作日志")
     @PutMapping("/sub")
-    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.SUB_CATEGORY, paramSource = ParamSource.BODY,
+        paramName = "id")
     @DataSync(resource = SyncResource.SUB_CATEGORY, changeType = SyncChangeType.UPDATE, description = "修改子分类后同步图谱与数仓")
     @ApiLog("修改子分类")
     public Mono<Result<Void>> updateSubCategory(@Validated @RequestBody SubCategoryUpdateDTO dto) {
@@ -113,8 +119,9 @@ public class CategoryController {
 
     @Operation(summary = "删除子分类", description = "管理员删除指定子分类，并同步删除 Neo4j 图谱中的对应节点")
     @DeleteMapping("/sub/{id}")
-    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
-        "id" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.SUB_CATEGORY,
+        paramSource = ParamSource.PATH_SINGLE,
+        paramName = "id")
     @DataSync(resource = SyncResource.SUB_CATEGORY, changeType = SyncChangeType.DELETE, description = "删除子分类后同步图谱与数仓")
     @ApiLog("删除子分类")
     public Mono<Result<Void>> deleteSubCategory(@PathVariable Long id) {
@@ -123,8 +130,9 @@ public class CategoryController {
 
     @Operation(summary = "批量删除子分类", description = "管理员按逗号分隔的ID列表批量删除子分类，并同步删除 Neo4j 图谱节点")
     @DeleteMapping("/sub/batch/{ids}")
-    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
-        "ids" })
+    @RequirePermission(roles = { "admin" }, businessType = BusinessType.SUB_CATEGORY,
+        paramSource = ParamSource.PATH_SINGLE,
+        paramName = "ids")
     @DataSync(resource = SyncResource.SUB_CATEGORY, changeType = SyncChangeType.DELETE, description = "批量删除子分类后同步图谱与数仓")
     @ApiLog("批量删除子分类")
     public Mono<Result<Void>> deleteSubCategories(@PathVariable String ids) {
