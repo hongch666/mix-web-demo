@@ -31,7 +31,10 @@ public class DatabaseInitializer {
                 () -> logger.info(Messages.INIT_AI_SUCCESS));
     }
 
-    private Mono<Void> initializeDatabase() {
+    /**
+     * 编排建表与预置数据初始化，包私有以便单元测试直接订阅验证顺序与容错
+     */
+    Mono<Void> initializeDatabase() {
         Mono<Void> baseTables = Mono.when(
             execute(Scripts.CREATE_CATEGORY_TABLE),
             execute(Scripts.CREATE_USER_TABLE),
