@@ -150,7 +150,6 @@ class DatabaseInitializerTest {
 
     private DatabaseClient.GenericExecuteSpec createSpec(String sql) {
         DatabaseClient.GenericExecuteSpec spec = mock(DatabaseClient.GenericExecuteSpec.class);
-        @SuppressWarnings("unchecked")
         FetchSpec<Map<String, Object>> fetch = mock(FetchSpec.class);
         when(spec.fetch()).thenReturn(fetch);
         when(fetch.rowsUpdated()).thenAnswer(invocation -> Mono.defer(() -> {
