@@ -122,10 +122,10 @@ web/controller   HTTP 接口层（返回 Mono/Flux）
 web/filter|exception  请求过滤与异常映射
 web/security/annotation|aspect  权限注解与切面
 web/logging/annotation|aspect  接口日志注解与切面
+web/sync/annotation|aspect  变更同步注解与切面
 application/service      业务接口
 application/service/impl 业务实现
 application/task  定时调度
-application/sync/annotation|aspect  变更同步注解与切面
 infra/persistence/repository   R2DBC Repository
 infra/persistence/DatabaseInitializer  数据库初始化
 entity/po|vo|dto|event|projection  实体、视图对象、领域事件与投影（跨服务变更事件放 entity/event）
@@ -137,12 +137,12 @@ observability   指标记录（MetricsRecorder）
 common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 ```
 
-测试文件按被测类的包路径放在 `spring/src/test/java/com/hcsy/spring/` 下，例如 `web/logging/aspect/ApiLogAspectTest.java`、`web/security/aspect/PermissionValidationAspectTest.java` 与 `application/service/impl/ArticleServiceImplTest.java`
+测试文件按被测类的包路径放在 `spring/src/test/java/com/hcsy/spring/` 下，例如 `web/logging/aspect/ApiLogAspectTest.java`、`web/security/aspect/RequirePermissionAspectTest.java` 与 `application/service/impl/ArticleServiceImplTest.java`
 
 ### 硬性约定
 
 - **控制器返回类型禁止匿名 Map**：一律用 `entity/vo/` 下的 VO 并给字段加 `@Schema`，`./mix lint spring` 会检查（`scripts/controller-vo.py`）。把原先的 `Map<String, Object>` 换成 VO 时，类上必须加 `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)` 保持 `user_id`、`create_time` 这类下划线字段名，否则 FastAPI/GoZero 按原字段名解析会取不到值；只有运行时结构不固定（动态列、动态键）时才允许 Map，并在方法或其注解上方写 `// vo-exempt: 原因`，整类场景写 `// vo-exempt-class: 原因`
-- **依赖方向**：`web` 调用 `application/service`，应用服务使用 `infra` 的客户端与 Repository；`application/task` 调用业务服务，`application/sync` 的切面调用同步服务。`common` 不依赖 `web` 或 `application`；`entity/assembler` 现有实现依赖 `infra/persistence/repository`，新增跨层组件前先确认依赖方向
+- **依赖方向**：`web` 调用 `application/service`，应用服务使用 `infra` 的客户端与 Repository；`application/task` 调用业务服务，`web/sync` 的切面调用同步服务。`common` 不依赖 `web` 或 `application`；`entity/assembler` 现有实现依赖 `infra/persistence/repository`，新增跨层组件前先确认依赖方向
 - 文章创建/更新的作者解析、评论创建/更新的关联规则与评论列表补全由应用服务执行；Controller 只映射原接口的成功或缺失响应。定时任务的异步订阅由任务组件启动，Controller 只触发任务。保留 `@ArticleSync` / `@DataSync` 所需的创建主键与成功结果形态
 - ORM 是 Spring Data R2DBC，不是 MyBatisPlus：Repository 继承 `ReactiveCrudRepository<T, ID>`；自定义 SQL 用 `@Query` + `:param`，更新加 `@Modifying`；事务用 `TransactionalOperator.transactional()` 包裹，禁止 `@Transactional`
 - Controller 返回 `Mono<Result<T>>` / `Flux<Result<T>>`，Service 返回 `Mono<T>` / `Flux<T>`；禁止返回裸类型、禁止调用 `.block()`
@@ -155,7 +155,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 - 微服务调用用 `ServiceWebClient`（WebClient + `@LoadBalanced` 服务名寻址 + Resilience4j 熔断/重试），新增远程接口在该类中加方法，通过 `deferContextual` 注入上下文头；禁止 OpenFeign。**当前实现在每次请求里 `webClientBuilder.build()` 重建 WebClient**：连接池是 reactor-netty 全局的所以不会泄漏，但每次构建有额外开销，改造时应在 `@PostConstruct` 缓存一个实例（`WebClient` 不可变且线程安全）
 - Redis 用 `ReactiveStringRedisTemplate`，封装在 `common/utils/RedisUtil`；缓存读写走 Mono 链式 `switchIfEmpty(Mono.defer(...))` 模式，禁止 `@Cacheable`
 - AOP 切面中 `pjp.proceed()` 返回 `Mono<?>` 时必须在 Mono 链内操作（`.flatMap()` / `.doOnSuccess()`），上下文用 `.deferContextual()` 获取
-- 横切能力由 AOP 实现：`ApiLogAspect`（接口日志）、`PermissionValidationAspect`（`@RequirePermission` 声明式权限）、`InternalTokenAspect`（`@RequireInternalToken` 内部令牌）、`ArticleSyncAspect`（文章变更同步 MQ / ES / 向量）、`DataSyncAspect`（图谱与数仓同步）。新增写接口时确认是否需要权限注解与同步触发，同步失败只记日志、没有补偿机制
+- 横切能力由 AOP 实现：`ApiLogAspect`（接口日志）、`RequirePermissionAspect`（`@RequirePermission` 声明式权限）、`RequireInternalTokenAspect`（`@RequireInternalToken` 内部令牌）、`ArticleSyncAspect`（文章变更同步 MQ / ES / 向量）、`DataSyncAspect`（图谱与数仓同步）。切面类与注解同名（注解去 `@` 加 `Aspect` 后缀），新增切面沿用该命名。新增写接口时确认是否需要权限注解与同步触发，同步失败只记日志、没有补偿机制
 - **响应式切面的固定写法**：`pjp.proceed()` 返回的是**未订阅的冷流**（业务代码此时尚未执行），且 Reactor Context 只在订阅时可见。所以切面必须把校验 / 日志 / 同步挂到 Mono 链上（`Mono.deferContextual(ctx -> ...)`）：校验类用 `validate(ctx).then(businessMono)` 保证「校验先于业务」，副作用类用 `monoResult.doOnSuccess(...)` 发后即忘；副作用里若需要用户身份，必须用 `UserContext.writeContext(Context.empty(), ...)` 重建 Context 再 `contextWrite`，否则异步链上读不到。**禁止用同步代码在 `proceed()` 之前读上下文**，那时 ctx 不可见，只会拿到 null
 - 注入风格：`@Service` + `@RequiredArgsConstructor` + `private final` 字段（构造器注入），禁止字段 `@Autowired`
 - 外部基础设施统一由 Spring Bean 提供：`PasswordEncryptor` 注入 `BCryptPasswordEncoder`，禁止在工具或 Service 内部直接 `new` 加密器、客户端或连接资源；新增同类依赖放入 `config` 的 `@Configuration` Bean
@@ -400,7 +400,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 | 服务    | 标记方式                                                                                        | 校验实现                                         | 网关侧                  |
 | ------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------ | ----------------------- |
-| Spring  | `@RequireInternalToken`                                                                         | 切面 `InternalTokenAspect`                       | `block-internal` 黑名单 |
+| Spring  | `@RequireInternalToken`                                                                         | 切面 `RequireInternalTokenAspect`                       | `block-internal` 黑名单 |
 | NestJS  | `@RequireInternalToken()`                                                                       | `framework/guards/internalToken.guard.ts`        | 同上                    |
 | FastAPI | `@requireInternalToken`（装饰器会给 wrapper 打 `requires_internal_token` 标记，供契约测试自省） | `core/decorators/requireInternalToken.py`        | 同上                    |
 | GoZero  | `.api` 的 `@server middleware:` + `InternalServiceMiddleware`                                   | `common/middleware/internalServiceMiddleware.go` | 同上                    |
