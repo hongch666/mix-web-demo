@@ -15,7 +15,6 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.CacheUtil;
-import com.hcsy.spring.common.utils.UserRoleCache;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
@@ -31,6 +30,10 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 public class PermissionCheckerImpl implements PermissionChecker {
+
+    /** 用户角色多级缓存，TTL 走全局默认，用户修改与删除时按同一份定义失效 */
+    static final CacheUtil.CacheOptions<String> USER_ROLE_CACHE = CacheUtil.CacheOptions.fixed(
+        RedisKeys.userRoleCacheName(), RedisKeys.userCacheInvalidationChannel(), 1000);
 
     private final UserService userService;
     private final ArticleService articleService;
@@ -104,7 +107,7 @@ public class PermissionCheckerImpl implements PermissionChecker {
      * 用户不存在时缓存空字符串，避免每次请求都穿透到数据库
      */
     private Mono<String> getRole(Long userId) {
-        return cacheUtil.get(UserRoleCache.OPTIONS, userId, RedisKeys.userRole(userId), String.class,
+        return cacheUtil.get(USER_ROLE_CACHE, userId, RedisKeys.userRole(userId), String.class,
             () -> userService.getById(userId).map(User::getRole).defaultIfEmpty(""));
     }
 

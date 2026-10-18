@@ -239,19 +239,19 @@ public class CacheUtil {
 
         public CacheOptions {
             if (name == null || name.isBlank()) {
-                throw new IllegalArgumentException("缓存名称不能为空");
+                throw new IllegalArgumentException(Messages.CACHE_OPTIONS_NAME_NOT_BLANK);
             }
             if (invalidationChannel == null || invalidationChannel.isBlank()) {
-                throw new IllegalArgumentException("缓存失效频道不能为空");
+                throw new IllegalArgumentException(Messages.CACHE_OPTIONS_CHANNEL_NOT_BLANK);
             }
             if (maximumSize < 1) {
-                throw new IllegalArgumentException("缓存容量必须大于零");
+                throw new IllegalArgumentException(Messages.CACHE_OPTIONS_MAXIMUM_SIZE_POSITIVE);
             }
             if (l1TtlSeconds < 1) {
-                throw new IllegalArgumentException("L1 本地缓存过期时间必须大于零");
+                throw new IllegalArgumentException(Messages.CACHE_OPTIONS_L1_TTL_POSITIVE);
             }
             if (l2TtlSeconds < 1) {
-                throw new IllegalArgumentException("L2 缓存过期时间必须大于零");
+                throw new IllegalArgumentException(Messages.CACHE_OPTIONS_L2_TTL_POSITIVE);
             }
         }
 

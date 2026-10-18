@@ -23,7 +23,6 @@ import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.CacheUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
-import com.hcsy.spring.common.utils.UserRoleCache;
 import com.hcsy.spring.config.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
@@ -165,7 +164,7 @@ public class UserServiceImpl implements UserService {
             .flatMap(userRepository::delete);
         return transactionalOperator.transactional(databaseOperation)
             .then(Mono.when(evictAllUsersCache(), redisUtil.delete(RedisKeys.userStatus(id)),
-                UserRoleCache.evict(cacheUtil, id)));
+                evictUserRoleCache(id)));
     }
 
     @Override
@@ -183,7 +182,7 @@ public class UserServiceImpl implements UserService {
             .flatMap(id -> redisUtil.delete(RedisKeys.userStatus(id)), 8)
             .then();
         Mono<Void> clearRoles = Flux.fromIterable(distinctIds)
-            .flatMap(id -> UserRoleCache.evict(cacheUtil, id), 8)
+            .flatMap(this::evictUserRoleCache, 8)
             .then();
         return transactionalOperator.transactional(databaseOperation)
             .then(Mono.when(evictAllUsersCache(), clearStatuses, clearRoles));
@@ -430,7 +429,7 @@ public class UserServiceImpl implements UserService {
                     return transactionalOperator.transactional(userRepository.save(user));
                 });
             })
-            .then(evictAllUsersCache());
+            .then(Mono.when(evictAllUsersCache(), evictUserRoleCache(dto.getId().longValue())));
     }
 
     @Override
@@ -549,6 +548,10 @@ public class UserServiceImpl implements UserService {
 
     private Mono<Void> evictAllUsersCache() {
         return cacheUtil.evict(RedisKeys.allUsersCache(), ALL_USERS_CACHE);
+    }
+
+    private Mono<Void> evictUserRoleCache(Long userId) {
+        return cacheUtil.evict(RedisKeys.userRole(userId), PermissionCheckerImpl.USER_ROLE_CACHE);
     }
 
     private Mono<Void> validateLoginCaptcha(String captchaId, String captchaText) {

@@ -87,6 +87,11 @@ public class Messages {
     public static final String CACHE_L2_CLEAR_FAILED = "L2缓存清除失败: %s";
     public static final String CACHE_INVALIDATION_PUBLISH_FAILED = "发布本地缓存失效消息失败，频道=%s: %s";
     public static final String CACHE_INVALIDATION_SUBSCRIBE_FAILED = "订阅本地缓存失效消息失败，频道=%s: %s";
+    public static final String CACHE_OPTIONS_NAME_NOT_BLANK = "缓存名称不能为空";
+    public static final String CACHE_OPTIONS_CHANNEL_NOT_BLANK = "缓存失效频道不能为空";
+    public static final String CACHE_OPTIONS_MAXIMUM_SIZE_POSITIVE = "缓存容量必须大于零";
+    public static final String CACHE_OPTIONS_L1_TTL_POSITIVE = "L1 本地缓存过期时间必须大于零";
+    public static final String CACHE_OPTIONS_L2_TTL_POSITIVE = "L2 缓存过期时间必须大于零";
     public static final String REFERENCE_EXIST = "该子分类已存在权威参考文本";
     public static final String REFERENCE_NOT_EXIST = "该子分类暂无权威参考文本";
     public static final String PDF_EMPTY = "PDF类型必须提供pdf链接";
