@@ -50,6 +50,8 @@ spring:
           max-active: 10
           max-idle: 5
           min-idle: 1
+          # 借不到连接最多等 3 秒，避免池耗尽时请求无限挂起
+          max-wait: 3000
       timeout: 3000
   rabbitmq:
     host: ${RABBITMQ_HOST:127.0.0.1}
