@@ -64,12 +64,15 @@ COPY app/etc ./etc
 RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup
 
-# 创建日志和文件目录并设置权限
+# 创建日志、静态文件与 Nacos 缓存/日志目录并设置权限
+# Nacos 目录默认在 /app/tmp 下（cacheDir/logDir 相对 ./tmp 解析），非 root 用户需要预建授权
 RUN mkdir -p /app/logs/gozero && \
     mkdir -p /app/static/pic && \
     mkdir -p /app/static/excel && \
     mkdir -p /app/static/upload && \
-    chown -R appuser:appgroup /app/logs /app/static && \
+    mkdir -p /app/tmp/nacos/cache && \
+    mkdir -p /app/tmp/nacos/log && \
+    chown -R appuser:appgroup /app/logs /app/static /app/tmp && \
     chmod -R 755 /app
 
 USER appuser
