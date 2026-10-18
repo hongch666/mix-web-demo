@@ -29,7 +29,7 @@ public class TokenCleanupTask {
             .subscribe();
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 * * * * *")
     public Mono<Void> cleanupExpiredTokens() {
         long startedAt = System.nanoTime();
         String lockKey = RedisKeys.lockTaskTokenCleanup();
