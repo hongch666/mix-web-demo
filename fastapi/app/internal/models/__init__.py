@@ -1,5 +1,6 @@
 from .mysql.aiHistory import AiHistory
 from .mysql.aiUserSummary import AiUserSummary
+from .mysql.mcpServerConfig import McpServerConfig
 from .graph.article import Article
 from .graph.belongsToRel import BelongsToRel
 from .graph.category import Category
@@ -50,6 +51,7 @@ from .warehouse.base import (
 __all__: list[str] = [
     "AiHistory",
     "AiUserSummary",
+    "McpServerConfig",
     "User",
     "Category",
     "SubCategory",

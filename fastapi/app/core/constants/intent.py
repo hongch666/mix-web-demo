@@ -70,6 +70,7 @@ class IntentConstants:
 
     # 结构化输出字段说明
     STRUCTURED_TYPES_DESCRIPTION: str = (
-        "识别出的用户意图类型列表，可同时包含多个领域，只有纯闲聊时才给出 general_chat"
+        "识别出的用户意图类型列表，可同时包含多个领域，"
+        "只有纯闲聊且不需要调用任何工具（含 mcp_ 前缀的外部扩展工具）时才给出 general_chat"
     )
     STRUCTURED_CONFIDENCE_DESCRIPTION: str = "意图识别的置信度"

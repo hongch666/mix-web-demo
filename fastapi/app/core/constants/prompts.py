@@ -23,7 +23,8 @@ class Prompts:
         5. 执行 SQL 必须使用参数化占位符（:paramName）并包含 LIMIT（最大 100），禁止拼接值。
         6. 涉及文章、用户、分类、标签之间的关系、相似文章和推荐时，优先使用 Neo4j 知识图谱工具。
         7. MongoDB 工具只用于日志相关查询(文章日志/API日志)，查询前先确认 collection 名称。
-        8. 最终回答必须使用中文，简洁明确。
+        8. 系统还挂载了 mcp_ 前缀的外部扩展工具：能力匹配时优先调用它获取真实数据而非凭空作答，参数以工具描述为准，失败时如实说明。
+        9. 最终回答必须使用中文，简洁明确。
 
         数仓工具选择示例：
         - "平台总浏览量和文章数" -> query_clickhouse_warehouse(dataset="platform_stats")
@@ -169,11 +170,15 @@ class Prompts:
         * "你好"
         * "谢谢你的帮助"
         * "你能做什么？"
+    - 排除规则：问题只要需要查询数据、执行操作或调用任何工具（包括以 mcp_ 前缀开头的
+      外部扩展工具）才能回答，就禁止归为 general_chat，按最接近的领域归类
 
     组合规则：
     - 只涉及一个领域时返回该领域
     - 同时涉及多个领域时全部返回，不要遗漏
     - general_chat 仅在问题与其它领域无关时返回，禁止与其它领域一起返回
+    - 涉及系统挂载的外部扩展工具（mcp_ 前缀）的问题，按其能力归属到最接近的领域，
+      无法确定时也归入 database_query 而不是 general_chat
 
     只输出意图标识，多个用英文逗号分隔，不要输出其它内容
     可选值：database_query、article_search、log_analysis、knowledge_query、general_chat

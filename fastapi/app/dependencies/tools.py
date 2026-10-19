@@ -8,6 +8,7 @@ from app.internal.agents import (
     ClickHouseWarehouseTools,
     FastapiSqlTool,
     GozeroSqlTool,
+    MCPServerTools,
     MongoDBTools,
     Neo4jQueryTools,
     NestjsSqlTool,
@@ -15,6 +16,7 @@ from app.internal.agents import (
     SpringSqlTool,
     get_fastapi_sql_tool,
     get_gozero_sql_tool,
+    get_mcp_tools,
     get_mongodb_tools,
     get_neo4j_tools,
     get_nestjs_sql_tool,
@@ -59,6 +61,14 @@ def provide_warehouse_tools() -> ClickHouseWarehouseTools:
     return get_warehouse_tools()
 
 
+def provide_mcp_tools() -> MCPServerTools:
+    """装配 MCP 工具组工厂，工具实例在 initialize_ai_tools 中延迟构造
+
+    构造与发现阶段读取 mcp_server_config 表，配置变更无需重启即可生效
+    """
+    return get_mcp_tools()
+
+
 def provide_agent_tool_factories(
     spring_client: SpringClientDep,
     gozero_client: GozeroClientDep,
@@ -81,6 +91,7 @@ def provide_agent_tool_factories(
         neo4j=("Neo4j 知识图谱", provide_neo4j_tools),
         mongodb=("MongoDB 日志", partial(provide_mongodb_tools, nestjs_client)),
         warehouse=("ClickHouse 数仓", provide_warehouse_tools),
+        mcp_servers=(("MCP 服务", provide_mcp_tools),),
     )
 
 

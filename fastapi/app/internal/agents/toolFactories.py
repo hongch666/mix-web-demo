@@ -32,6 +32,7 @@ class AgentToolFactories:
     neo4j: tuple[str, Callable[[], Any]]
     mongodb: tuple[str, Callable[[], Any]]
     warehouse: tuple[str, Callable[[], Any]]
+    mcp_servers: tuple[tuple[str, Callable[[], Any]], ...] = ()
 
 
 def default_agent_tool_factories() -> AgentToolFactories:

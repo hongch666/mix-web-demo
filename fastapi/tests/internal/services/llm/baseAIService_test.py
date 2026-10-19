@@ -807,6 +807,7 @@ async def test_stream_chat_emits_compact_note_before_content() -> None:
 # Agent 流式对话同样在工具步骤之前下发记忆整理思考帧
 @pytest.mark.anyio
 async def test_stream_chat_agent_emits_compact_note_first() -> None:
+    # agent 提示词全文参与上下文预算估算，调整 AGENT_PROMPT 文案会改变折叠轮数，期望值需与当前提示词长度下的预算规划结果保持一致
     mapper = AsyncMock()
     mapper.get_ai_history_after_id_async.return_value = [
         _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
@@ -838,7 +839,7 @@ async def test_stream_chat_agent_emits_compact_note_first() -> None:
 
     assert frames[0] == {
         "type": "thinking",
-        "content": Messages.CHAT_MEMORY_COMPACT_THINKING(3, len("合并摘要")),
+        "content": Messages.CHAT_MEMORY_COMPACT_THINKING(4, len("合并摘要")),
     }
     assert all(frame["type"] == "thinking" for frame in frames[:2])
 

@@ -2,6 +2,7 @@ from .aiHistory import AiHistoryMapper, get_ai_history_mapper
 from .aiUserSummary import AiUserSummaryMapper, get_ai_user_summary_mapper
 from .apiLog import ApiLogMapper, get_api_log_mapper
 from .article import ArticleMapper, get_article_mapper
+from .mcpServerConfig import McpServerConfigMapper, get_mcp_server_config_mapper
 from .user import UserMapper, get_user_mapper
 from .vector import (
     DocScore,
@@ -19,6 +20,8 @@ __all__: list[str] = [
     "AiHistoryMapper",
     "get_ai_user_summary_mapper",
     "AiUserSummaryMapper",
+    "get_mcp_server_config_mapper",
+    "McpServerConfigMapper",
     "get_user_mapper",
     "UserMapper",
     "get_vector_store_mapper",

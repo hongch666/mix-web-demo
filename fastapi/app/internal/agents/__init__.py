@@ -16,6 +16,7 @@ from .modelParams import (
 )
 from .tools.fastapiSqlTool import FastapiSqlTool, get_fastapi_sql_tool
 from .tools.gozeroSqlTool import GozeroSqlTool, get_gozero_sql_tool
+from .tools.mcpTools import MCPServerTools, get_mcp_tools
 from .tools.mongoDBTools import MongoDBTools, get_mongodb_tools
 from .tools.neo4jTools import Neo4jQueryTools, get_neo4j_tools
 from .tools.nestjsSqlTool import NestjsSqlTool, get_nestjs_sql_tool
@@ -40,6 +41,8 @@ __all__: list[str] = [
     "get_gozero_sql_tool",
     "MongoDBTools",
     "get_mongodb_tools",
+    "MCPServerTools",
+    "get_mcp_tools",
     "Neo4jQueryTools",
     "get_neo4j_tools",
     "NestjsSqlTool",

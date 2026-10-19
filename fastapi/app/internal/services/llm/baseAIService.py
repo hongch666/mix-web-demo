@@ -107,7 +107,7 @@ def initialize_ai_tools(
     factories: AgentToolFactories = tool_factories or default_agent_tool_factories()
 
     # 并行加载所有独立工具组
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=5 + len(factories.mcp_servers)) as executor:
         futures: dict[str, Any] = {}
 
         if include_sql:
@@ -117,6 +117,10 @@ def initialize_ai_tools(
         if include_logs:
             futures["mongodb"] = executor.submit(_load_tool_group, *factories.mongodb)
         futures["warehouse"] = executor.submit(_load_tool_group, *factories.warehouse)
+        for index, (server_name, server_factory) in enumerate(factories.mcp_servers):
+            futures[f"mcp_{index}"] = executor.submit(
+                _load_tool_group, server_name, server_factory
+            )
 
         # 按完成顺序收集结果
         for _future in as_completed(futures.values()):
@@ -138,6 +142,10 @@ def initialize_ai_tools(
         if "warehouse" in futures:
             _, warehouse_tools = futures["warehouse"].result()
             all_tools.extend(warehouse_tools)
+        for index in range(len(factories.mcp_servers)):
+            if f"mcp_{index}" in futures:
+                _, mcp_tools = futures[f"mcp_{index}"].result()
+                all_tools.extend(mcp_tools)
 
     Logger.info(Messages.LLM_TOOLS_LOADED_TOTAL(len(all_tools)))
     return sql_tools_instance, rag_tools_instance, mongodb_tools_instance, all_tools
