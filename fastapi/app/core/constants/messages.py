@@ -291,15 +291,15 @@ class Messages:
         return f"总共加载了 {count} 个工具"
 
     @staticmethod
-    def MCP_ADAPTER_NOT_INSTALLED() -> str:
-        return "langchain-mcp-adapters 未安装，MCP 工具组降级为空"
+    def MCP_NO_ENABLED_SERVERS() -> str:
+        return "mcp_server_config 表中没有启用中的 MCP 服务，MCP 工具组为空"
 
     @staticmethod
     def MCP_SERVER_TOOLS_DISCOVERED(server_name: str, count: int) -> str:
         return f"发现 {server_name} MCP 服务工具: {count} 个"
 
     @staticmethod
-    def MCP_SERVER_LOAD_FAILED(server_name: str, error: Exception) -> str:
+    def MCP_SERVER_LOAD_FAILED(server_name: str, error: BaseException) -> str:
         return f"加载 {server_name} MCP 服务工具失败: {error}"
 
     @staticmethod
