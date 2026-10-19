@@ -67,6 +67,48 @@ lint_package_imports() {
     return 0
 }
 
+# API 文件格式检查（gozero）：goctl api format 没有只读校验模式，
+# 把 .api 复制到临时目录执行格式化后与仓库文件比对，仓库文件只读不修改，goctl 缺失时跳过
+lint_api_format() {
+    if ! command -v goctl >/dev/null 2>&1; then
+        print_warn "未检测到 goctl，跳过 API 文件格式检查"
+        return 0
+    fi
+
+    local api_dir="$WORKDIR/gozero/api"
+    [ -d "$api_dir" ] || return 0
+
+    local work_dir check_dir
+    work_dir="$(mktemp -d)"
+    check_dir="$work_dir/api"
+    mkdir -p "$check_dir"
+    cp -r "$api_dir/." "$check_dir/"
+
+    # goctl 是原生程序，Windows 下无法识别 /c/... 这类 POSIX 路径，需要转成本机原生路径
+    if command -v cygpath >/dev/null 2>&1; then
+        check_dir="$(cygpath -w "$check_dir")"
+    fi
+
+    # 在临时目录内执行：goctl 模块识别异常时会以调用者当前目录为基准回退执行 go mod init / go work use，
+    # 留在仓库目录会污染根目录的 go.mod 与 go.work
+    if ! (cd "$work_dir" && goctl api format -dir "$check_dir" >/dev/null 2>&1); then
+        rm -rf "$work_dir"
+        print_error "goctl api format 执行失败，请检查 .api 文件语法"
+        return 1
+    fi
+
+    local diff_rc=0
+    diff -r --strip-trailing-cr "$api_dir" "$work_dir/api" >/dev/null 2>&1 || diff_rc=1
+    if [ "$diff_rc" -ne 0 ]; then
+        print_error "API 文件未通过 goctl api format 格式检查："
+        diff -r --strip-trailing-cr "$api_dir" "$work_dir/api" | sed -n '1,60p'
+        rm -rf "$work_dir"
+        return 1
+    fi
+    rm -rf "$work_dir"
+    return 0
+}
+
 # 未指定服务时检查全部服务
 if [ $# -gt 0 ]; then
     SERVICES="$*"
@@ -89,6 +131,10 @@ lint_gozero() {
     command -v golangci-lint >/dev/null 2>&1 || return 2
     print_info "检查 GoZero 代码（golangci-lint）..."
     (cd "$WORKDIR/gozero/app" && golangci-lint run) || return 1
+
+    # 校验 .api 文件是否符合 goctl api format 规范
+    print_info "检查 GoZero API 文件格式（goctl api format）..."
+    lint_api_format || return 1
 
     # 校验 goctl 生成产物：不允许修改的文件按模板重新生成后比对，允许编辑的文件只校验首行标记注释
     print_info "校验 GoZero 生成产物与 gozero/template 是否一致..."

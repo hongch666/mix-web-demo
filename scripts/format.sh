@@ -53,6 +53,16 @@ format_package_imports() {
     return 0
 }
 
+# API 文件格式化（gozero）：与 genApi.sh 生成流程使用同一命令，goctl 缺失时跳过
+format_api_files() {
+    if command -v goctl >/dev/null 2>&1; then
+        (cd "$WORKDIR/gozero/api" && goctl api format -dir .)
+        return
+    fi
+    print_warn "未检测到 goctl，跳过 API 文件格式化"
+    return 0
+}
+
 # 未指定服务时格式化全部服务
 if [ $# -gt 0 ]; then
     SERVICES="$*"
@@ -72,7 +82,9 @@ format_spring() {
 format_gozero() {
     command -v golangci-lint >/dev/null 2>&1 || return 2
     print_info "格式化 GoZero 代码（golangci-lint fmt）..."
-    (cd "$WORKDIR/gozero/app" && golangci-lint fmt)
+    (cd "$WORKDIR/gozero/app" && golangci-lint fmt) || return 1
+    print_info "格式化 GoZero API 文件（goctl api format）..."
+    format_api_files || return 1
 }
 
 format_nestjs() {
