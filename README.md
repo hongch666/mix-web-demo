@@ -1702,8 +1702,8 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `goctl-api-init.sh`         | scripts/             | 生成 GoZero API 代码，参数透传给`genApi.sh`                                                    | Linux/macOS         |
 | `goctl-orm-init.sh`         | scripts/             | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                                    | Linux/macOS         |
 | `checkGenerated.sh`         | gozero/script/goctl/ | 校验 goctl 生成产物是否被人工改动（按`gozero/template`重新生成后比对）                         | Linux/macOS/Windows |
-| `lint.sh`                   | scripts/             | 检查四个服务的代码规范（Spotless/golangci-lint/ESLint/Prettier/Ruff）                          | Linux/macOS         |
-| `format.sh`                 | scripts/             | 格式化四个服务的代码（Spotless/golangci-lint/Prettier/Ruff）                                   | Linux/macOS         |
+| `lint.sh`                   | scripts/             | 检查四个服务的代码规范（Spotless/golangci-lint/goctl api format/ESLint/Prettier/Ruff）         | Linux/macOS         |
+| `format.sh`                 | scripts/             | 格式化四个服务的代码（Spotless/golangci-lint/goctl api format/Prettier/Ruff）                  | Linux/macOS         |
 | `test.sh`                   | scripts/             | 运行四个服务的单元测试（支持指定服务）                                                         | Linux/macOS         |
 | `compile.sh`                | scripts/             | 验证四个服务能否编译通过（只编译，不产出打包目录）                                             | Linux/macOS         |
 | `hooks-init.sh`             | scripts/             | 启用/停用/查看仓库的版本化 Git 提交钩子（`.githooks/`）                                        | Linux/macOS/Windows |
@@ -2672,7 +2672,7 @@ FastAPI 侧不使用 Pyright 作为门禁：仓库既有类型检查基线存在
 | 服务    | 工具                         | 配置文件                                                                | 说明                        |
 | ------- | ---------------------------- | ----------------------------------------------------------------------- | --------------------------- |
 | Spring  | Spotless + Eclipse formatter | `spring/eclipse-formatter.xml`、`spring/pom.xml`、`spring/build.gradle` | Java 格式化与校验           |
-| GoZero  | golangci-lint v2             | `gozero/app/.golangci.yml`                                              | Go 静态检查与格式化         |
+| GoZero  | golangci-lint v2 + goctl     | `gozero/app/.golangci.yml`                                              | Go 静态检查与格式化、`.api` 文件格式化与校验 |
 | NestJS  | ESLint + Prettier            | `nestjs/eslint.config.mjs`、`nestjs/.prettierrc`                        | TypeScript 静态检查与格式化 |
 | FastAPI | Ruff + Pyright               | `fastapi/pyproject.toml`                                                | Python 检查与格式化         |
 
@@ -2709,7 +2709,12 @@ golangci-lint run   # 静态检查
 golangci-lint fmt   # 格式化
 ```
 
-`./mix lint gozero` 除 golangci-lint 外，还会调用 `gozero/script/goctl/checkGenerated.sh` 校验 goctl 生成产物是否被人工改动，规则见「其他说明 → GoZero 代码生成 → 生成产物校验」。
+`./mix format gozero` 除 golangci-lint fmt 外，还会对 `gozero/api/` 下的 `.api` 文件执行 `goctl api format`（goctl 未安装时跳过并提示）。
+
+`./mix lint gozero` 除 golangci-lint 外，还会做两项校验：
+
+1. `.api` 文件格式检查：`goctl api format` 没有只读校验模式，脚本把 `gozero/api/` 复制到临时目录执行格式化后与仓库文件 diff，不一致即失败并打印 diff（仓库文件全程只读，goctl 未安装时跳过并提示）
+2. 调用 `gozero/script/goctl/checkGenerated.sh` 校验 goctl 生成产物是否被人工改动，规则见「其他说明 → GoZero 代码生成 → 生成产物校验」
 
 ### NestJS
 
