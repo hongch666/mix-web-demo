@@ -44,6 +44,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 获取 GitHub 授权地址
       tags:
         - GitHub 登录模块
@@ -88,6 +94,12 @@ paths:
               description: 重定向地址
               schema:
                 type: string
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: GitHub 回调处理
       tags:
         - GitHub 登录模块
@@ -127,6 +139,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 发送邮箱验证码
       tags:
         - 邮件模块
@@ -160,6 +178,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 手动执行清理API日志任务
       tags:
         - 定时任务模块
@@ -193,6 +217,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 手动执行清理文章日志任务
       tags:
         - 定时任务模块
@@ -336,6 +366,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 查询文章日志
       tags:
         - 文章日志模块
@@ -420,6 +456,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 游标同步文章日志
       tags:
         - 文章日志模块
@@ -458,6 +500,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 删除文章日志
       tags:
         - 文章日志模块
@@ -496,6 +544,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 批量删除文章日志
       tags:
         - 文章日志模块
@@ -541,6 +595,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 获取搜索历史
       tags:
         - 文章日志模块
@@ -599,6 +659,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 获取文章浏览分布
       tags:
         - 文章日志模块
@@ -635,6 +701,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 获取搜索关键词
       tags:
         - 文章日志模块
@@ -779,6 +851,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 查询API日志
       tags:
         - API日志模块
@@ -817,6 +895,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 删除API日志
       tags:
         - API日志模块
@@ -855,6 +939,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 批量删除API日志
       tags:
         - API日志模块
@@ -945,6 +1035,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 游标同步API日志
       tags:
         - API日志模块
@@ -997,6 +1093,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 获取所有接口的平均响应速度
       tags:
         - API日志模块
@@ -1049,6 +1151,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 获取接口调用次数
       tags:
         - API日志模块
@@ -1082,6 +1190,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: NestJS自己的测试
       tags:
         - 测试模块
@@ -1121,6 +1235,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 下载文章Word
       tags:
         - 下载模块
@@ -1160,6 +1280,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 下载文章Markdown
       tags:
         - 下载模块
@@ -1199,6 +1325,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 下载文章PDF
       tags:
         - 下载模块
@@ -1248,6 +1380,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 列出日志集合
       tags:
         - MongoDB工具模块
@@ -1290,6 +1428,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 查询日志文档
       tags:
         - MongoDB工具模块
@@ -1332,6 +1476,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 聚合查询日志文档
       tags:
         - MongoDB工具模块
@@ -1371,6 +1521,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 上传本地文件到 OSS
       tags:
         - 文件上传
@@ -1430,6 +1586,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 上传图片到 OSS
       tags:
         - 文件上传
@@ -1495,6 +1657,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 上传 PDF 到 OSS
       tags:
         - 文件上传
@@ -1531,6 +1699,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 获取当前用户所有页面的列配置
       tags:
         - 表格列设置
@@ -1572,6 +1746,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 获取指定页面的列配置
       tags:
         - 表格列设置
@@ -1616,6 +1796,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 保存指定页面的列配置
       tags:
         - 表格列设置
@@ -1654,6 +1840,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 删除指定页面的列配置
       tags:
         - 表格列设置
@@ -1709,6 +1901,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 获取表结构信息
       tags:
         - SQL工具
@@ -1764,6 +1962,12 @@ paths:
                   - code
                   - msg
                   - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 执行只读参数化SQL
       tags:
         - SQL工具
@@ -1953,3 +2157,22 @@ components:
             limit: 10
       required:
         - query
+    UnauthorizedResponse:
+      type: object
+      description: 统一错误响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 401
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
