@@ -74,7 +74,7 @@
 12. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
 13. 基于 FastAPI、ClickHouse 和 SQLAlchemy ORM（clickhouse-sqlalchemy + asynch 异步驱动）实现系统数据的相关分析
 14. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
-15. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL、MongoDB、Neo4j，支持 **GPT/Gemini/GLM/DeepSeek/Claude/Qwen** 进行多模型选择
+15. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL、MongoDB、Neo4j 及 MCP 外部扩展工具，支持 **GPT/Gemini/GLM/DeepSeek/Claude/Qwen** 进行多模型选择
 16. 基于 FastAPI、Neo4j 和 neomodel（异步 OGM）实现文章、用户、分类、标签、点赞、收藏、评论、关注等实体关系图谱，用于关系查询和图谱推荐
 17. 基于 FastAPI 和 LangSmith 实现 LLM 链路可观测性，对 AI 聊天、RAG 检索、Agent Tools 调用和向量同步任务进行全链路 Trace，支持采样率控制与敏感数据脱敏
 18. 基于 NestJS 和 Spring 实现 **GitHub OAuth 登录/注册**，NestJS 处理 GitHub 授权回调并创建/关联用户，Spring 生成站内登录票据，支持首次 GitHub 登录自动注册，前端通过一次性 ticket 换取 JWT
@@ -131,15 +131,15 @@ NestJS 模块按职责划分为两层：
 
 ### FastAPI 服务（端口 8084）
 
-| 项目     | 说明                                                                                                                                                                               |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 框架     | FastAPI + SQLAlchemy（MySQL、ClickHouse 异步 ORM）                                                                                                                                 |
-| 数据库   | MySQL（SQLAlchemy，ai_history 表）、ClickHouse（SQLAlchemy ORM 数仓分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（neomodel 异步 OGM 知识图谱）                              |
-| 消息队列 | RabbitMQ                                                                                                                                                                           |
-| 注册中心 | Nacos                                                                                                                                                                              |
-| 运行时   | Python 3.12+                                                                                                                                                                       |
-| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（neomodel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询）、多模型（GPT/Gemini/GLM/DeepSeek/Claude/Qwen）、LangSmith LLM 链路追踪 |
-| 代码位置 | `fastapi/`                                                                                                                                                                         |
+| 项目     | 说明                                                                                                                                                                                            |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 框架     | FastAPI + SQLAlchemy（MySQL、ClickHouse 异步 ORM）                                                                                                                                              |
+| 数据库   | MySQL（SQLAlchemy，ai_history/ai_user_summary/mcp_server_config 表）、ClickHouse（SQLAlchemy ORM 数仓分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（neomodel 异步 OGM 知识图谱）         |
+| 消息队列 | RabbitMQ                                                                                                                                                                                        |
+| 注册中心 | Nacos                                                                                                                                                                                           |
+| 运行时   | Python 3.12+                                                                                                                                                                                    |
+| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（neomodel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询/MCP 扩展工具）、多模型（GPT/Gemini/GLM/DeepSeek/Claude/Qwen）、LangSmith LLM 链路追踪 |
+| 代码位置 | `fastapi/`                                                                                                                                                                                      |
 
 ### Apache APISIX 网关（端口 8080）
 
@@ -2997,6 +2997,31 @@ ORM 生成会按表名落到项目现有目录结构，例如 `sub_category.sql`
 
 > 在仓库根目录直接执行 goctl 会污染仓库：goctl 在 Windows 下判定模块有缺陷（`go env GOMOD` 返回 `NUL` 而非 `/dev/null`），会以调用者的当前目录为基准回退执行 `go mod init`、`go work use`，从而在仓库根目录生成多余的 `go.mod` 并把 `go.work` 改成 `use (. / ./gozero/app)`。手工执行 goctl 前先 `cd` 到模块内（如 `gozero/app`）；`checkGenerated.sh` 的生成阶段已切到临时目录，不受影响。
 
+### FastAPI MCP 工具扩展说明
+
+FastAPI 的 AI Agent 支持通过 MCP 协议扩展外部工具（基于 langchain-mcp-adapters），配置方式为直接维护数据库表 `mcp_server_config`（服务启动时自动建表，变更后重启生效）。启动时读取启用配置，按服务名以 `mcp_` 前缀包装为 LangChain 工具供 Agent 调用，单个服务加载失败仅告警降级、不影响其他工具组：
+
+| 字段                                 | 说明                                                                       |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| `server_name`                        | MCP 服务名（唯一），决定工具名前缀 `mcp_{服务名}_{工具名}`                 |
+| `transport_type`                     | 传输类型：`stdio`（本地子进程）/ `sse` / `streamable_http`（远程服务推荐） |
+| `command` / `args_json` / `env_json` | 仅 `stdio`：可执行命令、参数数组与环境变量                                 |
+| `url` / `headers_json`               | 仅 `sse`/`streamable_http`：服务地址与请求头（如 `Authorization`）         |
+| `description`                        | 运维备注                                                                   |
+| `enabled`                            | `1` 启用 / `0` 停用                                                        |
+
+插入示例（远程 Google 搜索 MCP 服务）：
+
+```sql
+INSERT INTO mcp_server_config
+    (server_name, transport_type, url, headers_json, description, enabled, created_at, updated_at)
+VALUES
+    ('google_search', 'streamable_http',
+     'https://api.openai-proxy.org/api/v1/mcp/google',
+     JSON_OBJECT('Authorization', 'Bearer <token>'),
+     'Google 搜索 MCP 服务', 1, NOW(), NOW());
+```
+
 ### FastAPI Agent 工具说明
 
 FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通过这些工具进行数据查询和分析。
@@ -3274,13 +3299,13 @@ ES 按召回窗口返回候选集后，GoZero 对**整个召回候选集**进行
 
 档位取整的目的是让**同一档位内的各页共享同一候选集**，归一化分母保持一致，跨页的 `FinalScore` 因此可比。当 `page × size` 超过上限 200 时，退化为按目标页直接查询、在窗口内重排，避免深分页拖垮 ES 与增强服务。
 
-| 请求（`size=10`） | `page × size` | ES 实际召回 | 是否切页 |
-| --- | --- | --- | --- |
-| `page=1` | 10 | 100 条 | 是 |
-| `page=10` | 100 | 100 条 | 是 |
-| `page=11` | 110 | 200 条 | 是 |
-| `page=20` | 200 | 200 条 | 是 |
-| `page=21` | 210 | 10 条（该页） | 否，窗口内重排 |
+| 请求（`size=10`） | `page × size` | ES 实际召回   | 是否切页       |
+| ----------------- | ------------- | ------------- | -------------- |
+| `page=1`          | 10            | 100 条        | 是             |
+| `page=10`         | 100           | 100 条        | 是             |
+| `page=11`         | 110           | 200 条        | 是             |
+| `page=20`         | 200           | 200 条        | 是             |
+| `page=21`         | 210           | 10 条（该页） | 否，窗口内重排 |
 
 融合前先对 ES 原始分做本次召回候选集归一化（分母为同一召回窗口内的最大 ES 原始分）：
 
