@@ -59,6 +59,10 @@ import com.hcsy.spring.web.sync.annotation.DataSync;
 
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -176,6 +180,11 @@ public class UserController {
 
     @GetMapping("/internal/auth/validate")
     @Operation(summary = "校验网关访问令牌", description = "校验访问令牌并返回用户身份请求头")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "校验通过，用户身份通过响应头返回，响应体为空", headers = {
+            @Header(name = "X-User-Id", description = "用户ID", schema = @Schema(implementation = String.class)),
+            @Header(name = "X-Username", description = "用户名", schema = @Schema(implementation = String.class)),
+            @Header(name = "X-Session-Id", description = "会话ID", schema = @Schema(implementation = String.class)) }) })
     public Mono<ResponseEntity<Void>> validateGatewayAccessToken(
         @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
         @RequestHeader(value = HeaderNames.ACCESS_TOKEN, required = false) String accessToken,

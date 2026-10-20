@@ -411,6 +411,16 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -470,6 +480,16 @@
                     "msg",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -567,6 +587,16 @@
                     "msg",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -669,6 +699,16 @@
                     "msg",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -852,6 +892,16 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -922,6 +972,16 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -962,6 +1022,16 @@
                     "msg",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1027,6 +1097,16 @@
                     "msg",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1151,6 +1231,16 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1219,6 +1309,16 @@
                     "msg",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1293,6 +1393,16 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1345,6 +1455,16 @@
                     "msg",
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1425,6 +1545,16 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1497,6 +1627,16 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1531,5 +1671,34 @@
       "description": "SQL 执行工具相关API，包括表结构查询与只读参数化SQL查询",
       "x-english-name": "sqlTools"
     }
-  ]
+  ],
+  "components": {
+    "schemas": {
+      "UnauthorizedResponse": {
+        "type": "object",
+        "description": "统一错误响应",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 401,
+            "description": "响应码，与 HTTP 状态码一致"
+          },
+          "msg": {
+            "type": "string",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "null",
+            "description": "响应数据"
+          }
+        },
+        "required": [
+          "code",
+          "msg",
+          "data"
+        ]
+      }
+    }
+  }
 }

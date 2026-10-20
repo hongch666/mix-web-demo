@@ -346,12 +346,12 @@ Body 参数：
           React["React 前端页面"]
       end
 
-      subgraph GatewayLayer["API 网关层"]
+      subgraph GatewayLayer["应用网关层"]
           APISIX["APISIX 网关路由"]
-          Auth["接口登录校验 (Spring 内部接口校验)"]
+          Auth["端口资源校验 (Spring 内部接口校验)"]
       end
 
-      subgraph CommLayer["微服务通信层"]
+      subgraph CommLayer["服务治理层"]
           Nacos["Nacos 注册中心"]
           Restful["Restful API 远程调用"]
           RabbitMQ["RabbitMQ 异步消息队列"]
@@ -365,7 +365,7 @@ Body 参数：
       end
 
       subgraph ThirdParty["第三方服务层"]
-          LLM["LangChain 大模型 API 调用 (GPT/Gemini/GLM/DeepSeek/Claude/Qwen)"]
+          LLM["LangChain API + MCP (GPT/Gemini/GLM/DeepSeek/Claude/Qwen)"]
           LangSmith["LangSmith 日志监控"]
           OSS["阿里云 OSS 对象存储"]
           GithubAPI["Github API 调用"]
@@ -393,7 +393,7 @@ Body 参数：
 
       React <-->|响应/请求| APISIX
       APISIX <-->|响应/请求| Auth
-      Auth -->|检验 token| SpringSvc
+      Auth -->|鉴权 token| SpringSvc
 
       GatewayLayer <-->|网关路由| CommLayer
       CommLayer <-->|调度| SvcLayer
@@ -414,14 +414,14 @@ Body 参数：
       Prometheus -->|统一查询| Grafana
 
       SpringSvc <-->|请求/响应| Redis
-      Redis <-->|请求/响应| MySQL
+      Redis <-->|缓存读写| MySQL
       GoZeroSvc <-->|请求/响应| ES
       NestJSSvc <-->|请求/响应| MongoDB
       FastAPISvc <-->|请求/响应| ClickHouse
       FastAPISvc <-->|请求/响应| Postgres
       FastAPISvc <-->|请求/响应| Neo4j
 
-      MySQL -->|索引同步| ES
+      MySQL -->|数据同步| ES
       MySQL -->|数仓同步| ClickHouse
       MySQL -->|向量同步| Postgres
       MySQL -->|图谱同步| Neo4j
@@ -435,6 +435,7 @@ Body 参数：
       USER ||--o{ APILOGS : "记录"
       USER ||--o{ USER_TABLE_SETTING : "列设置"
       USER ||--o{ AI_HISTORY : "提问"
+      USER ||--o{ AI_HISTORY_SUMMARY : "压缩"
       USER }o--o{ CHAT_MESSAGE : "聊天"
       USER ||--o{ ARTICLE : "创建"
       USER ||--o{ LIKES : "点赞"
@@ -454,9 +455,9 @@ Body 参数：
       USER {
           bigint id PK
           bigint github_id
-          varchar github_login
-          varchar github_url
-          varchar name
+          bigint gitee_id
+          varchar username
+          varchar github
           varchar password
           int age
           varchar email
@@ -505,13 +506,22 @@ Body 参数：
           datetime created_at
           datetime updated_at
       }
+      AI_HISTORY_SUMMARY {
+          bigint id PK
+          bigint user_id FK
+          text summary_text
+          int last_summarized_history_id
+          int summarized_count
+          datetime created_at
+          datetime updated_at
+      }
       CHAT_MESSAGE {
           bigint id PK
           bigint sender_id FK
           bigint receiver_id FK
           text content
           tinyint is_read
-          datetime created_at
+          datetime created_time
       }
       ARTICLE {
           bigint id PK
@@ -575,6 +585,19 @@ Body 参数：
           string msg
           date createdAt
           date updatedAt
+      }
+      MCP_SERVER_CONFIG {
+          bigint id PK
+          varchar server_name
+          varchar command
+          json args_json
+          json cwd_json
+          json env_json
+          json headers_json
+          varchar description
+          tinyint enabled
+          datetime created_at
+          datetime updated_at
       }
   ```
 

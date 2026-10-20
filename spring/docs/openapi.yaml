@@ -61,6 +61,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserListVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     put:
       tags:
       - "用户模块"
@@ -80,6 +86,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     post:
       tags:
       - "用户模块"
@@ -99,6 +111,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/status/{id}:
     put:
       tags:
@@ -125,6 +143,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments:
     get:
       tags:
@@ -174,6 +198,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOCommentsVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     put:
       tags:
       - "评论模块"
@@ -193,6 +223,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     post:
       tags:
       - "评论模块"
@@ -212,6 +248,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category:
     put:
       tags:
@@ -232,6 +274,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     post:
       tags:
       - "分类模块"
@@ -251,6 +299,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/sub:
     put:
       tags:
@@ -271,6 +325,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     post:
       tags:
       - "分类模块"
@@ -290,6 +350,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/reference:
     put:
       tags:
@@ -310,6 +376,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     post:
       tags:
       - "权威参考文本模块"
@@ -329,6 +401,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles:
     put:
       tags:
@@ -349,6 +427,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     post:
       tags:
       - "文章模块"
@@ -368,6 +452,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/view/{id}:
     put:
       tags:
@@ -389,6 +479,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/publish/{id}:
     put:
       tags:
@@ -410,6 +506,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/token/refresh:
     post:
       tags:
@@ -430,6 +532,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultTokenRefreshVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/reset-password:
     post:
       tags:
@@ -450,6 +558,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/register:
     post:
       tags:
@@ -470,6 +584,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/logout:
     post:
       tags:
@@ -484,6 +604,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/login:
     post:
       tags:
@@ -504,6 +630,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserLoginVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/kick-other-devices:
     post:
       tags:
@@ -518,6 +650,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultKickOtherDevicesVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/github/token:
     post:
       tags:
@@ -538,6 +676,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserLoginVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/github/token-ticket:
     post:
       tags:
@@ -558,6 +702,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultGithubTokenTicketVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/github-user:
     post:
       tags:
@@ -578,6 +728,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/force-logout/{user_id}:
     post:
       tags:
@@ -599,6 +755,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/email/send:
     post:
       tags:
@@ -629,6 +791,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/email-login:
     post:
       tags:
@@ -649,6 +817,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserLoginVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/batch:
     post:
       tags:
@@ -669,6 +843,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListUserVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/admin/reset-password/{user_id}:
     post:
       tags:
@@ -690,6 +870,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/admin/reset-all-passwords:
     post:
       tags:
@@ -704,6 +890,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /task/clean:
     post:
       tags:
@@ -718,6 +910,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /sql-tools/query:
     post:
       tags:
@@ -738,6 +936,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultSqlQueryResultVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /likes:
     post:
       tags:
@@ -758,6 +962,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     delete:
       tags:
       - "文章点赞模块"
@@ -786,6 +996,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /likes/counts/batch:
     post:
       tags:
@@ -806,6 +1022,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultBatchCountVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus:
     post:
       tags:
@@ -826,6 +1048,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     delete:
       tags:
       - "用户关注模块"
@@ -854,6 +1082,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus/counts/batch:
     post:
       tags:
@@ -874,6 +1108,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultBatchCountVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/statistics/delete-ai/{articleId}:
     post:
       tags:
@@ -895,6 +1135,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/scores/batch:
     post:
       tags:
@@ -915,6 +1161,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleCommentScoresVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/internal/create:
     post:
       tags:
@@ -935,6 +1187,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/batch:
     post:
       tags:
@@ -955,6 +1213,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCommentSyncVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /collects:
     post:
       tags:
@@ -975,6 +1239,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     delete:
       tags:
       - "文章收藏模块"
@@ -1003,6 +1273,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /collects/counts/batch:
     post:
       tags:
@@ -1023,6 +1299,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultBatchCountVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/sub/batch:
     post:
       tags:
@@ -1043,6 +1325,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListSubCategoryVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/batch:
     post:
       tags:
@@ -1063,6 +1351,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCategoryVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/views/batch:
     post:
       tags:
@@ -1083,6 +1377,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListIdCountVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/batch:
     post:
       tags:
@@ -1103,6 +1403,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleWithCategoryVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /warehouse/sync/{resource}:
     get:
       tags:
@@ -1143,6 +1449,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultSyncPage"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/{id}:
     get:
       tags:
@@ -1164,6 +1476,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     delete:
       tags:
       - "用户模块"
@@ -1184,6 +1502,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/{id}/is-admin:
     get:
       tags:
@@ -1205,6 +1529,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultBoolean"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/neo4j-sync:
     get:
       tags:
@@ -1225,6 +1555,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListUserSyncVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/internal/auth/validate:
     get:
       tags:
@@ -1250,7 +1586,29 @@ paths:
           type: "string"
       responses:
         "200":
-          description: "OK"
+          description: "校验通过，用户身份通过响应头返回，响应体为空"
+          headers:
+            X-Username:
+              description: "用户名"
+              style: "simple"
+              schema:
+                type: "string"
+            X-Session-Id:
+              description: "会话ID"
+              style: "simple"
+              schema:
+                type: "string"
+            X-User-Id:
+              description: "用户ID"
+              style: "simple"
+              schema:
+                type: "string"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/captcha:
     get:
       tags:
@@ -1265,6 +1623,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultImageCaptchaVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/by-name:
     get:
       tags:
@@ -1285,6 +1649,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListUserVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/all:
     get:
       tags:
@@ -1299,6 +1669,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserListVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/ai:
     get:
       tags:
@@ -1313,6 +1689,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserListVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /test/spring:
     get:
       tags:
@@ -1327,6 +1709,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultString"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /sql-tools/tables:
     get:
       tags:
@@ -1347,6 +1735,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListSqlTableSchemaVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /likes/user/{user_id}:
     get:
       tags:
@@ -1385,6 +1779,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOArticleLikeVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /likes/statistics/total:
     get:
       tags:
@@ -1399,6 +1799,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /likes/statistics/monthly-trend/{userId}:
     get:
       tags:
@@ -1420,6 +1826,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultMapDataVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /likes/statistics/average:
     get:
       tags:
@@ -1434,6 +1846,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultDouble"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /likes/neo4j-sync:
     get:
       tags:
@@ -1454,6 +1872,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleRelationSyncVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /likes/count/{article_id}:
     get:
       tags:
@@ -1476,6 +1900,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLikeCountVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /likes/check:
     get:
       tags:
@@ -1505,6 +1935,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLikeCheckVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus/statistics/total-follows/{userId}:
     get:
       tags:
@@ -1526,6 +1962,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus/statistics/followers-in-period/{userId}:
     get:
       tags:
@@ -1559,6 +2001,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus/statistics/daily-follows/{userId}:
     get:
       tags:
@@ -1592,6 +2040,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultMapDataVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus/neo4j-sync:
     get:
       tags:
@@ -1612,6 +2066,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListFocusSyncVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus/followers/{user_id}:
     get:
       tags:
@@ -1650,6 +2110,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOFocusUserVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus/count/follower/{user_id}:
     get:
       tags:
@@ -1672,6 +2138,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCountVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus/count/focus/{user_id}:
     get:
       tags:
@@ -1694,6 +2166,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCountVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus/check:
     get:
       tags:
@@ -1723,6 +2201,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultFocusCheckVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus/authors/{user_id}:
     get:
       tags:
@@ -1761,6 +2245,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOFocusUserVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/{id}:
     get:
       tags:
@@ -1782,6 +2272,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCommentsVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     delete:
       tags:
       - "评论模块"
@@ -1802,6 +2298,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/user/{id}:
     get:
       tags:
@@ -1837,6 +2339,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOCommentsVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/statistics/monthly-trend/{userId}:
     get:
       tags:
@@ -1858,6 +2366,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultMapDataVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/statistics/ai-count/{articleId}:
     get:
       tags:
@@ -1879,6 +2393,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/neo4j-sync:
     get:
       tags:
@@ -1899,6 +2419,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCommentSyncVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/article/{id}:
     get:
       tags:
@@ -1940,6 +2466,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOCommentsVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/article/ai/{id}:
     get:
       tags:
@@ -1961,6 +2493,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListAICommentsVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/ai:
     get:
       tags:
@@ -2010,6 +2548,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOCommentsVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /collects/user/{user_id}:
     get:
       tags:
@@ -2048,6 +2592,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOArticleCollectVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /collects/statistics/total:
     get:
       tags:
@@ -2062,6 +2612,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /collects/statistics/monthly-trend/{userId}:
     get:
       tags:
@@ -2083,6 +2639,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultMapDataVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /collects/statistics/average:
     get:
       tags:
@@ -2097,6 +2659,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultDouble"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /collects/neo4j-sync:
     get:
       tags:
@@ -2117,6 +2685,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleRelationSyncVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /collects/count/{article_id}:
     get:
       tags:
@@ -2139,6 +2713,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCollectCountVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /collects/check:
     get:
       tags:
@@ -2168,6 +2748,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCollectCheckVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/{id}:
     get:
       tags:
@@ -2189,6 +2775,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCategoryVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     delete:
       tags:
       - "分类模块"
@@ -2209,6 +2801,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/reference/sub/{sub_category_id}:
     get:
       tags:
@@ -2230,6 +2828,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCategoryReferenceVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     delete:
       tags:
       - "权威参考文本模块"
@@ -2250,6 +2854,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/list:
     get:
       tags:
@@ -2279,6 +2889,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOCategoryVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/internal/sub/with-parent:
     get:
       tags:
@@ -2293,6 +2909,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListSubCategoryWithParentVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/internal/sub/neo4j-sync:
     get:
       tags:
@@ -2313,6 +2935,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListSubCategorySyncVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/internal/neo4j-sync:
     get:
       tags:
@@ -2333,6 +2961,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCategorySyncVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/internal/all:
     get:
       tags:
@@ -2347,6 +2981,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCategoryVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/{id}:
     get:
       tags:
@@ -2368,6 +3008,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultArticleWithCategoryVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
     delete:
       tags:
       - "文章模块"
@@ -2388,6 +3034,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/user/{id}:
     get:
       tags:
@@ -2430,6 +3082,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOArticleWithCategoryVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/unpublished/list:
     get:
       tags:
@@ -2459,6 +3117,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOArticleWithCategoryVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/statistics/total:
     get:
       tags:
@@ -2473,6 +3137,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/statistics/total-views:
     get:
       tags:
@@ -2487,6 +3157,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultInteger"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/statistics/top10:
     get:
       tags:
@@ -2501,6 +3177,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleSyncVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/statistics/monthly-publish-count:
     get:
       tags:
@@ -2515,6 +3197,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListMonthlyPublishCountVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/statistics/excel-export:
     get:
       tags:
@@ -2529,6 +3217,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleExportVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/statistics/category-count:
     get:
       tags:
@@ -2543,6 +3237,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCategoryArticleCountVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/statistics/average-views:
     get:
       tags:
@@ -2557,6 +3257,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultDouble"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/statistics/active-authors:
     get:
       tags:
@@ -2571,6 +3277,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/neo4j-sync:
     get:
       tags:
@@ -2591,6 +3303,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleSyncVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/list:
     get:
       tags:
@@ -2620,6 +3338,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOArticle"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/by-title:
     get:
       tags:
@@ -2640,6 +3364,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleWithCategoryVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/batch/{ids}:
     delete:
       tags:
@@ -2660,6 +3390,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/batch/{ids}:
     delete:
       tags:
@@ -2680,6 +3416,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/sub/{id}:
     delete:
       tags:
@@ -2701,6 +3443,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/sub/batch/{ids}:
     delete:
       tags:
@@ -2721,6 +3469,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/batch/{ids}:
     delete:
       tags:
@@ -2741,6 +3495,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
   /articles/batch/{ids}:
     delete:
       tags:
@@ -2761,6 +3521,12 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
 components:
   schemas:
     UserUpdateDTO:
@@ -5095,3 +5861,22 @@ components:
         data:
           $ref: "#/components/schemas/PageVOArticle"
           description: "返回数据"
+    UnauthorizedResponse:
+      type: "object"
+      description: "统一错误响应"
+      properties:
+        code:
+          type: "integer"
+          format: "int32"
+          description: "响应码，与 HTTP 状态码一致"
+          example: 401
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "null"
+          description: "返回数据"
+      required:
+      - "code"
+      - "data"
+      - "msg"

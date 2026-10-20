@@ -97,6 +97,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -127,6 +137,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -154,6 +174,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLong"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -195,6 +225,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -271,6 +311,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -301,6 +351,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -328,6 +388,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLong"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -363,6 +433,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -390,6 +470,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLong"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -425,6 +515,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -452,6 +552,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLong"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -487,6 +597,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -514,6 +634,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -549,6 +679,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -576,6 +716,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLong"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -612,6 +762,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -642,6 +802,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -677,6 +847,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -706,6 +886,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -741,6 +931,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -760,6 +960,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -795,6 +1005,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -814,6 +1034,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultKickOtherDevicesVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -849,6 +1079,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -878,6 +1118,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultGithubTokenTicketVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -913,6 +1163,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -943,6 +1203,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -995,6 +1265,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1027,6 +1307,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1056,6 +1346,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListUserVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1092,6 +1392,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1114,6 +1424,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1133,6 +1453,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1168,6 +1498,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1197,6 +1537,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1242,6 +1592,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1274,6 +1634,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1303,6 +1673,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1348,6 +1728,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1377,6 +1767,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultBatchCountVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1413,6 +1813,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1442,6 +1852,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListArticleCommentScoresVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1477,6 +1897,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1509,6 +1939,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1538,6 +1978,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1583,6 +2033,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1612,6 +2072,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultBatchCountVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1647,6 +2117,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1676,6 +2156,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListCategoryVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1711,6 +2201,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1740,6 +2240,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListArticleWithCategoryVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1804,6 +2314,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1837,6 +2357,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -1865,6 +2395,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1901,6 +2441,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1930,6 +2480,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListUserSyncVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -1973,7 +2533,40 @@
         ],
         "responses" : {
           "200" : {
-            "description" : "OK"
+            "description" : "校验通过，用户身份通过响应头返回，响应体为空",
+            "headers" : {
+              "X-Username" : {
+                "description" : "用户名",
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "X-Session-Id" : {
+                "description" : "会话ID",
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "X-User-Id" : {
+                "description" : "用户ID",
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1993,6 +2586,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultImageCaptchaVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2028,6 +2631,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2047,6 +2660,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultUserListVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2072,6 +2695,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2091,6 +2724,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultString"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2123,6 +2766,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListSqlTableSchemaVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2182,6 +2835,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2201,6 +2864,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLong"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2237,6 +2910,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2256,6 +2939,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultDouble"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2291,6 +2984,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2322,6 +3025,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLikeCountVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2369,6 +3082,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2399,6 +3122,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLong"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2453,6 +3186,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2504,6 +3247,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2533,6 +3286,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListFocusSyncVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2592,6 +3355,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2626,6 +3399,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2657,6 +3440,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultCountVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2701,6 +3494,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultFocusCheckVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2760,6 +3563,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2793,6 +3606,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -2821,6 +3644,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2877,6 +3710,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2907,6 +3750,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultMapDataVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -2943,6 +3796,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2972,6 +3835,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListCommentSyncVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3037,6 +3910,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3067,6 +3950,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListAICommentsVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3143,6 +4036,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3199,6 +4102,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3218,6 +4131,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLong"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3254,6 +4177,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3273,6 +4206,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultDouble"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3308,6 +4251,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3339,6 +4292,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultCollectCountVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3386,6 +4349,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3419,6 +4392,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -3447,6 +4430,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3483,6 +4476,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -3511,6 +4514,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3558,6 +4571,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3577,6 +4600,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListSubCategoryWithParentVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3612,6 +4645,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3644,6 +4687,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3663,6 +4716,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListCategoryVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3699,6 +4762,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -3727,6 +4800,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3793,6 +4876,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3837,6 +4930,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3856,6 +4959,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLong"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3881,6 +4994,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3900,6 +5023,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListArticleSyncVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3925,6 +5058,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3944,6 +5087,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListArticleExportVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -3969,6 +5122,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -3991,6 +5154,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4010,6 +5183,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultLong"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -4042,6 +5225,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListArticleSyncVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -4089,6 +5282,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4118,6 +5321,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultListArticleWithCategoryVO"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -4153,6 +5366,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4182,6 +5405,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -4218,6 +5451,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4247,6 +5490,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -4282,6 +5535,16 @@
                 }
               }
             }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -4311,6 +5574,16 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ResultVoid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
                 }
               }
             }
@@ -7465,6 +8738,31 @@
             "description" : "返回数据"
           }
         }
+      },
+      "UnauthorizedResponse" : {
+        "type" : "object",
+        "description" : "统一错误响应",
+        "properties" : {
+          "code" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "响应码，与 HTTP 状态码一致",
+            "example" : 401
+          },
+          "msg" : {
+            "type" : "string",
+            "description" : "响应信息"
+          },
+          "data" : {
+            "type" : "null",
+            "description" : "返回数据"
+          }
+        },
+        "required" : [
+          "code",
+          "data",
+          "msg"
+        ]
       }
     }
   }

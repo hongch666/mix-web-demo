@@ -16,9 +16,13 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
+import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MapSchema;
+import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.servers.Server;
 
 @Configuration
@@ -34,6 +38,15 @@ public class SwaggerConfig {
     private static final String NULL_TYPE = "null";
 
     private static final String OBJECT_TYPE = "object";
+
+    /** 401 统一错误响应的描述文案，与 Messages.USER_NOT_LOGIN 保持一致 */
+    private static final String UNAUTHORIZED_DESCRIPTION = "用户未登录或登录已失效";
+
+    /** 401 统一错误响应的 schema 名，注册在 components 下供各接口引用 */
+    private static final String UNAUTHORIZED_SCHEMA_NAME = "UnauthorizedResponse";
+
+    /** 401 响应的 JSON 媒体类型 */
+    private static final String JSON_MEDIA_TYPE = "application/json";
 
     @Value("${server.port}")
     private String port;
@@ -53,6 +66,7 @@ public class SwaggerConfig {
     OpenApiCustomizer snakeCaseOpenApiCustomizer() {
         return openApi -> {
             normalizeVoidDataSchema(openApi);
+            addCommonUnauthorizedResponse(openApi);
             if (openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
                 openApi.getComponents().getSchemas().values().forEach(this::transformSchema);
             }
@@ -129,6 +143,73 @@ public class SwaggerConfig {
         });
     }
 
+    /**
+     * 为所有接口补统一的 401 未登录响应
+     *
+     * 未登录或访问令牌失效由 GlobalExceptionHandler 统一转为 Result.error(401, msg)，
+     * 该响应对所有接口通用，但 springdoc 只能收集单个接口显式声明的错误响应，
+     * 这里统一注入，避免每个控制器重复声明
+     */
+    private void addCommonUnauthorizedResponse(OpenAPI openApi) {
+        if (openApi.getPaths() == null) {
+            return;
+        }
+        registerUnauthorizedSchema(openApi);
+        Content content = new Content()
+            .addMediaType(JSON_MEDIA_TYPE, new MediaType()
+                .schema(new Schema<>().$ref("#/components/schemas/" + UNAUTHORIZED_SCHEMA_NAME)));
+        openApi.getPaths().values().forEach(pathItem -> pathItem.readOperations().forEach(operation -> {
+            if (operation.getResponses() != null && operation.getResponses().containsKey("401")) {
+                return;
+            }
+            if (operation.getResponses() == null) {
+                operation.setResponses(new ApiResponses());
+            }
+            operation.getResponses().addApiResponse("401", new ApiResponse()
+                .description(UNAUTHORIZED_DESCRIPTION)
+                .content(content));
+        }));
+    }
+
+    /** 注册 401 统一错误响应的 schema，结构与 Result.error(401, msg) 的实际输出一致 */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void registerUnauthorizedSchema(OpenAPI openApi) {
+        if (openApi.getComponents() == null || openApi.getComponents().getSchemas() == null) {
+            return;
+        }
+        Map<String, Schema> schemas = openApi.getComponents().getSchemas();
+        if (schemas.containsKey(UNAUTHORIZED_SCHEMA_NAME)) {
+            return;
+        }
+        Map<String, Schema> properties = new LinkedHashMap<>();
+        Schema codeSchema = typedSchema("integer", "响应码，与 HTTP 状态码一致");
+        codeSchema.setFormat("int32");
+        codeSchema.setExample(401);
+        properties.put("code", codeSchema);
+        properties.put("msg", typedSchema("string", "响应信息"));
+        properties.put("data", typedSchema(NULL_TYPE, "返回数据"));
+
+        Schema schema = typedSchema(OBJECT_TYPE, "统一错误响应");
+        schema.setProperties(properties);
+        schema.setRequired(List.of("code", "msg", "data"));
+        schemas.put(UNAUTHORIZED_SCHEMA_NAME, schema);
+    }
+
+    /**
+     * 构造声明了类型的 schema
+     *
+     * swagger-models 的 type 与 types 分别标注 @OpenAPI30 与 @OpenAPI31，
+     * springdoc 以 openapi_3_1 输出时只认 types 集合，两个字段必须同时写入
+     */
+    @SuppressWarnings({ "rawtypes" })
+    private Schema typedSchema(String type, String description) {
+        Schema schema = new Schema();
+        schema.setType(type);
+        schema.addType(type);
+        schema.setDescription(description);
+        return schema;
+    }
+
     /** 判断是否为没有任何结构信息的裸 object：只有 type，没有 properties/additionalProperties/items/组合或引用 */
     private boolean isEmptyObjectSchema(Schema<?> schema) {
         if (!OBJECT_TYPE.equals(schema.getType())) {
@@ -160,7 +241,7 @@ public class SwaggerConfig {
     }
 
     @SuppressWarnings({ "rawtypes" })
-    private void transformSchema(Schema schema) {
+    private void transformSchema(Schema<?> schema) {
         if (schema == null) {
             return;
         }

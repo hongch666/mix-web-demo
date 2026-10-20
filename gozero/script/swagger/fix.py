@@ -35,6 +35,12 @@ EMPTY_DATA_SCHEMA = {"type": "null", "description": "响应数据"}
 # 自动生成（形如 Response Stream Message Chat Stream Post），GoZero 这里显式给出帧类型名
 SSE_FRAME_SCHEMA_TITLE = "ChatSSEMessage"
 
+# 401 统一错误响应的描述文案
+UNAUTHORIZED_DESCRIPTION = "用户未登录或登录已失效"
+
+# 401 统一错误响应的 schema 名
+UNAUTHORIZED_SCHEMA_NAME = "UnauthorizedResponse"
+
 # 产物的规范版本：留 3.1 是为了表达 type: "null"（空数据响应，Apifox 靠它展示空值）
 # 该写法只有 3.1 合法，3.0 的 type 只接受 array/boolean/integer/number/object/string
 # 服务内嵌的 swagger-ui 资源为 5.x（支持 3.1）；4.x 只认 swagger 2.0 与 openapi 3.0.x，会直接白屏
@@ -141,6 +147,10 @@ def add_chinese_tags_to_dict(swagger_data):
     # utils.Success/Error 统一包装为 {code, msg, data}，这里补齐文档外壳。
     wrap_unified_responses(swagger_data)
 
+    # 401 未登录响应对所有接口通用，统一注入（必须在 wrap_unified_responses 之后，
+    # 否则会被当成业务数据再包一层 code/msg/data 外壳）
+    add_common_unauthorized_response(swagger_data)
+
     # 先摘出 WebSocket 接口的描述与标签，随后该路径会被剔除，改由 apifox-sync.sh
     # 通过 Apifox CLI 的 websocket 命令单独同步
     websocket_endpoints = collect_websocket_endpoints(swagger_data)
@@ -222,6 +232,59 @@ def wrap_unified_responses(swagger_data):
                     },
                     "required": ["code", "msg", "data"],
                 }
+
+
+def add_common_unauthorized_response(swagger_data):
+    """为所有接口补统一的 401 未登录响应
+
+    未登录或令牌失效由 utils.Error 统一输出 {code, msg, data}，
+    该响应对所有接口通用，这里统一注入，避免每个 handler 重复声明。
+    必须排在 wrap_unified_responses 之后：$ref 引用没有内联 properties，
+    先注入会被误判成业务数据再包一层外壳
+    """
+    components = swagger_data.setdefault("components", {})
+    if not isinstance(components, dict):
+        return
+    schemas = components.setdefault("schemas", {})
+    if not isinstance(schemas, dict):
+        return
+    if UNAUTHORIZED_SCHEMA_NAME not in schemas:
+        schemas[UNAUTHORIZED_SCHEMA_NAME] = {
+            "type": "object",
+            "description": "统一错误响应",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "format": "int32",
+                    "example": 401,
+                    "description": "响应码，与 HTTP 状态码一致",
+                },
+                "msg": {"type": "string", "description": "响应消息"},
+                "data": {"type": "null", "description": "响应数据"},
+            },
+            "required": ["code", "msg", "data"],
+        }
+
+    ref = f"#/components/schemas/{UNAUTHORIZED_SCHEMA_NAME}"
+    paths = swagger_data.get("paths")
+    if not isinstance(paths, dict):
+        return
+    for path_item in paths.values():
+        if not isinstance(path_item, dict):
+            continue
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+            responses = operation.get("responses")
+            if not isinstance(responses, dict):
+                responses = {}
+                operation["responses"] = responses
+            if "401" in responses:
+                continue
+            responses["401"] = {
+                "description": UNAUTHORIZED_DESCRIPTION,
+                "content": {"application/json": {"schema": {"$ref": ref}}},
+            }
 
 
 def is_empty_object_schema(schema):

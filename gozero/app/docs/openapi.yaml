@@ -304,6 +304,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /search/history/{user_id}:
     get:
       description: 获取指定用户最近10条搜索关键词列表
@@ -346,6 +352,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /sql-tools/query:
     post:
       description: 执行受限的只读参数化SQL查询，表名白名单控制，强制参数化占位符和LIMIT
@@ -413,6 +425,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /sql-tools/tables:
     get:
       description: 获取白名单内MySQL表的结构信息，可选指定表名
@@ -484,6 +502,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /sse/chat:
     get:
       description: 建立SSE连接。成功时以 text/event-stream 持续推送数据帧，帧结构见响应模型；参数非法时返回统一 JSON
@@ -614,6 +638,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /task/syncer:
     post:
       description: 手动触发同步MySQL文章数据到ElasticSearch
@@ -662,6 +692,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /test/gozero:
     get:
       description: 验证GoZero服务是否正常运行
@@ -692,6 +728,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /user-chat/all-unread-counts:
     post:
       description: 获取指定用户与所有其他用户的未读消息数统计
@@ -736,6 +778,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /user-chat/history:
     post:
       description: 分页获取指定两个用户之间的聊天记录
@@ -822,6 +870,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /user-chat/join:
     post:
       description: 用户手动加入聊天队列，不需要建立WebSocket连接
@@ -870,6 +924,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /user-chat/leave:
     post:
       description: 用户手动离开聊天队列
@@ -918,6 +978,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /user-chat/queue:
     get:
       description: 获取当前在队列中的所有用户
@@ -956,6 +1022,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /user-chat/send:
     post:
       description: 发送聊天消息，先保存到数据库，再通过WebSocket发送给在线用户
@@ -1009,6 +1081,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /user-chat/unread-count:
     post:
       description: 获取指定用户与另一个用户间的未读消息数
@@ -1058,6 +1136,12 @@ paths:
                 - code
                 - msg
                 - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
 x-description: This is a goctl generated swagger file.
 x-github: https://github.com/zeromicro/go-zero
 x-go-zero-doc: https://go-zero.dev/
@@ -1077,3 +1161,24 @@ tags:
 - name: SQL工具模块
   description: SQL 执行工具相关API，包括表结构查询与只读参数化SQL查询
   x-english-name: sqlTools
+components:
+  schemas:
+    UnauthorizedResponse:
+      type: object
+      description: 统一错误响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 401
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 响应数据
+      required:
+      - code
+      - msg
+      - data

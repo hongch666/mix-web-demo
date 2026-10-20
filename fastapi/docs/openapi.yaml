@@ -18,6 +18,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ListResponse_dict_str__Any___'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/wordcloud:
     post:
       tags:
@@ -32,6 +38,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_str_'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/excel:
     post:
       tags:
@@ -46,6 +58,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_str_'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/statistics:
     get:
       tags:
@@ -60,6 +78,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ArticleStatisticsResponse_'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/article-count-by-category:
     get:
       tags:
@@ -74,6 +98,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ListResponse_CategoryArticleCountResponse__'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/monthly-publish-count:
     get:
       tags:
@@ -88,6 +118,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ListResponse_MonthlyPublishCountResponse__'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/api/average-speed:
     get:
       tags:
@@ -102,6 +138,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_ApiLogAverageResponse__'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/api/called-count:
     get:
       tags:
@@ -116,6 +158,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_ApiLogCalledCountResponse__'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /chat/models:
     get:
       tags:
@@ -130,6 +178,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_str__'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /chat/send:
     post:
       tags:
@@ -156,6 +210,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /chat/stream:
     post:
       tags:
@@ -192,6 +252,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /generate/tags:
     post:
       tags:
@@ -218,6 +284,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /generate/ai_comment/{article_id}:
     post:
       tags:
@@ -245,6 +317,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /generate/ai_comment_with_reference/{article_id}:
     post:
       tags:
@@ -272,6 +350,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /test/fastapi:
     get:
       tags:
@@ -286,6 +370,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_str_'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /task/update-analyze-caches:
     post:
       tags:
@@ -300,6 +390,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /task/vector:
     post:
       tags:
@@ -328,6 +424,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /task/init-hash-cache:
     post:
       tags:
@@ -343,6 +445,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /task/clear-analyze-caches:
     post:
       tags:
@@ -357,6 +465,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /task/sync-neo4j:
     post:
       tags:
@@ -396,6 +510,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /task/sync-warehouse:
     post:
       tags:
@@ -424,6 +544,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /ai_history/list:
     get:
       tags:
@@ -451,6 +577,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /ai_history/{user_id}:
     delete:
       tags:
@@ -478,6 +610,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/user/new-followers:
     get:
       tags:
@@ -512,6 +650,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/user/article-view-distribution:
     get:
       tags:
@@ -539,6 +683,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/user/author-follow-statistics:
     get:
       tags:
@@ -566,6 +716,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/user/monthly-comment-trend:
     get:
       tags:
@@ -593,6 +749,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/user/monthly-like-trend:
     get:
       tags:
@@ -620,6 +782,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/user/monthly-collect-trend:
     get:
       tags:
@@ -647,6 +815,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /analyze/user/profile:
     get:
       tags:
@@ -674,6 +848,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /graph-search/enhance:
     post:
       tags:
@@ -700,6 +880,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /vector-search/enhance:
     post:
       tags:
@@ -726,6 +912,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /algorithm/search/weights:
     get:
       tags:
@@ -740,6 +932,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_SearchWeightsResponse_'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /algorithm/search/script:
     get:
       tags:
@@ -754,6 +952,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_SearchScriptResponseData_'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
   /algorithm/search/script-params:
     get:
       tags:
@@ -768,6 +972,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ScriptParamsResponse_'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
 components:
   schemas:
     AIServiceType:
@@ -2313,6 +2523,23 @@ components:
       type: object
       title: WarehouseSyncDTO
       description: 数仓同步请求，按资源名精确定位需要刷新的源表
+    UnauthorizedResponse:
+      type: object
+      description: 统一错误响应
+      properties:
+        code:
+          type: integer
+          description: 响应码
+        data:
+          type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          description: 响应消息
+      required:
+      - code
+      - data
+      - msg
 tags:
 - name: AI历史模块
   description: AI历史相关API，包括创建AI历史记录、获取所有AI历史记录、删除用户所有AI历史记录等

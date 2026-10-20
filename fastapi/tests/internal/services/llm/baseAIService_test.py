@@ -808,6 +808,8 @@ async def test_stream_chat_emits_compact_note_before_content() -> None:
 @pytest.mark.anyio
 async def test_stream_chat_agent_emits_compact_note_first() -> None:
     # agent 提示词全文参与上下文预算估算，调整 AGENT_PROMPT 文案会改变折叠轮数，期望值需与当前提示词长度下的预算规划结果保持一致
+    # 窗口 1060 按 AGENT_PROMPT(931 tokens) + 压缩后 2 轮注入(110 tokens) 校准，
+    # 保证恰好保留最近 2 轮、折叠 4 轮；提示词再次调整时需重新计算
     mapper = AsyncMock()
     mapper.get_ai_history_after_id_async.return_value = [
         _FakeHistory(index, f"q{index}", "答" * 40) for index in range(1, 7)
@@ -829,7 +831,7 @@ async def test_stream_chat_agent_emits_compact_note_first() -> None:
         intent_router=router,
         agent_executor=executor,
         _context_budget=_wide_budget(
-            window_tokens=900, keep_rounds=2, candidate_rounds=6
+            window_tokens=1060, keep_rounds=2, candidate_rounds=6
         ),
     )
 

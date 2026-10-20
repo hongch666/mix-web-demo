@@ -24,6 +24,12 @@ from app import create_app  # noqa: E402
 
 DEFAULT_OUTPUT = FASTAPI_ROOT / "docs" / "openapi.json"
 
+# 401 统一错误响应的描述文案
+UNAUTHORIZED_DESCRIPTION = "用户未登录或登录已失效"
+
+# 401 统一错误响应的 schema 名
+UNAUTHORIZED_SCHEMA_NAME = "UnauthorizedResponse"
+
 
 def write_json(path: Path, schema: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -50,12 +56,62 @@ def write_yaml(path: Path, schema: dict[str, object]) -> None:
     )
 
 
+def add_common_unauthorized_response(schema: dict[str, object]) -> None:
+    """为所有接口补统一的 401 未登录响应
+
+    未登录或令牌失效由 business_exception_handler 统一转为 error(code=401, msg=...)，
+    该响应对所有接口通用，这里统一注入，避免每个路由重复声明
+    """
+    components: dict[str, object] = schema.setdefault("components", {})  # type: ignore[assignment]
+    schemas: dict[str, object] = components.setdefault("schemas", {})  # type: ignore[assignment]
+    if UNAUTHORIZED_SCHEMA_NAME not in schemas:
+        schemas[UNAUTHORIZED_SCHEMA_NAME] = {
+            "type": "object",
+            "description": "统一错误响应",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "description": "响应码",
+                },
+                "data": {"type": "null", "description": "返回数据"},
+                "msg": {"type": "string", "description": "响应消息"},
+            },
+            "required": ["code", "data", "msg"],
+        }
+
+    ref = f"#/components/schemas/{UNAUTHORIZED_SCHEMA_NAME}"
+    for path_item in (schema.get("paths") or {}).values():
+        if not isinstance(path_item, dict):
+            continue
+        for method, operation in path_item.items():
+            if method not in (
+                "get",
+                "post",
+                "put",
+                "delete",
+                "patch",
+                "head",
+                "options",
+            ):
+                continue
+            if not isinstance(operation, dict):
+                continue
+            responses: dict[str, object] = operation.setdefault("responses", {})  # type: ignore[assignment]
+            if "401" in responses:
+                continue
+            responses["401"] = {
+                "description": UNAUTHORIZED_DESCRIPTION,
+                "content": {"application/json": {"schema": {"$ref": ref}}},
+            }
+
+
 def main() -> None:
     output: Path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_OUTPUT
     yaml_output: Path = output.with_suffix(".yaml")
 
     app = create_app()
     schema: dict[str, object] = app.openapi()
+    add_common_unauthorized_response(schema)
 
     write_json(output, schema)
     write_yaml(yaml_output, schema)
