@@ -28,6 +28,14 @@ func NewSyncESLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SyncESLogi
 	}
 }
 
+// syncArticleESChangesFunc 后台同步实现，抽为变量便于单元测试注入替身
+var syncArticleESChangesFunc = logic.SyncArticleESChanges
+
+// runSyncInBackground 后台执行方式，抽为变量便于单元测试控制执行时机与同步等待
+var runSyncInBackground = func(l *SyncESLogic, task func()) {
+	utils.SafeGo(l.ZeroLogger, constants.SAFE_GO_SYNC_ES_DATA, task)
+}
+
 func (l *SyncESLogic) SyncES(req *types.SyncESReq) (resp *types.SyncESResp, err error) {
 	l.Info(constants.TASK_SYNC_ES_STARTED_MESSAGE)
 
@@ -37,8 +45,8 @@ func (l *SyncESLogic) SyncES(req *types.SyncESReq) (resp *types.SyncESResp, err 
 
 	// 在后台 goroutine 中异步执行 ES 同步，立刻返回成功
 	// 携带主键时按主键精确同步，主键为空时退化为全量同步
-	utils.SafeGo(l.ZeroLogger, constants.SAFE_GO_SYNC_ES_DATA, func() {
-		if syncErr := logic.SyncArticleESChanges(l.svcCtx.Context, l.svcCtx, changeType, ids); syncErr != nil {
+	runSyncInBackground(l, func() {
+		if syncErr := syncArticleESChangesFunc(l.svcCtx.Context, l.svcCtx, changeType, ids); syncErr != nil {
 			l.Error(fmt.Sprintf("%s: %v", constants.TASK_SYNC_ES_FAILED_MESSAGE, syncErr))
 			return
 		}
