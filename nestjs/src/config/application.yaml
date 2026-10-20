@@ -31,6 +31,7 @@ database:
     username: ${DB_MONGODB_USERNAME:} # 可选：MongoDB 用户名
     password: ${DB_MONGODB_PASSWORD:} # 可选：MongoDB 密码
     dbName: ${DB_MONGODB_DATABASE:demo}
+    logging: ${DB_MONGODB_LOGGING:false} # 集合操作调试日志开关，默认关闭
   redis:
     host: ${REDIS_HOST:127.0.0.1}
     port: ${REDIS_PORT:6379}

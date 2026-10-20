@@ -7,6 +7,7 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { ScheduleModule } from "@nestjs/schedule";
 import type { TypeOrmModuleOptions } from "@nestjs/typeorm";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import mongoose from "mongoose";
 import { ClsModule } from "nestjs-cls";
 import config, { isTaskEnabled } from "src/config";
 import { AllExceptionsFilter } from "src/framework/filters/allException.filter";
@@ -14,6 +15,8 @@ import { InternalTokenGuard } from "src/framework/guards/internalToken.guard";
 import { RequireAdminGuard } from "src/framework/guards/requireAdmin.guard";
 import { ApiLogInterceptor } from "src/framework/interceptors/apiLog.interceptor";
 import { CommonModule } from "src/module/common/common.module";
+import { LoggerService } from "src/module/common/logger/logger.service";
+import { createMongooseDebugLogger } from "src/module/common/logger/mongooseDebugLogger";
 import { RedisModule } from "src/module/common/redis/redis.module";
 import { SystemModule } from "src/module/system/system.module";
 import { InternalTokenUtil } from "../common/utils/internalToken.util";
@@ -35,6 +38,7 @@ interface MongoDbConfig {
   username?: string;
   password?: string;
   dbName: string;
+  logging: boolean;
 }
 
 @Module({
@@ -66,10 +70,17 @@ interface MongoDbConfig {
       imports: [ConfigModule],
       useFactory: async (
         configService: ConfigService,
+        loggerService: LoggerService,
       ): Promise<MongooseModuleOptions> => {
         const mongodb: MongoDbConfig =
           configService.get<MongoDbConfig>("database.mongodb")!;
-        const { host, port, username, password, dbName } = mongodb;
+        const { host, port, username, password, dbName, logging } = mongodb;
+
+        // 独立开关开启时把 mongoose 集合操作日志路由到统一日志服务
+        // mongoose.set 是全局生效，本项目只有一个 mongo 连接，无隔离问题
+        if (logging) {
+          mongoose.set("debug", createMongooseDebugLogger(loggerService));
+        }
 
         // 根据是否有用户名和密码构建 URI
         let uri: string;
@@ -85,7 +96,7 @@ interface MongoDbConfig {
           autoCreate: true,
         };
       },
-      inject: [ConfigService],
+      inject: [ConfigService, LoggerService],
     }),
     ClsModule.forRoot({
       global: true,

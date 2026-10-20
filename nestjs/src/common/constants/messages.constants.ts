@@ -189,6 +189,12 @@ export class Messages {
   static readonly LOG_WRITE_FAILED = (errorMessage: string): string =>
     `写入日志失败: ${errorMessage}`;
 
+  static readonly MONGO_DEBUG_LOG = (
+    collectionName: string,
+    methodName: string,
+    args: string,
+  ): string => `Mongoose: ${collectionName}.${methodName}(${args})`;
+
   static readonly UPLOAD_IMAGE_START = (filename: string | undefined): string =>
     `uploadImage 开始，文件信息: filename=${filename}`;
 
