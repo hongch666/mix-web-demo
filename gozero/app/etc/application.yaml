@@ -47,6 +47,7 @@ database:
     username: ${DB_ES_USERNAME:}
     password: ${DB_ES_PASSWORD:}
     sniff: ${DB_ES_SNIFF:false}
+    dslLogEnabled: ${DB_ES_DSL_LOG_ENABLED:false} # 查询 DSL 日志开关，默认关闭
   redis:
     host: ${REDIS_HOST:127.0.0.1}
     port: ${REDIS_PORT:6379}

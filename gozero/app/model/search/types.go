@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"app/common/utils"
 	"app/internal/client/springClient"
 
 	"github.com/olivere/elastic/v7"
@@ -81,6 +82,10 @@ type ScriptParamMapping map[string]string
 type SearchModelDeps struct {
 	ESClient     *elastic.Client
 	SpringClient springClient.Client
+	// DSLLogEnabled 查询 DSL 日志开关，默认关闭
+	DSLLogEnabled bool
+	// Logger DSL 日志输出用的日志实例，未装配时跳过 DSL 输出
+	Logger *utils.ZeroLogger
 }
 
 type SearchModel interface {
@@ -90,11 +95,17 @@ type SearchModel interface {
 type searchModel struct {
 	esClient     *elastic.Client
 	springClient springClient.Client
+	// dslLogEnabled 查询 DSL 日志开关
+	dslLogEnabled bool
+	// logger DSL 日志输出用的日志实例
+	logger *utils.ZeroLogger
 }
 
 func NewSearchModel(deps SearchModelDeps) SearchModel {
 	return &searchModel{
-		esClient:     deps.ESClient,
-		springClient: deps.SpringClient,
+		esClient:      deps.ESClient,
+		springClient:  deps.SpringClient,
+		dslLogEnabled: deps.DSLLogEnabled,
+		logger:        deps.Logger,
 	}
 }

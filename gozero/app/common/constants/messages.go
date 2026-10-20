@@ -215,6 +215,10 @@ const (
 	INDEX_CHECK_ERROR_MESSAGE             = "索引判断错误"
 	INDEX_CREATION_ERROR_MESSAGE          = "索引创建错误"
 
+	// ES 查询 DSL 日志
+	ES_SEARCH_DSL_LOG = "ES 查询 DSL: index=%s, body=%s"
+	ES_DSL_BUILD_FAIL = "构建 ES 查询 DSL 失败: %v"
+
 	// 内部令牌日志
 	INTERNAL_TOKEN_HEADER_MISSING_LOG   = "[内部令牌验证] 缺少 %s 请求头，路径: %s"
 	INTERNAL_TOKEN_VALIDATE_FAIL_LOG    = "[内部令牌验证] 令牌验证失败: %v, 路径: %s"

@@ -42,7 +42,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	// 装配后立即校验依赖清单：必需依赖缺失直接 panic，避免带病启动
 	validateDependencies(infrastructure)
 	clientCtx := newClientContext(infrastructure.NamingClient, c.RemoteCall, zLogger)
-	models := newModelContext(c, infrastructure, clientCtx)
+	models := newModelContext(c, infrastructure, clientCtx, zLogger)
 
 	serviceCtx := &ServiceContext{
 		RuntimeContext:        &RuntimeContext{Context: serviceContext, Cancel: cancel, Config: c},

@@ -63,6 +63,8 @@ type ESConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Sniff    bool   `json:"sniff"`
+	// DSLLogEnabled 查询 DSL 日志开关，默认关闭；开启后每次搜索输出一份等价请求体
+	DSLLogEnabled bool `json:"dslLogEnabled"`
 }
 
 type DatabaseConfig struct {

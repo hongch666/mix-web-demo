@@ -17,13 +17,19 @@ import (
 	zerotrace "github.com/zeromicro/go-zero/core/trace"
 )
 
+// logFileHolder 共享的文件句柄，供同一路径下的派生日志实例复用
+// 派生实例各自持有句柄会在高频请求下不断新建文件描述符，只有等 GC 回收才关闭
+type logFileHolder struct {
+	mu          sync.Mutex // 保护文件句柄的并发访问
+	file        *os.File   // 当前打开的日志文件句柄
+	currentDate string     // 当前日志文件对应的日期，用于按天切换
+}
+
 // ZeroLogger 基于 go-zero logx 的日志工具，支持文件记录
 type ZeroLogger struct {
-	logPath     string
-	ctx         context.Context
-	fileMu      sync.Mutex // 保护文件句柄的并发访问
-	currentFile *os.File   // 当前打开的日志文件句柄
-	currentDate string     // 当前日志文件对应的日期，用于按天切换
+	logPath string
+	ctx     context.Context
+	holder  *logFileHolder
 }
 
 // NewZeroLogger 创建新的日志实例
@@ -51,19 +57,24 @@ func NewZeroLogger(logPath string) (*ZeroLogger, error) {
 	logger := &ZeroLogger{
 		logPath: logPath,
 		ctx:     context.Background(),
+		holder:  &logFileHolder{},
 	}
 
 	return logger, nil
 }
 
-// WithContext 返回一个包含上下文的新日志实例（共享同一日志文件路径）
+// WithContext 返回一个包含上下文的新日志实例（共享同一日志文件与文件句柄）
 func (z *ZeroLogger) WithContext(ctx context.Context) *ZeroLogger {
 	if ctx == nil {
 		return z
 	}
+	if z.holder == nil {
+		z.holder = &logFileHolder{}
+	}
 	return &ZeroLogger{
 		logPath: z.logPath,
 		ctx:     ctx,
+		holder:  z.holder,
 	}
 }
 
@@ -80,25 +91,25 @@ func (z *ZeroLogger) writeToFile(message string, level string) {
 	}
 	logEntry := fmt.Sprintf(constants.TraceLogFormat, timestamp, level, traceID, message)
 
-	z.fileMu.Lock()
-	defer z.fileMu.Unlock()
+	z.holder.mu.Lock()
+	defer z.holder.mu.Unlock()
 
 	// 日期变化或文件未打开时，切换到新文件
-	if z.currentFile == nil || z.currentDate != today {
-		if z.currentFile != nil {
-			z.currentFile.Close()
+	if z.holder.file == nil || z.holder.currentDate != today {
+		if z.holder.file != nil {
+			z.holder.file.Close()
 		}
 		file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 		if err != nil {
 			logx.Error(fmt.Sprintf(constants.LOGGER_OPEN_FILE_ERROR, err))
 			return
 		}
-		z.currentFile = file
-		z.currentDate = today
+		z.holder.file = file
+		z.holder.currentDate = today
 	}
 
 	// 使用缓冲写入减少系统调用
-	writer := bufio.NewWriter(z.currentFile)
+	writer := bufio.NewWriter(z.holder.file)
 	if _, err := writer.WriteString(logEntry); err != nil {
 		logx.Error(fmt.Sprintf(constants.LOGGER_WRITE_FILE_ERROR, err))
 	}
@@ -158,14 +169,19 @@ func (z *ZeroLogger) Debugf(format string, args ...interface{}) {
 }
 
 // Close 关闭日志文件句柄，刷新缓冲区
+// 派生实例与根实例共享同一句柄，重复关闭是安全的
 func (z *ZeroLogger) Close() error {
-	z.fileMu.Lock()
-	defer z.fileMu.Unlock()
+	if z.holder == nil {
+		return nil
+	}
 
-	if z.currentFile != nil {
-		err := z.currentFile.Close()
-		z.currentFile = nil
-		z.currentDate = ""
+	z.holder.mu.Lock()
+	defer z.holder.mu.Unlock()
+
+	if z.holder.file != nil {
+		err := z.holder.file.Close()
+		z.holder.file = nil
+		z.holder.currentDate = ""
 		return err
 	}
 	return nil

@@ -104,12 +104,14 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 		RequestCache(true)
 
 	// 无关键词时 boolQuery 只含过滤条件，_score 恒为 0，需显式按创建时间倒序保证顺序确定
-	if searchDTO.Keyword == "" {
+	sortByCreateAt := searchDTO.Keyword == ""
+	if sortByCreateAt {
 		searchService = searchService.Sort("create_at", false)
 	}
 
+	var highlight *elastic.Highlight
 	if searchDTO.Keyword != "" {
-		highlight := elastic.NewHighlight().PreTags("<em>").PostTags("</em>").
+		highlight = elastic.NewHighlight().PreTags("<em>").PostTags("</em>").
 			Fields(
 				elastic.NewHighlighterField("title"),
 				elastic.NewHighlighterField("content"),
@@ -118,6 +120,9 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 			FragmentSize(150)
 		searchService = searchService.Highlight(highlight)
 	}
+
+	// DSL 日志开关关闭时该调用直接返回，不产生任何序列化开销
+	m.logSearchDSL(ctx, finalQuery, from, size, sortByCreateAt, highlight)
 
 	searchResult, err := searchService.Do(ctx)
 	if err != nil {

@@ -1,8 +1,13 @@
 package boot
 
 import (
+	"os"
 	"strings"
 	"testing"
+
+	"app/internal/config"
+
+	"github.com/zeromicro/go-zero/core/conf"
 )
 
 // 验证该测试场景的预期行为
@@ -58,5 +63,30 @@ func TestIsNumericAndIsQuoted(t *testing.T) {
 	}
 	if !isQuoted("\"x\"") || !isQuoted("'x'") || isQuoted("x") {
 		t.Fatal("isQuoted 判断错误")
+	}
+}
+
+// 校验 ES DSL 日志开关能从配置文件经环境变量展开后正确装配
+// 覆盖 YAML 占位符展开与结构体字段映射，避免开关写错字段名导致静默失效
+
+func TestESDSLLogSwitchLoadedFromConfig(t *testing.T) {
+	content, err := os.ReadFile("../../etc/application.yaml")
+	if err != nil {
+		t.Fatalf("读取配置文件失败: %v", err)
+	}
+
+	if !strings.Contains(string(content), "${DB_ES_DSL_LOG_ENABLED:false}") {
+		t.Fatal("配置文件缺少 ES DSL 日志开关占位符")
+	}
+
+	t.Setenv("DB_ES_DSL_LOG_ENABLED", "true")
+
+	var c config.Config
+	if err := conf.LoadFromYamlBytes([]byte(expandEnvWithDefaults(string(content))), &c); err != nil {
+		t.Fatalf("解析配置失败: %v", err)
+	}
+
+	if !c.Database.ES.DSLLogEnabled {
+		t.Fatal("环境变量置为 true 时 ES DSL 日志开关未生效")
 	}
 }
