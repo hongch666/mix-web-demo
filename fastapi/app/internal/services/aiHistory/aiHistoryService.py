@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, Optional
 
-from app.core.base import Logger
+from app.core.base import Logger, LoggerProtocol
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 from app.internal.clients import SpringClient, get_spring_client
@@ -22,6 +22,7 @@ class AiHistoryService:
         ai_history_mapper: Optional[AiHistoryMapper] = None,
         spring_client: Optional[SpringClient] = None,
         ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
+        logger: Optional[LoggerProtocol] = None,
     ) -> None:
         self.ai_history_mapper: AiHistoryMapper = (
             ai_history_mapper or get_ai_history_mapper()
@@ -30,6 +31,8 @@ class AiHistoryService:
         self._ai_user_summary_mapper: AiUserSummaryMapper = (
             ai_user_summary_mapper or get_ai_user_summary_mapper()
         )
+        # 日志器可注入，缺省回退全局单例
+        self._logger: LoggerProtocol = logger or Logger
 
     async def create_ai_history(self, ai_history: Any, db: Any) -> Any:
         data: dict[str, Any] = self._normalize_ai_history_data(ai_history)
@@ -71,7 +74,7 @@ class AiHistoryService:
         except Exception:
             await db.rollback()
             raise
-        Logger.info(Messages.AI_MEMORY_SUMMARY_CLEARED(user_id))
+        self._logger.info(Messages.AI_MEMORY_SUMMARY_CLEARED(user_id))
 
     @staticmethod
     def _serialize_ai_history(ai_history: AiHistory) -> dict[str, Any]:
@@ -118,9 +121,11 @@ def get_ai_history_service(
     ai_history_mapper: AiHistoryMapper,
     spring_client: SpringClient,
     ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
+    logger: Optional[LoggerProtocol] = None,
 ) -> AiHistoryService:
     return AiHistoryService(
         ai_history_mapper,
         spring_client,
         ai_user_summary_mapper,
+        logger,
     )

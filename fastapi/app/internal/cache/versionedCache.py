@@ -2,7 +2,7 @@ import hashlib
 from contextvars import ContextVar
 from typing import Any, ClassVar, Optional
 
-from app.core.base import Logger
+from app.core.base import LoggerProtocol
 from app.core.constants import Messages, Scripts
 from app.core.db import execute_clickhouse_query
 
@@ -29,8 +29,8 @@ class VersionedCache(BaseCache):
     # 声明为 ClassVar[Any]：子类用具体模型类型收窄，可变属性的覆盖类型是固定的，基类不能用 Optional[type[Any]] 卡住
     VERSION_MODEL: ClassVar[Any] = None
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, logger: LoggerProtocol | None = None) -> None:
+        super().__init__(logger)
         # 版本号
         self._cache_version: Optional[str] = None
 
@@ -50,7 +50,9 @@ class VersionedCache(BaseCache):
     async def get_cache_version(self) -> Optional[str]:
         """基于版本号校验模型对应表的内容生成稳定版本号"""
         if self.VERSION_MODEL is None:
-            Logger.warning(Messages.CACHE_VERSION_MODEL_NOT_SET(type(self).__name__))
+            self._logger.warning(
+                Messages.CACHE_VERSION_MODEL_NOT_SET(type(self).__name__)
+            )
             return None
 
         try:
@@ -65,7 +67,7 @@ class VersionedCache(BaseCache):
             version_str = f"{ch_table}:{int(total_rows)}:{int(max_stat_ts)}"
             return hashlib.md5(version_str.encode()).hexdigest()[:8]
         except Exception as e:
-            Logger.debug(Messages.CACHE_VERSION_GET_FAILED(e))
+            self._logger.debug(Messages.CACHE_VERSION_GET_FAILED(e))
             return None
 
     async def _persist_version(self, version: str) -> None:
@@ -78,7 +80,7 @@ class VersionedCache(BaseCache):
         try:
             current_version = await self.get_cache_version()
             if not current_version:
-                Logger.debug(Messages.SKIP_VERSION_CHECK)
+                self._logger.debug(Messages.SKIP_VERSION_CHECK)
                 return False
 
             # 记录本次读取观察到的版本，写缓存时以此为版本号，避免旧数据被绑定新版本
@@ -96,7 +98,7 @@ class VersionedCache(BaseCache):
                         else old_version.decode("utf-8")
                     )
             except Exception as e:
-                Logger.debug(Messages.CACHE_VERSION_REDIS_READ_FAILED(e))
+                self._logger.debug(Messages.CACHE_VERSION_REDIS_READ_FAILED(e))
                 old_version = None
 
             # 本地版本号作为备选
@@ -106,12 +108,12 @@ class VersionedCache(BaseCache):
             # 关键修复：如果没有旧版本号（首次调用），不认为是版本变化
             if not old_version:
                 await self._persist_version(current_version)
-                Logger.debug(Messages.CACHE_VERSION_INITIALIZED(current_version))
+                self._logger.debug(Messages.CACHE_VERSION_INITIALIZED(current_version))
                 return False
 
             # 版本号对比：有旧版本且不相等时才算变化
             if str(current_version) != str(old_version):
-                Logger.info(
+                self._logger.info(
                     Messages.CACHE_VERSION_CHANGED(
                         str(old_version), str(current_version)
                     )
@@ -120,7 +122,7 @@ class VersionedCache(BaseCache):
 
             return False
         except Exception as e:
-            Logger.warning(Messages.CACHE_VERSION_CHECK_FAILED(e))
+            self._logger.warning(Messages.CACHE_VERSION_CHECK_FAILED(e))
             return False
 
     async def update_version(self) -> None:
@@ -136,9 +138,9 @@ class VersionedCache(BaseCache):
                 version = await self.get_cache_version()
             if version:
                 await self._persist_version(version)
-                Logger.info(Messages.CACHE_VERSION_UPDATED(version))
+                self._logger.info(Messages.CACHE_VERSION_UPDATED(version))
         except Exception as e:
-            Logger.warning(Messages.CACHE_VERSION_SET_FAILED(e))
+            self._logger.warning(Messages.CACHE_VERSION_SET_FAILED(e))
 
     async def clear_all(self) -> None:
         """清除所有缓存，包括版本号"""
@@ -147,4 +149,4 @@ class VersionedCache(BaseCache):
         try:
             await self._redis.delete(self.REDIS_VERSION_KEY)
         except Exception as e:
-            Logger.error(Messages.CACHE_VERSION_CLEAR_FAILED(e))
+            self._logger.error(Messages.CACHE_VERSION_CLEAR_FAILED(e))

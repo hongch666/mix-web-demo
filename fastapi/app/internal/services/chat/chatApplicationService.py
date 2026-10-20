@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base import (
     Logger,
+    LoggerProtocol,
     StreamFrameContext,
     build_native_frame,
     build_openai_chunk_frame,
@@ -60,15 +61,20 @@ class ChatApplicationService:
     """装配模型调用、追踪和历史保存的聊天用例"""
 
     def __init__(
-        self, models: Mapping[AIServiceType, Any], history_service: Any
+        self,
+        models: Mapping[AIServiceType, Any],
+        history_service: Any,
+        logger: LoggerProtocol | None = None,
     ) -> None:
         self._models = models
         self._history_service = history_service
+        # 日志器可注入，缺省回退全局单例
+        self._logger: LoggerProtocol = logger or Logger
 
     def _prepare(self, request: ChatRequest, streaming: bool) -> ChatSession:
         current_user_id: Optional[int] = get_current_user_id()
         if current_user_id is None:
-            Logger.warning(
+            self._logger.warning(
                 Messages.USER_IDENTITY_FALLBACK_TO_SYSTEM(
                     "stream_message" if streaming else "send_message"
                 )
@@ -142,7 +148,7 @@ class ChatApplicationService:
                     }
             notes: list[str] = []
             model = select_chat_model(request.service, self._models)
-            Logger.info(
+            self._logger.info(
                 Messages.CHAT_SERVICE_PROCESSING(
                     request.service.value, session.user_id, False
                 )
@@ -166,11 +172,13 @@ class ChatApplicationService:
             request.service,
         )
         if saved:
-            Logger.info(
+            self._logger.info(
                 Messages.AI_HISTORY_SAVED(session.user_id, request.service.value, False)
             )
         else:
-            Logger.info(Messages.AI_HISTORY_SKIPPED_SYSTEM_USER(session.user_id, False))
+            self._logger.info(
+                Messages.AI_HISTORY_SKIPPED_SYSTEM_USER(session.user_id, False)
+            )
         return ChatResponseData(
             message=response_message,
             conversationId=session.conversation_id,
@@ -200,7 +208,7 @@ class ChatApplicationService:
             ):
                 db = await anext(db_generator)
                 model = select_chat_model(request.service, self._models)
-                Logger.info(
+                self._logger.info(
                     Messages.CHAT_SERVICE_PROCESSING(
                         request.service.value, session.user_id, True
                     )
@@ -217,7 +225,9 @@ class ChatApplicationService:
                     else:
                         kind = Defaults.STREAM_TYPE_CONTENT
                         content = str(chunk)
-                    Logger.debug(Messages.STREAM_CHUNK_RECEIVED(kind, len(content)))
+                    self._logger.debug(
+                        Messages.STREAM_CHUNK_RECEIVED(kind, len(content))
+                    )
                     if kind == Defaults.STREAM_TYPE_THINKING:
                         thinking_acc += content
                     elif kind == Defaults.STREAM_TYPE_CONTENT:
@@ -235,13 +245,13 @@ class ChatApplicationService:
                         request.service,
                     )
                     if saved:
-                        Logger.info(
+                        self._logger.info(
                             Messages.AI_HISTORY_SAVED(
                                 session.user_id, request.service.value, True
                             )
                         )
                     else:
-                        Logger.info(
+                        self._logger.info(
                             Messages.AI_HISTORY_SKIPPED_SYSTEM_USER(
                                 session.user_id, True
                             )
@@ -312,6 +322,7 @@ def get_chat_application_service(
     claude_service: Any,
     qwen_service: Any,
     history_service: Any,
+    logger: LoggerProtocol | None = None,
 ) -> ChatApplicationService:
     return ChatApplicationService(
         {
@@ -323,4 +334,5 @@ def get_chat_application_service(
             AIServiceType.QWEN: qwen_service,
         },
         history_service,
+        logger,
     )

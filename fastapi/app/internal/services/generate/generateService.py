@@ -9,7 +9,7 @@ from typing import Any, Optional, cast
 
 import jieba.analyse
 
-from app.core.base import Logger
+from app.core.base import Logger, LoggerProtocol
 from app.core.constants import AiUsers, HttpCode, Messages, Prompts
 from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
@@ -47,6 +47,7 @@ class GenerateService:
         claude_service: Optional[ClaudeService] = None,
         qwen_service: Optional[QwenService] = None,
         spring_client: Optional[SpringClient] = None,
+        logger: Optional[LoggerProtocol] = None,
     ) -> None:
         # 各模型服务允许缺省，调用失败由各调用点按异常兜底降级，因此按 Any 持有
         self.glm_service: Any = glm_service
@@ -56,6 +57,8 @@ class GenerateService:
         self.claude_service: Any = claude_service
         self.qwen_service: Any = qwen_service
         self._spring_client: SpringClient = spring_client or get_spring_client()
+        # 日志器可注入，缺省回退全局单例
+        self._logger: LoggerProtocol = logger or Logger
 
     async def extract_tags(self, text: str, topK: int = 5) -> list[str]:
         """
@@ -134,7 +137,7 @@ class GenerateService:
     ) -> dict[str, Any]:
         """解析模型返回并构建评论数据，异常响应降级为失败文案与默认分"""
         if isinstance(response, Exception):
-            Logger.error(failed_message(model.service_name, response))
+            self._logger.error(failed_message(model.service_name, response))
             response = model.failed_text
         content, star = self._parse_ai_comment_response(response)
         return self._build_comment_data(article_id, model.user_id, content, star)
@@ -149,13 +152,13 @@ class GenerateService:
             try:
                 result = await model.service.basic_chat(prompt)
             except Exception as e:
-                Logger.error(
+                self._logger.error(
                     Messages.LLM_CALL_FAILED_TIMED(
                         model.service_name, time.time() - start, e
                     )
                 )
                 return e
-            Logger.info(
+            self._logger.info(
                 Messages.LLM_CALL_COMPLETED(model.service_name, time.time() - start)
             )
             return result
@@ -180,13 +183,13 @@ class GenerateService:
                     article_content, reference_content
                 )
             except Exception as e:
-                Logger.error(
+                self._logger.error(
                     Messages.LLM_REFERENCE_CALL_FAILED_TIMED(
                         model.service_name, time.time() - start, e
                     )
                 )
                 return e
-            Logger.info(
+            self._logger.info(
                 Messages.LLM_REFERENCE_CALL_COMPLETED(
                     model.service_name, time.time() - start
                 )
@@ -206,7 +209,7 @@ class GenerateService:
         )
         # 2. 获取文章信息（与删除AI评论并行，互不依赖）
         if ai_comments_count > 0:
-            Logger.info(Messages.ARTICLE_AI_COMMENT_EXISTS_DELETING(article_id))
+            self._logger.info(Messages.ARTICLE_AI_COMMENT_EXISTS_DELETING(article_id))
             _, articles = await asyncio.gather(
                 self._spring_client.delete_ai_comments_by_article_id(article_id),
                 self._spring_client.get_articles_by_ids([article_id]),
@@ -227,7 +230,7 @@ class GenerateService:
             article_data.get("content", ""),
         )
         # 2.3 异步并发调用所有大模型生成AI评论
-        Logger.info(Messages.CONCURRENT_LLM_AI_COMMENT_START(article_id))
+        self._logger.info(Messages.CONCURRENT_LLM_AI_COMMENT_START(article_id))
         models = self._ai_comment_models()
 
         # 记录整体开始时间
@@ -236,7 +239,9 @@ class GenerateService:
 
         # 记录整体结束时间
         total_elapsed = time.time() - total_start_time
-        Logger.info(Messages.CONCURRENT_LLM_ALL_COMPLETED(total_elapsed, article_id))
+        self._logger.info(
+            Messages.CONCURRENT_LLM_ALL_COMPLETED(total_elapsed, article_id)
+        )
 
         # 3. 构建AI评论对象，异常返回由构建阶段替换为降级文案
         comments = [
@@ -249,7 +254,7 @@ class GenerateService:
             await self._spring_client.create_comment(comment)
 
         await asyncio.gather(*(_insert_comment(comment) for comment in comments))
-        Logger.info(Messages.AI_COMMENT_GENERATED_AND_SAVED(article_id))
+        self._logger.info(Messages.AI_COMMENT_GENERATED_AND_SAVED(article_id))
 
     async def generate_ai_comments_in_background(self, article_id: int) -> None:
         """后台生成 AI 评论"""
@@ -303,7 +308,7 @@ class GenerateService:
         )
         # 2. 获取文章信息（与删除AI评论并行，互不依赖）
         if ai_comments_count > 0:
-            Logger.info(Messages.ARTICLE_AI_COMMENT_EXISTS_DELETING(article_id))
+            self._logger.info(Messages.ARTICLE_AI_COMMENT_EXISTS_DELETING(article_id))
             _, articles = await asyncio.gather(
                 self._spring_client.delete_ai_comments_by_article_id(article_id),
                 self._spring_client.get_articles_by_ids([article_id]),
@@ -311,13 +316,13 @@ class GenerateService:
         else:
             articles = await self._spring_client.get_articles_by_ids([article_id])
         if not articles:
-            Logger.error(Messages.ARTICLE_NOT_FOUND_WITH_ID(article_id))
+            self._logger.error(Messages.ARTICLE_NOT_FOUND_WITH_ID(article_id))
             return
         article_data = articles[0]
         # 各模型的评论身份与降级文案在单次调用内固定
         models = self._ai_comment_models()
 
-        Logger.info(Messages.REFERENCE_BASED_AI_COMMENT_START(article_id))
+        self._logger.info(Messages.REFERENCE_BASED_AI_COMMENT_START(article_id))
 
         # 3. 获取权威参考文本（通过SpringClient远程调用）
         reference_content = None
@@ -333,10 +338,10 @@ class GenerateService:
             )
 
             if category_ref:
-                Logger.info(
+                self._logger.info(
                     Messages.REFERENCE_TEXT_TYPE_FOUND(str(category_ref.get("type")))
                 )
-                Logger.info(Messages.REFERENCE_TEXT_DETAIL(category_ref))
+                self._logger.info(Messages.REFERENCE_TEXT_DETAIL(category_ref))
 
                 # 4. 根据类型提取内容并使用大模型进行总结
                 extractor = get_reference_content_extractor()
@@ -346,10 +351,14 @@ class GenerateService:
 
                 if ref_type == "pdf":
                     ref_value = str(category_ref.get("pdf") or "")
-                    Logger.info(Messages.REFERENCE_PDF_EXTRACTION_START(ref_value))
+                    self._logger.info(
+                        Messages.REFERENCE_PDF_EXTRACTION_START(ref_value)
+                    )
                 elif ref_type == "link":
                     ref_value = str(category_ref.get("link") or "")
-                    Logger.info(Messages.REFERENCE_LINK_EXTRACTION_START(ref_value))
+                    self._logger.info(
+                        Messages.REFERENCE_LINK_EXTRACTION_START(ref_value)
+                    )
 
                 # 定义各大模型的总结函数
                 async def summarize_with(model: AiCommentModel, content: str) -> str:
@@ -358,7 +367,7 @@ class GenerateService:
                             content, max_length=1500
                         )
                     except Exception as e:
-                        Logger.error(
+                        self._logger.error(
                             Messages.LLM_SUMMARIZE_FAILED(model.service_name, e)
                         )
                         return content[:1500]
@@ -384,23 +393,23 @@ class GenerateService:
 
                 if summaries:
                     reference_content = "\n\n".join(summaries)
-                    Logger.info(
+                    self._logger.info(
                         Messages.REFERENCE_TEXT_EXTRACTED_AND_SUMMARIZED(
                             len(reference_content)
                         )
                     )
                 else:
-                    Logger.warning(
+                    self._logger.warning(
                         Messages.REFERENCE_TEXT_EXTRACTION_FAILED_TYPE(ref_type)
                     )
                     reference_content = Messages.REFERENCE_TEXT_FALLBACK_CONTENT(
                         ref_type, str(ref_value)
                     )
             else:
-                Logger.info(Messages.SUB_CATEGORY_NO_REFERENCE(sub_category_id))
+                self._logger.info(Messages.SUB_CATEGORY_NO_REFERENCE(sub_category_id))
                 reference_content = None
         else:
-            Logger.warning(Messages.ARTICLE_NO_SUB_CATEGORY(article_id))
+            self._logger.warning(Messages.ARTICLE_NO_SUB_CATEGORY(article_id))
             reference_content = None
         # 如果没有参考文本，使用默认参考提示
         if not reference_content:
@@ -414,7 +423,9 @@ class GenerateService:
         )
 
         # 6. 异步并发调用所有大模型生成AI评论
-        Logger.info(Messages.CONCURRENT_LLM_REFERENCE_AI_COMMENT_START(article_id))
+        self._logger.info(
+            Messages.CONCURRENT_LLM_REFERENCE_AI_COMMENT_START(article_id)
+        )
 
         total_start_time = time.time()
         responses = await self._call_models_with_reference(
@@ -422,7 +433,7 @@ class GenerateService:
         )
 
         total_elapsed = time.time() - total_start_time
-        Logger.info(
+        self._logger.info(
             Messages.CONCURRENT_LLM_REFERENCE_ALL_COMPLETED(total_elapsed, article_id)
         )
 
@@ -439,7 +450,7 @@ class GenerateService:
             await self._spring_client.create_comment(comment)
 
         await asyncio.gather(*(_insert_comment_ref(comment) for comment in comments))
-        Logger.info(Messages.REFERENCE_AI_COMMENT_GENERATED_AND_SAVED(article_id))
+        self._logger.info(Messages.REFERENCE_AI_COMMENT_GENERATED_AND_SAVED(article_id))
 
     async def generate_authority_article_with_ai_summaries(
         self, reference_type: str, reference_value: str
@@ -455,7 +466,7 @@ class GenerateService:
             包含三个大模型总结的字典
         """
         try:
-            Logger.info(
+            self._logger.info(
                 Messages.AUTHORITY_ARTICLE_GENERATION_START(
                     reference_type, reference_value
                 )
@@ -473,23 +484,25 @@ class GenerateService:
                     reference_value, max_length=3000
                 )
             else:
-                Logger.error(Messages.UNSUPPORTED_REFERENCE_TYPE(reference_type))
+                self._logger.error(Messages.UNSUPPORTED_REFERENCE_TYPE(reference_type))
                 return {
                     "status": "error",
                     "message": Messages.UNSUPPORTED_REFERENCE_TYPE(reference_type),
                 }
 
             if not raw_content:
-                Logger.warning(Messages.REFERENCE_TEXT_EXTRACTION_ERROR)
+                self._logger.warning(Messages.REFERENCE_TEXT_EXTRACTION_ERROR)
                 return {
                     "status": "error",
                     "message": Messages.REFERENCE_TEXT_EXTRACTION_ERROR,
                 }
 
-            Logger.info(Messages.RAW_CONTENT_EXTRACTION_COMPLETED(len(raw_content)))
+            self._logger.info(
+                Messages.RAW_CONTENT_EXTRACTION_COMPLETED(len(raw_content))
+            )
 
             # 2. 并发调用三个大模型进行总结
-            Logger.info(Messages.CONCURRENT_SUMMARY_MESSAGE)
+            self._logger.info(Messages.CONCURRENT_SUMMARY_MESSAGE)
             total_start_time = time.time()
 
             async def timed_glm_summarize() -> Optional[str]:
@@ -499,7 +512,7 @@ class GenerateService:
                         raw_content, max_length=1500
                     )
                     elapsed = time.time() - start
-                    Logger.info(
+                    self._logger.info(
                         Messages.LLM_SUMMARIZE_COMPLETED(
                             "GLM", elapsed, len(result) if result else 0
                         )
@@ -507,7 +520,9 @@ class GenerateService:
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    Logger.error(Messages.LLM_SUMMARIZE_FAILED_TIMED("GLM", elapsed, e))
+                    self._logger.error(
+                        Messages.LLM_SUMMARIZE_FAILED_TIMED("GLM", elapsed, e)
+                    )
                     return None
 
             async def timed_gemini_summarize() -> Optional[str]:
@@ -517,7 +532,7 @@ class GenerateService:
                         raw_content, max_length=1500
                     )
                     elapsed = time.time() - start
-                    Logger.info(
+                    self._logger.info(
                         Messages.LLM_SUMMARIZE_COMPLETED(
                             "Gemini", elapsed, len(result) if result else 0
                         )
@@ -525,7 +540,7 @@ class GenerateService:
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    Logger.error(
+                    self._logger.error(
                         Messages.LLM_SUMMARIZE_FAILED_TIMED("Gemini", elapsed, e)
                     )
                     return None
@@ -537,7 +552,7 @@ class GenerateService:
                         raw_content, max_length=1500
                     )
                     elapsed = time.time() - start
-                    Logger.info(
+                    self._logger.info(
                         Messages.LLM_SUMMARIZE_COMPLETED(
                             "GPT", elapsed, len(result) if result else 0
                         )
@@ -545,7 +560,9 @@ class GenerateService:
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    Logger.error(Messages.LLM_SUMMARIZE_FAILED_TIMED("GPT", elapsed, e))
+                    self._logger.error(
+                        Messages.LLM_SUMMARIZE_FAILED_TIMED("GPT", elapsed, e)
+                    )
                     return None
 
             # 并发执行三个总结任务
@@ -557,7 +574,9 @@ class GenerateService:
             )
 
             total_elapsed = time.time() - total_start_time
-            Logger.info(Messages.ALL_CONCURRENT_SUMMARIZE_COMPLETED(total_elapsed))
+            self._logger.info(
+                Messages.ALL_CONCURRENT_SUMMARIZE_COMPLETED(total_elapsed)
+            )
 
             # 3. 构建返回结果
             result = {
@@ -583,11 +602,11 @@ class GenerateService:
                 "total_execution_time": total_elapsed,
             }
 
-            Logger.info(Messages.CONCURRENT_CHAT_MESSAGE_SUCCESS)
+            self._logger.info(Messages.CONCURRENT_CHAT_MESSAGE_SUCCESS)
             return result
 
         except Exception as e:
-            Logger.error(Messages.AUTHORITY_ARTICLE_GENERATION_EXCEPTION(str(e)))
+            self._logger.error(Messages.AUTHORITY_ARTICLE_GENERATION_EXCEPTION(str(e)))
             return {
                 "status": "error",
                 "message": Messages.AUTHORITY_ARTICLE_GENERATION_FAILED(str(e)),
@@ -609,6 +628,7 @@ def get_generate_service(
     claude_service: ClaudeService,
     qwen_service: QwenService,
     spring_client: SpringClient,
+    logger: Optional[LoggerProtocol] = None,
 ) -> GenerateService:
     return GenerateService(
         glm_service,
@@ -618,4 +638,5 @@ def get_generate_service(
         claude_service,
         qwen_service,
         spring_client,
+        logger,
     )

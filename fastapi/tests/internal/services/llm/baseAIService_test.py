@@ -144,6 +144,8 @@ def _make_service(**overrides) -> BaseAiService:
     service._base_url = ""
     service._timeout = 30
     service._context_budget = ContextBudgetConfig()
+    # 与 __init__ 保持一致：日志器可注入，缺省为全局单例
+    service._logger = base_module.Logger
     for name, value in overrides.items():
         setattr(service, name, value)
     return service

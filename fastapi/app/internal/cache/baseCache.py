@@ -2,7 +2,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
-from app.core.base import Logger
+from app.core.base import Logger, LoggerProtocol
 from app.core.constants import Messages
 from app.core.db import get_redis_client
 
@@ -20,7 +20,7 @@ class BaseCache(ABC):
     REDIS_KEY_PREFIX: str = ""
     L1_CACHE_TTL: int = 300  # 默认5分钟
 
-    def __init__(self) -> None:
+    def __init__(self, logger: LoggerProtocol | None = None) -> None:
         # L1 本地缓存
         self._local_cache: Optional[Any] = None
         self._local_cache_time: float = 0
@@ -31,6 +31,9 @@ class BaseCache(ABC):
 
         # Redis TTL（1天）
         self._redis_ttl: int = 86400
+
+        # 日志器可注入，缺省回退全局单例
+        self._logger: LoggerProtocol = logger or Logger
 
     def __repr__(self) -> str:
         """对象表示 - 用于日志输出和序列化"""
@@ -47,7 +50,7 @@ class BaseCache(ABC):
 
         # 检查 TTL
         if time.time() - self._local_cache_time > self._local_cache_ttl:
-            Logger.info(Messages.L1_CACHE_TTL_EXPIRED)
+            self._logger.info(Messages.L1_CACHE_TTL_EXPIRED)
             return False
 
         return True
@@ -56,7 +59,7 @@ class BaseCache(ABC):
         """从本地缓存获取"""
         if await self.is_local_cache_valid():
             cache_age = time.time() - self._local_cache_time
-            Logger.info(Messages.CACHE_L1_HIT(cache_age))
+            self._logger.info(Messages.CACHE_L1_HIT(cache_age))
             return self._local_cache
         return None
 
@@ -65,45 +68,45 @@ class BaseCache(ABC):
         try:
             data = await self._redis.get(self.REDIS_KEY_PREFIX)
             if data:
-                Logger.info(Messages.L2_CACHE_HIT)
+                self._logger.info(Messages.L2_CACHE_HIT)
                 # 同时更新本地缓存
                 self._local_cache = data
                 self._local_cache_time = time.time()
                 return data
 
-            Logger.info(Messages.L2_CACHE_MISS)
+            self._logger.info(Messages.L2_CACHE_MISS)
             return None
         except Exception as e:
-            Logger.error(Messages.CACHE_L2_READ_FAILED(e))
+            self._logger.error(Messages.CACHE_L2_READ_FAILED(e))
             return None
 
     async def update_local_cache(self, data: Any) -> None:
         """更新本地缓存"""
         self._local_cache = data
         self._local_cache_time = time.time()
-        Logger.info(Messages.L1_CACHE_UPDATED)
+        self._logger.info(Messages.L1_CACHE_UPDATED)
 
     async def update_redis_cache(self, data: Any) -> None:
         """更新 Redis 缓存"""
         try:
             await self._redis.set(self.REDIS_KEY_PREFIX, data, ex=self._redis_ttl)
-            Logger.info(Messages.CACHE_L2_UPDATED(self._redis_ttl))
+            self._logger.info(Messages.CACHE_L2_UPDATED(self._redis_ttl))
         except Exception as e:
-            Logger.error(Messages.CACHE_L2_WRITE_FAILED(e))
+            self._logger.error(Messages.CACHE_L2_WRITE_FAILED(e))
 
     async def clear_local_cache(self) -> None:
         """清除本地缓存"""
         self._local_cache = None
         self._local_cache_time = 0
-        Logger.info(Messages.L1_CACHE_CLEARED)
+        self._logger.info(Messages.L1_CACHE_CLEARED)
 
     async def clear_redis_cache(self) -> None:
         """清除 Redis 缓存"""
         try:
             await self._redis.delete(self.REDIS_KEY_PREFIX)
-            Logger.info(Messages.L2_CACHE_CLEARED)
+            self._logger.info(Messages.L2_CACHE_CLEARED)
         except Exception as e:
-            Logger.error(Messages.CACHE_L2_CLEAR_FAILED(e))
+            self._logger.error(Messages.CACHE_L2_CLEAR_FAILED(e))
 
     async def clear_all(self) -> None:
         """清除所有缓存"""

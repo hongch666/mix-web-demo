@@ -2,7 +2,7 @@ import time
 from functools import lru_cache
 from typing import ClassVar, Optional
 
-from app.core.base import Logger
+from app.core.base import LoggerProtocol
 from app.core.constants import Messages, RedisKeys
 from app.internal.models import AdsSearchKeyword
 
@@ -35,7 +35,7 @@ class WordcloudCache(VersionedCache):
         try:
             data = await self._redis.get(self.REDIS_KEY_PREFIX)
             if data:
-                Logger.info(Messages.L2_CACHE_HIT)
+                self._logger.info(Messages.L2_CACHE_HIT)
                 # 统一转换为字符串类型
                 url = data if isinstance(data, str) else str(data)
                 # 同时更新本地缓存
@@ -43,10 +43,10 @@ class WordcloudCache(VersionedCache):
                 self._local_cache_time = time.time()
                 return url
 
-            Logger.info(Messages.L2_CACHE_MISS)
+            self._logger.info(Messages.L2_CACHE_MISS)
             return None
         except Exception as e:
-            Logger.error(Messages.CACHE_L2_READ_FAILED(e))
+            self._logger.error(Messages.CACHE_L2_READ_FAILED(e))
             return None
 
     async def get(self) -> Optional[str]:
@@ -61,7 +61,7 @@ class WordcloudCache(VersionedCache):
         """
         # 检查版本号是否变化
         if await self.is_version_changed():
-            Logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
+            self._logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
             await self.clear_all()
             return None
 
@@ -76,7 +76,7 @@ class WordcloudCache(VersionedCache):
             return redis_data
 
         # 3. 两级缓存都没有
-        Logger.info(Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE)
+        self._logger.info(Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE)
         return None
 
     async def set(self, data: str) -> None:
@@ -100,9 +100,9 @@ class WordcloudCache(VersionedCache):
 
 
 @lru_cache
-def get_wordcloud_cache() -> WordcloudCache:
+def get_wordcloud_cache(logger: LoggerProtocol | None = None) -> WordcloudCache:
     """依赖注入 - 获取词云图缓存单例"""
     global _wordcloud_cache_instance
     if _wordcloud_cache_instance is None:
-        _wordcloud_cache_instance = WordcloudCache()
+        _wordcloud_cache_instance = WordcloudCache(logger)
     return _wordcloud_cache_instance

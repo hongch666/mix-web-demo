@@ -12,7 +12,7 @@ from openpyxl import Workbook
 from sqlalchemy.ext.asyncio import AsyncSession
 from wordcloud import WordCloud
 
-from app.core.base import Logger
+from app.core.base import Logger, LoggerProtocol
 from app.core.config import load_config
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
@@ -50,6 +50,7 @@ class AnalyzeService:
         wordcloud_cache: Optional[WordcloudCache] = None,
         spring_client: Optional[SpringClient] = None,
         nestjs_client: Optional[NestjsClient] = None,
+        logger: Optional[LoggerProtocol] = None,
     ) -> None:
         # 依赖由工厂显式传入，缺省时回退进程内单例，字段本身不再需要允许 None
         self.articleMapper: ArticleMapper = articleMapper or get_article_mapper()
@@ -68,6 +69,8 @@ class AnalyzeService:
         # 远程服务客户端由工厂装配，缺省时取共享单例
         self._nestjs_client: NestjsClient = nestjs_client or get_nestjs_client()
         self._spring_client: SpringClient = spring_client or get_spring_client()
+        # 日志器可注入，缺省回退全局单例
+        self._logger: LoggerProtocol = logger or Logger
 
     async def clear_analyze_caches(self) -> None:
         """并行清除分析接口使用的五类缓存"""
@@ -102,31 +105,35 @@ class AnalyzeService:
         async with lock:
             cached_result: Any = await cache_getter()
             if cached_result is not None:
-                Logger.info(Messages.SINGLEFLIGHT_KEY_HIT(key))
+                self._logger.info(Messages.SINGLEFLIGHT_KEY_HIT(key))
                 return cached_result
 
-            Logger.info(Messages.SINGLEFLIGHT_KEY_START(key))
+            self._logger.info(Messages.SINGLEFLIGHT_KEY_START(key))
             return await loader()
 
     async def _get_top10_cached(self) -> Optional[list[dict[str, Any]]]:
         try:
             return await self._article_cache.get()
         except Exception as e:
-            Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_top10_cached", e))
+            self._logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_top10_cached", e))
             return None
 
     async def _get_wordcloud_cached(self) -> Optional[str]:
         try:
             return await self._wordcloud_cache.get()
         except Exception as e:
-            Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_wordcloud_cached", e))
+            self._logger.debug(
+                Messages.CACHE_GET_FAILED_DETAIL("_get_wordcloud_cached", e)
+            )
             return None
 
     async def _get_statistics_cached(self) -> Optional[dict[str, Any]]:
         try:
             return await self._statistics_cache.get()
         except Exception as e:
-            Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_statistics_cached", e))
+            self._logger.debug(
+                Messages.CACHE_GET_FAILED_DETAIL("_get_statistics_cached", e)
+            )
             return None
 
     async def _get_category_article_count_cached(
@@ -135,7 +142,7 @@ class AnalyzeService:
         try:
             return await self._category_cache.get()
         except Exception as e:
-            Logger.debug(
+            self._logger.debug(
                 Messages.CACHE_GET_FAILED_DETAIL(
                     "_get_category_article_count_cached", e
                 )
@@ -146,7 +153,7 @@ class AnalyzeService:
         try:
             return await self._publish_time_cache.get()
         except Exception as e:
-            Logger.debug(
+            self._logger.debug(
                 Messages.CACHE_GET_FAILED_DETAIL("_get_monthly_publish_count_cached", e)
             )
             return None
@@ -215,14 +222,14 @@ class AnalyzeService:
             ] = await self._article_cache.get()
             if cached_result:
                 total_time: float = time.time() - start
-                Logger.info(
+                self._logger.info(
                     Messages.SERVICE_CACHE_HIT("get_top10_articles_service", total_time)
                 )
                 return cached_result
         except Exception as cache_e:
-            Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
+            self._logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
-        Logger.info(Messages.TOP10_CACHE_MISS)
+        self._logger.info(Messages.TOP10_CACHE_MISS)
 
         try:
             articles = (
@@ -230,9 +237,9 @@ class AnalyzeService:
             )
             if articles and isinstance(articles[0], dict):
                 data_source = "ClickHouse"
-                Logger.info(Messages.TOP10_CLICKHOUSE_GET)
+                self._logger.info(Messages.TOP10_CLICKHOUSE_GET)
         except Exception as ch_e:
-            Logger.warning(
+            self._logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
                     "get_top10_articles_service", ch_e
                 )
@@ -242,7 +249,7 @@ class AnalyzeService:
             # 通过SpringClient远程查询DB作为降级
             articles = await self._spring_client.get_top10_articles()
             data_source = "DB"
-            Logger.info(Messages.TOP10_DB_SOURCE)
+            self._logger.info(Messages.TOP10_DB_SOURCE)
 
         if articles and isinstance(articles[0], dict):
             # 数仓 ADS 层已直接产出作者名，只有 DB 降级路径缺作者名时才远程补全
@@ -283,13 +290,13 @@ class AnalyzeService:
             try:
                 await self._article_cache.set(result)
                 total_time: float = time.time() - start
-                Logger.info(
+                self._logger.info(
                     Messages.SERVICE_CACHE_UPDATED(
                         "get_top10_articles_service", data_source, total_time
                     )
                 )
             except Exception as cache_e:
-                Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
+                self._logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
 
         return result
 
@@ -301,11 +308,11 @@ class AnalyzeService:
                 await self.articleMapper.get_search_keywords_clickhouse_mapper_async()
             )
             if all_keywords:
-                Logger.info(Messages.WORDCLOUD_ADS_SOURCE)
+                self._logger.info(Messages.WORDCLOUD_ADS_SOURCE)
                 return {keyword: 1 for keyword in all_keywords}
-            Logger.info(Messages.WORDCLOUD_ADS_EMPTY_FALLBACK_NESTJS)
+            self._logger.info(Messages.WORDCLOUD_ADS_EMPTY_FALLBACK_NESTJS)
         except Exception as error:
-            Logger.warning(Messages.WORDCLOUD_ADS_QUERY_FAILED(error))
+            self._logger.warning(Messages.WORDCLOUD_ADS_QUERY_FAILED(error))
 
         all_keywords = await self._nestjs_client.get_search_keywords()
         return {keyword: 1 for keyword in all_keywords}
@@ -335,7 +342,7 @@ class AnalyzeService:
                 os.path.join(os.getcwd(), FILE_PATH, "search_keywords_wordcloud.png")
             )
         )
-        Logger.info(Messages.WORDCLOUD_GENERATION_SUCCESS)
+        self._logger.info(Messages.WORDCLOUD_GENERATION_SUCCESS)
 
     async def upload_file(self, file_path: str, oss_path: str) -> str:
         """远程调用 NestJS 上传文件到 OSS"""
@@ -345,11 +352,13 @@ class AnalyzeService:
                 file_path, oss_path
             )
             oss_url: str = str(result.get("data", ""))
-            Logger.info(Messages.UPLOAD_FILE_TO_OSS_SUCCESS(oss_url))
-            Logger.info(Messages.UPLOAD_FILE_TO_OSS_PATH_INFO(file_path, oss_path))
+            self._logger.info(Messages.UPLOAD_FILE_TO_OSS_SUCCESS(oss_url))
+            self._logger.info(
+                Messages.UPLOAD_FILE_TO_OSS_PATH_INFO(file_path, oss_path)
+            )
             return oss_url
         except Exception as e:
-            Logger.error(Messages.UPLOAD_FILE_TO_OSS_REMOTE_FAILED(str(e)))
+            self._logger.error(Messages.UPLOAD_FILE_TO_OSS_REMOTE_FAILED(str(e)))
             raise
 
     async def upload_wordcloud_to_oss(self) -> str:
@@ -381,15 +390,15 @@ class AnalyzeService:
             cached_url: Optional[str] = await self._wordcloud_cache.get()
             if cached_url:
                 elapsed: float = time.time() - start
-                Logger.info(
+                self._logger.info(
                     Messages.SERVICE_CACHE_HIT("get_wordcloud_service", elapsed)
                 )
                 return cached_url
         except Exception as cache_e:
-            Logger.debug(Messages.WORDCLOUD_CACHE_MISS_WILL_RETRY(cache_e))
+            self._logger.debug(Messages.WORDCLOUD_CACHE_MISS_WILL_RETRY(cache_e))
 
         # ========== 步骤2: 缓存未命中，生成词云图并上传 ==========
-        Logger.info(Messages.WORDCLOUD_CACHE_FETCH_FAILED)
+        self._logger.info(Messages.WORDCLOUD_CACHE_FETCH_FAILED)
         # 获取关键词字典
         keywords_dic: dict[str, int] = await self.get_keywords_dic()
         # 生成词云图
@@ -401,9 +410,9 @@ class AnalyzeService:
         try:
             await self._wordcloud_cache.set(oss_url)
             elapsed: float = time.time() - start
-            Logger.info(Messages.WORDCLOUD_GENERATED_AND_CACHED(elapsed))
+            self._logger.info(Messages.WORDCLOUD_GENERATED_AND_CACHED(elapsed))
         except Exception as cache_e:
-            Logger.warning(Messages.WORDCLOUD_CACHE_URL_FAILED(cache_e))
+            self._logger.warning(Messages.WORDCLOUD_CACHE_URL_FAILED(cache_e))
 
         return oss_url
 
@@ -472,7 +481,7 @@ class AnalyzeService:
             total_rows += 1
 
         await asyncio.to_thread(workbook.save, file_path)
-        Logger.info(Messages.EXPORT_ARTICLES_SUCCESS(file_path, total_rows))
+        self._logger.info(Messages.EXPORT_ARTICLES_SUCCESS(file_path, total_rows))
         return file_path
 
     async def upload_excel_to_oss(self, file_path: str) -> str:
@@ -513,26 +522,26 @@ class AnalyzeService:
             cached_result: Optional[dict[str, Any]] = await self._statistics_cache.get()
             if cached_result:
                 total_time: float = time.time() - start
-                Logger.info(
+                self._logger.info(
                     Messages.SERVICE_CACHE_HIT(
                         "get_article_statistics_service", total_time
                     )
                 )
                 return cached_result
         except Exception as cache_e:
-            Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
+            self._logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
         # ========== 步骤2: 缓存未命中，优先查询 ClickHouse ADS ==========
-        Logger.info(Messages.STATISTICS_CACHE_FETCH_FAILED)
+        self._logger.info(Messages.STATISTICS_CACHE_FETCH_FAILED)
         try:
             statistics = (
                 await self.articleMapper.get_platform_stats_clickhouse_mapper_async()
             )
             await self._statistics_cache.set(statistics)
-            Logger.info(Messages.STATISTICS_CLICKHOUSE_SOURCE)
+            self._logger.info(Messages.STATISTICS_CLICKHOUSE_SOURCE)
             return statistics
         except Exception as ch_e:
-            Logger.warning(
+            self._logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
                     Messages.ARTICLE_STATISTICS_SERVICE_NAME, ch_e
                 )
@@ -575,15 +584,15 @@ class AnalyzeService:
         try:
             await self._statistics_cache.set(statistics)
             total_time: float = time.time() - start
-            Logger.info(
+            self._logger.info(
                 Messages.SERVICE_CACHE_UPDATED(
                     "get_article_statistics_service", "DB", total_time
                 )
             )
         except Exception as cache_e:
-            Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
+            self._logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
 
-        Logger.info(Messages.STATISTICS_RESULT_INFO(statistics))
+        self._logger.info(Messages.STATISTICS_RESULT_INFO(statistics))
         return statistics
 
     async def get_category_article_count_service(
@@ -610,26 +619,26 @@ class AnalyzeService:
             ] = await self._category_cache.get()
             if cached_result:
                 total_time: float = time.time() - start
-                Logger.info(
+                self._logger.info(
                     Messages.SERVICE_CACHE_HIT(
                         "get_category_article_count_service", total_time
                     )
                 )
                 return cached_result
         except Exception as cache_e:
-            Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
+            self._logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
         # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-        Logger.info(Messages.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
+        self._logger.info(Messages.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
         local_category_data: Optional[list[dict[str, Any]]] = None
         local_data_source: str = "DB"
 
         try:
             local_category_data = await self.articleMapper.get_category_article_count_clickhouse_mapper_async()
             local_data_source = "ClickHouse"
-            Logger.info(Messages.CATEGORY_STATISTICS_CLICKHOUSE_GET)
+            self._logger.info(Messages.CATEGORY_STATISTICS_CLICKHOUSE_GET)
         except Exception as ch_e:
-            Logger.warning(
+            self._logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
                     "get_category_article_count_service", ch_e
                 )
@@ -640,7 +649,7 @@ class AnalyzeService:
             # 通过SpringClient远程查询DB作为降级
             local_category_data = await self._spring_client.get_category_article_count()
             local_data_source = "DB"
-            Logger.info(Messages.CATEGORY_STATISTICS_DB_SOURCE)
+            self._logger.info(Messages.CATEGORY_STATISTICS_DB_SOURCE)
 
         if (
             local_data_source == "ClickHouse"
@@ -686,7 +695,9 @@ class AnalyzeService:
         result.sort(key=lambda x: x["article_count"], reverse=True)
 
         non_zero_count: int = len([c for c in result if c["article_count"] > 0])
-        Logger.info(Messages.CATEGORY_ARTICLE_COUNT_RESULT(len(result), non_zero_count))
+        self._logger.info(
+            Messages.CATEGORY_ARTICLE_COUNT_RESULT(len(result), non_zero_count)
+        )
 
         data_source = local_data_source
 
@@ -695,7 +706,7 @@ class AnalyzeService:
             try:
                 await self._category_cache.set(result)
                 total_time = time.time() - start
-                Logger.info(
+                self._logger.info(
                     Messages.SERVICE_CACHE_UPDATED(
                         "get_category_article_count_service",
                         data_source,
@@ -703,7 +714,7 @@ class AnalyzeService:
                     )
                 )
             except Exception as cache_e:
-                Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
+                self._logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
 
         return result
 
@@ -728,26 +739,26 @@ class AnalyzeService:
             ] = await self._publish_time_cache.get()
             if cached_result:
                 total_time: float = time.time() - start
-                Logger.info(
+                self._logger.info(
                     Messages.SERVICE_CACHE_HIT(
                         "get_monthly_publish_count_service", total_time
                     )
                 )
                 return cached_result
         except Exception as cache_e:
-            Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
+            self._logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
         # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-        Logger.info(Messages.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
+        self._logger.info(Messages.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
         local_publish_data: Optional[list[dict[str, Any]]] = None
         local_data_source: str = "DB"
 
         try:
             local_publish_data = await self.articleMapper.get_monthly_publish_count_clickhouse_mapper_async()
             local_data_source = "ClickHouse"
-            Logger.info(Messages.MONTHLY_STATISTICS_CLICKHOUSE_GET)
+            self._logger.info(Messages.MONTHLY_STATISTICS_CLICKHOUSE_GET)
         except Exception as ch_e:
-            Logger.warning(
+            self._logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
                     "get_monthly_publish_count_service", ch_e
                 )
@@ -757,7 +768,7 @@ class AnalyzeService:
             # 通过SpringClient远程查询DB作为降级
             local_publish_data = await self._spring_client.get_monthly_publish_count()
             local_data_source = "DB"
-            Logger.info(Messages.MONTHLY_STATISTICS_DB_SOURCE)
+            self._logger.info(Messages.MONTHLY_STATISTICS_DB_SOURCE)
 
         now: datetime = datetime.now()
         expected_months: list[str] = []
@@ -774,7 +785,7 @@ class AnalyzeService:
             result.append({"year_month": month, "count": data_dict.get(month, 0)})
 
         result.sort(key=lambda x: x["year_month"], reverse=False)
-        Logger.info(
+        self._logger.info(
             Messages.MONTHLY_PUBLISH_COUNT_RESULT(
                 len(result), len([r for r in result if r["count"] > 0])
             )
@@ -786,13 +797,13 @@ class AnalyzeService:
             try:
                 await self._publish_time_cache.set(result)
                 total_time: float = time.time() - start
-                Logger.info(
+                self._logger.info(
                     Messages.SERVICE_CACHE_UPDATED(
                         "get_monthly_publish_count_service", data_source, total_time
                     )
                 )
             except Exception as cache_e:
-                Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
+                self._logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
 
         return result
 
@@ -807,6 +818,7 @@ def get_analyze_service(
     wordcloud_cache: WordcloudCache,
     spring_client: SpringClient,
     nestjs_client: NestjsClient,
+    logger: Optional[LoggerProtocol] = None,
 ) -> AnalyzeService:
     return AnalyzeService(
         articleMapper,
@@ -817,4 +829,5 @@ def get_analyze_service(
         wordcloud_cache,
         spring_client,
         nestjs_client,
+        logger,
     )

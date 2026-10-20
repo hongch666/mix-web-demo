@@ -4,7 +4,7 @@ import time
 from functools import lru_cache
 from typing import Any, Optional
 
-from app.core.base import Logger
+from app.core.base import Logger, LoggerProtocol
 from app.core.constants import Defaults, Messages
 from app.internal.agents.langsmith import get_langsmith_context
 from app.internal.crud import VectorMapper, get_vector_store_mapper
@@ -28,6 +28,7 @@ class VectorSearchService:
         min_score: float = Defaults.VECTOR_SEARCH_MIN_SCORE,
         score_mode: str = Defaults.VECTOR_SEARCH_SCORE_MODE,
         vector_mapper: VectorMapper | None = None,
+        logger: LoggerProtocol | None = None,
     ) -> None:
         self.enabled = enabled
         self.candidate_limit = max(candidate_limit, 1)
@@ -39,6 +40,8 @@ class VectorSearchService:
         )
         # 由依赖图注入；缺省时回退到工厂单例，保持手工构造可用
         self._vector_mapper: VectorMapper | None = vector_mapper
+        # 日志器可注入，缺省回退全局单例
+        self._logger: LoggerProtocol = logger or Logger
 
     async def enhance(self, req: VectorSearchEnhanceReq) -> VectorSearchEnhanceResp:
         """执行向量增强, 返回候选文章的语义分和命中片段"""
@@ -73,7 +76,7 @@ class VectorSearchService:
                 fetch_k,
             )
         search_elapsed = time.time() - search_start
-        Logger.info(
+        self._logger.info(
             Messages.VECTOR_ENHANCE_SEARCH_TIMING(search_elapsed, len(docs_with_scores))
         )
 
@@ -123,7 +126,7 @@ class VectorSearchService:
             )
 
         items.sort(key=lambda item: item.vectorScore, reverse=True)
-        Logger.info(
+        self._logger.info(
             Messages.VECTOR_ENHANCE_SEARCH_SUCCESS(len(article_ids), len(items))
         )
         return VectorSearchEnhanceResp(items=items)
@@ -193,6 +196,7 @@ class VectorSearchService:
 @lru_cache
 def get_vector_search_service(
     vector_mapper: Optional[VectorMapper] = None,
+    logger: LoggerProtocol | None = None,
 ) -> VectorSearchService:
     """获取 VectorSearchService 单例"""
     return VectorSearchService(
@@ -203,4 +207,5 @@ def get_vector_search_service(
         min_score=Defaults.VECTOR_SEARCH_MIN_SCORE,
         score_mode=Defaults.VECTOR_SEARCH_SCORE_MODE,
         vector_mapper=vector_mapper,
+        logger=logger,
     )

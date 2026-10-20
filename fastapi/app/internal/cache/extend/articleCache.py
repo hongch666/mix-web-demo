@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, ClassVar, Optional
 
-from app.core.base import Logger
+from app.core.base import LoggerProtocol
 from app.core.constants import Messages, RedisKeys
 from app.internal.models import AdsTop10Article
 
@@ -40,7 +40,7 @@ class ArticleCache(VersionedCache):
         """
         # 检查版本号是否变化
         if await self.is_version_changed():
-            Logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
+            self._logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
             await self.clear_all()
             return None
 
@@ -55,7 +55,7 @@ class ArticleCache(VersionedCache):
             return redis_data
 
         # 3. 两级缓存都没有
-        Logger.info(Messages.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
+        self._logger.info(Messages.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
         return None
 
     async def set(self, data: list[dict[str, Any]]) -> None:
@@ -76,9 +76,9 @@ class ArticleCache(VersionedCache):
 
 
 @lru_cache
-def get_article_cache() -> ArticleCache:
+def get_article_cache(logger: LoggerProtocol | None = None) -> ArticleCache:
     """获取 ArticleCache 单例实例"""
     global _article_cache_instance
     if _article_cache_instance is None:
-        _article_cache_instance = ArticleCache()
+        _article_cache_instance = ArticleCache(logger)
     return _article_cache_instance

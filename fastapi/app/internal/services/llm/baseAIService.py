@@ -12,7 +12,7 @@ from pydantic import SecretStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import is_memory_user, normalize_user_id
-from app.core.base import Logger
+from app.core.base import Logger, LoggerProtocol
 from app.core.config import load_config
 from app.core.constants import Messages, Prompts
 from app.internal.agents import (
@@ -164,8 +164,11 @@ class BaseAiService:
         use_structured_output: bool = True,
         tool_factories: Optional[AgentToolFactories] = None,
         ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
+        logger: Optional[LoggerProtocol] = None,
     ) -> None:
         self._normalize_proxy_env()
+        # 日志器可注入，缺省回退全局单例
+        self._logger: LoggerProtocol = logger or Logger
         self.ai_history_mapper: Any = ai_history_mapper
         # 用户级记忆摘要 Mapper，缺省时回退进程内单例（与 spring_client 处理方式一致）
         self.ai_summary_mapper: AiUserSummaryMapper = (
@@ -286,7 +289,7 @@ class BaseAiService:
                 notes,
             )
         elif user_id is not None:
-            Logger.info(Messages.MEMORY_SKIPPED_SYSTEM_USER(user_id))
+            self._logger.info(Messages.MEMORY_SKIPPED_SYSTEM_USER(user_id))
 
         history_messages: list[Any] = []
         for human_msg, ai_msg in chat_history:
@@ -324,7 +327,7 @@ class BaseAiService:
         """
         if not (db and user_id is not None and is_memory_user(user_id)):
             if user_id is not None:
-                Logger.info(Messages.MEMORY_SKIPPED_SYSTEM_USER(user_id))
+                self._logger.info(Messages.MEMORY_SKIPPED_SYSTEM_USER(user_id))
             return "", []
 
         return await self._load_chat_memory(
@@ -344,7 +347,7 @@ class BaseAiService:
         try:
             return await self.ai_summary_mapper.get_by_user_id_async(db, user_id)
         except Exception as error:
-            Logger.error(Messages.LLM_CHAT_MEMORY_LOAD_FAILED(error))
+            self._logger.error(Messages.LLM_CHAT_MEMORY_LOAD_FAILED(error))
             return None
 
     async def _load_chat_memory(
@@ -393,13 +396,13 @@ class BaseAiService:
             )
         except Exception as error:
             # 历史读取失败只降级为无原文，不打断本轮回答
-            Logger.error(Messages.LLM_CHAT_HISTORY_LOAD_FAILED(error))
+            self._logger.error(Messages.LLM_CHAT_HISTORY_LOAD_FAILED(error))
             return existing_summary, []
 
         # 达到候选上限说明水位线之后还有更早的记录被本轮查询越过
         limit_reached = len(histories) == candidate_rounds
         if limit_reached:
-            Logger.warning(
+            self._logger.warning(
                 Messages.LLM_CHAT_MEMORY_CANDIDATE_LIMIT_REACHED(
                     self.service_name, candidate_rounds
                 )
@@ -416,7 +419,7 @@ class BaseAiService:
             prompt_tokens,
             use_tools,
         )
-        Logger.info(
+        self._logger.info(
             Messages.LLM_CHAT_MEMORY_PLANNED(
                 self.service_name,
                 plan.budget_tokens,
@@ -427,7 +430,7 @@ class BaseAiService:
         )
         if plan.budget_tokens <= 0:
             # 窗口已被提示词与预留占满，本轮既不注入历史也不压缩，优先保证请求可用
-            Logger.warning(
+            self._logger.warning(
                 Messages.LLM_CHAT_CONTEXT_BUDGET_EXHAUSTED(
                     self.service_name,
                     self._context_budget.window_tokens,
@@ -511,7 +514,7 @@ class BaseAiService:
                 db, user_id, watermark, self._context_budget.candidate_rounds
             )
         except Exception as error:
-            Logger.error(Messages.LLM_CHAT_HISTORY_LOAD_FAILED(error))
+            self._logger.error(Messages.LLM_CHAT_HISTORY_LOAD_FAILED(error))
             return []
 
         return [
@@ -540,7 +543,7 @@ class BaseAiService:
         Returns:
             Optional[str]: 合并后的摘要，失败时返回 None
         """
-        Logger.info(
+        self._logger.info(
             Messages.LLM_CHAT_MEMORY_COMPACT_START(
                 self.service_name, len(targets), watermark_id
             )
@@ -570,7 +573,7 @@ class BaseAiService:
                 raise ValueError(Messages.CHAT_MEMORY_COMPACT_EMPTY_RESULT)
             # 超限摘要不落库也不截断，保留旧摘要并保持水位线，下一轮重新合并
             if len(new_summary) > self._context_budget.summary_max_chars:
-                Logger.warning(
+                self._logger.warning(
                     Messages.LLM_CHAT_MEMORY_COMPACT_OVER_LIMIT(
                         self.service_name,
                         len(new_summary),
@@ -585,7 +588,7 @@ class BaseAiService:
             await self.ai_summary_mapper.upsert_async(
                 db, user_id, new_summary, watermark_id, summarized_count
             )
-            Logger.info(
+            self._logger.info(
                 Messages.LLM_CHAT_MEMORY_COMPACT_COMPLETED(
                     self.service_name, len(new_summary), watermark_id
                 )
@@ -596,7 +599,7 @@ class BaseAiService:
             )
             return new_summary
         except Exception as error:
-            Logger.error(
+            self._logger.error(
                 Messages.LLM_CHAT_MEMORY_COMPACT_FAILED(self.service_name, error)
             )
             self._append_compact_note(
@@ -710,7 +713,7 @@ class BaseAiService:
         """将用户ID统一转换为整数，避免不同调用链传入字符串"""
         normalized = normalize_user_id(user_id)
         if normalized is None and user_id is not None:
-            Logger.warning(Messages.LLM_INVALID_USER_ID(user_id))
+            self._logger.warning(Messages.LLM_INVALID_USER_ID(user_id))
         return normalized
 
     @staticmethod
@@ -824,7 +827,7 @@ class BaseAiService:
         unsupported_prefixes = service_cfg.get("structured_output_unsupported_prefixes")
         if supports_structured_output(self.model_name, unsupported_prefixes):
             return True
-        Logger.warning(
+        self._logger.warning(
             Messages.LLM_STRUCTURED_OUTPUT_UNSUPPORTED(
                 self.service_name, self.model_name
             )
@@ -846,7 +849,7 @@ class BaseAiService:
         unsupported_prefixes = service_cfg.get("temperature_unsupported_prefixes")
         if supports_temperature(self.model_name, unsupported_prefixes):
             return {"temperature": self.temperature}
-        Logger.warning(
+        self._logger.warning(
             Messages.LLM_TEMPERATURE_UNSUPPORTED(self.service_name, self.model_name)
         )
         return {}
@@ -899,7 +902,9 @@ class BaseAiService:
                 return_intermediate_steps=True,
             )
         except Exception as tool_error:
-            Logger.warning(Messages.LLM_AGENT_INITIALIZATION_PARTIAL_FAILED(tool_error))
+            self._logger.warning(
+                Messages.LLM_AGENT_INITIALIZATION_PARTIAL_FAILED(tool_error)
+            )
             self.agent = None
             self.agent_executor = None
             self.intent_router = None
@@ -935,18 +940,18 @@ class BaseAiService:
                     **self._build_llm_client_options(service_cfg),
                 )
                 self._initialize_agent_stack(max_iterations=agent_max_iterations)
-                Logger.info(self._build_initialization_success_message())
+                self._logger.info(self._build_initialization_success_message())
             else:
                 self._reset_runtime_state()
-                Logger.warning(self._build_configuration_incomplete_message())
+                self._logger.warning(self._build_configuration_incomplete_message())
         except Exception as error:
             self._reset_runtime_state()
-            Logger.error(self._build_client_initialization_error_message(error))
+            self._logger.error(self._build_client_initialization_error_message(error))
 
     async def basic_chat(self, message: str) -> str:
         """最基础的对话接口 - 不使用知识库和向量数据库"""
         try:
-            Logger.info(Messages.BASIC_CHAT_START(message))
+            self._logger.info(Messages.BASIC_CHAT_START(message))
 
             if not getattr(self, "llm", None):
                 return Messages.INITIALIZATION_ERROR
@@ -958,19 +963,21 @@ class BaseAiService:
             response = await self.llm.ainvoke(messages)
 
             result: str = response.content
-            Logger.info(
+            self._logger.info(
                 Messages.BASIC_CHAT_REPLY_LENGTH(self.service_name, len(result))
             )
             return result
 
         except Exception as error:
-            Logger.error(Messages.BASIC_CHAT_EXCEPTION(self.service_name, str(error)))
+            self._logger.error(
+                Messages.BASIC_CHAT_EXCEPTION(self.service_name, str(error))
+            )
             return Messages.CHAT_SERVICE_ERROR(error)
 
     async def with_reference_chat(self, message: str, reference_content: str) -> str:
         """基于参考文本进行评价和打分"""
         try:
-            Logger.info(Messages.REFERENCE_CHAT_START(len(reference_content)))
+            self._logger.info(Messages.REFERENCE_CHAT_START(len(reference_content)))
 
             if not getattr(self, "llm", None):
                 return Messages.INITIALIZATION_ERROR
@@ -983,13 +990,13 @@ class BaseAiService:
 
             response = await self.llm.ainvoke(messages)
             result: str = response.content
-            Logger.info(
+            self._logger.info(
                 Messages.REFERENCE_CHAT_REPLY_LENGTH(self.service_name, len(result))
             )
             return result
 
         except Exception as error:
-            Logger.error(
+            self._logger.error(
                 Messages.REFERENCE_CHAT_EXCEPTION(self.service_name, str(error))
             )
             return Messages.CHAT_SERVICE_ERROR(error)
@@ -997,7 +1004,7 @@ class BaseAiService:
     async def summarize_content(self, content: str, max_length: int = 1000) -> str:
         """总结长文本内容"""
         try:
-            Logger.info(Messages.SUMMARIZE_START(self.service_name, len(content)))
+            self._logger.info(Messages.SUMMARIZE_START(self.service_name, len(content)))
 
             if not getattr(self, "llm", None):
                 return Messages.INITIALIZATION_ERROR
@@ -1010,11 +1017,15 @@ class BaseAiService:
 
             response = await self.llm.ainvoke(messages)
             result: str = response.content[:max_length]
-            Logger.info(Messages.SUMMARIZE_COMPLETED(self.service_name, len(result)))
+            self._logger.info(
+                Messages.SUMMARIZE_COMPLETED(self.service_name, len(result))
+            )
             return result
 
         except Exception as error:
-            Logger.error(Messages.SUMMARIZE_EXCEPTION(self.service_name, str(error)))
+            self._logger.error(
+                Messages.SUMMARIZE_EXCEPTION(self.service_name, str(error))
+            )
             return Messages.SUMMARIZE_SERVICE_ERROR(error)
 
     async def simple_chat(
@@ -1037,7 +1048,7 @@ class BaseAiService:
         """
         try:
             normalized_user_id = self._normalize_user_id(user_id)
-            Logger.info(Messages.USER_SEND_MESSAGE(user_id, message))
+            self._logger.info(Messages.USER_SEND_MESSAGE(user_id, message))
 
             if not getattr(self, "llm", None):
                 if raise_on_error:
@@ -1053,7 +1064,9 @@ class BaseAiService:
                 )
                 response = await self.llm.ainvoke(messages, config=config)
                 result: str = response.content
-                Logger.info(Messages.CHAT_REPLY_LENGTH(self.service_name, len(result)))
+                self._logger.info(
+                    Messages.CHAT_REPLY_LENGTH(self.service_name, len(result))
+                )
                 return result
 
             intent = "general_chat"
@@ -1067,16 +1080,20 @@ class BaseAiService:
                 ) = await self.intent_router.route_with_permission_check_async(
                     message, normalized_user_id, db, runnable_config
                 )
-                Logger.info(Messages.INTENT_WITH_PERMISSION(intent, has_permission))
+                self._logger.info(
+                    Messages.INTENT_WITH_PERMISSION(intent, has_permission)
+                )
 
                 if not has_permission:
-                    Logger.info(Messages.USER_NO_PERMISSION_FOR_INTENT(user_id, intent))
+                    self._logger.info(
+                        Messages.USER_NO_PERMISSION_FOR_INTENT(user_id, intent)
+                    )
                     return permission_msg or Messages.NO_PERMISSION_ERROR
             elif self.intent_router:
                 intent, intent_resolution = await self.intent_router.route_async(
                     message
                 )
-                Logger.info(Messages.INTENT_RECOGNIZED(intent))
+                self._logger.info(Messages.INTENT_RECOGNIZED(intent))
 
             # 将意图信息补充到 runnable_config 中
             config = dict(runnable_config) if runnable_config else {}
@@ -1097,7 +1114,7 @@ class BaseAiService:
                 response = await self.llm.ainvoke(messages, config=config)
                 result = response.content
             else:
-                Logger.info(Messages.AGENT_PROCESSING_MESSAGE)
+                self._logger.info(Messages.AGENT_PROCESSING_MESSAGE)
                 config.setdefault("run_name", "agent.execute")
 
                 # 用户身份经 contextvars（ToolScope）随请求传递给工具层，
@@ -1122,11 +1139,13 @@ class BaseAiService:
                 if raise_on_error and "output" not in agent_response:
                     raise RuntimeError(Messages.MESSAGE_RETRIEVAL_ERROR)
 
-            Logger.info(Messages.CHAT_REPLY_LENGTH(self.service_name, len(result)))
+            self._logger.info(
+                Messages.CHAT_REPLY_LENGTH(self.service_name, len(result))
+            )
             return result
 
         except Exception as error:
-            Logger.error(Messages.CHAT_EXCEPTION(self.service_name, str(error)))
+            self._logger.error(Messages.CHAT_EXCEPTION(self.service_name, str(error)))
             if raise_on_error:
                 raise
             return self._resolve_service_error_message(str(error))
@@ -1148,7 +1167,7 @@ class BaseAiService:
         """
         try:
             normalized_user_id = self._normalize_user_id(user_id)
-            Logger.info(Messages.USER_START_STREAMING_CHAT(user_id, message))
+            self._logger.info(Messages.USER_START_STREAMING_CHAT(user_id, message))
             # 记忆压缩说明先以思考帧下发，让前端知道本轮在回答前整理过历史
             notes: list[str] = []
 
@@ -1174,20 +1193,20 @@ class BaseAiService:
                         try:
                             chunk_content = self._extract_message_content(chunk)
                             if chunk_content:
-                                Logger.debug(
+                                self._logger.debug(
                                     Messages.STREAM_CHUNK_RECEIVED_LENGTH(
                                         len(chunk_content)
                                     )
                                 )
                                 yield {"type": "content", "content": chunk_content}
                         except Exception as chunk_error:
-                            Logger.error(
+                            self._logger.error(
                                 Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error))
                             )
                             continue
                 except Exception as stream_error:
                     error_msg = str(stream_error)
-                    Logger.error(Messages.STREAM_BASIC_CHAT_FAILED(error_msg))
+                    self._logger.error(Messages.STREAM_BASIC_CHAT_FAILED(error_msg))
                     yield {
                         "type": "content",
                         "content": self._resolve_service_error_message(error_msg),
@@ -1205,10 +1224,14 @@ class BaseAiService:
                 ) = await self.intent_router.route_with_permission_check_async(
                     message, normalized_user_id, db, runnable_config
                 )
-                Logger.info(Messages.INTENT_WITH_PERMISSION(intent, has_permission))
+                self._logger.info(
+                    Messages.INTENT_WITH_PERMISSION(intent, has_permission)
+                )
 
                 if not has_permission:
-                    Logger.info(Messages.USER_NO_PERMISSION_FOR_INTENT(user_id, intent))
+                    self._logger.info(
+                        Messages.USER_NO_PERMISSION_FOR_INTENT(user_id, intent)
+                    )
                     permission_message = permission_msg or Messages.NO_PERMISSION_ERROR
                     thinking = Messages.PERMISSION_DENIED_STREAM_THINKING(intent)
                     yield {"type": "thinking", "content": thinking}
@@ -1221,7 +1244,7 @@ class BaseAiService:
                 intent, intent_resolution = await self.intent_router.route_async(
                     message
                 )
-                Logger.info(Messages.INTENT_RECOGNIZED(intent))
+                self._logger.info(Messages.INTENT_RECOGNIZED(intent))
 
             # 将意图信息补充到 runnable_config 中
             config = dict(runnable_config) if runnable_config else {}
@@ -1253,19 +1276,19 @@ class BaseAiService:
                             if chunk_content:
                                 yield {"type": "content", "content": chunk_content}
                         except Exception as chunk_error:
-                            Logger.error(
+                            self._logger.error(
                                 Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error))
                             )
                             continue
                 except Exception as stream_error:
                     error_msg = str(stream_error)
-                    Logger.error(Messages.STREAM_CHAT_FAILED(error_msg))
+                    self._logger.error(Messages.STREAM_CHAT_FAILED(error_msg))
                     yield {
                         "type": "content",
                         "content": self._resolve_service_error_message(error_msg),
                     }
             else:
-                Logger.info(Messages.AGENT_PROCESSING_MESSAGE)
+                self._logger.info(Messages.AGENT_PROCESSING_MESSAGE)
                 config.setdefault("run_name", "agent.execute")
 
                 # 用户身份经 contextvars（ToolScope）随请求传递给工具层，
@@ -1285,7 +1308,7 @@ class BaseAiService:
                 )
                 full_input = context + user_info + Messages.CURRENT_QUESTION(message)
 
-                Logger.info(Messages.AGENT_START_PROCESSING_MESSAGE)
+                self._logger.info(Messages.AGENT_START_PROCESSING_MESSAGE)
 
                 # 事件流驱动的中间结果，工具步骤完成即推送思考片段
                 intermediate_steps: list[IntermediateStep] = []
@@ -1372,7 +1395,7 @@ class BaseAiService:
                                     intermediate_steps = collected_steps
                 except Exception as agent_error:
                     error_msg = str(agent_error)
-                    Logger.error(Messages.AGENT_EXECUTION_FAILED(error_msg))
+                    self._logger.error(Messages.AGENT_EXECUTION_FAILED(error_msg))
                     yield {
                         "type": "content",
                         "content": self._resolve_service_error_message(error_msg),
@@ -1388,12 +1411,12 @@ class BaseAiService:
                     intermediate_steps, agent_result
                 )
 
-                Logger.info(Messages.THINKING_PROCESS_LENGTH(len(thinking_text)))
+                self._logger.info(Messages.THINKING_PROCESS_LENGTH(len(thinking_text)))
                 if len(thinking_text) > 5000:
-                    Logger.debug(
+                    self._logger.debug(
                         Messages.THINKING_PROCESS_PREVIEW_TEXT(thinking_text[:2000])
                     )
-                    Logger.debug(
+                    self._logger.debug(
                         Messages.THINKING_PROCESS_MIDDLE_TEXT(
                             thinking_text[
                                 len(thinking_text) // 2 - 1000 : len(thinking_text) // 2
@@ -1401,18 +1424,20 @@ class BaseAiService:
                             ]
                         )
                     )
-                    Logger.debug(
+                    self._logger.debug(
                         Messages.THINKING_PROCESS_END_TEXT(thinking_text[-2000:])
                     )
                 else:
-                    Logger.debug(Messages.COMPLETE_THINKING_PROCESS_TEXT(thinking_text))
+                    self._logger.debug(
+                        Messages.COMPLETE_THINKING_PROCESS_TEXT(thinking_text)
+                    )
 
                 yield {
                     "type": "thinking",
                     "content": Messages.AGENT_FINAL_RESULT(agent_result),
                 }
 
-                Logger.info(Messages.AGENT_START_STREAMING_MESSAGE)
+                self._logger.info(Messages.AGENT_START_STREAMING_MESSAGE)
 
                 history_messages = []
                 for human_msg, ai_msg in chat_history:
@@ -1441,19 +1466,19 @@ class BaseAiService:
                                 final_content_emitted = True
                                 yield {"type": "content", "content": chunk_content}
                         except Exception as chunk_error:
-                            Logger.error(
+                            self._logger.error(
                                 Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error))
                             )
                             continue
                 except Exception as final_stream_error:
                     error_msg = str(final_stream_error)
-                    Logger.error(Messages.FINAL_STREAM_OUTPUT_FAILED(error_msg))
+                    self._logger.error(Messages.FINAL_STREAM_OUTPUT_FAILED(error_msg))
                     yield {
                         "type": "content",
                         "content": self._resolve_service_error_message(error_msg),
                     }
                 if not final_content_emitted:
-                    Logger.warning(Messages.FINAL_STREAM_EMPTY_FALLBACK)
+                    self._logger.warning(Messages.FINAL_STREAM_EMPTY_FALLBACK)
                     try:
                         fallback_response = await self.llm.ainvoke(
                             stream_messages,
@@ -1464,7 +1489,7 @@ class BaseAiService:
                             fallback_response
                         )
                     except Exception as fallback_error:
-                        Logger.error(
+                        self._logger.error(
                             Messages.FINAL_STREAM_OUTPUT_FAILED(str(fallback_error))
                         )
                         fallback_content = ""
@@ -1480,7 +1505,7 @@ class BaseAiService:
                     }
 
         except Exception as error:
-            Logger.error(Messages.STREAM_CHAT_EXCEPTION(str(error)))
+            self._logger.error(Messages.STREAM_CHAT_EXCEPTION(str(error)))
             yield {
                 "type": "error",
                 "content": self._resolve_service_error_message(str(error)),

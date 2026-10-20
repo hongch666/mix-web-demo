@@ -4,7 +4,7 @@ import asyncio
 from functools import lru_cache
 from typing import Any
 
-from app.core.base import Logger
+from app.core.base import Logger, LoggerProtocol
 from app.core.constants import Defaults, Messages, Scripts
 from app.core.db import get_neo4j_client
 from app.internal.schemas import (
@@ -26,6 +26,7 @@ class GraphSearchService:
         candidate_similarity_weight: float = 0.20,
         keyword_tag_weight: float = 0.20,
         candidate_limit: int = 200,
+        logger: LoggerProtocol | None = None,
     ) -> None:
         self.TAG_INTEREST_WEIGHT: float = tag_interest_weight
         self.FOLLOWED_AUTHOR_WEIGHT: float = followed_author_weight
@@ -33,6 +34,8 @@ class GraphSearchService:
         self.CANDIDATE_SIMILARITY_WEIGHT: float = candidate_similarity_weight
         self.KEYWORD_TAG_WEIGHT: float = keyword_tag_weight
         self.candidate_limit: int = max(candidate_limit, 1)
+        # 日志器可注入，缺省回退全局单例
+        self._logger: LoggerProtocol = logger or Logger
 
     async def enhance(self, req: GraphSearchEnhanceReq) -> GraphSearchEnhanceResp:
         """执行图谱增强, 返回候选文章的图谱分和推荐原因"""
@@ -83,7 +86,9 @@ class GraphSearchService:
             # gather 带 return_exceptions 时结果类型含 BaseException，异常分支单独降级为空结果
             signal_result: Any = raw
             if isinstance(signal_result, Exception):
-                Logger.warning(Messages.GRAPH_SEARCH_QUERY_EXCEPTION_LOG(signal_result))
+                self._logger.warning(
+                    Messages.GRAPH_SEARCH_QUERY_EXCEPTION_LOG(signal_result)
+                )
                 signal_results.append({})
             else:
                 signal_results.append(signal_result)
@@ -327,7 +332,7 @@ class GraphSearchService:
             neo4j = get_neo4j_client()
             return await neo4j.run_query(cypher, params)
         except Exception as e:
-            Logger.warning(Messages.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG(e))
+            self._logger.warning(Messages.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG(e))
             return []
 
     def _generate_reason(self, relations: list[GraphRelationDTO]) -> str:
@@ -367,7 +372,9 @@ class GraphSearchService:
 
 
 @lru_cache
-def get_graph_search_service() -> GraphSearchService:
+def get_graph_search_service(
+    logger: LoggerProtocol | None = None,
+) -> GraphSearchService:
     """获取 GraphSearchService 单例"""
     return GraphSearchService(
         tag_interest_weight=Defaults.GRAPH_TAG_INTEREST_WEIGHT,
@@ -376,4 +383,5 @@ def get_graph_search_service() -> GraphSearchService:
         candidate_similarity_weight=Defaults.GRAPH_CANDIDATE_SIMILARITY_WEIGHT,
         keyword_tag_weight=Defaults.GRAPH_KEYWORD_TAG_WEIGHT,
         candidate_limit=Defaults.GRAPH_SEARCH_CANDIDATE_LIMIT,
+        logger=logger,
     )

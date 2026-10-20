@@ -1,5 +1,6 @@
 from .logger import (
     Logger,
+    LoggerProtocol,
     SimpleLogger,
     log_debug,
     log_error,
@@ -31,6 +32,7 @@ __all__: list[str] = [
     "log_debug",
     "SimpleLogger",
     "Logger",
+    "LoggerProtocol",
     "StreamFrameContext",
     "build_native_frame",
     "build_openai_chunk_frame",

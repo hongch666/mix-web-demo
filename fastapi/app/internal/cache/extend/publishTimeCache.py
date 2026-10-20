@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, ClassVar, Optional
 
-from app.core.base import Logger
+from app.core.base import LoggerProtocol
 from app.core.constants import Messages, RedisKeys
 from app.internal.models import AdsMonthlyPublish
 
@@ -40,7 +40,7 @@ class PublishTimeCache(VersionedCache):
         """
         # 检查版本号是否变化
         if await self.is_version_changed():
-            Logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
+            self._logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
             await self.clear_all()
             return None
 
@@ -55,7 +55,7 @@ class PublishTimeCache(VersionedCache):
             return redis_data
 
         # 3. 两级缓存都没有
-        Logger.info(Messages.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
+        self._logger.info(Messages.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
         return None
 
     async def set(self, data: list[dict[str, Any]]) -> None:
@@ -76,9 +76,9 @@ class PublishTimeCache(VersionedCache):
 
 
 @lru_cache
-def get_publish_time_cache() -> PublishTimeCache:
+def get_publish_time_cache(logger: LoggerProtocol | None = None) -> PublishTimeCache:
     """获取 PublishTimeCache 单例实例"""
     global _publish_time_cache_instance
     if _publish_time_cache_instance is None:
-        _publish_time_cache_instance = PublishTimeCache()
+        _publish_time_cache_instance = PublishTimeCache(logger)
     return _publish_time_cache_instance

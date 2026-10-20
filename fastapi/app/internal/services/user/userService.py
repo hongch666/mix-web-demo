@@ -5,7 +5,7 @@ from typing import Any
 
 from dateutil.relativedelta import relativedelta
 
-from app.core.base import Logger
+from app.core.base import Logger, LoggerProtocol
 from app.core.constants import Messages
 from app.internal.clients import NestjsClient, SpringClient
 from app.internal.crud import UserMapper
@@ -19,10 +19,13 @@ class UserService:
         spring_client: SpringClient,
         nestjs_client: NestjsClient,
         user_mapper: UserMapper,
+        logger: LoggerProtocol | None = None,
     ) -> None:
         self._spring_client: SpringClient = spring_client
         self._nestjs_client: NestjsClient = nestjs_client
         self._user_mapper: UserMapper = user_mapper
+        # 日志器可注入，缺省回退全局单例
+        self._logger: LoggerProtocol = logger or Logger
 
     @staticmethod
     def _period_dates(period: str) -> tuple[datetime, datetime, int, str]:
@@ -94,7 +97,7 @@ class UserService:
                 "timeline": self._build_period_timeline(period, start, count, rows),
             }
         except Exception as ch_error:
-            Logger.warning(
+            self._logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
                     "get_new_followers_service", ch_error
                 )
@@ -164,7 +167,7 @@ class UserService:
 
             return {"period": period, "timeline": timeline}
         except Exception as e:
-            Logger.error(Messages.USER_NEW_FOLLOWER_COUNT_FAILED(e))
+            self._logger.error(Messages.USER_NEW_FOLLOWER_COUNT_FAILED(e))
             return {"period": period, "timeline": []}
 
     async def get_article_view_distribution_service(
@@ -174,7 +177,7 @@ class UserService:
         try:
             return await self._user_mapper.get_article_view_distribution(user_id)
         except Exception as ch_error:
-            Logger.warning(
+            self._logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
                     "get_article_view_distribution_service", ch_error
                 )
@@ -183,7 +186,7 @@ class UserService:
             return await self._nestjs_client.get_article_view_distribution(user_id)
         except Exception as e:
             # 项目 Logger 只接收消息，异常内容已由消息模板带上，不能再传 exc_info
-            Logger.error(Messages.ARTICLE_VIEW_DISTRIBUTION_FAILED(e))
+            self._logger.error(Messages.ARTICLE_VIEW_DISTRIBUTION_FAILED(e))
             return {"total_views": 0, "articles": []}
 
     async def get_author_follow_statistics_service(
@@ -200,7 +203,7 @@ class UserService:
                 user_id, start, end
             )
         except Exception as ch_error:
-            Logger.warning(
+            self._logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
                     "get_author_follow_statistics_service", ch_error
                 )
@@ -232,7 +235,7 @@ class UserService:
 
             return {"total_authors": total_authors, "daily_follows": daily_follows}
         except Exception as e:
-            Logger.error(Messages.USER_AUTHOR_FOLLOW_STATS_FAILED(e))
+            self._logger.error(Messages.USER_AUTHOR_FOLLOW_STATS_FAILED(e))
             return {"total_authors": 0, "daily_follows": []}
 
     async def get_monthly_comment_trend_service(self, user_id: int) -> dict[str, Any]:
@@ -248,7 +251,7 @@ class UserService:
                 + relativedelta(months=1),
             )
         except Exception as ch_error:
-            Logger.warning(
+            self._logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
                     "get_monthly_comment_trend_service", ch_error
                 )
@@ -256,7 +259,7 @@ class UserService:
         try:
             return await self._spring_client.get_monthly_comment_trend(user_id)
         except Exception as e:
-            Logger.error(Messages.USER_COMMENT_TREND_FAILED(e))
+            self._logger.error(Messages.USER_COMMENT_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
 
     async def get_monthly_like_trend_service(self, user_id: int) -> dict[str, Any]:
@@ -269,7 +272,7 @@ class UserService:
                 user_id, "like_count", start, start + relativedelta(months=1)
             )
         except Exception as ch_error:
-            Logger.warning(
+            self._logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
                     "get_monthly_like_trend_service", ch_error
                 )
@@ -277,7 +280,7 @@ class UserService:
         try:
             return await self._spring_client.get_monthly_like_trend(user_id)
         except Exception as e:
-            Logger.error(Messages.USER_LIKE_TREND_FAILED(e))
+            self._logger.error(Messages.USER_LIKE_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
 
     async def get_monthly_collect_trend_service(self, user_id: int) -> dict[str, Any]:
@@ -290,7 +293,7 @@ class UserService:
                 user_id, "collect_count", start, start + relativedelta(months=1)
             )
         except Exception as ch_error:
-            Logger.warning(
+            self._logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
                     "get_monthly_collect_trend_service", ch_error
                 )
@@ -298,7 +301,7 @@ class UserService:
         try:
             return await self._spring_client.get_monthly_collect_trend(user_id)
         except Exception as e:
-            Logger.error(Messages.USER_COLLECT_TREND_FAILED(e))
+            self._logger.error(Messages.USER_COLLECT_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
 
     async def get_user_profile_service(self, user_id: int) -> dict[str, Any]:
@@ -306,7 +309,7 @@ class UserService:
         try:
             return await self._user_mapper.get_user_profile(user_id)
         except Exception as ch_error:
-            Logger.warning(
+            self._logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
                     "get_user_profile_service", ch_error
                 )
@@ -346,10 +349,12 @@ def get_user_service(
     spring_client: SpringClient,
     nestjs_client: NestjsClient,
     user_mapper: UserMapper,
+    logger: LoggerProtocol | None = None,
 ) -> UserService:
     """获取 UserService 单例实例"""
     return UserService(
         spring_client,
         nestjs_client,
         user_mapper,
+        logger,
     )

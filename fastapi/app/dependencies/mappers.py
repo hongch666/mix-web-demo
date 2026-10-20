@@ -19,6 +19,7 @@ from app.internal.crud import (
 )
 
 from .database import ClickHouseSessionFactoryDep
+from .logger import LoggerDep
 
 
 def provide_api_log_mapper(
@@ -39,8 +40,8 @@ def provide_user_mapper(
     return get_user_mapper(session_factory)
 
 
-def provide_vector_store_mapper() -> VectorMapper:
-    return get_vector_store_mapper()
+def provide_vector_store_mapper(logger: LoggerDep) -> VectorMapper:
+    return get_vector_store_mapper(logger)
 
 
 def resolve_article_mapper() -> ArticleMapper:

@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, ClassVar, Optional
 
-from app.core.base import Logger
+from app.core.base import LoggerProtocol
 from app.core.constants import Messages, RedisKeys
 from app.internal.models import AdsCategoryStats
 
@@ -40,7 +40,7 @@ class CategoryCache(VersionedCache):
         """
         # 检查版本号是否变化
         if await self.is_version_changed():
-            Logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
+            self._logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
             await self.clear_all()
             return None
 
@@ -55,7 +55,7 @@ class CategoryCache(VersionedCache):
             return redis_data
 
         # 3. 两级缓存都没有
-        Logger.info(Messages.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
+        self._logger.info(Messages.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
         return None
 
     async def set(self, data: list[dict[str, Any]]) -> None:
@@ -76,9 +76,9 @@ class CategoryCache(VersionedCache):
 
 
 @lru_cache
-def get_category_cache() -> CategoryCache:
+def get_category_cache(logger: LoggerProtocol | None = None) -> CategoryCache:
     """获取 CategoryCache 单例实例"""
     global _category_cache_instance
     if _category_cache_instance is None:
-        _category_cache_instance = CategoryCache()
+        _category_cache_instance = CategoryCache(logger)
     return _category_cache_instance

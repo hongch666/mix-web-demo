@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, ClassVar, Optional
 
-from app.core.base import Logger
+from app.core.base import LoggerProtocol
 from app.core.constants import Messages, RedisKeys
 from app.internal.models import AdsPlatformStats
 
@@ -41,7 +41,7 @@ class StatisticsCache(VersionedCache):
         """
         # 检查版本号是否变化
         if await self.is_version_changed():
-            Logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
+            self._logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
             await self.clear_all()
             return None
 
@@ -56,7 +56,7 @@ class StatisticsCache(VersionedCache):
             return redis_data
 
         # 3. 两级缓存都没有
-        Logger.info(Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE)
+        self._logger.info(Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE)
         return None
 
     async def set(self, data: dict[str, Any]) -> None:
@@ -77,9 +77,9 @@ class StatisticsCache(VersionedCache):
 
 
 @lru_cache
-def get_statistics_cache() -> StatisticsCache:
+def get_statistics_cache(logger: LoggerProtocol | None = None) -> StatisticsCache:
     """获取 StatisticsCache 单例实例"""
     global _statistics_cache_instance
     if _statistics_cache_instance is None:
-        _statistics_cache_instance = StatisticsCache()
+        _statistics_cache_instance = StatisticsCache(logger)
     return _statistics_cache_instance

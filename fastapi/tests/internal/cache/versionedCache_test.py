@@ -55,7 +55,6 @@ def cache(monkeypatch: pytest.MonkeyPatch) -> tuple[_VersionedCache, _FakeRedis]
     fake_redis = _FakeRedis()
     monkeypatch.setattr(base_cache, "get_redis_client", lambda: fake_redis)
     monkeypatch.setattr(base_cache, "Logger", Mock())
-    monkeypatch.setattr(versioned_cache, "Logger", Mock())
     return _VersionedCache(), fake_redis
 
 

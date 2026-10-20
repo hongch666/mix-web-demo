@@ -11,7 +11,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sqlalchemy import CursorResult
 from sqlalchemy.orm import Session
 
-from app.core.base import Logger
+from app.core.base import Logger, LoggerProtocol
 from app.core.config import load_config
 from app.core.constants import HttpCode, Messages, VectorConstants
 from app.core.db import get_pgvector_connection_string
@@ -33,21 +33,23 @@ class VectorMapper:
         self,
         embedding_function: Any,
         collection_name: str = VectorConstants.COLLECTION_NAME,
+        logger: LoggerProtocol | None = None,
     ) -> None:
+        self._logger: LoggerProtocol = logger or Logger
         self._text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=VectorConstants.CHUNK_SIZE,
             chunk_overlap=VectorConstants.CHUNK_OVERLAP,
             length_function=len,
             separators=VectorConstants.CHUNK_SEPARATORS,
         )
-        Logger.info(Messages.TEXT_SPLITTER_INITIALIZATION_SUCCESS)
+        self._logger.info(Messages.TEXT_SPLITTER_INITIALIZATION_SUCCESS)
         self._vector_store = PGVector(
             embedding_function=embedding_function,
             collection_name=collection_name,
             connection_string=get_pgvector_connection_string(),
             use_jsonb=True,
         )
-        Logger.info(Messages.VECTOR_STORE_INITIALIZATION_SUCCESS)
+        self._logger.info(Messages.VECTOR_STORE_INITIALIZATION_SUCCESS)
 
     @staticmethod
     def sanitize_content(text: str) -> str:
@@ -64,6 +66,7 @@ class VectorMapper:
         """
         for pattern in VectorConstants.INJECTION_PATTERNS:
             if re.search(pattern, text, re.IGNORECASE):
+                # 静态方法无法走实例注入，回退全局日志器
                 Logger.warning(Messages.RAG_TOOL_PROMPT_INJECTION_DETECTED())
                 text = re.sub(
                     pattern,
@@ -106,7 +109,9 @@ class VectorMapper:
             return 0
 
         await asyncio.to_thread(self._vector_store.add_documents, documents)
-        Logger.info(Messages.RAG_BATCH_ADDED_ARTICLES(len(article_ids), len(documents)))
+        self._logger.info(
+            Messages.RAG_BATCH_ADDED_ARTICLES(len(article_ids), len(documents))
+        )
         return len(documents)
 
     async def delete_by_article_ids(self, article_ids: list[int]) -> int:
@@ -184,7 +189,9 @@ class VectorMapper:
             deleted: int = int(result.rowcount or 0)
             session.commit()
 
-        Logger.info(Messages.RAG_DELETE_ARTICLES_SUCCESS(deleted, len(article_ids)))
+        self._logger.info(
+            Messages.RAG_DELETE_ARTICLES_SUCCESS(deleted, len(article_ids))
+        )
         return deleted
 
     def _list_article_ids_sync(self) -> set[int]:
@@ -233,6 +240,7 @@ def get_vector_embeddings() -> Any:
         embeddings = DashScopeEmbeddings(
             model=embedding_model, dashscope_api_key=api_key
         )
+        # 模块级函数无法走实例注入，回退全局日志器
         Logger.info(Messages.EMBEDDING_MODEL_INITIALIZED(embedding_model))
         return embeddings
     except Exception as error:
@@ -244,10 +252,10 @@ def get_vector_embeddings() -> Any:
 
 
 @lru_cache
-def get_vector_store_mapper() -> VectorMapper:
+def get_vector_store_mapper(logger: LoggerProtocol | None = None) -> VectorMapper:
     """获取向量库 Mapper 单例
 
-    embedding 模型由 get_vector_embeddings 单独缓存，本工厂必须保持无参：
-    缓存装饰器会把入参当缓存键，而 DashScopeEmbeddings 实例不可哈希
+    embedding 模型由 get_vector_embeddings 单独缓存，避免不可哈希的
+    DashScopeEmbeddings 实例进入缓存键；logger 为可哈希的可注入参数
     """
-    return VectorMapper(get_vector_embeddings())
+    return VectorMapper(get_vector_embeddings(), logger=logger)

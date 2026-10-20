@@ -24,7 +24,6 @@ def cache(
     fake_redis = _FakeRedis()
     monkeypatch.setattr(base_cache, "get_redis_client", lambda: fake_redis)
     monkeypatch.setattr(base_cache, "Logger", Mock())
-    monkeypatch.setattr(module, "Logger", Mock())
     return module.StatisticsCache(), fake_redis
 
 

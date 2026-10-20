@@ -41,6 +41,7 @@ from .caches import (
     WordcloudCacheDep,
 )
 from .clients import NestjsClientDep, SpringClientDep
+from .logger import LoggerDep
 from .llm import (
     ClaudeServiceDep,
     DeepseekServiceDep,
@@ -77,6 +78,7 @@ def provide_analyze_service(
     wordcloud_cache: WordcloudCacheDep,
     spring_client: SpringClientDep,
     nestjs_client: NestjsClientDep,
+    logger: LoggerDep,
 ) -> AnalyzeService:
     return get_analyze_service(
         article_mapper,
@@ -87,6 +89,7 @@ def provide_analyze_service(
         wordcloud_cache,
         spring_client,
         nestjs_client,
+        logger,
     )
 
 
@@ -116,6 +119,7 @@ def provide_generate_service(
     claude_service: ClaudeServiceDep,
     qwen_service: QwenServiceDep,
     spring_client: SpringClientDep,
+    logger: LoggerDep,
 ) -> GenerateService:
     return get_generate_service(
         glm_service,
@@ -125,6 +129,7 @@ def provide_generate_service(
         claude_service,
         qwen_service,
         spring_client,
+        logger,
     )
 
 
@@ -132,35 +137,39 @@ def provide_ai_history_service(
     ai_history_mapper: AiHistoryMapperDep,
     spring_client: SpringClientDep,
     ai_user_summary_mapper: AiUserSummaryMapperDep,
+    logger: LoggerDep,
 ) -> AiHistoryService:
     return get_ai_history_service(
-        ai_history_mapper, spring_client, ai_user_summary_mapper
+        ai_history_mapper, spring_client, ai_user_summary_mapper, logger
     )
 
 
 def provide_api_log_service(
     nestjs_client: NestjsClientDep,
     api_log_mapper: ApiLogMapperDep,
+    logger: LoggerDep,
 ) -> ApiLogService:
-    return get_apilog_service(nestjs_client, api_log_mapper)
+    return get_apilog_service(nestjs_client, api_log_mapper, logger)
 
 
-def provide_graph_search_service() -> GraphSearchService:
-    return get_graph_search_service()
+def provide_graph_search_service(logger: LoggerDep) -> GraphSearchService:
+    return get_graph_search_service(logger)
 
 
 def provide_user_service(
     spring_client: SpringClientDep,
     nestjs_client: NestjsClientDep,
     user_mapper: UserMapperDep,
+    logger: LoggerDep,
 ) -> UserService:
-    return get_user_service(spring_client, nestjs_client, user_mapper)
+    return get_user_service(spring_client, nestjs_client, user_mapper, logger)
 
 
 def provide_vector_search_service(
     vector_mapper: VectorMapperDep,
+    logger: LoggerDep,
 ) -> VectorSearchService:
-    return get_vector_search_service(vector_mapper)
+    return get_vector_search_service(vector_mapper, logger)
 
 
 AlgorithmServiceDep = Annotated[AlgorithmService, Depends(provide_algorithm_service)]
@@ -178,6 +187,7 @@ def provide_chat_application_service(
     claude_service: ClaudeServiceDep,
     qwen_service: QwenServiceDep,
     history_service: AiHistoryServiceDep,
+    logger: LoggerDep,
 ) -> ChatApplicationService:
     return get_chat_application_service(
         gpt_service,
@@ -187,6 +197,7 @@ def provide_chat_application_service(
         claude_service,
         qwen_service,
         history_service,
+        logger,
     )
 
 

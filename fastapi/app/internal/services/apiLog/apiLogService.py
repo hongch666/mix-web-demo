@@ -2,7 +2,7 @@ import traceback
 from functools import lru_cache
 from typing import Any
 
-from app.core.base import Logger
+from app.core.base import Logger, LoggerProtocol
 from app.core.constants import Messages
 from app.internal.clients import NestjsClient
 from app.internal.crud import ApiLogMapper
@@ -15,9 +15,12 @@ class ApiLogService:
         self,
         nestjs_client: NestjsClient,
         api_log_mapper: ApiLogMapper,
+        logger: LoggerProtocol | None = None,
     ) -> None:
         self._nestjs_client: NestjsClient = nestjs_client
         self._apiLogMapper: ApiLogMapper = api_log_mapper
+        # 日志器可注入，缺省回退全局单例
+        self._logger: LoggerProtocol = logger or Logger
 
     async def _query_ads_with_fallback(
         self,
@@ -28,12 +31,12 @@ class ApiLogService:
         try:
             result: list[dict[str, Any]] = await ads_loader()
             if result:
-                Logger.info(Messages.APILOG_ADS_SOURCE)
+                self._logger.info(Messages.APILOG_ADS_SOURCE)
                 return result
-            Logger.info(Messages.APILOG_ADS_EMPTY_FALLBACK_REMOTE)
+            self._logger.info(Messages.APILOG_ADS_EMPTY_FALLBACK_REMOTE)
         except Exception as error:
-            Logger.error(Messages.APILOG_CLICKHOUSE_QUERY_FAILED(error))
-            Logger.debug(traceback.format_exc())
+            self._logger.error(Messages.APILOG_CLICKHOUSE_QUERY_FAILED(error))
+            self._logger.debug(traceback.format_exc())
         return await remote_loader()
 
     async def get_api_average_response_time_service(self) -> list[dict[str, Any]]:
@@ -55,5 +58,6 @@ class ApiLogService:
 def get_apilog_service(
     nestjs_client: NestjsClient,
     api_log_mapper: ApiLogMapper,
+    logger: LoggerProtocol | None = None,
 ) -> ApiLogService:
-    return ApiLogService(nestjs_client, api_log_mapper)
+    return ApiLogService(nestjs_client, api_log_mapper, logger)

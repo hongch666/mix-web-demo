@@ -1,12 +1,30 @@
 import logging
 import os
 from datetime import datetime
+from typing import Protocol, runtime_checkable
 
 from app.core.config import load_config
 from app.core.constants import TelemetryConstants
 from app.core.middleware import get_current_trace_id
 
 logger: logging.Logger = logging.getLogger("uvicorn")
+
+
+@runtime_checkable
+class LoggerProtocol(Protocol):
+    """日志器协议，供依赖注入时声明类型
+
+    优先通过构造参数注入 LoggerProtocol 实现；无法注入的场景
+    （模块级函数、静态方法、装饰器、调度回调等）直接使用全局 Logger 单例
+    """
+
+    def info(self, message: str) -> None: ...
+
+    def error(self, message: str) -> None: ...
+
+    def warning(self, message: str) -> None: ...
+
+    def debug(self, message: str) -> None: ...
 
 
 def write_log(message: str, level: str = "INFO") -> None:
