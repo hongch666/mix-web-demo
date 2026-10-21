@@ -19,13 +19,15 @@ import (
 
 type ApiLogMiddleware struct {
 	description     string
+	excludeFields   []string
 	rabbitPublisher *rabbitmq.Publisher
 	*utils.ZeroLogger
 }
 
-func NewApiLogMiddleware(description string, rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger) *ApiLogMiddleware {
+func NewApiLogMiddleware(description string, rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, excludeFields ...string) *ApiLogMiddleware {
 	return &ApiLogMiddleware{
 		description:     description,
+		excludeFields:   excludeFields,
 		rabbitPublisher: rabbitPublisher,
 		ZeroLogger:      log,
 	}
@@ -75,6 +77,8 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		if method == "POST" || method == "PUT" || method == "PATCH" {
 			requestBody = extractRequestBody(r)
 			if requestBody != nil {
+				// 敏感字段排除
+				requestBody = sanitizeBody(requestBody, m.excludeFields)
 				logInfo[constants.API_LOG_REQUEST_BODY_FIELD] = requestBody
 			}
 		}
@@ -97,8 +101,11 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		// 发送 API 日志到队列（异步，不阻塞主流程）
 		if m.ZeroLogger != nil {
+			// 队列投递前再次排除敏感字段（防御性，防止中间被篡改）
+			sanitizedRequestBody := sanitizeBody(requestBody, m.excludeFields)
+			sanitizedQueryParams := sanitizeQueryParams(queryParams, m.excludeFields)
 			utils.SafeGo(m.ZeroLogger, "sendApiLogToQueue", func() {
-				sendApiLogToQueue(m.ZeroLogger, m.rabbitPublisher, userID, username, method, path, m.description, queryParams, requestBody, durationMs)
+				sendApiLogToQueue(m.ZeroLogger, m.rabbitPublisher, userID, username, method, path, m.description, sanitizedQueryParams, sanitizedRequestBody, durationMs)
 			})
 		}
 	}
@@ -261,16 +268,75 @@ func sendApiLogToQueue(lgr *utils.ZeroLogger, rabbitPublisher *rabbitmq.Publishe
 	}
 }
 
+// sanitizeBody 递归移除敏感字段（支持 map、slice、嵌套结构）
+func sanitizeBody(data any, excludeFields []string) any {
+	if len(excludeFields) == 0 || data == nil {
+		return data
+	}
+
+	excludeSet := make(map[string]struct{}, len(excludeFields))
+	for _, f := range excludeFields {
+		excludeSet[strings.ToLower(f)] = struct{}{}
+	}
+
+	return doSanitize(data, excludeSet)
+}
+
+func doSanitize(data any, excludeSet map[string]struct{}) any {
+	switch v := data.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(v))
+		for key, val := range v {
+			if _, excluded := excludeSet[strings.ToLower(key)]; excluded {
+				result[key] = constants.SENSITIVE_FIELD_MASK
+			} else {
+				result[key] = doSanitize(val, excludeSet)
+			}
+		}
+		return result
+	case []any:
+		result := make([]any, len(v))
+		for i, item := range v {
+			result[i] = doSanitize(item, excludeSet)
+		}
+		return result
+	default:
+		return v
+	}
+}
+
+// sanitizeQueryParams 对查询参数做同样排除
+func sanitizeQueryParams(params map[string]any, excludeFields []string) map[string]any {
+	if len(excludeFields) == 0 || params == nil {
+		return params
+	}
+
+	excludeSet := make(map[string]struct{}, len(excludeFields))
+	for _, f := range excludeFields {
+		excludeSet[strings.ToLower(f)] = struct{}{}
+	}
+
+	result := make(map[string]any, len(params))
+	for key, val := range params {
+		if _, excluded := excludeSet[strings.ToLower(key)]; excluded {
+			result[key] = constants.SENSITIVE_FIELD_MASK
+		} else {
+			result[key] = val
+		}
+	}
+	return result
+}
+
 // WithApiLog 为 handler 添加 API 日志中间件
 // WithApiLog 中间件工厂函数
-func WithApiLog(rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, description string) func(http.HandlerFunc) http.HandlerFunc {
+func WithApiLog(rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, description string, excludeFields ...string) func(http.HandlerFunc) http.HandlerFunc {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
-		return NewApiLogMiddleware(description, rabbitPublisher, log).Handle(handler)
+		return NewApiLogMiddleware(description, rabbitPublisher, log, excludeFields...).Handle(handler)
 	}
 }
 
 // ApplyApiLog 直接应用 API 日志中间件到 handler
-// 用法: return middleware.ApplyApiLog(rabbitPublisher, logger, handler, "操作描述")
-func ApplyApiLog(rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, handler http.HandlerFunc, description string) http.HandlerFunc {
-	return WithApiLog(rabbitPublisher, log, description)(handler)
+// 用法: return middleware.ApplyApiLog(rabbitPublisher, logger, handler, "操作描述", "password", "captcha")
+func ApplyApiLog(rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, handler http.HandlerFunc, description string, excludeFields ...string) http.HandlerFunc {
+	return WithApiLog(rabbitPublisher, log, description, excludeFields...)(handler)
 }

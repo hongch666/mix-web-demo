@@ -86,3 +86,6 @@ const (
 	// DDL 执行超时（如建表）
 	DDLOperationTimeout = 10 * time.Second
 )
+
+// 敏感字段掩码
+const SENSITIVE_FIELD_MASK = "******"

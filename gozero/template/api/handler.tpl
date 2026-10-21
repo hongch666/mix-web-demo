@@ -31,5 +31,6 @@ func {{.HandlerName}}(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		{{if .HasResp}}utils.Success(w, resp){{else}}utils.Success(w, nil){{end}}
 	}
+	// TODO: 若接口涉及敏感字段，请在下面数组添加字段名（如 "password", "captcha", "token"）
 	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_PENDING_DESCRIPTION)
 }
