@@ -2,6 +2,9 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsObject, IsOptional, IsString } from "class-validator";
 import { Messages } from "src/common/constants";
 
+/**
+ * 参数化只读 SQL 查询请求DTO，包含 SQL 语句与命名参数键值对
+ */
 export class SqlQueryDto {
   @ApiProperty({
     description: "参数化SQL（使用 :paramName 占位符）",

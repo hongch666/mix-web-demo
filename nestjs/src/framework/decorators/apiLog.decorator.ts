@@ -2,6 +2,9 @@ import { SetMetadata } from "@nestjs/common";
 
 export const API_LOG_KEY = "api_log";
 
+/**
+ * @ApiLog 日志装饰器的配置项，包含日志消息、是否记录参数、日志级别与需排除的敏感字段
+ */
 export interface ApiLogOptions {
   message: string; // 日志消息
   includeParams?: boolean; // 是否包含参数，默认true

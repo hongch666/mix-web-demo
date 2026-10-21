@@ -7,6 +7,9 @@ import { ApiLogService } from "src/module/system/apiLog/apiLog.service";
 import { ArticleLogService } from "src/module/system/articleLog/articleLog.service";
 import { RedisService } from "../redis/redis.service";
 
+/**
+ * 定时任务服务，通过 Cron 定时并配合 Redis 分布式锁清理过期的 API 日志与文章日志
+ */
 @Injectable()
 export class TaskService {
   constructor(

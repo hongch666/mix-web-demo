@@ -23,6 +23,9 @@ export class InternalTokenGuard implements CanActivate {
     private readonly logger: LoggerService,
   ) {}
 
+  /**
+   * 校验标注 @RequireInternalToken 接口的内部服务令牌，可进一步比对装饰器指定的服务名称是否匹配
+   */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // 检查方法是否标有 @RequireInternalToken 装饰器
     const requireInternalToken: boolean | undefined =

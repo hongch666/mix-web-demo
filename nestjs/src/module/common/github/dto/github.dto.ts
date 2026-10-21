@@ -2,6 +2,9 @@ import { ApiPropertyOptional } from "@nestjs/swagger";
 import { IsOptional, IsString } from "class-validator";
 import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
 
+/**
+ * 获取 GitHub 授权地址接口的查询参数，包含登录成功后的前端回跳路径
+ */
 export class GithubAuthorizeQueryDto {
   @ApiPropertyOptional({
     description: "登录成功后回跳路径",
@@ -12,6 +15,9 @@ export class GithubAuthorizeQueryDto {
   redirect?: string;
 }
 
+/**
+ * GitHub OAuth 回调接口的查询参数，包含授权码、state 及错误信息
+ */
 export class GithubCallbackQueryDto {
   @ApiPropertyOptional({
     description: "GitHub 授权码",

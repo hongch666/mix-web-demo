@@ -22,6 +22,9 @@ import { SystemModule } from "src/module/system/system.module";
 import { InternalTokenUtil } from "../common/utils/internalToken.util";
 import { ClsMiddleware } from "../framework/middleware/cls.middleware";
 
+/**
+ * MySQL 数据库连接配置结构，供 TypeOrmModule 异步初始化读取
+ */
 interface DatabaseConfig {
   type: "mysql";
   host: string;
@@ -32,6 +35,9 @@ interface DatabaseConfig {
   logging: boolean;
 }
 
+/**
+ * MongoDB 数据库连接配置结构，供 MongooseModule 异步初始化读取
+ */
 interface MongoDbConfig {
   host: string;
   port: number;
@@ -41,6 +47,9 @@ interface MongoDbConfig {
   logging: boolean;
 }
 
+/**
+ * NestJS 根模块，聚合 TypeORM、Mongoose、Redis、RabbitMQ、CLS 等基础设施配置，并注册全局过滤器、拦截器与守卫
+ */
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
@@ -159,6 +168,9 @@ interface MongoDbConfig {
   ],
 })
 export class AppModule {
+  /**
+   * 为所有路由注册 ClsMiddleware，建立请求级上下文
+   */
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(ClsMiddleware)

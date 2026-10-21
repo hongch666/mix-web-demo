@@ -4,6 +4,9 @@ import Redis from "ioredis";
 import { RedisKeys } from "src/common/constants";
 import { RedisService } from "./redis.service";
 
+/**
+ * Redis 模块，提供 forRoot 静态方法按配置创建 Redis 客户端并全局导出 RedisService
+ */
 @Module({})
 export class RedisModule {
   /**

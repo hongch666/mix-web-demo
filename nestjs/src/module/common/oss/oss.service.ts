@@ -9,6 +9,9 @@ import { OSS_CLIENT } from "./oss.tokens";
 
 import type OSS from "ali-oss";
 
+/**
+ * 阿里云 OSS 配置结构，包含访问密钥、存储桶名称与访问端点
+ */
 export interface OssConfig {
   access_key_id: string;
   access_key_secret: string;
@@ -16,10 +19,16 @@ export interface OssConfig {
   endpoint: string;
 }
 
+/**
+ * OSS 客户端最小接口定义，仅声明上传文件所需的 put 方法
+ */
 export interface OssClient {
   put(name: string, file: string): Promise<unknown>;
 }
 
+/**
+ * OSS 文件上传服务，负责本地文件上传到阿里云对象存储并生成访问 URL，兼容 Node 与 Bun 运行时
+ */
 @Injectable()
 export class OssService implements OnModuleInit {
   private client: OSS | null = null;
@@ -37,6 +46,9 @@ export class OssService implements OnModuleInit {
     private readonly ossClient: OssClient | null = null,
   ) {}
 
+  /**
+   * 模块初始化时读取并校验 OSS 配置，计算上传超时时间并记录 Bun 运行时兼容提示
+   */
   async onModuleInit(): Promise<void> {
     const config: Record<string, unknown> =
       this.configService.get<Record<string, unknown>>("oss") ?? {};
@@ -137,6 +149,9 @@ export class OssService implements OnModuleInit {
     return `https://${this.bucketName}.${this.endpoint}/${ossFile}`;
   }
 
+  /**
+   * 判断当前进程是否运行在 Bun 运行时环境
+   */
   private isBunRuntime(): boolean {
     return Boolean(
       (process as NodeJS.Process & { versions?: { bun?: string } }).versions
@@ -144,6 +159,9 @@ export class OssService implements OnModuleInit {
     );
   }
 
+  /**
+   * 使用 ali-oss 客户端上传文件，并通过 Promise 竞争实现上传超时控制
+   */
   private async uploadFileWithAliOss(
     localFile: string,
     ossFile: string,
@@ -165,6 +183,9 @@ export class OssService implements OnModuleInit {
     return Promise.race([uploadPromise, timeoutPromise]);
   }
 
+  /**
+   * 在 Bun 环境下绕过 ali-oss，手工构造 OSS 签名并以 fetch PUT 方式上传文件
+   */
   private async uploadFileWithBun(
     localFile: string,
     ossFile: string,
@@ -233,6 +254,9 @@ export class OssService implements OnModuleInit {
     }
   }
 
+  /**
+   * 按路径分段对 OSS 目标路径做 URL 编码，保留路径分隔符
+   */
   private encodeOssPath(ossFile: string): string {
     return ossFile
       .split("/")

@@ -1,6 +1,9 @@
 import { createServer, type Server } from "node:http";
 import { metricsRegistry } from "./metrics";
 
+/**
+ * 启动独立的 HTTP 服务，在指定端口与路径暴露 Prometheus 指标数据
+ */
 export function startMetricsServer(port: number, path: string): Server {
   const server: Server = createServer((request, response) => {
     if (request.url !== path) {

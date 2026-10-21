@@ -12,6 +12,9 @@ import {
   GithubCallbackQueryDto,
 } from "./dto/github.dto";
 
+/**
+ * GitHub OAuth 配置，包含客户端凭据、授权与令牌端点地址及前端成功失败跳转页
+ */
 interface GithubOAuthConfig {
   clientId: string;
   clientSecret: string;
@@ -26,11 +29,17 @@ interface GithubOAuthConfig {
   frontendFailureUrl: string;
 }
 
+/**
+ * 获取授权地址的结果，包含拼接好的授权 URL 与对应的 state 值
+ */
 interface GithubAuthorizeResult {
   authorizeUrl: string;
   state: string;
 }
 
+/**
+ * GitHub 令牌接口的响应结构，包含访问令牌或错误码与错误描述
+ */
 interface GithubAccessTokenResponse {
   access_token?: string;
   scope?: string;
@@ -40,6 +49,9 @@ interface GithubAccessTokenResponse {
   error_description?: string;
 }
 
+/**
+ * GitHub 用户信息接口的响应结构，包含用户 ID、登录名、昵称、头像等字段
+ */
 interface GithubUserResponse {
   id: number;
   login: string;
@@ -49,6 +61,9 @@ interface GithubUserResponse {
   html_url?: string | null;
 }
 
+/**
+ * GitHub 用户邮箱接口的响应元素，包含邮箱地址及其主要与已验证标记
+ */
 interface GithubEmailResponse {
   email: string;
   primary: boolean;
@@ -56,10 +71,16 @@ interface GithubEmailResponse {
   visibility?: string | null;
 }
 
+/**
+ * 存入 Redis 的 OAuth state 载荷，记录授权完成后要回跳的前端路径
+ */
 interface GithubStatePayload {
   redirect: string;
 }
 
+/**
+ * GitHub OAuth 登录服务，负责生成授权地址、处理回调换取用户信息并创建登录票据
+ */
 @Injectable()
 export class GithubService {
   private readonly githubConfig: GithubOAuthConfig;
@@ -75,6 +96,9 @@ export class GithubService {
     this.githubConfig = this.buildGithubConfig();
   }
 
+  /**
+   * 校验 OAuth 配置后生成随机 state 存入 Redis，并拼接携带客户端信息的 GitHub 授权地址
+   */
   async buildAuthorizeUrl(
     query: GithubAuthorizeQueryDto,
   ): Promise<GithubAuthorizeResult> {
@@ -114,6 +138,9 @@ export class GithubService {
     };
   }
 
+  /**
+   * 处理 OAuth 回调的完整流程，校验 state、换取令牌、获取用户信息并在 Spring 侧落库后生成登录票据，失败时返回失败跳转地址
+   */
   async handleCallback(query: GithubCallbackQueryDto): Promise<string> {
     try {
       this.validateGithubConfig();
@@ -175,6 +202,9 @@ export class GithubService {
     }
   }
 
+  /**
+   * 从配置服务读取 github.oauth 配置段并组装为完整的 OAuth 配置对象
+   */
   private buildGithubConfig(): GithubOAuthConfig {
     const githubConfig =
       this.configService.get<Record<string, unknown>>("github") || {};
@@ -195,6 +225,9 @@ export class GithubService {
     };
   }
 
+  /**
+   * 将配置值规范化为去空格的字符串，非字符串类型转字符串，缺失时返回回退值
+   */
   private readGithubConfigString(value: unknown, fallback = ""): string {
     if (typeof value === "string") {
       return value.trim();
@@ -211,6 +244,9 @@ export class GithubService {
     return fallback.trim();
   }
 
+  /**
+   * 校验 OAuth 配置必填项是否齐全，缺失任一项时抛出内部服务器错误
+   */
   private validateGithubConfig(): void {
     const requiredFields: Array<{ value: string; name: string }> = [
       { value: this.githubConfig.clientId, name: "clientId" },
@@ -241,6 +277,9 @@ export class GithubService {
     }
   }
 
+  /**
+   * 读取并删除 Redis 中的 state 记录（一次性消费），校验其有效性并解析出回跳路径
+   */
   private async consumeState(state: string): Promise<GithubStatePayload> {
     const redisClient = this.redisService.getClient();
     if (!redisClient) {
@@ -264,6 +303,9 @@ export class GithubService {
     }
   }
 
+  /**
+   * 用授权码调用 GitHub 令牌接口换取访问令牌，兼容 JSON 与表单两种响应格式并校验错误
+   */
   private async exchangeCodeForAccessToken(code: string): Promise<string> {
     try {
       const response: AxiosResponse<GithubAccessTokenResponse | string> =
@@ -344,6 +386,9 @@ export class GithubService {
     }
   }
 
+  /**
+   * 携带访问令牌调用 GitHub 用户信息接口，校验响应并返回用户资料
+   */
   private async fetchGithubProfile(
     accessToken: string,
   ): Promise<GithubUserResponse> {
@@ -413,6 +458,9 @@ export class GithubService {
     }
   }
 
+  /**
+   * 携带访问令牌调用 GitHub 邮箱接口，返回主要且已验证的邮箱地址，失败时返回 null
+   */
   private async fetchPrimaryEmail(accessToken: string): Promise<string | null> {
     const response: AxiosResponse<GithubEmailResponse[]> = await axios.get<
       GithubEmailResponse[]
@@ -438,6 +486,9 @@ export class GithubService {
     return primaryEmail?.email ?? null;
   }
 
+  /**
+   * 调用 Spring 服务为 GitHub 用户创建登录令牌票据，失败或票据缺失时抛出网关错误
+   */
   private async createLoginTicket(
     userId: number,
     username: string,
@@ -466,6 +517,9 @@ export class GithubService {
     return ticket;
   }
 
+  /**
+   * 在配置的前端成功页地址上附加 ticket 与 redirect 参数，拼出登录成功回跳地址
+   */
   private buildSuccessRedirectUrl(ticket: string, redirect: string): string {
     const successUrl = new URL(this.githubConfig.frontendSuccessUrl);
     successUrl.searchParams.set("ticket", ticket);
@@ -473,12 +527,18 @@ export class GithubService {
     return successUrl.toString();
   }
 
+  /**
+   * 在配置的前端失败页地址上附加 oauth_error 参数，拼出登录失败回跳地址
+   */
   private buildFailureRedirectUrl(): string {
     const failureUrl = new URL(this.githubConfig.frontendFailureUrl);
     failureUrl.searchParams.set("oauth_error", "github");
     return failureUrl.toString();
   }
 
+  /**
+   * 规范化前端回跳路径，只允许站内相对路径，外部链接与空值统一回退到根路径
+   */
   private normalizeRedirect(redirect?: string): string {
     const fallbackRedirect = "/";
     if (!redirect) {

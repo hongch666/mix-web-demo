@@ -11,15 +11,24 @@ import { BusinessException } from "src/common/exceptions/business.exception";
 import { error } from "src/common/utils/response";
 import { LoggerService } from "src/module/common/logger/logger.service";
 
+/**
+ * HttpException 响应体中 message 字段的结构描述，兼容字符串与字符串数组两种形态
+ */
 interface HttpExceptionResponse {
   message?: string | string[];
 }
 
+/**
+ * 全局异常过滤器，在 app.module 中注册，捕获所有异常并记录错误日志后返回统一错误响应体
+ */
 @Catch()
 @Injectable()
 export class AllExceptionsFilter implements ExceptionFilter {
   constructor(private readonly logger: LoggerService) {}
 
+  /**
+   * 拦截处理过程中的异常，区分业务异常与其他异常提取消息与状态码，记录详细错误日志后输出统一响应
+   */
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response: FastifyReply = ctx.getResponse<FastifyReply>();

@@ -33,6 +33,9 @@ export interface ArticleLogMessage {
   articleId: number;
 }
 
+/**
+ * 创建文章日志的请求DTO，包含用户ID、文章ID、操作类型与任意结构的操作内容
+ */
 export class CreateArticleLogDto {
   @ApiProperty({ description: "用户ID", example: "1" })
   @ExposeName()
@@ -67,6 +70,9 @@ export class CreateArticleLogDto {
   msg?: string;
 }
 
+/**
+ * 文章日志分页查询条件DTO，支持用户、文章、操作类型与时间范围过滤及分页参数
+ */
 export class QueryArticleLogDto {
   @ApiPropertyOptional({ description: "用户ID" })
   @ExposeName()

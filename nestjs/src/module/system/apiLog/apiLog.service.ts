@@ -17,10 +17,16 @@ dayjs.extend(isLeapYear);
 
 const TIMEZONE = "Asia/Shanghai";
 
+/**
+ * MongoDB 索引信息结构，仅包含索引名
+ */
 interface MongoIndexInfo {
   name?: string;
 }
 
+/**
+ * API 日志分页列表项数据结构，时间为格式化后的字符串
+ */
 interface ApiLogListItem {
   _id: unknown;
   userId: number;
@@ -36,11 +42,17 @@ interface ApiLogListItem {
   updatedAt?: string;
 }
 
+/**
+ * API 日志分页查询结果，含总数与列表
+ */
 interface ApiLogPageResult {
   total: number;
   list: ApiLogListItem[];
 }
 
+/**
+ * API 日志游标同步返回的单条数据结构
+ */
 interface ApiLogSyncItem {
   _id: unknown;
   userId: number;
@@ -52,6 +64,9 @@ interface ApiLogSyncItem {
   createdAt?: string;
 }
 
+/**
+ * API 日志服务，负责日志的攒批写入、条件分页查询、删除及接口耗时与调用次数的聚合统计
+ */
 @Injectable()
 export class ApiLogService {
   constructor(

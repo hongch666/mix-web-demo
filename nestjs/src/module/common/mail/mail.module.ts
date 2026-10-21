@@ -35,6 +35,9 @@ const mailTransporterProvider: Provider = {
   },
 };
 
+/**
+ * 邮件模块，基于配置创建 SMTP 传输器并注册邮件控制器与服务
+ */
 @Module({
   imports: [ConfigModule],
   controllers: [MailController],

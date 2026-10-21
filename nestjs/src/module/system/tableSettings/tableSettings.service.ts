@@ -5,6 +5,9 @@ import { LoggerService } from "src/module/common/logger/logger.service";
 import { Repository } from "typeorm";
 import { TableSettings } from "./entities/tableSettings.entity";
 
+/**
+ * 表格列设置服务，负责按用户与页面标识查询、保存与删除表格列配置
+ */
 @Injectable()
 export class TableSettingsService {
   constructor(

@@ -2,12 +2,18 @@ import { applyDecorators } from "@nestjs/common";
 import { ApiResponse as SwaggerApiResponse } from "@nestjs/swagger";
 import type { SchemaObject } from "@nestjs/swagger/dist/interfaces/open-api-spec.interface";
 
+/**
+ * ApiResponseModel 装饰器的配置项，指定响应 data 的 schema、描述文案与 HTTP 状态码
+ */
 export interface SwaggerResponseOptions {
   data?: SchemaObject;
   description?: string;
   status?: number;
 }
 
+/**
+ * 递归为 schema 及其嵌套属性、数组项补充中文 description，使 Swagger 文档中 data 结构可读
+ */
 function describeSchema(
   schema: SchemaObject,
   fieldName = "返回数据",

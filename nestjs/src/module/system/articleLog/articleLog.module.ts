@@ -7,6 +7,9 @@ import { ArticleLogController } from "./articleLog.controller";
 import { ArticleLogService } from "./articleLog.service";
 import { ArticleLog, ArticleLogSchema } from "./schema/articleLog.schema";
 
+/**
+ * 文章日志模块，注册日志控制器、消息消费者与查询服务并导出服务
+ */
 @Module({
   imports: [
     MongooseModule.forFeature([

@@ -16,11 +16,17 @@ import { RequireInternalToken } from "src/framework/decorators/requireInternalTo
 import { ArticleLogService } from "./articleLog.service";
 import { QueryArticleLogDto } from "./dto/articleLog.dto";
 
+/**
+ * 文章日志接口，提供日志查询、删除、游标同步及搜索历史与浏览分布等内部统计接口
+ */
 @Controller("article-logs")
 @ApiTags("文章日志模块")
 export class ArticleLogController {
   constructor(private readonly logService: ArticleLogService) {}
 
+  /**
+   * 分页查询文章日志，支持用户名、文章标题等条件模糊过滤
+   */
   @Get("list")
   @ApiOperation({
     summary: "查询文章日志",
@@ -36,6 +42,9 @@ export class ArticleLogController {
     return success(data);
   }
 
+  /**
+   * 按 MongoDB ID 游标增量同步文章日志，供 FastAPI 数仓调用
+   */
   @Get("sync")
   @ApiOperation({
     summary: "游标同步文章日志",
@@ -54,6 +63,9 @@ export class ArticleLogController {
     return success(data);
   }
 
+  /**
+   * 根据日志 ID 删除单条文章日志
+   */
   @Delete(":id")
   @ApiOperation({
     summary: "删除文章日志",
@@ -67,6 +79,9 @@ export class ArticleLogController {
     return success(null);
   }
 
+  /**
+   * 批量删除文章日志，多个 ID 用英文逗号分隔
+   */
   @Delete("batch/:ids")
   @ApiOperation({
     summary: "批量删除文章日志",
@@ -84,6 +99,9 @@ export class ArticleLogController {
     return success(null);
   }
 
+  /**
+   * 获取指定用户最近去重的搜索关键词，供 GoZero 内部远程调用
+   */
   @Get("search-history/:user_id")
   @ApiOperation({
     summary: "获取搜索历史",
@@ -100,6 +118,9 @@ export class ArticleLogController {
     return success({ keywords });
   }
 
+  /**
+   * 获取指定用户浏览过的文章及浏览次数分布，供 FastAPI 内部远程调用
+   */
   @Get("view-distribution/:user_id")
   @ApiOperation({
     summary: "获取文章浏览分布",
@@ -117,6 +138,9 @@ export class ArticleLogController {
     return success(data);
   }
 
+  /**
+   * 获取所有去重搜索关键词，供 FastAPI 词云功能内部远程调用
+   */
   @Get("search-keywords")
   @ApiOperation({
     summary: "获取搜索关键词",

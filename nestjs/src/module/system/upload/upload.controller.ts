@@ -20,11 +20,17 @@ import { RequireInternalToken } from "src/framework/decorators/requireInternalTo
 import { UploadDto, UploadResult } from "./dto/upload.dto";
 import { MultipartUploadFile, UploadService } from "./upload.service";
 
+/**
+ * 文件上传接口，支持本地文件路径直传及图片、PDF 的 multipart 表单上传
+ */
 @Controller("upload")
 @ApiTags("文件上传")
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
+  /**
+   * 根据本地文件路径上传文件到 OSS 并返回访问链接
+   */
   @Post("")
   @ApiOperation({
     summary: "上传本地文件到 OSS",
@@ -41,6 +47,9 @@ export class UploadController {
     return success(url);
   }
 
+  /**
+   * 通过 multipart/form-data 上传图片到 OSS，返回原始文件名与 OSS 信息
+   */
   @Post("image")
   @ApiConsumes("multipart/form-data")
   @ApiBody({
@@ -76,6 +85,9 @@ export class UploadController {
     throw BusinessException.notFound(Messages.FILE_PART_NOT_FOUND);
   }
 
+  /**
+   * 通过 multipart/form-data 上传 PDF 到 OSS，支持自定义文件名（不含扩展名）
+   */
   @Post("pdf")
   @ApiConsumes("multipart/form-data")
   @ApiBody({

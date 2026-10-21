@@ -32,6 +32,9 @@ export interface ApiLogMessage {
   responseTime: number;
 }
 
+/**
+ * 创建 API 日志的请求DTO，包含用户、接口描述、路径、方法与响应时间等字段
+ */
 export class CreateApiLogDto {
   @ApiProperty({ description: "用户ID", example: 1 })
   @ExposeName()
@@ -91,6 +94,9 @@ export class CreateApiLogDto {
   responseTime!: number;
 }
 
+/**
+ * API 日志分页查询条件DTO，支持用户、路径、方法与时间范围过滤及分页参数
+ */
 export class QueryApiLogDto {
   @ApiPropertyOptional({ description: "用户ID" })
   @ExposeName()

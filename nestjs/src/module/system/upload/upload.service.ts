@@ -13,6 +13,9 @@ import { UploadResult } from "./dto/upload.dto";
 
 const pump = promisify(pipeline);
 
+/**
+ * Fastify multipart 上传的文件对象结构，兼容流式读取与 toBuffer 两种取值方式
+ */
 export interface MultipartUploadFile {
   filename?: string;
   readable?: boolean;
@@ -21,6 +24,9 @@ export interface MultipartUploadFile {
   toBuffer?: () => Promise<Buffer>;
 }
 
+/**
+ * 文件上传服务，负责校验文件、写入本地临时目录并上传图片与 PDF 到 OSS 后清理临时文件
+ */
 @Injectable()
 export class UploadService {
   constructor(
@@ -149,6 +155,9 @@ export class UploadService {
     }
   }
 
+  /**
+   * 将上传文件写入本地临时目录，支持扩展名白名单校验，优先使用文件流写入并回退到 toBuffer
+   */
   private async saveFileToTemp(
     file: MultipartUploadFile,
     filename: string,
@@ -222,6 +231,9 @@ export class UploadService {
     }
   }
 
+  /**
+   * 删除上传后残留的本地临时文件，失败时仅记录警告不抛出异常
+   */
   private async cleanupTempFile(filePath: string): Promise<void> {
     try {
       await fs.promises.unlink(filePath);

@@ -7,6 +7,9 @@ import { InternalEmailCodeSendDto } from "./dto/mail.dto";
 import { MAIL_TRANSPORTER } from "./mail.tokens";
 import { buildEmailContent } from "./templates/mail.template";
 
+/**
+ * 邮件服务，通过 SMTP 传输器异步发送验证码邮件并记录发送结果日志
+ */
 @Injectable()
 export class MailService {
   private readonly transporter: nodemailer.Transporter | null;
@@ -24,6 +27,9 @@ export class MailService {
     }
   }
 
+  /**
+   * 向指定邮箱异步发送验证码邮件，按场景渲染模板与主题，发送结果仅通过日志记录
+   */
   async sendVerificationCode(dto: InternalEmailCodeSendDto): Promise<void> {
     const { email, code, type, expireMinutes = 10 } = dto;
 
@@ -69,6 +75,9 @@ export class MailService {
       });
   }
 
+  /**
+   * 根据验证码场景（注册、登录、重置）返回对应的邮件主题
+   */
   private getSubject(type: string): string {
     switch (type) {
       case "register":

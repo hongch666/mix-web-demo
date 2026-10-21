@@ -1,3 +1,6 @@
+/**
+ * Prometheus 监控指标名称常量集合，涵盖 HTTP 请求、客户端请求与定时任务等指标
+ */
 export class MetricNames {
   static readonly HTTP_REQUESTS = "mix_http_requests_total";
   static readonly HTTP_DURATION = "mix_http_request_duration_seconds";

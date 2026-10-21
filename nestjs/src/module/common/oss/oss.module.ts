@@ -36,6 +36,9 @@ const ossClientProvider: Provider = {
   },
 };
 
+/**
+ * OSS 对象存储模块，基于配置创建阿里云 OSS 客户端并注册导出 OssService
+ */
 @Module({
   imports: [ConfigModule],
   providers: [ossClientProvider, OssService],

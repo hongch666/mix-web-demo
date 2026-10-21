@@ -3,6 +3,9 @@ import { Document } from "mongoose";
 
 export type ArticleLogDocument = ArticleLog & Document;
 
+/**
+ * 文章操作日志 MongoDB 文档结构，记录用户对文章的操作内容并声明查询索引
+ */
 @Schema({ timestamps: true }) // 自动添加 createdAt 和 updatedAt
 export class ArticleLog {
   // 用户ID（MySQL 表的自增主键，数字）

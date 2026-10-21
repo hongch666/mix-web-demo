@@ -16,6 +16,9 @@ import { InternalTokenUtil } from "src/common/utils/internalToken.util";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { clientDuration, clientRequests } from "../telemetry/metrics";
 
+/**
+ * 服务间调用的请求参数，包含目标服务名、HTTP 方法、路径及路径、查询、请求体与自定义请求头
+ */
 interface CallOptions {
   serviceName: string;
   method: Method; // 'GET' | 'POST' | 'PUT' | 'DELETE'
@@ -26,6 +29,9 @@ interface CallOptions {
   headers?: Record<string, string>;
 }
 
+/**
+ * 远程调用配置，包含超时、重试与指数退避参数及熔断器各项阈值
+ */
 interface RemoteCallConfig {
   timeout: number;
   maxRetries: number;
@@ -44,6 +50,9 @@ type NacosInstancePayload = Parameters<
   NacosNamingClient["registerInstance"]
 >[1];
 
+/**
+ * Nacos 服务治理实现，负责实例注册注销、服务发现，并提供带熔断、重试、轮询负载均衡的服务间 HTTP 调用
+ */
 @Injectable()
 export class NacosService implements OnModuleInit, OnModuleDestroy {
   private client!: NacosNamingClient;
@@ -78,6 +87,9 @@ export class NacosService implements OnModuleInit, OnModuleDestroy {
     private readonly logger: LoggerService,
   ) {}
 
+  /**
+   * 模块初始化时加载远程调用配置、配置 axios 重试策略，并将本服务实例注册到 Nacos
+   */
   async onModuleInit(): Promise<void> {
     // 加载远程调用配置
     this.remoteCallConfig =
@@ -188,6 +200,9 @@ export class NacosService implements OnModuleInit, OnModuleDestroy {
     this.logger.info(Messages.REGISTER_NACOS);
   }
 
+  /**
+   * 模块销毁时从 Nacos 注销当前实例，并关闭熔断器与 keep-alive 连接池
+   */
   async onModuleDestroy(): Promise<void> {
     await this.deregisterFromNacos();
     this.shutdownBreakers();
@@ -266,12 +281,18 @@ export class NacosService implements OnModuleInit, OnModuleDestroy {
     return `${trimmedHost}:${trimmedPort}`;
   }
 
+  /**
+   * 查询指定服务在 Nacos 中的全部可用实例列表
+   */
   async getServiceInstances(serviceName: string): Promise<NacosInstance[]> {
     const instances: NacosInstance[] =
       await this.client.getAllInstances(serviceName);
     return instances;
   }
 
+  /**
+   * 按服务名获取或创建对应的熔断器，熔断器开启、半开、关闭与降级时记录日志
+   */
   private getBreaker(serviceName: string): CircuitBreaker {
     const existing: CircuitBreaker | undefined = this.breakers.get(serviceName);
     if (existing) {
@@ -313,6 +334,9 @@ export class NacosService implements OnModuleInit, OnModuleDestroy {
     return breaker;
   }
 
+  /**
+   * 发起服务间调用，经 Nacos 服务发现取实例、轮询选点并经熔断器包装请求，附带用户上下文与内部令牌请求头，失败时降级或抛出网关错误
+   */
   async call(opts: CallOptions): Promise<Record<string, unknown>> {
     const startedAt: bigint = process.hrtime.bigint();
     const breaker = this.getBreaker(opts.serviceName);

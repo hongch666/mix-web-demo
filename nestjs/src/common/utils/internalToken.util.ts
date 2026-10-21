@@ -4,6 +4,9 @@ import * as jwt from "jsonwebtoken";
 import { ErrorIds, HttpCode, Messages } from "../constants";
 import { BusinessException } from "../exceptions/business.exception";
 
+/**
+ * 内部服务令牌的 JWT 载荷结构，包含用户 ID、服务名称与令牌类型
+ */
 interface InternalTokenClaims {
   userId: number;
   serviceName: string;

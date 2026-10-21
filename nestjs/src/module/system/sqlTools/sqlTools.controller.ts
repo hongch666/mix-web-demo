@@ -11,11 +11,17 @@ import { RequireInternalToken } from "src/framework/decorators/requireInternalTo
 import { SqlQueryDto } from "./dto/sqlQuery.dto";
 import { SqlToolsService } from "./sqlTools.service";
 
+/**
+ * SQL 工具接口，提供白名单表结构查询与只读参数化 SQL 执行，供内部服务远程调用
+ */
 @ApiTags("SQL工具")
 @Controller("sql-tools")
 export class SqlToolsController {
   constructor(private readonly sqlToolsService: SqlToolsService) {}
 
+  /**
+   * 查询白名单内 MySQL 表结构信息，不传表名时返回所有白名单表列表
+   */
   @Get("tables")
   @ApiOperation({
     summary: "获取表结构信息",
@@ -35,6 +41,9 @@ export class SqlToolsController {
     return success(data);
   }
 
+  /**
+   * 在白名单表范围内执行参数化只读 SQL 查询并返回列与行数据
+   */
   @Post("query")
   @ApiOperation({
     summary: "执行只读参数化SQL",

@@ -6,6 +6,9 @@ import type {
   SchemaObject,
 } from "@nestjs/swagger/dist/interfaces/open-api-spec.interface";
 
+/**
+ * 判断值是否为 OpenAPI 的 $ref 引用对象
+ */
 function isReferenceObject(value: unknown): value is ReferenceObject {
   return (
     typeof value === "object" &&
@@ -15,16 +18,25 @@ function isReferenceObject(value: unknown): value is ReferenceObject {
   );
 }
 
+/**
+ * 判断值是否为普通 SchemaObject（非 $ref 引用），供转换前的类型收窄使用
+ */
 function isSchemaObject(value: unknown): value is SchemaObject {
   return (
     typeof value === "object" && value !== null && !isReferenceObject(value)
   );
 }
 
+/**
+ * 将驼峰命名的键名转换为下划线命名
+ */
 function toSnakeCase(key: string): string {
   return key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
+/**
+ * 递归转换 example/default 示例数据中的对象键为下划线命名，保持 Swagger 示例与实际响应字段一致
+ */
 function transformExample<T>(value: T): T {
   if (Array.isArray(value)) {
     return value.map((item) => transformExample(item)) as T;
@@ -41,6 +53,9 @@ function transformExample<T>(value: T): T {
   return result as T;
 }
 
+/**
+ * 递归转换 schema 内 properties 键名、required 字段列表及嵌套 schema 的 example/default 为下划线命名
+ */
 function transformSchema(schema?: SchemaObject | ReferenceObject): void {
   if (!schema || isReferenceObject(schema)) {
     return;
@@ -90,6 +105,9 @@ function transformSchema(schema?: SchemaObject | ReferenceObject): void {
   }
 }
 
+/**
+ * 转换 OpenAPI 参数定义，将参数名及其 schema、示例中的键名统一为下划线命名
+ */
 function transformParameter(
   parameter: ParameterObject | ReferenceObject,
 ): void {
@@ -120,6 +138,9 @@ function transformParameter(
   }
 }
 
+/**
+ * 转换单个 OpenAPI 操作的参数、请求体与各响应体的 schema 及示例键名为下划线命名
+ */
 function transformOperation(operation: OperationObject): void {
   operation.parameters?.forEach((parameter) => transformParameter(parameter));
 
@@ -163,6 +184,9 @@ function transformOperation(operation: OperationObject): void {
   });
 }
 
+/**
+ * 遍历整个 Swagger 文档的 components 与所有 paths 操作，将全部字段命名统一为下划线风格以匹配对外接口契约
+ */
 export function applySwaggerSnakeCase(document: OpenAPIObject): OpenAPIObject {
   Object.values(document.components?.schemas ?? {}).forEach((schema) => {
     transformSchema(schema);

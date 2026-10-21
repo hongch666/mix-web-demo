@@ -18,6 +18,9 @@ type RawApiLogMessage = Partial<ApiLogMessage> & {
   response_time?: number;
 };
 
+/**
+ * 消费 RabbitMQ 的 API 日志消息并攒批写入 MongoDB
+ */
 @Injectable()
 export class ApiLogConsumerService implements OnApplicationShutdown {
   private readonly batchBuffer: BatchBuffer<CreateApiLogDto>;
@@ -49,10 +52,16 @@ export class ApiLogConsumerService implements OnApplicationShutdown {
     await this.batchBuffer.flush();
   }
 
+  /**
+   * 应用关闭时停止攒批缓冲并将剩余日志落库
+   */
   async onApplicationShutdown(): Promise<void> {
     await this.batchBuffer.shutdown();
   }
 
+  /**
+   * 订阅 api-log-queue 消息，兼容对象与 JSON 字符串两种格式，归一化字段校验后入攒批队列
+   */
   @RabbitSubscribe({
     queue: "api-log-queue",
   })

@@ -3,6 +3,9 @@ import Redis from "ioredis";
 import { RedisKeys } from "src/common/constants";
 import { v4 as uuidv4 } from "uuid";
 
+/**
+ * Redis 服务封装，提供客户端获取与基于 set NX 及 Lua 脚本的分布式锁加锁解锁能力
+ */
 @Injectable()
 export class RedisService {
   private readonly redis: Redis | null;

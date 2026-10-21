@@ -16,6 +16,9 @@ type RawArticleLogMessage = Partial<ArticleLogMessage> & {
   article_id?: number;
 };
 
+/**
+ * 消费 RabbitMQ 的文章日志消息并攒批写入 MongoDB
+ */
 @Injectable()
 export class LogConsumerService implements OnApplicationShutdown {
   private readonly batchBuffer: BatchBuffer<CreateArticleLogDto>;
@@ -47,10 +50,16 @@ export class LogConsumerService implements OnApplicationShutdown {
     await this.batchBuffer.flush();
   }
 
+  /**
+   * 应用关闭时停止攒批缓冲并将剩余日志落库
+   */
   async onApplicationShutdown(): Promise<void> {
     await this.batchBuffer.shutdown();
   }
 
+  /**
+   * 订阅 article-log-queue 消息，校验必填字段与操作类型后构建 DTO 入攒批队列
+   */
   @RabbitSubscribe({
     queue: "article-log-queue",
   })

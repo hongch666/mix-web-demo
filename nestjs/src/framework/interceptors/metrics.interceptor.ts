@@ -12,8 +12,14 @@ import {
   httpRequests,
 } from "src/module/common/telemetry/metrics";
 
+/**
+ * HTTP 监控指标拦截器，在 createApp 中全局注册，采集各路由的请求计数与响应耗时
+ */
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
+  /**
+   * 按请求方法、路由与状态码统计请求次数，并在请求结束时上报以秒为单位的响应耗时
+   */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request: FastifyRequest = context.switchToHttp().getRequest();
     const method: string = request.method;
@@ -38,6 +44,9 @@ export class MetricsInterceptor implements NestInterceptor {
     );
   }
 
+  /**
+   * 按方法、路由与状态码递增 HTTP 请求总数计数器
+   */
   private record(method: string, route: string, status: string): void {
     httpRequests.labels(method, route, status).inc();
   }

@@ -3,6 +3,9 @@ import { Document } from "mongoose";
 
 export type ApiLogDocument = ApiLog & Document;
 
+/**
+ * API 日志 MongoDB 文档结构，记录接口调用的用户、路径、方法与响应时间并声明查询索引
+ */
 @Schema({ timestamps: true }) // 自动添加 createdAt 和 updatedAt
 export class ApiLog {
   // 用户ID

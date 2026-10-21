@@ -9,11 +9,17 @@ import { RequireInternalToken } from "src/framework/decorators/requireInternalTo
 import { InternalEmailCodeSendDto } from "./dto/mail.dto";
 import { MailService } from "./mail.service";
 
+/**
+ * 邮件模块控制器，仅对内部服务提供发送邮箱验证码接口
+ */
 @Controller("email")
 @ApiTags("邮件模块")
 export class MailController {
   constructor(private readonly mailService: MailService) {}
 
+  /**
+   * 发送邮箱验证码接口，触发异步发信后立即返回成功，不阻塞响应
+   */
   @Post("send-code")
   @RequireInternalToken("spring")
   @ApiOperation({

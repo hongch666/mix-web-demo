@@ -10,6 +10,9 @@ import {
 } from "class-validator";
 import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
 
+/**
+ * 内部服务发送邮箱验证码的请求体，包含收件邮箱、验证码、场景类型与可选过期分钟数
+ */
 export class InternalEmailCodeSendDto {
   @ApiProperty({ description: "收件邮箱", example: "user@example.com" })
   @IsEmail({}, { message: "邮箱格式不正确" })

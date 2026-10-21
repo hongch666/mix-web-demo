@@ -208,6 +208,9 @@ export class BatchBuffer<T> {
     );
   }
 
+  /**
+   * 通过 setImmediate 将 flush 推迟到下一轮事件循环，避免在 enqueue 调用栈内同步刷盘
+   */
   private scheduleFlush(): void {
     // 使用 setImmediate 避免在 enqueue 调用栈中同步 flush
     setImmediate(() => {

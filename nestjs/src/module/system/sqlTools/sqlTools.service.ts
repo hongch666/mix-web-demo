@@ -12,13 +12,22 @@ const MAX_LIMIT = SqlTools.MAX_LIMIT;
 function createTableNameRegex(): RegExp {
   return new RegExp(SqlTools.TABLE_NAME_REGEX.source, "gi");
 }
+/**
+ * 创建检查 SQL 中 LIMIT 子句的局部正则，避免全局标志的 lastIndex 状态残留
+ */
 function createLimitRegex(): RegExp {
   return new RegExp(SqlTools.LIMIT_REGEX.source, "i");
 }
+/**
+ * 创建匹配命名参数占位符 :paramName 的局部正则，避免全局标志的 lastIndex 状态残留
+ */
 function createNamedParamRegex(): RegExp {
   return new RegExp(SqlTools.NAMED_PARAM_REGEX.source, "g");
 }
 
+/**
+ * 白名单表信息结构，含表名与行数
+ */
 interface TableInfo {
   table: string;
   rowCount?: number;

@@ -22,10 +22,16 @@ dayjs.extend(isLeapYear);
 
 const TIMEZONE = "Asia/Shanghai";
 
+/**
+ * MongoDB 索引信息结构，仅包含索引名
+ */
 interface MongoIndexInfo {
   name?: string;
 }
 
+/**
+ * 文章日志分页列表项数据结构，含远程映射的用户名与文章标题
+ */
 interface ArticleLogListItem {
   _id: unknown;
   userId: number;
@@ -39,11 +45,17 @@ interface ArticleLogListItem {
   updatedAt?: string;
 }
 
+/**
+ * 文章日志分页查询结果，含总数与列表
+ */
 interface ArticleLogPageResult {
   total: number;
   list: ArticleLogListItem[];
 }
 
+/**
+ * 文章日志游标同步返回的单条数据结构
+ */
 interface ArticleLogSyncItem {
   _id: unknown;
   userId: number;
@@ -53,6 +65,9 @@ interface ArticleLogSyncItem {
   createdAt?: Date;
 }
 
+/**
+ * 文章日志服务，负责日志写入、条件分页查询、删除及搜索关键词与浏览分布的聚合统计
+ */
 @Injectable()
 export class ArticleLogService {
   constructor(
@@ -135,6 +150,9 @@ export class ArticleLogService {
     await this.logModel.insertMany(dtos, { ordered: false });
   }
 
+  /**
+   * 根据 ID 删除文章日志，日志不存在时抛出业务异常
+   */
   async removeById(id: string): Promise<ArticleLogDocument | null> {
     const existingLog: ArticleLogDocument | null = await this.logModel
       .findById(id)
@@ -145,6 +163,9 @@ export class ArticleLogService {
     return this.logModel.findByIdAndDelete(id).exec();
   }
 
+  /**
+   * 批量删除文章日志，任一 ID 不存在时抛出业务异常
+   */
   async removeByIds(ids: string[]): Promise<DeleteResult> {
     // 先检查所有记录是否存在
     const existingLogs: ArticleLogDocument[] = await this.logModel
@@ -165,6 +186,9 @@ export class ArticleLogService {
     return this.logModel.deleteMany({ _id: { $in: ids } }).exec();
   }
 
+  /**
+   * 按条件分页查询文章日志，用户名与文章标题先经 Spring 服务解析为对应 ID，并批量映射用户名和标题消除 N+1 查询
+   */
   async findByFilter(query: QueryArticleLogDto): Promise<ArticleLogPageResult> {
     const {
       userId,
@@ -309,6 +333,9 @@ export class ArticleLogService {
     return { total, list: resultList };
   }
 
+  /**
+   * 按 MongoDB ID 游标增量拉取文章日志并返回下一页游标，供数仓同步
+   */
   async findByCursor(
     cursor: string | null,
     limit: number,

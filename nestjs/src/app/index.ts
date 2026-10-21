@@ -27,6 +27,9 @@ import { buildSwaggerDocument } from "./swagger";
 
 type FastifyRegisterPlugin = Parameters<NestFastifyApplication["register"]>[0];
 
+/**
+ * 从 ValidationPipe 校验错误中提取各字段的首条错误信息并以分号拼接，无结果时返回默认错误文案
+ */
 function extractValidationMessage(errors: unknown[]): string {
   const messages: string[] = [];
 
@@ -50,6 +53,9 @@ function extractValidationMessage(errors: unknown[]): string {
   return messages.length > 0 ? messages.join("; ") : Messages.ERROR_DEFAULT_MSG;
 }
 
+/**
+ * 创建并初始化基于 Fastify 的 Nest 应用，依次注册文件上传插件、Swagger 文档、全局过滤器、拦截器与校验管道
+ */
 export async function createApp(): Promise<NestFastifyApplication> {
   const fastifyAdapter: FastifyAdapter = new FastifyAdapter();
 

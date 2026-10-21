@@ -15,6 +15,9 @@ import { RequireInternalToken } from "src/framework/decorators/requireInternalTo
 import { ApiLogService } from "./apiLog.service";
 import { QueryApiLogDto } from "./dto/apiLog.dto";
 
+/**
+ * API 日志接口，提供日志分页查询、删除及面向内部服务的同步与统计数据
+ */
 @Controller("api-logs")
 @ApiTags("API日志模块")
 export class ApiLogController {

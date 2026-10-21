@@ -36,6 +36,9 @@ interface RemoteUser {
   name: string;
 }
 
+/**
+ * 文章导出服务，负责拉取文章与作者信息并生成 Word、Markdown、PDF 文件上传到 OSS 返回下载链接
+ */
 @Injectable()
 export class DownloadService {
   constructor(

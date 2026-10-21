@@ -4,6 +4,9 @@ import * as fs from "fs";
 import { htmlToText } from "html-to-text";
 import * as path from "path";
 
+/**
+ * Word 文档生成服务，使用 docx-templates 将数据填充到模板生成文档 Buffer
+ */
 @Injectable()
 export class WordService {
   /**

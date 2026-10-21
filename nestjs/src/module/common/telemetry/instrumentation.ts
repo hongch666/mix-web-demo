@@ -13,6 +13,9 @@ import { Messages, TelemetryConstants } from "src/common/constants";
 import config from "src/config";
 import { startMetricsServer } from "./metrics.server";
 
+/**
+ * OpenTelemetry 遥测配置结构，包含开关、服务名、链路上报地址、采样器及指标服务端口与路径
+ */
 interface TelemetryConfig {
   enabled: boolean;
   serviceName: string;
@@ -26,6 +29,9 @@ interface TelemetryConfig {
 const telemetryConfig: TelemetryConfig = config.telemetry as TelemetryConfig;
 let metricsServer: Server | undefined;
 
+/**
+ * 根据传入比例值创建基于 TraceId 的比例采样器，比例非法时抛出错误
+ */
 function createRatioSampler(ratioValue: string): TraceIdRatioBasedSampler {
   const ratio: number = Number(ratioValue);
   if (!Number.isFinite(ratio) || ratio < 0 || ratio > 1) {
@@ -34,6 +40,9 @@ function createRatioSampler(ratioValue: string): TraceIdRatioBasedSampler {
   return new TraceIdRatioBasedSampler(ratio);
 }
 
+/**
+ * 按配置中的采样器名称创建对应的 OpenTelemetry 采样器实例，不支持的名称抛出错误
+ */
 function createSampler(telemetry: TelemetryConfig): Sampler {
   switch (telemetry.sampler) {
     case TelemetryConstants.SAMPLER_ALWAYS_ON:
@@ -78,6 +87,9 @@ if (telemetryConfig.enabled) {
   );
 }
 
+/**
+ * 关闭遥测 SDK 并停止指标暴露的 HTTP 服务，用于应用优雅停机
+ */
 export async function shutdownTelemetry(): Promise<void> {
   await telemetrySdk?.shutdown();
   if (metricsServer) {

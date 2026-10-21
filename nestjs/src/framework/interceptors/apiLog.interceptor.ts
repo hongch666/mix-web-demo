@@ -13,6 +13,9 @@ import { Messages } from "src/common/constants";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { API_LOG_KEY, ApiLogOptions } from "../decorators/apiLog.decorator";
 
+/**
+ * API 日志拦截器，通过 APP_INTERCEPTOR 全局注册，为标注 @ApiLog 的接口记录操作日志与耗时并投递到 RabbitMQ
+ */
 @Injectable()
 export class ApiLogInterceptor implements NestInterceptor {
   constructor(
@@ -22,6 +25,9 @@ export class ApiLogInterceptor implements NestInterceptor {
     private readonly logger: LoggerService,
   ) {}
 
+  /**
+   * 读取 @ApiLog 装饰器配置，记录请求日志并计时，请求结束后将接口调用明细异步发送到 api-log-queue 消息队列
+   */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     // 获取装饰器配置
     const logConfig: ApiLogOptions | undefined =
@@ -212,6 +218,9 @@ export class ApiLogInterceptor implements NestInterceptor {
     }
   }
 
+  /**
+   * 提取当前请求的 query、body 与路径参数拼装成日志文本，multipart 请求标记为文件上传并按配置排除敏感字段
+   */
   private extractParams(
     context: ExecutionContext,
     excludeFields: string[] = [],
@@ -284,6 +293,9 @@ export class ApiLogInterceptor implements NestInterceptor {
     }
   }
 
+  /**
+   * 根据处理方法名推断 GET 请求查询参数在日志中的展示名称
+   */
   private getQueryParamName(context: ExecutionContext): string {
     // 对于GET请求的查询参数，通常使用DTO名称
     const handler = context.getHandler();
@@ -300,6 +312,9 @@ export class ApiLogInterceptor implements NestInterceptor {
     return "Query参数";
   }
 
+  /**
+   * 根据处理方法名推断请求体参数在日志中的展示名称，区分创建与更新类 DTO
+   */
   private getBodyParamName(context: ExecutionContext): string {
     // 对于POST/PUT请求的body参数，通常使用DTO名称
     const handler = context.getHandler();
@@ -314,6 +329,9 @@ export class ApiLogInterceptor implements NestInterceptor {
     return "RequestBody";
   }
 
+  /**
+   * 依据实际路径参数键名确定路径参数在日志中的展示名称
+   */
   private getPathParamName(context: ExecutionContext): string {
     const request: Record<string, unknown> = context
       .switchToHttp()
@@ -335,6 +353,9 @@ export class ApiLogInterceptor implements NestInterceptor {
     return "PathParams";
   }
 
+  /**
+   * 从参数对象副本中剔除指定敏感字段，防止凭据等信息随日志进入消息队列
+   */
   private filterFields(
     obj: Record<string, unknown>,
     excludeFields: string[],

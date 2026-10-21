@@ -6,6 +6,9 @@ import { ApiLogController } from "./apiLog.controller";
 import { ApiLogService } from "./apiLog.service";
 import { ApiLog, ApiLogSchema } from "./schema/apiLog.schema";
 
+/**
+ * API 日志模块，注册日志控制器、消息消费者与查询服务并导出服务
+ */
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: ApiLog.name, schema: ApiLogSchema }]),

@@ -2,12 +2,18 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty, IsString } from "class-validator";
 import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
 
+/**
+ * 文件上传结果结构，包含原始文件名、OSS 文件名与访问链接
+ */
 export interface UploadResult {
   originalFilename: string;
   ossFilename: string;
   ossUrl: string;
 }
 
+/**
+ * 通过本地文件路径上传文件到 OSS 的请求DTO，含本地路径与 OSS 目标路径
+ */
 export class UploadDto {
   @ApiProperty({
     description: "本地文件路径（必须是服务本地存在的文件）",

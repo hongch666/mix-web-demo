@@ -11,11 +11,17 @@ import { RequireInternalToken } from "src/framework/decorators/requireInternalTo
 import { AggregateMongoDto, QueryMongoDto } from "./dto/mongoTools.dto";
 import { MongoToolsService } from "./mongoTools.service";
 
+/**
+ * MongoDB 日志查询工具接口，提供集合列表、只读查询与受限聚合，供 FastAPI 内部远程调用
+ */
 @Controller("mongo-tools")
 @ApiTags("MongoDB工具模块")
 export class MongoToolsController {
   constructor(private readonly mongoToolsService: MongoToolsService) {}
 
+  /**
+   * 列出白名单内日志集合及其文档数与示例字段
+   */
   @Get("collections")
   @ApiOperation({
     summary: "列出日志集合",
@@ -28,6 +34,9 @@ export class MongoToolsController {
     return success(data);
   }
 
+  /**
+   * 对白名单内的日志集合执行只读 find 查询
+   */
   @Post("query")
   @ApiOperation({
     summary: "查询日志文档",
@@ -44,6 +53,9 @@ export class MongoToolsController {
     return success(data);
   }
 
+  /**
+   * 对白名单内的日志集合执行受限只读聚合管道
+   */
   @Post("aggregate")
   @ApiOperation({
     summary: "聚合查询日志文档",

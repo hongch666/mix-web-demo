@@ -15,11 +15,17 @@ import {
 } from "./dto/github.dto";
 import { GithubService } from "./github.service";
 
+/**
+ * GitHub 登录模块控制器，提供获取授权地址与 OAuth 回调处理两个接口
+ */
 @Controller("github")
 @ApiTags("GitHub 登录模块")
 export class GithubController {
   constructor(private readonly githubService: GithubService) {}
 
+  /**
+   * 获取 GitHub OAuth 授权地址，返回授权 URL 与随机生成的 state 供前端跳转
+   */
   @Get("authorize")
   @ApiOperation({
     summary: "获取 GitHub 授权地址",
@@ -35,6 +41,9 @@ export class GithubController {
     return success(data);
   }
 
+  /**
+   * 处理 GitHub OAuth 回调，完成换取令牌和登录票据后以 302 重定向到前端页面
+   */
   @Get("callback")
   @ApiOperation({
     summary: "GitHub 回调处理",

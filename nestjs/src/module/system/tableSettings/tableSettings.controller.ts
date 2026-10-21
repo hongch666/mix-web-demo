@@ -15,6 +15,9 @@ import { SaveTableSettingsDto } from "./dto/tableSettings.dto";
 import { TableSettings } from "./entities/tableSettings.entity";
 import { TableSettingsService } from "./tableSettings.service";
 
+/**
+ * 表格列设置接口，提供当前登录用户各页面列配置的查询、保存与删除
+ */
 @Controller("table-settings")
 @ApiTags("表格列设置")
 export class TableSettingsController {
@@ -23,6 +26,9 @@ export class TableSettingsController {
     private readonly cls: ClsService,
   ) {}
 
+  /**
+   * 获取当前登录用户所有页面的表格列配置
+   */
   @Get("")
   @ApiOperation({
     summary: "获取当前用户所有页面的列配置",
@@ -43,6 +49,9 @@ export class TableSettingsController {
     return success(settings);
   }
 
+  /**
+   * 获取当前登录用户在指定页面的表格列配置
+   */
   @Get(":table_key")
   @ApiOperation({
     summary: "获取指定页面的列配置",
@@ -66,6 +75,9 @@ export class TableSettingsController {
     return success(settings);
   }
 
+  /**
+   * 保存（新增或更新）当前登录用户在指定页面的表格列配置
+   */
   @Put(":table_key")
   @ApiOperation({
     summary: "保存指定页面的列配置",
@@ -90,6 +102,9 @@ export class TableSettingsController {
     return success(null);
   }
 
+  /**
+   * 删除当前登录用户在指定页面的表格列配置，使其恢复默认配置
+   */
   @Delete(":table_key")
   @ApiOperation({
     summary: "删除指定页面的列配置",

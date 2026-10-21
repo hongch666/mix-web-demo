@@ -8,11 +8,17 @@ import { ApiResponse, success } from "src/common/utils/response";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { DownloadService } from "./download.service";
 
+/**
+ * 文章导出下载接口，提供 Word、Markdown、PDF 三种格式的导出下载
+ */
 @Controller("download")
 @ApiTags("下载模块")
 export class DownloadController {
   constructor(private readonly downloadService: DownloadService) {}
 
+  /**
+   * 按文章 ID 导出 Word 文档并返回 OSS 下载链接
+   */
   @Get("word/:id")
   @ApiOperation({
     summary: "下载文章Word",
@@ -26,6 +32,9 @@ export class DownloadController {
     return success(url);
   }
 
+  /**
+   * 按文章 ID 导出 Markdown 文件并返回 OSS 下载链接
+   */
   @Get("markdown/:id")
   @ApiOperation({
     summary: "下载文章Markdown",
@@ -43,6 +52,9 @@ export class DownloadController {
     return success(url);
   }
 
+  /**
+   * 按文章 ID 导出 PDF 文件并返回 OSS 下载链接
+   */
   @Get("pdf/:id")
   @ApiOperation({
     summary: "下载文章PDF",

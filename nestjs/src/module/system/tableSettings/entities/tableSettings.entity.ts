@@ -8,6 +8,9 @@ import {
   UpdateDateColumn,
 } from "typeorm";
 
+/**
+ * 用户表格列设置实体，按用户ID与页面标识唯一存储列配置 JSON
+ */
 @Entity("user_table_settings")
 @Unique("uk_user_table", ["user_id", "table_key"])
 export class TableSettings {
