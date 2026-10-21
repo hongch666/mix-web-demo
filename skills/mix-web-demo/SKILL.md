@@ -160,6 +160,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 - 外部基础设施统一由 Spring Bean 提供：`PasswordEncryptor` 注入 `BCryptPasswordEncoder`，禁止在工具或 Service 内部直接 `new` 加密器、客户端或连接资源；新增同类依赖放入 `config` 的 `@Configuration` Bean
 - Swagger 用 springdoc：`@Operation(summary, description)`、`@Tag`，注解参数直接写字面量，不抽常量
 - 日志：`common/utils/SimpleLogger` 实例注入使用
+- **类（含接口、抽象类、枚举、记录、注解类型）与方法（含构造器）必须带 Javadoc 注释**（风格参考 `infra/client/ServiceRequestOptions.java` 的三行 `/** 微服务请求的可选参数 */`）：类/接口/注解类型说明职责，方法说明做什么及关键语义（响应式语义与下游用途可提及）；单句简体中文、结尾不加中文句号；带注解的声明注释写在首个注解上方；`src/test` 不要求，已存在的注释不改写。新增声明遗漏注释视同未完成
 
 ## NestJS 服务（nestjs/，Fastify + Mongoose/TypeORM）
 
@@ -199,6 +200,7 @@ module/system/    系统业务模块（apiLog、articleLog、sqlTools 等）
 - **路径和查询参数命名必须与实际 URL 一致**：本项目 OpenAPI 会将字段转换为 snake_case。路径参数统一使用 snake_case，并让路由、`@Param`、`@ApiParam` 三处名称完全一致，例如 `:user_id` + `@Param("user_id")`、`:table_key` + `@Param("table_key")`。查询参数也必须统一，例如 `custom_filename` + `@Query("custom_filename")`，禁止同时出现 camelCase 与 snake_case。
 - **Swagger 参数重复检查**：修改接口后重新生成 OpenAPI，检查每个 operation 的 `parameters` 是否存在重复语义或同时存在大小写不同的参数；重点排查 `userId/user_id`、`tableKey/table_key`、`customFilename/custom_filename` 等组合。
 - 日志：注入 `LoggerService`（`module/common/logger`）
+- **类、接口、函数与方法必须带 JSDoc 注释**（风格参考 `common/utils/batchBuffer.ts` 的三行 `/** 攒批配置选项 */`）：Service/Controller/Module/DTO/接口说明职责，方法说明做什么及关键语义；单句简体中文、结尾不加中文句号；带装饰器的声明注释写在首个装饰器上方；`*.spec.ts` 不要求，已存在的注释不改写。新增声明遗漏注释视同未完成
 
 ## FastAPI 服务（fastapi/）
 
@@ -247,6 +249,7 @@ app/internal/agents     LangChain Agent 与工具
 - Agent 工具权限：`internal/agents/toolScope.py` 的 contextvars 作用域（**fail-closed**）——`intentRouter` 在路由前统一写入 `ToolScope(user_id, is_admin)`，SQL 与 MongoDB 工具执行前校验行级范围（查询必须含 `user_id` 且绑定值等于当前用户，admin 放行）。禁止把请求态写进 `@lru_cache` 单例的实例字段
 - 日志：`from app.core.base import Logger`，`Logger.info/warning/error/debug`
 - 上下文：`core/middleware/contextMiddleware.py` 的 contextvars（`get_current_user_id` 等），深层函数免参读取用户信息
+- **类与函数必须带单行中文 docstring**（风格参考 `internal/models/warehouse/base.py`）：类说明职责，方法/函数说明做什么，`__init__` 说明注入了哪些依赖；常量类 `@staticmethod` 用一句话概括消息/常量用途，SQL 模板常量概括查询目的；单行书写、结尾不加中文句号（对齐通用规则 13）；私有方法（`_` 前缀）与嵌套类同样要求，已存在的 docstring 不改写。新增类和函数遗漏 docstring 视同未完成；交付前可用 AST 复核（遍历 `ClassDef` / `FunctionDef` / `AsyncFunctionDef`，`ast.get_docstring` 为 None 的清单必须为空）
 
 ## GoZero 服务（gozero/，API-First）
 
@@ -304,6 +307,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 中间件：`.api` 文件 `@server middleware:` 声明 + `routes.go` 的 `rest.WithMiddlewares`；内部服务接口必须挂 `InternalServiceMiddleware`（校验 `X-Internal-Token`）
 - 远程调用：统一走 `common/client` 的 `ServiceDiscovery.CallService(ctx, serviceName, path, RequestOptions)`，按目标服务在 `internal/client/` 封装 Client 结构体，logic 里禁止直接发 HTTP。发送层是 go-zero 的 `rest/httpc`，服务发现/负载均衡/重试/响应解析仍由自己实现，详见下面「远程调用（httpc）」小节
 - 常量：消息进 `app/common/constants/messages.go`，动态部分 `fmt.Sprintf(constants.XXX+": %v", err)` 拼接
+- **顶层 type 与 func（含方法）必须带单行中文前置注释**（风格参考 `internal/hub/chatHub.go` 的 `// WebSocket客户端` 与 `// ConfigureReadMarker 在服务装配阶段注入消息已读操作`）：函数/方法以函数名开头（如 `// NewChatHub 创建聊天 Hub 并初始化空队列`），类型/接口直接描述职责；单行书写、结尾不加中文句号；`type (...)` 分组块内的成员同样要求；goctl 生成文件（`types.go`、`routes.go`、`*_gen.go`）不加注释，`_test.go` 不要求。新增声明遗漏注释视同未完成
 - 构建校验：`cd gozero/app && GOTOOLCHAIN=local go build ./... && go vet ./... && go test ./... -count=1` 必须通过；**必须带 `GOTOOLCHAIN=local`**（对齐 Docker 的构建约束，避免 toolchain 自动升级掩盖版本漂移）；检查未使用导包与变量；产物命名与入口一致；格式与静态检查统一走 `./mix lint gozero`，不要用裸 `gofmt -l`（对行尾差异会报大量假阳性），也不要直接 `gofmt -w` 做全量重排
 
 ### 请求参数校验
