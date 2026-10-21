@@ -11,6 +11,9 @@ import java.util.regex.Pattern;
  */
 public final class SqlTools {
 
+    /**
+     * 聚合 SQL 只读代理的表名白名单、只读前缀白名单、匹配正则与查询限制常量
+     */
     private SqlTools() {
     }
 

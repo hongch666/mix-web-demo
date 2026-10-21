@@ -14,6 +14,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 定时任务控制器，提供 /task/clean 内部接口用于手动触发过期Token清理任务
+ */
 @RestController
 @RequestMapping("/task")
 @RequiredArgsConstructor
@@ -21,6 +24,9 @@ import reactor.core.publisher.Mono;
 public class TaskController {
     private final TokenCleanupTask tokenCleanupTask;
 
+    /**
+     * POST /task/clean 内部接口，手动触发清理过期Token任务并立即返回成功
+     */
     @PostMapping("/clean")
     @Operation(summary = "手动执行清理过期Token", description = "手动触发清理过期Token任务")
     @RequireInternalToken

@@ -15,6 +15,9 @@ import reactor.core.publisher.Mono;
 import reactor.rabbitmq.OutboundMessage;
 import reactor.rabbitmq.Sender;
 
+/**
+ * 封装基于发布确认模式的 JSON 消息发送与反序列化转换能力
+ */
 @Component
 @RequiredArgsConstructor
 public class RabbitMQUtil {
@@ -62,6 +65,9 @@ public class RabbitMQUtil {
             .then();
     }
 
+    /**
+     * 以发布确认模式发送 JSON 消息，未收到 Broker 确认时报错
+     */
     private Mono<Void> sendWithConfirm(String exchange, String routingKey, String jsonMessage) {
         OutboundMessage outboundMessage = new OutboundMessage(
             exchange,

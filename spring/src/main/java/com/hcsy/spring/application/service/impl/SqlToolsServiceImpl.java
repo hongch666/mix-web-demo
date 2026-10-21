@@ -33,6 +33,9 @@ public class SqlToolsServiceImpl implements SqlToolsService {
     private final DatabaseClient databaseClient;
     private final SimpleLogger logger;
 
+    /**
+     * 实现查询白名单内表结构，指定表名时返回单表列信息，否则返回全表及行数
+     */
     @Override
     public Mono<List<SqlTableSchemaVO>> getTables(String table) {
         if (table != null && !table.isBlank()) {
@@ -41,6 +44,9 @@ public class SqlToolsServiceImpl implements SqlToolsService {
         return getAllTableSchemas();
     }
 
+    /**
+     * 实现先校验SQL合法性再以参数化方式执行只读查询
+     */
     @Override
     public Mono<SqlQueryResultVO> executeQuery(String query, Map<String, Object> params) {
         return Mono.just(query)
@@ -48,6 +54,9 @@ public class SqlToolsServiceImpl implements SqlToolsService {
             .flatMap(validatedQuery -> executeParameterizedQuery(validatedQuery, params));
     }
 
+    /**
+     * 校验SQL仅限只读前缀、单条语句、表白名单且必须带LIMIT
+     */
     private String validateQuery(String query) {
         if (query == null || query.isBlank()) {
             throw new BusinessException(Messages.SQL_PROXY_FORBIDDEN_STATEMENT);
@@ -104,6 +113,9 @@ public class SqlToolsServiceImpl implements SqlToolsService {
         return normalized;
     }
 
+    /**
+     * 绑定参数执行SQL并将结果转换为列名与行值结构
+     */
     private Mono<SqlQueryResultVO> executeParameterizedQuery(String query, Map<String, Object> params) {
         DatabaseClient.GenericExecuteSpec spec = databaseClient.sql(query);
         if (params != null) {
@@ -143,6 +155,9 @@ public class SqlToolsServiceImpl implements SqlToolsService {
             });
     }
 
+    /**
+     * 查询白名单内所有表的行数，单表失败时行数返回-1
+     */
     private Mono<List<SqlTableSchemaVO>> getAllTableSchemas() {
         List<String> tableNames = new ArrayList<>(SqlTools.TABLE_WHITELIST);
         // 异步获取每个表的行数（表名来自白名单，使用反引号包裹避免保留字冲突）
@@ -155,6 +170,9 @@ public class SqlToolsServiceImpl implements SqlToolsService {
             .collectList();
     }
 
+    /**
+     * 查询白名单内单表的字段、类型、键与注释信息
+     */
     private Mono<List<SqlTableSchemaVO>> getSingleTableSchema(String tableName) {
         if (!SqlTools.TABLE_WHITELIST.contains(tableName)) {
             throw new BusinessException(

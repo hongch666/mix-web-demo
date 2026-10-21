@@ -15,17 +15,38 @@ import com.hcsy.spring.entity.vo.IdCountVO;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * 负责用户关注关系实体（Focus）的响应式数据访问，含关注与粉丝的查询统计及同步抓取
+ */
 public interface FocusRepository extends ReactiveCrudRepository<Focus, Long> {
+    /**
+     * 判断用户是否已关注指定用户
+     */
     Mono<Boolean> existsByUserIdAndFocusId(Long userId, Long focusId);
 
+    /**
+     * 删除用户对指定用户的关注记录，用于取消关注
+     */
     Mono<Void> deleteByUserIdAndFocusId(Long userId, Long focusId);
 
+    /**
+     * 按关注时间倒序分页查询用户关注的人列表
+     */
     Flux<Focus> findByUserIdOrderByCreatedTimeDesc(Long userId, Pageable pageable);
 
+    /**
+     * 按关注时间倒序分页查询关注指定用户的粉丝列表
+     */
     Flux<Focus> findByFocusIdOrderByCreatedTimeDesc(Long focusId, Pageable pageable);
 
+    /**
+     * 统计用户关注他人的数量
+     */
     Mono<Long> countByUserId(Long userId);
 
+    /**
+     * 统计指定用户的被关注（粉丝）数量
+     */
     Mono<Long> countByFocusId(Long focusId);
 
     /**
@@ -39,6 +60,9 @@ public interface FocusRepository extends ReactiveCrudRepository<Focus, Long> {
         """)
     Flux<IdCountVO> countGroupByFocusIdIn(@Param("ids") Collection<Long> userIds);
 
+    /**
+     * 统计指定用户在时间段内新增的粉丝数量
+     */
     @Query("""
         SELECT COUNT(*) FROM focus
         WHERE focus_id = :userId AND created_time >= :startDate AND created_time <= :endDate
@@ -48,6 +72,9 @@ public interface FocusRepository extends ReactiveCrudRepository<Focus, Long> {
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate);
 
+    /**
+     * 按天分组统计用户在时间段内关注他人的数量并按日期升序返回
+     */
     @Query("""
         SELECT DATE(created_time) AS date, COUNT(*) AS count
         FROM focus
@@ -60,6 +87,9 @@ public interface FocusRepository extends ReactiveCrudRepository<Focus, Long> {
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate);
 
+    /**
+     * 统计用户累计关注他人的总数
+     */
     @Query("SELECT COUNT(*) FROM focus WHERE user_id = :userId")
     Mono<Long> countTotalFollowsByUserId(@Param("userId") Long userId);
 

@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * AI 生成的评论响应，包含评论内容、星级评分、AI 类型与头像地址
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

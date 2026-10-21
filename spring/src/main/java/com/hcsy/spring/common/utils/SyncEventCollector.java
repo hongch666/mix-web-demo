@@ -14,6 +14,9 @@ import com.hcsy.spring.entity.event.ChangeEvent;
  */
 public final class SyncEventCollector {
 
+    /**
+     * 私有构造器，防止静态工具类被实例化
+     */
     private SyncEventCollector() {
     }
 
@@ -30,6 +33,9 @@ public final class SyncEventCollector {
         return ChangeEvent.of(resource, changeType, ids, "");
     }
 
+    /**
+     * 按变更类型优先从业务返回值与切点入参中解析受影响主键
+     */
     public static List<Long> resolveIds(SyncChangeType changeType, Object primaryParam, Object result) {
         if (changeType == SyncChangeType.INSERT) {
             List<Long> fromResult = readIdsFromResult(result);
@@ -100,11 +106,17 @@ public final class SyncEventCollector {
         }
     }
 
+    /**
+     * 反射读取对象属性并转为 Long
+     */
     public static Long readLong(Object target, String property) {
         Object value = readProperty(target, property);
         return value instanceof Number number ? number.longValue() : null;
     }
 
+    /**
+     * 反射读取对象属性并转为字符串
+     */
     public static String readString(Object target, String property) {
         Object value = readProperty(target, property);
         return value instanceof String text ? text : null;
@@ -126,6 +138,9 @@ public final class SyncEventCollector {
         return null;
     }
 
+    /**
+     * 安全地将字符串解析为 Long，失败时返回 null
+     */
     private static Long parseLongSafely(String value) {
         try {
             return Long.valueOf(value);

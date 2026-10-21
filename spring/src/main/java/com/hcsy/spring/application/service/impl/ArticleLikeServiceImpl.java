@@ -27,6 +27,9 @@ import com.hcsy.spring.infra.repository.ArticleLikeRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * ArticleLikeService 的实现，在事务中完成文章点赞的查重写入与取消删除，并组装点赞分页视图与各类点赞统计数据
+ */
 @Service
 @RequiredArgsConstructor
 public class ArticleLikeServiceImpl implements ArticleLikeService {
@@ -36,6 +39,9 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
     private final TransactionalOperator transactionalOperator;
     private final ArticleService articleService;
 
+    /**
+     * 实现点赞文章，在事务中查重后写入点赞记录，已存在返回 false
+     */
     @Override
     public Mono<Boolean> addLike(Long articleId, Long userId) {
         Mono<Boolean> operation = articleLikeRepository.existsByArticleIdAndUserId(articleId, userId)
@@ -52,6 +58,9 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
         return transactionalOperator.transactional(operation);
     }
 
+    /**
+     * 实现取消点赞，在事务中确认存在后删除，未点赞返回 false
+     */
     @Override
     public Mono<Boolean> removeLike(Long articleId, Long userId) {
         return transactionalOperator.transactional(
@@ -61,11 +70,17 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
                     : Mono.just(false)));
     }
 
+    /**
+     * 实现查询用户是否已点赞指定文章
+     */
     @Override
     public Mono<Boolean> isLiked(Long articleId, Long userId) {
         return articleLikeRepository.existsByArticleIdAndUserId(articleId, userId);
     }
 
+    /**
+     * 实现分页查询用户点赞列表，组装点赞视图与总数
+     */
     @Override
     public Mono<PageDTO<ArticleLikeVO>> listUserLikes(Long userId, long page, long size) {
         Mono<List<ArticleLikeVO>> records = articleLikeRepository
@@ -76,11 +91,17 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
             .map(result -> page(page, size, result.getT2(), result.getT1()));
     }
 
+    /**
+     * 实现统计指定文章的点赞总数
+     */
     @Override
     public Mono<Long> getLikeCountByArticleId(Long articleId) {
         return articleLikeRepository.countByArticleId(articleId);
     }
 
+    /**
+     * 实现按文章ID分组批量统计点赞数
+     */
     @Override
     public Mono<BatchCountVO> getLikeCountsByArticleIds(Collection<Long> articleIds) {
         if (articleIds == null || articleIds.isEmpty()) {
@@ -92,10 +113,16 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
             .map(BatchCountVO::new);
     }
 
+    /**
+     * 构造分页请求，页码从1起始转0起始并限制每页最大1000条
+     */
     private PageRequest pageRequest(long page, long size) {
         return PageRequest.of((int) Math.max(0, page - 1), (int) Math.max(1, Math.min(size, 1000)));
     }
 
+    /**
+     * 组装点赞分页结果的当前页、页大小、总数与记录
+     */
     private PageDTO<ArticleLikeVO> page(long current, long size, long total, List<ArticleLikeVO> records) {
         PageDTO<ArticleLikeVO> result = new PageDTO<>();
         result.setCurrent(current);
@@ -112,6 +139,9 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
         return articleLikeRepository.count();
     }
 
+    /**
+     * 实现计算每篇文章的平均点赞数，结果保留两位小数
+     */
     @Override
     public Mono<Double> getAverageLikes() {
         return Mono.zip(articleService.getTotalArticles(), getTotalLikes())
@@ -125,6 +155,9 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
             });
     }
 
+    /**
+     * 实现统计用户本月每日点赞趋势与总数
+     */
     @Override
     public Mono<MapDataVO> getMonthlyLikeTrend(Long userId) {
         LocalDate today = LocalDate.now();
@@ -155,6 +188,9 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
             });
     }
 
+    /**
+     * 实现查询点赞关系数据用于Neo4j同步，全量时仅取最近限定条数
+     */
     @Override
     public Mono<List<ArticleRelationSyncVO>> getNeo4jSyncLikes(String updatedAfter) {
         // 点赞表数据量可达百万级，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时

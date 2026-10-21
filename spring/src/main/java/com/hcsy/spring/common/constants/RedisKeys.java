@@ -5,6 +5,9 @@ package com.hcsy.spring.common.constants;
  * 所有 Redis key 的前缀、完整 key 生成方法，以及用于批量扫描的 pattern 都集中在此，避免 key 前缀在多处硬编码导致漂移 / 失配
  */
 public final class RedisKeys {
+    /**
+     * 统一管理 Redis key 前缀、完整 key 生成方法与批量扫描 pattern
+     */
     private RedisKeys() {
     }
 
@@ -36,6 +39,9 @@ public final class RedisKeys {
         return USER_ROLE_PREFIX + userId;
     }
 
+    /**
+     * 返回用户角色本地缓存名称
+     */
     public static String userRoleCacheName() {
         return USER_ROLE_CACHE_NAME;
     }
@@ -48,6 +54,9 @@ public final class RedisKeys {
         return CATEGORY_CACHE_INVALIDATION_CHANNEL;
     }
 
+    /**
+     * 返回用户本地缓存失效通知的 Redis 频道名
+     */
     public static String userCacheInvalidationChannel() {
         return USER_CACHE_INVALIDATION_CHANNEL;
     }
@@ -61,10 +70,16 @@ public final class RedisKeys {
         return ALL_USERS_CACHE_NAME;
     }
 
+    /**
+     * 返回分类详情本地缓存名称
+     */
     public static String categoryByIdCacheName() {
         return CATEGORY_BY_ID_CACHE_NAME;
     }
 
+    /**
+     * 返回分类分页本地缓存名称
+     */
     public static String categoryPageCacheName() {
         return CATEGORY_PAGE_CACHE_NAME;
     }
@@ -82,6 +97,9 @@ public final class RedisKeys {
         return CATEGORY_PREFIX + "*";
     }
 
+    /**
+     * 生成分类分页结果缓存的 Redis key
+     */
     public static String categoryPage(long page, long size) {
         return CATEGORY_PREFIX + "page:p_%d_s_%d".formatted(page, size);
     }
@@ -96,6 +114,9 @@ public final class RedisKeys {
         return USER_SESSION_PREFIX + userId + ":" + sessionId;
     }
 
+    /**
+     * 生成用户全部登录会话反向索引的 Redis key
+     */
     public static String userSessions(Long userId) {
         return USER_SESSIONS_PREFIX + userId;
     }
@@ -105,10 +126,16 @@ public final class RedisKeys {
         return USER_SESSIONS_PREFIX + "*";
     }
 
+    /**
+     * 生成访问令牌到会话反向索引的 Redis key
+     */
     public static String userAccess(String accessToken) {
         return USER_ACCESS_PREFIX + accessToken;
     }
 
+    /**
+     * 生成刷新令牌到会话反向索引的 Redis key
+     */
     public static String userRefresh(String refreshToken) {
         return USER_REFRESH_PREFIX + refreshToken;
     }
@@ -121,6 +148,9 @@ public final class RedisKeys {
         return EMAIL_VERIFY_PREFIX + email;
     }
 
+    /**
+     * 生成邮箱已验证标记的 Redis key
+     */
     public static String emailVerified(String email) {
         return EMAIL_VERIFIED_PREFIX + email;
     }
@@ -140,6 +170,9 @@ public final class RedisKeys {
         return LOCK_TASK_TOKEN_CLEANUP;
     }
 
+    /**
+     * 生成刷新令牌换发分布式锁的 Redis key
+     */
     public static String lockTokenRefresh(String refreshToken) {
         return LOCK_TOKEN_REFRESH_PREFIX + refreshToken;
     }

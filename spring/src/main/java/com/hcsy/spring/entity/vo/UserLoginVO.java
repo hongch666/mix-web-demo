@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 登录成功响应，返回访问与刷新令牌、有效期、用户信息及会话与在线设备数
+ */
 @Data
 @Builder
 @NoArgsConstructor

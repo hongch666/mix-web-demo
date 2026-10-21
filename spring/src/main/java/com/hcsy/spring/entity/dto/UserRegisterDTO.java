@@ -10,6 +10,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * 用户注册请求，携带用户名、密码、邮箱、年龄等资料及邮箱验证码
+ */
 @Data
 @Schema(description = "用户注册请求")
 public class UserRegisterDTO {

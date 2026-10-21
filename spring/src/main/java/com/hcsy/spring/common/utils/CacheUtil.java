@@ -41,6 +41,9 @@ public class CacheUtil {
     private final Map<String, Set<String>> cacheNamesByChannel = new ConcurrentHashMap<>();
     private final Map<String, Disposable> subscriptions = new ConcurrentHashMap<>();
 
+    /**
+     * 按缓存选项先查本地缓存再回源 Redis 或加载器（Class 类型）
+     */
     public <K, V> Mono<V> get(
         CacheOptions<V> options,
         K localKey,
@@ -51,6 +54,9 @@ public class CacheUtil {
             () -> loadFromRedisOrSource(redisKey, valueType, loader, options.l2TtlSeconds()));
     }
 
+    /**
+     * 按缓存选项先查本地缓存再回源 Redis 或加载器（TypeReference 复杂类型）
+     */
     public <K, V> Mono<V> get(
         CacheOptions<V> options,
         K localKey,
@@ -61,6 +67,9 @@ public class CacheUtil {
             () -> loadFromRedisOrSource(redisKey, valueType, loader, options.l2TtlSeconds()));
     }
 
+    /**
+     * 删除指定 Redis key 并失效本地缓存、广播失效通知
+     */
     public Mono<Void> evict(String redisKey, CacheOptions<?>... options) {
         return evictLocal(options)
             .then(redisUtil.delete(redisKey))
@@ -71,6 +80,9 @@ public class CacheUtil {
             .then(publishInvalidation(options));
     }
 
+    /**
+     * 按 pattern 批量删除 Redis key 并失效本地缓存、广播失效通知
+     */
     public Mono<Void> evictAll(String redisPattern, CacheOptions<?>... options) {
         return evictLocal(options)
             .then(redisUtil.getKeys(redisPattern).collectList())
@@ -82,12 +94,18 @@ public class CacheUtil {
             .then(publishInvalidation(options));
     }
 
+    /**
+     * 容器销毁时释放所有缓存失效订阅
+     */
     @PreDestroy
     void dispose() {
         subscriptions.values().forEach(Disposable::dispose);
         subscriptions.clear();
     }
 
+    /**
+     * 从 Caffeine 本地缓存读取，未命中时执行加载器回源
+     */
     private <K, V> Mono<V> getFromLocal(
         CacheOptions<V> options,
         K localKey,
@@ -99,6 +117,9 @@ public class CacheUtil {
             (ignoredKey, executor) -> loader.get().toFuture())).map(value -> cast(value)));
     }
 
+    /**
+     * 按缓存选项创建带容量上限与 L1 过期时间的 Caffeine 异步缓存
+     */
     private AsyncCache<Object, Object> createLocalCache(CacheOptions<?> options) {
         return Caffeine.newBuilder()
             .maximumSize(options.maximumSize())
@@ -107,12 +128,18 @@ public class CacheUtil {
             .buildAsync();
     }
 
+    /**
+     * 登记缓存名称与失效频道的映射并确保频道已订阅
+     */
     private void register(CacheOptions<?> options) {
         cacheNamesByChannel.computeIfAbsent(options.invalidationChannel(), ignored -> ConcurrentHashMap.newKeySet())
             .add(options.name());
         subscriptions.computeIfAbsent(options.invalidationChannel(), this::subscribe);
     }
 
+    /**
+     * 订阅失效频道，收到消息后清空该频道关联的本地缓存
+     */
     private Disposable subscribe(String channel) {
         return listenerContainer.receive(ChannelTopic.of(channel))
             .concatMap(ignoredMessage -> evictLocalByChannel(channel)
@@ -127,6 +154,9 @@ public class CacheUtil {
                     channel, error.getMessage(), error));
     }
 
+    /**
+     * 清空指定缓存选项对应的本地缓存
+     */
     private Mono<Void> evictLocal(CacheOptions<?>... options) {
         return Mono.fromRunnable(() -> {
             for (CacheOptions<?> option : options) {
@@ -140,6 +170,9 @@ public class CacheUtil {
             .then();
     }
 
+    /**
+     * 按失效频道清空关联的全部本地缓存
+     */
     private Mono<Void> evictLocalByChannel(String channel) {
         return Mono.fromRunnable(() -> {
             cacheNamesByChannel.getOrDefault(channel, Set.of()).forEach(cacheName -> {
@@ -153,6 +186,9 @@ public class CacheUtil {
             .then();
     }
 
+    /**
+     * 向各缓存选项的失效频道发布本地缓存失效通知
+     */
     private Mono<Void> publishInvalidation(CacheOptions<?>... options) {
         return Flux.fromArray(options)
             .map(CacheOptions::invalidationChannel)
@@ -161,6 +197,9 @@ public class CacheUtil {
             .then();
     }
 
+    /**
+     * 向指定 Redis 频道发布缓存失效消息
+     */
     private Mono<Void> publish(String channel) {
         return redisUtil.publish(channel, INVALIDATION_MESSAGE)
             .onErrorResume(error -> {
@@ -170,6 +209,9 @@ public class CacheUtil {
             .then();
     }
 
+    /**
+     * 从 Redis 读取缓存值，未命中时执行加载器并写回（Class 类型）
+     */
     private <V> Mono<V> loadFromRedisOrSource(
         String redisKey,
         Class<V> valueType,
@@ -183,6 +225,9 @@ public class CacheUtil {
                     .thenReturn(value))));
     }
 
+    /**
+     * 从 Redis 读取缓存值，未命中时执行加载器并写回（TypeReference 类型）
+     */
     private <V> Mono<V> loadFromRedisOrSource(
         String redisKey,
         TypeReference<V> valueType,
@@ -196,26 +241,41 @@ public class CacheUtil {
                     .thenReturn(value))));
     }
 
+    /**
+     * 反序列化 Redis 缓存值，失败时清除无效缓存（Class 类型）
+     */
     private <V> Mono<V> deserialize(String json, Class<V> valueType, String redisKey) {
         return Mono.fromCallable(() -> objectMapper.readValue(json, valueType))
             .onErrorResume(error -> clearInvalidRedisValue(redisKey, error));
     }
 
+    /**
+     * 反序列化 Redis 缓存值，失败时清除无效缓存（TypeReference 类型）
+     */
     private <V> Mono<V> deserialize(String json, TypeReference<V> valueType, String redisKey) {
         return Mono.fromCallable(() -> objectMapper.readValue(json, valueType))
             .onErrorResume(error -> clearInvalidRedisValue(redisKey, error));
     }
 
+    /**
+     * 记录反序列化失败日志并删除无效的 Redis 缓存
+     */
     private <V> Mono<V> clearInvalidRedisValue(String redisKey, Throwable error) {
         logger.error(Messages.CACHE_DESERIALIZE_FAILED, redisKey, error.getMessage(), error);
         return redisUtil.delete(redisKey).then(Mono.empty());
     }
 
+    /**
+     * Redis 缓存读取失败时记录日志并降级为直接回源加载
+     */
     private <V> Mono<V> cacheReadFallback(String redisKey, Throwable error) {
         logger.error(Messages.CACHE_READ_FAILED, redisKey, error.getMessage(), error);
         return Mono.empty();
     }
 
+    /**
+     * 将值序列化后写入 Redis 二级缓存，失败时仅记录日志不中断业务
+     */
     private Mono<Void> writeToRedis(String redisKey, Object value, long ttlSeconds) {
         return Mono.fromCallable(() -> objectMapper.writeValueAsString(value))
             .flatMap(json -> redisUtil.set(redisKey, json, ttlSeconds))
@@ -226,10 +286,16 @@ public class CacheUtil {
             .then();
     }
 
+    /**
+     * 将本地缓存取出的对象强转为目标泛型类型
+     */
     private <V> V cast(Object value) {
         return (V) value;
     }
 
+    /**
+     * 多级缓存选项，定义缓存名称、失效频道、容量上限与 L1/L2 TTL
+     */
     public record CacheOptions<V>(
         String name,
         String invalidationChannel,

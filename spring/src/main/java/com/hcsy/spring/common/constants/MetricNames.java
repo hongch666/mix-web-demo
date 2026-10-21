@@ -1,7 +1,13 @@
 package com.hcsy.spring.common.constants;
 
+/**
+ * 聚合 Micrometer 监控指标名称常量
+ */
 public final class MetricNames {
 
+    /**
+     * 聚合 Micrometer 监控指标名称常量
+     */
     private MetricNames() {
     }
 

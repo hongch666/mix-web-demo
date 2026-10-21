@@ -28,6 +28,9 @@ import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 将文章收藏与点赞记录组装为携带文章、作者及分类信息的收藏 VO 和点赞 VO
+ */
 @Component
 @RequiredArgsConstructor
 public class ArticleInteractionAssembler {
@@ -37,6 +40,9 @@ public class ArticleInteractionAssembler {
     private final SubCategoryRepository subCategoryRepository;
     private final CategoryRepository categoryRepository;
 
+    /**
+     * 将收藏记录列表转换为携带文章、作者与分类信息的收藏 VO 列表
+     */
     public Mono<List<ArticleCollectVO>> toCollectVOs(List<ArticleCollect> interactions) {
         return loadRelations(interactions.stream().map(ArticleCollect::getArticleId).collect(Collectors.toSet()))
             .map(relations -> interactions.stream()
@@ -44,6 +50,9 @@ public class ArticleInteractionAssembler {
                 .toList());
     }
 
+    /**
+     * 将点赞记录列表转换为携带文章、作者与分类信息的点赞 VO 列表
+     */
     public Mono<List<ArticleLikeVO>> toLikeVOs(List<ArticleLike> interactions) {
         return loadRelations(interactions.stream().map(ArticleLike::getArticleId).collect(Collectors.toSet()))
             .map(relations -> interactions.stream()
@@ -51,6 +60,9 @@ public class ArticleInteractionAssembler {
                 .toList());
     }
 
+    /**
+     * 按文章 ID 批量加载文章、作者、子分类与分类关联数据，供收藏和点赞 VO 组装复用
+     */
     private Mono<Relations> loadRelations(Set<Long> articleIds) {
         return articleRepository.findAllById(articleIds)
             .collectMap(Article::getId, Function.identity())
@@ -73,6 +85,9 @@ public class ArticleInteractionAssembler {
             });
     }
 
+    /**
+     * 将单条收藏记录与文章关联数据组装为收藏 VO，包含作者名、分类名与收藏时间
+     */
     private ArticleCollectVO toCollectVO(ArticleCollect interaction, Relations relations) {
         Article article = requireArticle(interaction.getArticleId(), relations);
         ArticleCollectVO vo = BeanUtil.copyProperties(article, ArticleCollectVO.class);
@@ -85,6 +100,9 @@ public class ArticleInteractionAssembler {
         return vo;
     }
 
+    /**
+     * 将单条点赞记录与文章关联数据组装为点赞 VO，包含作者名、分类名与点赞时间
+     */
     private ArticleLikeVO toLikeVO(ArticleLike interaction, Relations relations) {
         Article article = requireArticle(interaction.getArticleId(), relations);
         ArticleLikeVO vo = BeanUtil.copyProperties(article, ArticleLikeVO.class);
@@ -97,6 +115,9 @@ public class ArticleInteractionAssembler {
         return vo;
     }
 
+    /**
+     * 向收藏或点赞 VO 填充文章作者名、子分类名与分类名，关联数据缺失时抛出资源不存在异常
+     */
     private void fillArticleRelations(Article article, Object vo, Relations relations) {
         User author = relations.users().get(article.getUserId());
         if (author == null) {
@@ -123,6 +144,9 @@ public class ArticleInteractionAssembler {
         }
     }
 
+    /**
+     * 从关联数据中获取指定文章，不存在时抛出 404 业务异常
+     */
     private Article requireArticle(Long articleId, Relations relations) {
         Article article = relations.articles().get(articleId);
         if (article == null) {
@@ -131,10 +155,16 @@ public class ArticleInteractionAssembler {
         return article;
     }
 
+    /**
+     * 构造资源不存在的 404 业务异常
+     */
     private BusinessException notFound(String message) {
         return BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(message).build();
     }
 
+    /**
+     * 组装收藏和点赞 VO 所需的文章、用户、子分类与分类关联数据集合
+     */
     private record Relations(
         Map<Long, Article> articles,
         Map<Long, User> users,

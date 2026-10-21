@@ -26,6 +26,9 @@ import reactor.core.publisher.Mono;
 @Component
 public class SnakeCaseParameterWebFilter implements WebFilter {
 
+    /**
+     * WebFilter入口，为query与form参数中的下划线命名补充驼峰别名后放行请求，使控制器可按驼峰字段接收
+     */
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
@@ -153,6 +156,9 @@ public class SnakeCaseParameterWebFilter implements WebFilter {
         return merged;
     }
 
+    /**
+     * 判断参数集合中是否存在含下划线的参数名，用于跳过无需转换的请求
+     */
     private static boolean containsUnderscore(MultiValueMap<String, String> params) {
         for (String key : params.keySet()) {
             if (key.contains("_")) {
@@ -162,6 +168,9 @@ public class SnakeCaseParameterWebFilter implements WebFilter {
         return false;
     }
 
+    /**
+     * 将下划线命名的参数名转换为驼峰命名
+     */
     private static String toCamelCase(String value) {
         StringBuilder builder = new StringBuilder(value.length());
         boolean upperNext = false;

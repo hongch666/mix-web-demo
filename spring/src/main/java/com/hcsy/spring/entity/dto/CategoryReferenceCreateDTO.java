@@ -7,6 +7,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * 为子分类创建权威参考文本的请求，携带参考类型及对应的官网链接或 PDF 链接
+ */
 @Data
 @Schema(description = "创建权威参考文本请求")
 public class CategoryReferenceCreateDTO {

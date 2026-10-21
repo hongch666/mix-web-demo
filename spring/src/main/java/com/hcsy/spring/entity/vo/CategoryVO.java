@@ -8,6 +8,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 父分类响应，包含分类名称、创建与更新时间及其下的子分类列表
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

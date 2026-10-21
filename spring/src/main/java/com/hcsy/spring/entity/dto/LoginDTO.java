@@ -7,6 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 用户名密码登录请求，携带用户名、密码及图形验证码信息
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

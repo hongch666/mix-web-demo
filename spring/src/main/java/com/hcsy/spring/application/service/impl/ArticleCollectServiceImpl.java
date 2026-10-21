@@ -27,6 +27,9 @@ import com.hcsy.spring.infra.repository.ArticleCollectRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * ArticleCollectService 的实现，在事务中完成文章收藏的查重写入与取消删除，并组装收藏分页视图与各类收藏统计数据
+ */
 @Service
 @RequiredArgsConstructor
 public class ArticleCollectServiceImpl implements ArticleCollectService {
@@ -36,6 +39,9 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     private final TransactionalOperator transactionalOperator;
     private final ArticleService articleService;
 
+    /**
+     * 实现收藏文章，在事务中查重后写入收藏记录，已存在返回 false
+     */
     @Override
     public Mono<Boolean> addCollect(Long articleId, Long userId) {
         Mono<Boolean> operation = articleCollectRepository.existsByArticleIdAndUserId(articleId, userId)
@@ -52,6 +58,9 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
         return transactionalOperator.transactional(operation);
     }
 
+    /**
+     * 实现取消收藏，在事务中确认存在后删除，未收藏返回 false
+     */
     @Override
     public Mono<Boolean> removeCollect(Long articleId, Long userId) {
         return transactionalOperator.transactional(
@@ -62,11 +71,17 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
                     : Mono.just(false)));
     }
 
+    /**
+     * 实现查询用户是否已收藏指定文章
+     */
     @Override
     public Mono<Boolean> isCollected(Long articleId, Long userId) {
         return articleCollectRepository.existsByArticleIdAndUserId(articleId, userId);
     }
 
+    /**
+     * 实现分页查询用户收藏列表，组装收藏视图与总数
+     */
     @Override
     public Mono<PageDTO<ArticleCollectVO>> listUserCollects(Long userId, long page, long size) {
         Mono<List<ArticleCollectVO>> records = articleCollectRepository
@@ -77,11 +92,17 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
             .map(result -> page(page, size, result.getT2(), result.getT1()));
     }
 
+    /**
+     * 实现统计指定文章的收藏总数
+     */
     @Override
     public Mono<Long> getCollectCountByArticleId(Long articleId) {
         return articleCollectRepository.countByArticleId(articleId);
     }
 
+    /**
+     * 实现按文章ID分组批量统计收藏数
+     */
     @Override
     public Mono<BatchCountVO> getCollectCountsByArticleIds(Collection<Long> articleIds) {
         if (articleIds == null || articleIds.isEmpty()) {
@@ -93,10 +114,16 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
             .map(BatchCountVO::new);
     }
 
+    /**
+     * 构造分页请求，页码从1起始转0起始并限制每页最大1000条
+     */
     private PageRequest pageRequest(long page, long size) {
         return PageRequest.of((int) Math.max(0, page - 1), (int) Math.max(1, Math.min(size, 1000)));
     }
 
+    /**
+     * 组装收藏分页结果的当前页、页大小、总数与记录
+     */
     private PageDTO<ArticleCollectVO> page(long current, long size, long total, List<ArticleCollectVO> records) {
         PageDTO<ArticleCollectVO> result = new PageDTO<>();
         result.setCurrent(current);
@@ -113,6 +140,9 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
         return articleCollectRepository.count();
     }
 
+    /**
+     * 实现计算每篇文章的平均收藏数，结果保留两位小数
+     */
     @Override
     public Mono<Double> getAverageCollects() {
         return Mono.zip(articleService.getTotalArticles(), getTotalCollects())
@@ -126,6 +156,9 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
             });
     }
 
+    /**
+     * 实现统计用户本月每日收藏趋势与总数
+     */
     @Override
     public Mono<MapDataVO> getMonthlyCollectTrend(Long userId) {
         LocalDate today = LocalDate.now();
@@ -156,6 +189,9 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
             });
     }
 
+    /**
+     * 实现查询收藏关系数据用于Neo4j同步，全量时仅取最近限定条数
+     */
     @Override
     public Mono<List<ArticleRelationSyncVO>> getNeo4jSyncCollects(String updatedAfter) {
         // 收藏表数据量可达百万级，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时

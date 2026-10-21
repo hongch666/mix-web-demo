@@ -51,6 +51,9 @@ public class PermissionCheckerImpl implements PermissionChecker {
             .defaultIfEmpty(false);
     }
 
+    /**
+     * 实现判断当前用户是否为指定用户、文章或评论的属主
+     */
     @Override
     public Mono<Boolean> isOwner(Long currentUserId, Long targetId, BusinessType businessType) {
         if (currentUserId == null || targetId == null || businessType == null) {
@@ -68,6 +71,9 @@ public class PermissionCheckerImpl implements PermissionChecker {
         };
     }
 
+    /**
+     * 实现解析一批资源的共同属主，归属不一致或缺失时抛业务异常
+     */
     @Override
     public Mono<Long> resolveSharedOwner(List<Long> resourceIds, BusinessType businessType) {
         if (resourceIds == null || resourceIds.isEmpty() || businessType == null) {
@@ -97,6 +103,9 @@ public class PermissionCheckerImpl implements PermissionChecker {
         });
     }
 
+    /**
+     * 实现按用户名解析用户ID
+     */
     @Override
     public Mono<Long> resolveUserIdByUsername(String username) {
         return userService.findByUsername(username).map(User::getId);
@@ -111,6 +120,9 @@ public class PermissionCheckerImpl implements PermissionChecker {
             () -> userService.getById(userId).map(User::getRole).defaultIfEmpty(""));
     }
 
+    /**
+     * 构造404资源不存在的业务异常
+     */
     private BusinessException notFound(String message) {
         return BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(message).build();
     }

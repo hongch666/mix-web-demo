@@ -25,6 +25,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 权威参考文本控制器，聚合 /category/reference 下参考资料的创建、修改、删除与查询接口
+ */
 @RestController
 @RequestMapping("/category/reference")
 @RequiredArgsConstructor
@@ -33,6 +36,9 @@ public class CategoryReferenceController {
 
     private final CategoryReferenceService categoryReferenceService;
 
+    /**
+     * POST /category/reference 接口，管理员在指定子分类下创建权威参考文本内容
+     */
     @Operation(summary = "创建权威参考文本", description = "管理员在指定子分类下创建权威参考文本内容")
     @PostMapping()
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.CATEGORY_REFERENCE,
@@ -43,6 +49,9 @@ public class CategoryReferenceController {
         return categoryReferenceService.addCategoryReference(dto).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * PUT /category/reference 接口，管理员修改指定子分类下的权威参考文本内容
+     */
     @Operation(summary = "修改权威参考文本", description = "管理员修改指定子分类下的权威参考文本内容")
     @PutMapping()
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.CATEGORY_REFERENCE,
@@ -53,6 +62,9 @@ public class CategoryReferenceController {
         return categoryReferenceService.updateCategoryReference(dto).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * DELETE /category/reference/sub/{sub_category_id} 接口，管理员删除指定子分类下的权威参考文本
+     */
     @Operation(summary = "删除权威参考文本", description = "管理员删除指定子分类下的权威参考文本")
     @DeleteMapping("/sub/{sub_category_id}")
     @RequirePermission(roles = {
@@ -63,6 +75,9 @@ public class CategoryReferenceController {
         return categoryReferenceService.deleteCategoryReference(subCategoryId).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * GET /category/reference/sub/{sub_category_id} 接口，按子分类ID返回其权威参考文本，不存在时返回空数据
+     */
     @Operation(summary = "根据子分类ID获取权威参考文本", description = "根据子分类ID查询其关联的权威参考文本，不存在时返回空数据")
     @GetMapping("/sub/{sub_category_id}")
     @ApiLog("查询权威参考文本")

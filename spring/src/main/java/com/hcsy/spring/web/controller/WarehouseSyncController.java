@@ -19,6 +19,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 数仓同步控制器，提供 /warehouse/sync/{resource} 内部接口供 FastAPI 数仓任务增量分页同步业务数据
+ */
 @RestController
 @RequestMapping("/warehouse")
 @RequiredArgsConstructor
@@ -27,6 +30,9 @@ public class WarehouseSyncController {
 
     private final WarehouseSyncService warehouseSyncService;
 
+    /**
+     * GET /warehouse/sync/{resource} 内部接口，按资源名与更新时间增量分页返回业务表数据，供 FastAPI 数仓任务同步
+     */
     @GetMapping("/sync/{resource}")
     @RequireInternalToken
     @Operation(summary = "分页获取数仓源数据", description = "供 FastAPI 数仓任务通过内部接口分页同步 Spring 业务数据")

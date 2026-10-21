@@ -35,6 +35,9 @@ public class SqlToolsController {
 
     private final SqlToolsService sqlToolsService;
 
+    /**
+     * GET /sql-tools/tables 内部接口，返回白名单内MySQL表的结构信息，可通过 table 参数限定单个表
+     */
     @GetMapping("/tables")
     @Operation(summary = "获取表结构信息（内部）", description = "获取白名单内MySQL表的结构信息，供FastAPI Agent远程调用")
     @RequireInternalToken
@@ -44,6 +47,9 @@ public class SqlToolsController {
         return sqlToolsService.getTables(table).map(Result::success);
     }
 
+    /**
+     * POST /sql-tools/query 内部接口，执行经过校验与白名单限制的只读参数化SQL查询并返回结果集
+     */
     @PostMapping("/query")
     @Operation(summary = "执行只读SQL查询（内部）", description = "执行受限的只读参数化SQL查询，供FastAPI Agent远程调用")
     @RequireInternalToken

@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+/**
+ * 创建子分类请求，携带子分类名称与所属父分类ID
+ */
 @Data
 @Schema(description = "创建子分类请求")
 public class SubCategoryCreateDTO {

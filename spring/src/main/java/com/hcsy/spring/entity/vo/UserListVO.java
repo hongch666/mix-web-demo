@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 用户分页列表响应，包含总记录数与用户 VO 列表
+ */
 @Data
 @Builder
 @NoArgsConstructor

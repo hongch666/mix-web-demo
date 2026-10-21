@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 子分类权威参考文本响应，包含参考类型及对应的官网链接或 PDF 链接
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

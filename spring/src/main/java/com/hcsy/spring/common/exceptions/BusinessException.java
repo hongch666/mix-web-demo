@@ -11,18 +11,27 @@ public class BusinessException extends RuntimeException {
     private String errorCode;
     private String errorMessage;
 
+    /**
+     * 以错误信息构造业务异常，HTTP 状态默认为 500
+     */
     public BusinessException(String errorMessage) {
         super(errorMessage);
         this.httpStatus = HttpCode.INTERNAL_SERVER_ERROR;
         this.errorMessage = errorMessage;
     }
 
+    /**
+     * 以 HTTP 状态码与错误信息构造业务异常
+     */
     public BusinessException(int httpStatus, String errorMessage) {
         super(errorMessage);
         this.httpStatus = httpStatus;
         this.errorMessage = errorMessage;
     }
 
+    /**
+     * 以错误码与错误信息构造业务异常，HTTP 状态默认为 500
+     */
     public BusinessException(String errorCode, String errorMessage) {
         super(errorMessage);
         this.httpStatus = HttpCode.INTERNAL_SERVER_ERROR;
@@ -30,6 +39,9 @@ public class BusinessException extends RuntimeException {
         this.errorMessage = errorMessage;
     }
 
+    /**
+     * 以 HTTP 状态码、错误码与错误信息构造业务异常
+     */
     public BusinessException(int httpStatus, String errorCode, String errorMessage) {
         super(errorMessage);
         this.httpStatus = httpStatus;
@@ -37,18 +49,27 @@ public class BusinessException extends RuntimeException {
         this.errorMessage = errorMessage;
     }
 
+    /**
+     * 以错误信息与底层原因构造业务异常，HTTP 状态默认为 500
+     */
     public BusinessException(String errorMessage, Throwable cause) {
         super(errorMessage, cause);
         this.httpStatus = HttpCode.INTERNAL_SERVER_ERROR;
         this.errorMessage = errorMessage;
     }
 
+    /**
+     * 以 HTTP 状态码、错误信息与底层原因构造业务异常
+     */
     public BusinessException(int httpStatus, String errorMessage, Throwable cause) {
         super(errorMessage, cause);
         this.httpStatus = httpStatus;
         this.errorMessage = errorMessage;
     }
 
+    /**
+     * 以错误码、错误信息与底层原因构造业务异常，HTTP 状态默认为 500
+     */
     public BusinessException(String errorCode, String errorMessage, Throwable cause) {
         super(errorMessage, cause);
         this.httpStatus = HttpCode.INTERNAL_SERVER_ERROR;
@@ -56,6 +77,9 @@ public class BusinessException extends RuntimeException {
         this.errorMessage = errorMessage;
     }
 
+    /**
+     * 以 HTTP 状态码、错误码、错误信息与底层原因构造业务异常
+     */
     public BusinessException(int httpStatus, String errorCode, String errorMessage, Throwable cause) {
         super(errorMessage, cause);
         this.httpStatus = httpStatus;
@@ -113,14 +137,23 @@ public class BusinessException extends RuntimeException {
         }
     }
 
+    /**
+     * 返回异常对应的 HTTP 状态码
+     */
     public int getHttpStatus() {
         return httpStatus;
     }
 
+    /**
+     * 返回业务错误码
+     */
     public String getErrorCode() {
         return errorCode;
     }
 
+    /**
+     * 返回错误信息，为空时回退到异常消息
+     */
     public String getErrorMessage() {
         return errorMessage != null ? errorMessage : getMessage();
     }

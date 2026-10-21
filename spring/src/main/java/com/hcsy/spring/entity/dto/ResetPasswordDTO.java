@@ -9,6 +9,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 通过邮箱验证码重置密码的请求，携带邮箱、验证码与新密码
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

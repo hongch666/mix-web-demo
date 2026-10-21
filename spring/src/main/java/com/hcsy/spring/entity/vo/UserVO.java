@@ -8,6 +8,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 用户信息响应，包含账号资料、GitHub 绑定信息、认证来源、登录状态与在线设备数
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

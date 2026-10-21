@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+/**
+ * 更新父分类请求，携带分类ID与新名称
+ */
 @Data
 @Schema(description = "更新分类请求")
 public class CategoryUpdateDTO {

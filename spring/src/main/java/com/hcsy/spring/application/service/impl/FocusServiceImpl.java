@@ -34,6 +34,9 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * FocusService 的实现，在事务中维护用户关注关系的查重写入与取消删除，并提供关注粉丝列表分页、计数统计与时段趋势查询
+ */
 @Service
 @RequiredArgsConstructor
 public class FocusServiceImpl implements FocusService {
@@ -42,6 +45,9 @@ public class FocusServiceImpl implements FocusService {
     private final UserRepository userRepository;
     private final TransactionalOperator transactionalOperator;
 
+    /**
+     * 实现关注用户，在事务中查重后写入关注记录，已关注返回 false
+     */
     @Override
     public Mono<Boolean> addFocus(Long userId, Long focusId) {
         Mono<Boolean> operation = focusRepository.existsByUserIdAndFocusId(userId, focusId)
@@ -58,6 +64,9 @@ public class FocusServiceImpl implements FocusService {
         return transactionalOperator.transactional(operation);
     }
 
+    /**
+     * 实现取消关注，在事务中确认存在后删除，未关注返回 false
+     */
     @Override
     public Mono<Boolean> removeFocus(Long userId, Long focusId) {
         return transactionalOperator.transactional(
@@ -67,33 +76,51 @@ public class FocusServiceImpl implements FocusService {
                     : Mono.just(false)));
     }
 
+    /**
+     * 实现查询用户是否已关注目标用户
+     */
     @Override
     public Mono<Boolean> isFocused(Long userId, Long focusId) {
         return focusRepository.existsByUserIdAndFocusId(userId, focusId);
     }
 
+    /**
+     * 实现分页查询用户关注列表并补充被关注用户信息
+     */
     @Override
     public Mono<PageDTO<FocusUserVO>> listUserFocuses(Long userId, long page, long size) {
         Flux<Focus> query = focusRepository.findByUserIdOrderByCreatedTimeDesc(userId, pageRequest(page, size));
         return buildPage(query, focusRepository.countByUserId(userId), page, size, Focus::getFocusId);
     }
 
+    /**
+     * 实现分页查询用户粉丝列表并补充粉丝用户信息
+     */
     @Override
     public Mono<PageDTO<FocusUserVO>> listUserFollowers(Long userId, long page, long size) {
         Flux<Focus> query = focusRepository.findByFocusIdOrderByCreatedTimeDesc(userId, pageRequest(page, size));
         return buildPage(query, focusRepository.countByFocusId(userId), page, size, Focus::getUserId);
     }
 
+    /**
+     * 实现统计用户的关注数
+     */
     @Override
     public Mono<Long> getFocusCountByUserId(Long userId) {
         return focusRepository.countByUserId(userId);
     }
 
+    /**
+     * 实现统计用户的粉丝数
+     */
     @Override
     public Mono<Long> getFollowerCountByUserId(Long userId) {
         return focusRepository.countByFocusId(userId);
     }
 
+    /**
+     * 实现按用户ID分组批量统计粉丝数
+     */
     @Override
     public Mono<BatchCountVO> getFollowCountsByUserIds(Collection<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
@@ -105,6 +132,9 @@ public class FocusServiceImpl implements FocusService {
             .map(BatchCountVO::new);
     }
 
+    /**
+     * 将关注记录分页结果批量补充用户信息并组装分页对象
+     */
     private Mono<PageDTO<FocusUserVO>> buildPage(
         Flux<Focus> query,
         Mono<Long> total,
@@ -127,6 +157,9 @@ public class FocusServiceImpl implements FocusService {
         });
     }
 
+    /**
+     * 将关注记录与用户信息映射为关注用户视图，用户缺失时抛404异常
+     */
     private List<FocusUserVO> toVOs(
         List<Focus> focuses,
         Map<Long, User> users,
@@ -143,6 +176,9 @@ public class FocusServiceImpl implements FocusService {
         }).toList();
     }
 
+    /**
+     * 构造分页请求，页码从1起始转0起始并限制每页最大1000条
+     */
     private PageRequest pageRequest(long page, long size) {
         return PageRequest.of((int) Math.max(0, page - 1), (int) Math.max(1, Math.min(size, 1000)));
     }
@@ -154,6 +190,9 @@ public class FocusServiceImpl implements FocusService {
         return focusRepository.countFollowersInPeriod(userId, startDate, endDate).defaultIfEmpty(0L);
     }
 
+    /**
+     * 实现统计指定时间段内用户每天新增关注数
+     */
     @Override
     public Mono<MapDataVO> getDailyFollows(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
         return focusRepository.countDailyFollowsByUserIdAndPeriod(userId, startDate, endDate)
@@ -171,11 +210,17 @@ public class FocusServiceImpl implements FocusService {
             });
     }
 
+    /**
+     * 实现统计用户的总关注数
+     */
     @Override
     public Mono<Long> getTotalFollows(Long userId) {
         return focusRepository.countTotalFollowsByUserId(userId).defaultIfEmpty(0L);
     }
 
+    /**
+     * 实现查询关注关系数据用于Neo4j同步，全量时仅取最近限定条数
+     */
     @Override
     public Mono<List<FocusSyncVO>> getNeo4jSyncFocus(String updatedAfter) {
         // 关注表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时

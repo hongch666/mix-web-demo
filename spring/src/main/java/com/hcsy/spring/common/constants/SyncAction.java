@@ -13,6 +13,9 @@ public enum SyncAction {
 
     private final String value;
 
+    /**
+     * 枚举构造器，绑定下发到消息队列与下游的字符串值
+     */
     SyncAction(String value) {
         this.value = value;
     }

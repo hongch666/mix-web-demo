@@ -9,6 +9,9 @@ import org.springframework.data.relational.core.mapping.Table;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+/**
+ * 对应 user 表的用户实体，包含账号资料、GitHub 绑定信息、认证来源、角色与登录状态
+ */
 @Data
 @Table("user")
 @Schema(description = "用户")

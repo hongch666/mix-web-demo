@@ -7,6 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 带分类的文章详情响应，在文章字段外补充作者名、子分类与父分类名称
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

@@ -15,19 +15,40 @@ import com.hcsy.spring.entity.vo.DateCountVO;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * 负责文章评论实体（Comments）的响应式数据访问，含评论查询、AI 评论清理与趋势统计
+ */
 public interface CommentsRepository extends ReactiveCrudRepository<Comments, Long> {
+    /**
+     * 按创建时间倒序分页查询指定用户发表的评论列表
+     */
     Flux<Comments> findByUserIdOrderByCreateTimeDesc(Long userId, Pageable pageable);
 
+    /**
+     * 统计指定用户发表的评论总数
+     */
     Mono<Long> countByUserId(Long userId);
 
+    /**
+     * 按创建时间倒序查询指定文章下的全部评论
+     */
     Flux<Comments> findByArticleIdOrderByCreateTimeDesc(Long articleId);
 
+    /**
+     * 统计指定文章下来自给定用户集合的评论数量，用于统计 AI 用户评论数
+     */
     Mono<Long> countByArticleIdAndUserIdIn(@Param("articleId") Long articleId, @Param("userIds") List<Long> userIds);
 
+    /**
+     * 删除指定文章下来自给定用户集合的评论，用于清理 AI 评论
+     */
     @Modifying
     Mono<Integer> deleteByArticleIdAndUserIdIn(@Param("articleId") Long articleId,
         @Param("userIds") List<Long> userIds);
 
+    /**
+     * 按天分组统计用户在指定时间段内的评论数量并按日期升序返回，用于评论月度趋势统计
+     */
     @Query("""
         SELECT DATE(create_time) AS date, COUNT(*) AS count
         FROM comments

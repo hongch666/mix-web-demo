@@ -21,6 +21,9 @@ public class WarehouseSyncRepository {
 
     private final R2dbcEntityTemplate entityTemplate;
 
+    /**
+     * 按水位线字段倒序查询单个实体最近的一条记录，用于获取数仓同步水位线
+     */
     public <T> Mono<T> findLatest(Class<T> entityType, String watermarkProperty) {
         Query query = Query.empty()
             .sort(Sort.by(Sort.Order.desc(watermarkProperty), Sort.Order.desc("id")))
@@ -28,6 +31,9 @@ public class WarehouseSyncRepository {
         return entityTemplate.select(query, entityType).next();
     }
 
+    /**
+     * 分页查询水位线字段落在指定区间内且按水位线升序排列的实体列表，用于数仓增量同步抓取
+     */
     public <T> Flux<T> findUpdated(
         Class<T> entityType,
         String watermarkProperty,

@@ -8,6 +8,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+/**
+ * 更新文章请求，在创建字段基础上追加文章ID
+ */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor

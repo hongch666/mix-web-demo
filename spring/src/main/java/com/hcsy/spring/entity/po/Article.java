@@ -8,6 +8,9 @@ import org.springframework.data.relational.core.mapping.Table;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+/**
+ * 对应 articles 表的文章实体，包含标题、内容、作者、标签、发布状态、浏览量与所属子分类
+ */
 @Data
 @Table("articles")
 @Schema(description = "文章")

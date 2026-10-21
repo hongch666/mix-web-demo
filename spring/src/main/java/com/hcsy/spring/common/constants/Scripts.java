@@ -5,6 +5,9 @@ package com.hcsy.spring.common.constants;
  */
 public final class Scripts {
 
+    /**
+     * 聚合数据库建表 SQL、AI用户插入语句与 Redis 解锁 Lua 脚本
+     */
     private Scripts() {
     }
 

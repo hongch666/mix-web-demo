@@ -5,6 +5,9 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
 
+/**
+ * 用户分页查询请求，支持按用户名模糊匹配
+ */
 @Data
 @Schema(description = "用户查询参数")
 public class UserQueryDTO {

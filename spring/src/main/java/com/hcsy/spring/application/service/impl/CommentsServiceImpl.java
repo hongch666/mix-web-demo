@@ -46,6 +46,9 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * CommentsService 的实现，按文章标题与用户名解析关联关系后在事务中维护评论，并批量补充评论视图中的用户与文章信息
+ */
 @Service
 @RequiredArgsConstructor
 public class CommentsServiceImpl implements CommentsService {
@@ -56,6 +59,9 @@ public class CommentsServiceImpl implements CommentsService {
     private final R2dbcEntityTemplate entityTemplate;
     private final TransactionalOperator transactionalOperator;
 
+    /**
+     * 实现按文章标题与用户名解析关联ID后创建评论
+     */
     @Override
     public Mono<Comments> createComment(CommentCreateDTO dto) {
         return Mono.zip(articleRepository.findFirstByTitle(dto.getArticleTitle()),
@@ -68,6 +74,9 @@ public class CommentsServiceImpl implements CommentsService {
             });
     }
 
+    /**
+     * 实现按文章标题与用户名校验存在性后更新评论
+     */
     @Override
     public Mono<Comments> updateComment(CommentUpdateDTO dto) {
         Comments comment = BeanUtil.toBean(dto, Comments.class);
@@ -77,11 +86,17 @@ public class CommentsServiceImpl implements CommentsService {
             .flatMap(ignored -> update(comment));
     }
 
+    /**
+     * 实现查询单条评论详情并补充用户与文章信息
+     */
     @Override
     public Mono<CommentsVO> getCommentDetail(Long id) {
         return getById(id).flatMap(this::toCommentsVO);
     }
 
+    /**
+     * 实现批量补充评论分页中的用户与文章信息
+     */
     @Override
     public Mono<PageVO<CommentsVO>> listCommentDetails(PageDTO<Comments> page) {
         Set<Long> userIds = page.getRecords().stream().map(Comments::getUserId).collect(Collectors.toSet());
@@ -98,6 +113,9 @@ public class CommentsServiceImpl implements CommentsService {
         });
     }
 
+    /**
+     * 实现查询文章AI评论并补充AI用户名称与头像
+     */
     @Override
     public Mono<List<AICommentsVO>> listAICommentDetailsByArticleId(Long articleId) {
         return listAICommentsByArticleId(articleId).collectList().flatMap(comments -> {
@@ -113,6 +131,9 @@ public class CommentsServiceImpl implements CommentsService {
         });
     }
 
+    /**
+     * 实现按ID批量查询评论并转为Neo4j同步视图对象
+     */
     @Override
     public Mono<List<CommentSyncVO>> getCommentSyncByIds(Collection<Long> ids) {
         return listByIds(ids)
@@ -121,12 +142,18 @@ public class CommentsServiceImpl implements CommentsService {
             .collectList();
     }
 
+    /**
+     * 查询评论关联的用户与文章并组装为评论视图
+     */
     private Mono<CommentsVO> toCommentsVO(Comments comment) {
         Mono<User> user = userRepository.findById(comment.getUserId()).defaultIfEmpty(new User());
         Mono<Article> article = articleRepository.findById(comment.getArticleId()).defaultIfEmpty(new Article());
         return Mono.zip(user, article).map(relations -> mapComment(comment, relations.getT1(), relations.getT2()));
     }
 
+    /**
+     * 将评论实体与用户、文章组装为视图对象，缺失时用默认值
+     */
     private CommentsVO mapComment(Comments comment, User user, Article article) {
         CommentsVO vo = BeanUtil.copyProperties(comment, CommentsVO.class);
         vo.setUsername(user == null || user.getName() == null ? Defaults.DEFAULT_USER : user.getName());
@@ -136,22 +163,34 @@ public class CommentsServiceImpl implements CommentsService {
         return vo;
     }
 
+    /**
+     * 实现按用户名、文章标题、内容条件分页查询普通用户评论
+     */
     @Override
     public Mono<PageDTO<Comments>> listCommentsWithFilter(long page, long size, CommentsQueryDTO queryDTO) {
         return listWithFilter(page, size, queryDTO, false);
     }
 
+    /**
+     * 实现按条件分页查询AI用户评论
+     */
     @Override
     public Mono<PageDTO<Comments>> listAICommentsWithFilter(long page, long size, CommentsQueryDTO queryDTO) {
         return listWithFilter(page, size, queryDTO, true);
     }
 
+    /**
+     * 实现分页查询指定用户的评论，按创建时间倒序
+     */
     @Override
     public Mono<PageDTO<Comments>> listCommentsByUserId(long page, long size, Long userId) {
         Criteria criteria = Criteria.where("user_id").is(userId);
         return queryPage(criteria, page, size, Sort.by(Sort.Direction.DESC, "create_time"));
     }
 
+    /**
+     * 实现分页查询文章下普通用户评论，支持按评分或时间排序
+     */
     @Override
     public Mono<PageDTO<Comments>> listCommentsByArticleId(
         long page, long size, Long articleId, String sortWay) {
@@ -167,6 +206,9 @@ public class CommentsServiceImpl implements CommentsService {
         });
     }
 
+    /**
+     * 实现流式查询文章下所有AI用户评论
+     */
     @Override
     public Flux<Comments> listAICommentsByArticleId(Long articleId) {
         return userRepository.findIdsByRole(Defaults.AI_ROLE).collectList().flatMapMany(userIds -> {
@@ -179,11 +221,17 @@ public class CommentsServiceImpl implements CommentsService {
         });
     }
 
+    /**
+     * 实现在事务中保存评论实体
+     */
     @Override
     public Mono<Comments> save(Comments comments) {
         return transactionalOperator.transactional(commentsRepository.save(comments));
     }
 
+    /**
+     * 实现在事务中更新评论，仅允许修改内容与评分防止越权
+     */
     @Override
     public Mono<Comments> update(Comments comments) {
         return transactionalOperator.transactional(
@@ -197,6 +245,9 @@ public class CommentsServiceImpl implements CommentsService {
                 }));
     }
 
+    /**
+     * 实现按ID批量流式查询评论，空入参返回空流
+     */
     @Override
     public Flux<Comments> listByIds(Collection<Long> ids) {
         if (ids == null || ids.isEmpty()) {
@@ -205,11 +256,17 @@ public class CommentsServiceImpl implements CommentsService {
         return commentsRepository.findAllById(ids);
     }
 
+    /**
+     * 实现按ID查询单条评论
+     */
     @Override
     public Mono<Comments> getById(Long id) {
         return commentsRepository.findById(id);
     }
 
+    /**
+     * 实现删除指定评论，评论不存在时抛404异常
+     */
     @Override
     public Mono<Void> deleteComment(Long id) {
         Mono<Void> operation = commentsRepository.findById(id)
@@ -218,6 +275,9 @@ public class CommentsServiceImpl implements CommentsService {
         return transactionalOperator.transactional(operation);
     }
 
+    /**
+     * 实现批量删除评论，任一ID不存在时抛404异常
+     */
     @Override
     public Mono<Void> deleteComments(List<Long> ids) {
         List<Long> distinctIds = ids == null
@@ -235,6 +295,9 @@ public class CommentsServiceImpl implements CommentsService {
         return transactionalOperator.transactional(operation);
     }
 
+    /**
+     * 按角色过滤用户并结合文章标题与内容条件动态拼装评论分页查询
+     */
     private Mono<PageDTO<Comments>> listWithFilter(
         long page, long size, CommentsQueryDTO queryDTO, boolean aiOnly) {
         Flux<Long> articleIds = hasText(queryDTO.getArticleTitle())
@@ -272,6 +335,9 @@ public class CommentsServiceImpl implements CommentsService {
         });
     }
 
+    /**
+     * 按条件与排序执行评论分页查询，同时返回记录与总数
+     */
     private Mono<PageDTO<Comments>> queryPage(Criteria criteria, long page, long size, Sort sort) {
         long offset = Math.max(0, page - 1) * Math.max(1, size);
         int limit = (int) Math.max(1, Math.min(size, 1000));
@@ -282,10 +348,16 @@ public class CommentsServiceImpl implements CommentsService {
         return Mono.zip(records, total).map(result -> page(page, size, result.getT2(), result.getT1()));
     }
 
+    /**
+     * 构造总数为0的空评论分页结果
+     */
     private PageDTO<Comments> emptyPage(long current, long size) {
         return page(current, size, 0, List.of());
     }
 
+    /**
+     * 组装评论分页结果的当前页、页大小、总数与记录
+     */
     private PageDTO<Comments> page(long current, long size, long total, List<Comments> records) {
         PageDTO<Comments> result = new PageDTO<>();
         result.setCurrent(current);
@@ -295,14 +367,23 @@ public class CommentsServiceImpl implements CommentsService {
         return result;
     }
 
+    /**
+     * 判断字符串非null且非空白
+     */
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
     }
 
+    /**
+     * 构造404资源不存在的业务异常
+     */
     private BusinessException notFound(String message) {
         return BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(message).build();
     }
 
+    /**
+     * 实现批量查询文章评论评分并按AI与普通用户角色分组计算平均分
+     */
     @Override
     public Mono<List<ArticleCommentScoresVO>> getCommentScoresByArticleIds(Collection<Long> articleIds) {
         if (articleIds == null || articleIds.isEmpty()) {
@@ -368,6 +449,9 @@ public class CommentsServiceImpl implements CommentsService {
             });
     }
 
+    /**
+     * 实现删除文章下所有AI用户的评论
+     */
     @Override
     public Mono<Void> deleteAiCommentsByArticleId(Long articleId) {
         return userRepository.findIdsByRole(Defaults.AI_ROLE)
@@ -380,6 +464,9 @@ public class CommentsServiceImpl implements CommentsService {
             });
     }
 
+    /**
+     * 实现统计用户本月每日评论趋势与总数
+     */
     @Override
     public Mono<MapDataVO> getMonthlyCommentTrend(Long userId) {
         LocalDate today = LocalDate.now();
@@ -410,6 +497,9 @@ public class CommentsServiceImpl implements CommentsService {
             });
     }
 
+    /**
+     * 实现查询评论数据用于Neo4j同步，全量时仅取最近限定条数
+     */
     @Override
     public Mono<List<CommentSyncVO>> getNeo4jSyncComments(String updatedAfter) {
         // 评论表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时

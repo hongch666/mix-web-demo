@@ -40,6 +40,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 文章点赞控制器，聚合 /likes 下的点赞、取消点赞、点赞状态与列表查询及各类点赞统计接口
+ */
 @RestController
 @RequestMapping("/likes")
 @RequiredArgsConstructor
@@ -48,6 +51,9 @@ public class ArticleLikeController {
 
     private final ArticleLikeService articleLikeService;
 
+    /**
+     * POST /likes 接口，为指定用户新增一条文章点赞记录，重复点赞时返回409冲突
+     */
     @PostMapping
     @Operation(summary = "添加点赞", description = "为文章添加点赞")
     @ArticleSync(action = SyncAction.LIKE, resource = SyncResource.LIKES, description = "点赞了1篇文章")
@@ -62,6 +68,9 @@ public class ArticleLikeController {
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.LIKE_FAIL));
     }
 
+    /**
+     * DELETE /likes 接口，按文章ID与用户ID取消点赞
+     */
     @DeleteMapping
     @Operation(summary = "取消点赞", description = "取消对文章的点赞")
     @ArticleSync(action = SyncAction.UNLIKE, resource = SyncResource.LIKES, description = "取消点赞了1篇文章")
@@ -80,6 +89,9 @@ public class ArticleLikeController {
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.UNLIKE_FAIL));
     }
 
+    /**
+     * GET /likes/user/{user_id} 接口，分页返回指定用户的点赞列表，含点赞总数与带文章详情的点赞记录，需管理员或本人权限
+     */
     @GetMapping("/user/{user_id}")
     @Operation(summary = "查询用户的所有点赞", description = "分页查询某个用户的所有点赞记录（包含文章详情）")
     @ApiLog("查询用户点赞")
@@ -94,6 +106,9 @@ public class ArticleLikeController {
             .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
+    /**
+     * GET /likes/check 接口，按文章ID与用户ID查询是否已点赞，返回布尔结果
+     */
     @GetMapping("/check")
     @Operation(summary = "检查用户是否点赞", description = "查询用户是否点赞过某篇文章")
     @ApiLog("检查点赞状态")
@@ -109,6 +124,9 @@ public class ArticleLikeController {
             .map(liked -> Result.success(new LikeCheckVO(liked)));
     }
 
+    /**
+     * GET /likes/count/{article_id} 接口，返回指定文章的总点赞数
+     */
     @GetMapping("/count/{article_id}")
     @Operation(summary = "获取文章的点赞数", description = "获取某篇文章的总点赞数")
     @ApiLog("获取点赞数")
@@ -118,6 +136,9 @@ public class ArticleLikeController {
             .map(count -> Result.success(new LikeCountVO(count)));
     }
 
+    /**
+     * POST /likes/counts/batch 内部接口，按文章ID列表批量返回各文章的点赞数
+     */
     @PostMapping("/counts/batch")
     @Operation(summary = "批量查询点赞数（内部）", description = "根据文章ID列表批量查询点赞数，供内部服务远程调用")
     @RequireInternalToken
@@ -127,6 +148,9 @@ public class ArticleLikeController {
             .map(Result::success);
     }
 
+    /**
+     * GET /likes/statistics/total 内部接口，返回全站文章的总点赞数
+     */
     @GetMapping("/statistics/total")
     @Operation(summary = "获取总点赞数（内部）", description = "获取所有文章的总点赞数，供内部服务远程调用")
     @RequireInternalToken
@@ -135,6 +159,9 @@ public class ArticleLikeController {
         return articleLikeService.getTotalLikes().map(Result::success);
     }
 
+    /**
+     * GET /likes/statistics/average 内部接口，返回每篇文章的平均点赞数
+     */
     @GetMapping("/statistics/average")
     @Operation(summary = "获取平均点赞数（内部）", description = "获取每篇文章的平均点赞数，供内部服务远程调用")
     @RequireInternalToken
@@ -143,6 +170,9 @@ public class ArticleLikeController {
         return articleLikeService.getAverageLikes().map(Result::success);
     }
 
+    /**
+     * GET /likes/statistics/monthly-trend/{userId} 内部接口，返回指定用户本月的点赞趋势统计
+     */
     @GetMapping("/statistics/monthly-trend/{userId}")
     @Operation(summary = "获取用户月度点赞趋势（内部）", description = "获取用户本月点赞的趋势，供内部服务远程调用")
     @RequireInternalToken
@@ -151,6 +181,9 @@ public class ArticleLikeController {
         return articleLikeService.getMonthlyLikeTrend(userId).map(Result::success);
     }
 
+    /**
+     * GET /likes/neo4j-sync 内部接口，按 updatedAfter 增量返回点赞表数据供 FastAPI 同步 Neo4j
+     */
     @GetMapping("/neo4j-sync")
     @Operation(summary = "获取点赞表数据用于Neo4j同步（内部）", description = "获取点赞表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken

@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 通用数量统计响应，返回单个数量值
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

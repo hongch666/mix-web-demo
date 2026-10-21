@@ -10,6 +10,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建文章评论请求，携带评论内容、1到10的星级评分、文章标题与评论用户名
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

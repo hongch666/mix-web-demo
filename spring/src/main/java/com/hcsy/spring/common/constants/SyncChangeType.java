@@ -10,10 +10,16 @@ public enum SyncChangeType {
 
     private final String value;
 
+    /**
+     * 枚举构造器，绑定变更类型字符串值
+     */
     SyncChangeType(String value) {
         this.value = value;
     }
 
+    /**
+     * 返回下发到下游的变更类型字符串值
+     */
     public String value() {
         return value;
     }

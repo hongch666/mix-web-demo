@@ -15,12 +15,18 @@ import com.hcsy.spring.infra.repository.WarehouseSyncRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * WarehouseSyncService 的实现，按资源规格解析水位线并对业务表增量数据分页查询，自动修正分页参数后封装为同步分页结果
+ */
 @Service
 @RequiredArgsConstructor
 public class WarehouseSyncServiceImpl implements WarehouseSyncService {
 
     private final WarehouseSyncRepository warehouseSyncRepository;
 
+    /**
+     * 按资源规格解析数据水位线并分页查询增量数据，自动修正分页参数后封装为同步分页结果返回
+     */
     @Override
     public Mono<SyncPage> sync(String resource, LocalDateTime updatedAfter, int page, int size) {
         ResourceSpec spec = WarehouseResources.ALL.get(resource);
@@ -43,6 +49,9 @@ public class WarehouseSyncServiceImpl implements WarehouseSyncService {
             .defaultIfEmpty(new SyncPage(List.of(), safePage, safeSize, false, updatedAfter));
     }
 
+    /**
+     * 将查询结果裁剪至页大小并计算是否还有更多数据，组装为同步分页对象
+     */
     private SyncPage toPage(
         List<Map<String, Object>> rows,
         int page,

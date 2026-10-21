@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 文章收藏状态响应，表示当前用户是否已收藏该文章
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

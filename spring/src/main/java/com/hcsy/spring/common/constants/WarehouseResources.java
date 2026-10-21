@@ -19,9 +19,15 @@ import com.hcsy.spring.entity.po.User;
  */
 public final class WarehouseResources {
 
+    /**
+     * 私有构造器，防止常量类被实例化
+     */
     private WarehouseResources() {
     }
 
+    /**
+     * 数仓同步资源规格，包含实体类型、水位线属性与行映射逻辑
+     */
     public record ResourceSpec(
         Class<?> entityType,
         String watermarkProperty,
@@ -31,6 +37,9 @@ public final class WarehouseResources {
 
     public static final Map<String, ResourceSpec> ALL = createResources();
 
+    /**
+     * 构建文章、用户、点赞等全部数仓同步资源的类型、水位线与行映射定义
+     */
     private static Map<String, ResourceSpec> createResources() {
         Map<String, ResourceSpec> resources = new LinkedHashMap<>();
         resources.put("articles", new ResourceSpec(Article.class, "updateAt",
@@ -91,6 +100,9 @@ public final class WarehouseResources {
         return Map.copyOf(resources);
     }
 
+    /**
+     * 将键值交替参数组装为有序 Map
+     */
     private static Map<String, Object> mapOf(Object... values) {
         Map<String, Object> result = new LinkedHashMap<>();
         for (int index = 0; index < values.length; index += 2) {
@@ -99,6 +111,9 @@ public final class WarehouseResources {
         return result;
     }
 
+    /**
+     * 值为空时返回指定默认值
+     */
     private static <T> T defaultValue(T value, T defaultValue) {
         return value == null ? defaultValue : value;
     }

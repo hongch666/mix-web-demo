@@ -14,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * 数据库初始化器，应用就绪后按依赖顺序执行建表脚本并预置固定ID的AI用户数据
+ */
 @Component
 @RequiredArgsConstructor
 public class DatabaseInitializer {
@@ -21,6 +24,9 @@ public class DatabaseInitializer {
     private final DatabaseClient databaseClient;
     private final SimpleLogger logger;
 
+    /**
+     * 应用就绪后触发数据库建表与AI用户预置数据的初始化
+     */
     @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
         initializeDatabase()
@@ -63,6 +69,9 @@ public class DatabaseInitializer {
             .then();
     }
 
+    /**
+     * 执行单条建表或初始化 SQL
+     */
     private Mono<Void> execute(String sql) {
         return databaseClient.sql(sql)
             .fetch()
@@ -70,6 +79,9 @@ public class DatabaseInitializer {
             .then();
     }
 
+    /**
+     * 按固定 ID 插入不存在的 AI 用户并记录插入结果
+     */
     private Mono<Void> insertAIUserIfNotExists(Long id, String name, String email, String img) {
         return databaseClient.sql(Scripts.INSERT_AI_USER)
             .bind(0, id)

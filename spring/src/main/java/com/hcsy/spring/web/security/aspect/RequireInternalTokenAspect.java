@@ -45,6 +45,9 @@ public class RequireInternalTokenAspect {
         return result;
     }
 
+    /**
+     * 从Reactor上下文读取内部令牌并校验其合法性，令牌缺失或校验失败时抛出401业务异常
+     */
     private Mono<Void> validate(reactor.util.context.ContextView ctx, ProceedingJoinPoint pjp) {
         try {
             String internalToken = UserContext.getInternalToken(ctx);

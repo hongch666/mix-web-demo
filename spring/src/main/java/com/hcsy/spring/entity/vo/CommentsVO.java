@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 评论列表响应，包含评论内容、星级评分、评论用户及头像与文章标题
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

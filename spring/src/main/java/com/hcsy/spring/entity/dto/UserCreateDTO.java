@@ -12,6 +12,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建用户请求，携带用户名、密码、年龄、邮箱、头像与个性签名
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

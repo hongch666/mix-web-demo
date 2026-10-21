@@ -19,6 +19,9 @@ import reactor.core.publisher.Mono;
 @Component
 public class UserContextWebFilter implements WebFilter {
 
+    /**
+     * WebFilter入口，从请求头解析用户ID、用户名、会话ID与令牌并写入Reactor上下文，供下游响应式链路读取当前用户信息
+     */
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
@@ -32,6 +35,9 @@ public class UserContextWebFilter implements WebFilter {
             .contextWrite(ctx -> UserContext.writeContext(ctx, userId, username, sessionId, token, internalToken));
     }
 
+    /**
+     * 将字符串安全地解析为Long，空值或格式非法时返回null
+     */
     private Long parseLong(String value) {
         if (value == null)
             return null;
@@ -42,6 +48,9 @@ public class UserContextWebFilter implements WebFilter {
         }
     }
 
+    /**
+     * 从 Authorization 或内部令牌请求头中剥离 Bearer 前缀提取令牌原文
+     */
     private String extractToken(String authHeader) {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);

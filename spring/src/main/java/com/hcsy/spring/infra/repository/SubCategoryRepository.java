@@ -11,9 +11,18 @@ import com.hcsy.spring.entity.po.SubCategory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * 负责子分类实体（SubCategory）的响应式数据访问，含分类下子分类查询与 Neo4j 增量同步
+ */
 public interface SubCategoryRepository extends ReactiveCrudRepository<SubCategory, Long> {
+    /**
+     * 按 ID 升序查询指定分类下的全部子分类
+     */
     Flux<SubCategory> findByCategoryIdOrderByIdAsc(Long categoryId);
 
+    /**
+     * 删除指定分类下的全部子分类
+     */
     Mono<Void> deleteByCategoryId(Long categoryId);
 
     /**

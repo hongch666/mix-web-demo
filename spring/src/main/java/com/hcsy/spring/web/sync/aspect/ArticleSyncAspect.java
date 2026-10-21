@@ -40,11 +40,17 @@ public class ArticleSyncAspect extends AbstractSyncAspect<ArticleSync> {
     private final SimpleLogger logger;
     private final AsyncSyncService asyncSyncService;
 
+    /**
+     * 环绕通知，在标注 @ArticleSync 的接口成功执行后并行触发文章操作日志投递与ES、向量库、Neo4j同步
+     */
     @Around("@annotation(articleSync)")
     public Object handleArticleSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync) throws Throwable {
         return aroundSync(joinPoint, articleSync);
     }
 
+    /**
+     * 按操作类型解析受影响资源ID并构建日志消息与变更事件，并行投递MQ日志与各异步同步任务，失败仅记录日志不影响主流程
+     */
     @Override
     protected Mono<Void> trigger(ProceedingJoinPoint joinPoint, ArticleSync articleSync, Object result,
         Long userId, String username) {

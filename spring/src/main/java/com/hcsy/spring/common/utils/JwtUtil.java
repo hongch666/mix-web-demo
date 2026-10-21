@@ -24,6 +24,9 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 封装用户 access token 与 refresh token 的生成、解析、校验及有效期计算
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -32,6 +35,9 @@ public class JwtUtil {
     private final SimpleLogger logger;
     private Key key;
 
+    /**
+     * 启动时校验并初始化 JWT 的 HMAC 签名密钥
+     */
     @PostConstruct
     public void initKey() {
         if (jwtProperties.secret() == null || jwtProperties.secret().isEmpty()) {
@@ -87,18 +93,30 @@ public class JwtUtil {
         return UUID.randomUUID().toString();
     }
 
+    /**
+     * 从令牌中解析用户名
+     */
     public String extractUsername(String token) {
         return getClaims(token).getSubject();
     }
 
+    /**
+     * 从令牌中解析用户ID
+     */
     public Long extractUserId(String token) {
         return getClaims(token).get("userId", Long.class);
     }
 
+    /**
+     * 从令牌中解析会话ID
+     */
     public String extractSessionId(String token) {
         return getClaims(token).get("sessionId", String.class);
     }
 
+    /**
+     * 从令牌中解析令牌类型（access 或 refresh）
+     */
     public String extractTokenType(String token) {
         return getClaims(token).get("tokenType", String.class);
     }
@@ -157,6 +175,9 @@ public class JwtUtil {
         }
     }
 
+    /**
+     * 解析令牌并返回签名校验后的 Claims
+     */
     private Claims getClaims(String token) {
         return Jwts.parserBuilder()
             .setSigningKey(key)
@@ -165,22 +186,37 @@ public class JwtUtil {
             .getBody();
     }
 
+    /**
+     * 返回访问令牌的有效期毫秒数
+     */
     public long getAccessExpiration() {
         return jwtProperties.accessExpiration();
     }
 
+    /**
+     * 返回刷新令牌的有效期毫秒数
+     */
     public long getRefreshExpiration() {
         return jwtProperties.refreshExpiration();
     }
 
+    /**
+     * 返回访问令牌的有效期秒数
+     */
     public long getAccessExpirationSeconds() {
         return jwtProperties.accessExpiration() / 1000;
     }
 
+    /**
+     * 返回刷新令牌的有效期秒数
+     */
     public long getRefreshExpirationSeconds() {
         return jwtProperties.refreshExpiration() / 1000;
     }
 
+    /**
+     * 返回令牌距离过期的剩余毫秒数
+     */
     public long getRemainingTime(String token) {
         Date expiration = getClaims(token).getExpiration();
         return expiration.getTime() - System.currentTimeMillis();

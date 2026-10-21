@@ -14,6 +14,9 @@ import com.hcsy.spring.observability.MetricsRecorder;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 过期Token定时清理任务，每分钟通过 Redis 分布式锁防止多实例重复执行，并记录任务成功失败状态与耗时指标
+ */
 @Component
 @RequiredArgsConstructor
 public class TokenCleanupTask {
@@ -23,12 +26,18 @@ public class TokenCleanupTask {
     private final RedisDistributedLock distributedLock;
     private final MetricsRecorder metricsRecorder;
 
+    /**
+     * 手动触发一次过期Token清理任务，异步执行清理流程并记录过程中的错误日志
+     */
     public void triggerCleanup() {
         cleanupExpiredTokens()
             .doOnError(error -> logger.error(Messages.TASK_EXCEPTION + error.getMessage(), error))
             .subscribe();
     }
 
+    /**
+     * 每分钟定时清理过期登录Token，通过Redis分布式锁防止多实例重复执行，并记录任务成功失败状态与耗时指标
+     */
     @Scheduled(cron = "0 * * * * *")
     public Mono<Void> cleanupExpiredTokens() {
         long startedAt = System.nanoTime();

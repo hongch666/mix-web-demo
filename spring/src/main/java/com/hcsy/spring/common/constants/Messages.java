@@ -5,6 +5,9 @@ package com.hcsy.spring.common.constants;
  */
 public class Messages {
 
+    /**
+     * 聚合日志消息、用户提示与错误描述等文案常量
+     */
     private Messages() {
     }
 

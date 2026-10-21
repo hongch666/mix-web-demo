@@ -15,15 +15,33 @@ import com.hcsy.spring.entity.vo.IdCountVO;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * 负责文章收藏记录（ArticleCollect）的响应式数据访问，含收藏判断、统计与同步抓取
+ */
 public interface ArticleCollectRepository extends ReactiveCrudRepository<ArticleCollect, Long> {
+    /**
+     * 判断用户是否已收藏指定文章
+     */
     Mono<Boolean> existsByArticleIdAndUserId(Long articleId, Long userId);
 
+    /**
+     * 删除用户对指定文章的收藏记录，用于取消收藏
+     */
     Mono<Void> deleteByArticleIdAndUserId(Long articleId, Long userId);
 
+    /**
+     * 按收藏时间倒序分页查询用户收藏的文章记录
+     */
     Flux<ArticleCollect> findByUserIdOrderByCreatedTimeDesc(Long userId, Pageable pageable);
 
+    /**
+     * 统计用户收藏的文章总数
+     */
     Mono<Long> countByUserId(Long userId);
 
+    /**
+     * 统计指定文章的收藏总数
+     */
     Mono<Long> countByArticleId(Long articleId);
 
     /**
@@ -37,6 +55,9 @@ public interface ArticleCollectRepository extends ReactiveCrudRepository<Article
         """)
     Flux<IdCountVO> countGroupByArticleIdIn(@Param("ids") Collection<Long> articleIds);
 
+    /**
+     * 按天分组统计用户在指定时间段内的收藏数量并按日期升序返回，用于收藏月度趋势统计
+     */
     @Query("""
         SELECT DATE(created_time) AS date, COUNT(*) AS count
         FROM collects

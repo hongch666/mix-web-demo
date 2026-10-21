@@ -20,6 +20,9 @@ public class ServiceRequestOptions {
     private MultiValueMap<String, String> queryParameters;
     private Map<String, ?> pathVariables;
 
+    /**
+     * 创建一个不携带任何可选参数的空请求选项
+     */
     public static ServiceRequestOptions empty() {
         return ServiceRequestOptions.builder().build();
     }

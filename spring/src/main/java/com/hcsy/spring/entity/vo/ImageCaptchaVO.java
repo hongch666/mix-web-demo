@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 图形验证码响应，包含验证码ID与 Base64 编码的验证码图片
+ */
 @Data
 @Builder
 @NoArgsConstructor

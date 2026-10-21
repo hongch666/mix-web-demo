@@ -10,6 +10,9 @@ public final class HeaderNames {
     public static final String USERNAME = "X-Username";
     public static final String SESSION_ID = "X-Session-Id";
 
+    /**
+     * 聚合网关与微服务间透传的自定义 HTTP 请求头名称常量
+     */
     private HeaderNames() {
     }
 }

@@ -43,6 +43,9 @@ public class RequirePermissionAspect {
     private final SimpleLogger logger;
     private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
+    /**
+     * 环绕通知，对标注 @RequirePermission 的接口先校验登录与角色，角色不匹配时按注解配置校验资源归属，未通过则抛出403业务异常
+     */
     @Around("@annotation(requirePermission)")
     public Object checkPermission(ProceedingJoinPoint joinPoint, RequirePermission requirePermission)
         throws Throwable {
@@ -115,6 +118,9 @@ public class RequirePermissionAspect {
         return permissionChecker.isOwner(currentUserId, toLong(value), permission.businessType());
     }
 
+    /**
+     * 将逗号分隔的ID字符串解析为去重的Long列表，解析失败时抛出400业务异常
+     */
     private Mono<List<Long>> parseIds(String ids) {
         try {
             return Mono.just(Arrays.stream(ids.split(","))
@@ -129,6 +135,9 @@ public class RequirePermissionAspect {
         }
     }
 
+    /**
+     * 从请求体DTO中按优先级解析目标资源ID，依次读取 id 与 userId 字段，均缺失时按用户名反查用户ID
+     */
     private Mono<Long> resolveTargetFromBody(ProceedingJoinPoint joinPoint, String parameterName) {
         Object body = getBody(joinPoint, parameterName);
         if (body == null) {
@@ -146,6 +155,9 @@ public class RequirePermissionAspect {
         return username == null ? Mono.empty() : permissionChecker.resolveUserIdByUsername(username);
     }
 
+    /**
+     * 按注解声明的参数名从方法 @RequestParam 实参中定位查询参数值
+     */
     private Object getQueryParameter(ProceedingJoinPoint joinPoint, String requestedName) {
         Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
         Object[] arguments = joinPoint.getArgs();
@@ -163,6 +175,9 @@ public class RequirePermissionAspect {
         return null;
     }
 
+    /**
+     * 按注解声明的参数名从方法 @PathVariable 实参中定位路径参数值
+     */
     private Object getPathParameter(ProceedingJoinPoint joinPoint, String requestedName) {
         Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
         Object[] arguments = joinPoint.getArgs();
@@ -180,6 +195,9 @@ public class RequirePermissionAspect {
         return null;
     }
 
+    /**
+     * 按参数名或默认的 dto 名称从方法实参中定位请求体对象，未匹配时回退到首个参数
+     */
     private Object getBody(ProceedingJoinPoint joinPoint, String requestedName) {
         String[] names = parameterNameDiscoverer.getParameterNames(
             ((MethodSignature) joinPoint.getSignature()).getMethod());
@@ -194,6 +212,9 @@ public class RequirePermissionAspect {
         return arguments.length == 0 ? null : arguments[0];
     }
 
+    /**
+     * 将数值或非逗号数字字符串转换为Long，无法转换时返回null
+     */
     private Long toLong(Object value) {
         if (value instanceof Number number) {
             return number.longValue();
@@ -208,6 +229,9 @@ public class RequirePermissionAspect {
         return null;
     }
 
+    /**
+     * 构建携带403状态码与无权限文案的业务异常
+     */
     private BusinessException forbidden() {
         return BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISSION).build();
     }

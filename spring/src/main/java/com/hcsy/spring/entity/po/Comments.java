@@ -8,6 +8,9 @@ import org.springframework.data.relational.core.mapping.Table;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+/**
+ * 对应 comments 表的文章评论实体，包含评论内容、星级评分、所属文章与用户
+ */
 @Data
 @Table("comments")
 @Schema(description = "评论")

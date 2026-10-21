@@ -8,6 +8,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 邮箱验证码登录请求，携带登录邮箱、邮箱验证码及图形验证码信息
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

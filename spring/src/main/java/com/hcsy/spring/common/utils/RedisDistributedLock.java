@@ -25,6 +25,9 @@ public class RedisDistributedLock {
 
     private final ReactiveStringRedisTemplate redisTemplate;
 
+    /**
+     * 通过 setIfAbsent 抢占分布式锁并返回唯一锁持有者标识
+     */
     public Mono<String> tryLock(String lockKey, long expireSeconds) {
         String lockValue = UUID.randomUUID().toString();
         return redisTemplate.opsForValue()
@@ -33,6 +36,9 @@ public class RedisDistributedLock {
             .map(ignored -> lockValue);
     }
 
+    /**
+     * 通过 Lua 脚本校验锁持有者一致后才释放分布式锁
+     */
     public Mono<Boolean> unlock(String lockKey, String lockValue) {
         return redisTemplate.execute(UNLOCK_SCRIPT, List.of(lockKey), List.of(lockValue))
             .next()

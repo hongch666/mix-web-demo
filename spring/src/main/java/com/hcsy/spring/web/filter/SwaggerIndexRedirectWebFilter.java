@@ -21,6 +21,9 @@ import reactor.core.publisher.Mono;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class SwaggerIndexRedirectWebFilter implements WebFilter {
 
+    /**
+     * 拦截 /swagger-ui/index.html 与 /swagger-ui/ 请求并重定向到 /swagger-ui.html，避免展示 springdoc 默认的Petstore选择页
+     */
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String path = exchange.getRequest().getPath().value();

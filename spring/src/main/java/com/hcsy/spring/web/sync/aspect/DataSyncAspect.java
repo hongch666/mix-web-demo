@@ -29,11 +29,17 @@ public class DataSyncAspect extends AbstractSyncAspect<DataSync> {
 
     private final AsyncSyncService asyncSyncService;
 
+    /**
+     * 环绕通知，在标注 @DataSync 的接口成功执行后触发数据同步流程
+     */
     @Around("@annotation(dataSync)")
     public Object handleDataSync(ProceedingJoinPoint joinPoint, DataSync dataSync) throws Throwable {
         return aroundSync(joinPoint, dataSync);
     }
 
+    /**
+     * 从入参与返回值采集携带资源名、变更类型与主键的精确变更事件，并行触发Neo4j图谱同步与数仓同步，失败仅记录日志
+     */
     @Override
     protected Mono<Void> trigger(ProceedingJoinPoint joinPoint, DataSync dataSync, Object result,
         Long userId, String username) {

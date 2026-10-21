@@ -61,6 +61,9 @@ public class UserContext {
         return ctx.getOrDefault(CONTEXT_KEY_SESSION_ID, null);
     }
 
+    /**
+     * 从 Reactor Context 中获取内部服务令牌
+     */
     public static String getInternalToken(ContextView ctx) {
         return ctx.getOrDefault(CONTEXT_KEY_INTERNAL_TOKEN, null);
     }

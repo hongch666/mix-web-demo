@@ -25,6 +25,9 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.servers.Server;
 
+/**
+ * 装配 OpenAPI 文档信息，并统一定制下划线命名、空数据声明与 401 错误响应
+ */
 @Configuration
 public class SwaggerConfig {
 
@@ -62,6 +65,9 @@ public class SwaggerConfig {
                 new Server().url(Defaults.SWAGGER_URL_PREFIX + port).description("baseURL")));
     }
 
+    /**
+     * 定制 OpenAPI 文档，将 schema、参数与示例统一转为下划线命名并补充通用 401 响应
+     */
     @Bean
     OpenApiCustomizer snakeCaseOpenApiCustomizer() {
         return openApi -> {
@@ -220,6 +226,9 @@ public class SwaggerConfig {
             && schema.getOneOf() == null && schema.get$ref() == null;
     }
 
+    /**
+     * 将接口参数名称、schema 与示例转换为下划线命名
+     */
     private void transformParameter(Parameter parameter) {
         if (parameter == null) {
             return;
@@ -240,6 +249,9 @@ public class SwaggerConfig {
         }
     }
 
+    /**
+     * 递归将 schema 的属性、必填项与默认值转换为下划线命名
+     */
     @SuppressWarnings({ "rawtypes" })
     private void transformSchema(Schema<?> schema) {
         if (schema == null) {
@@ -285,6 +297,9 @@ public class SwaggerConfig {
         }
     }
 
+    /**
+     * 批量转换 allOf/anyOf/oneOf 组合 schema 列表
+     */
     @SuppressWarnings("rawtypes")
     private void transformSchemaList(List<Schema> schemas) {
         if (schemas == null) {
@@ -293,6 +308,9 @@ public class SwaggerConfig {
         schemas.forEach(this::transformSchema);
     }
 
+    /**
+     * 递归将示例值中 Map 的键转换为下划线命名
+     */
     private Object transformExample(Object value) {
         if (value instanceof Map<?, ?> mapValue) {
             Map<String, Object> transformed = new LinkedHashMap<>();
@@ -307,6 +325,9 @@ public class SwaggerConfig {
         return value;
     }
 
+    /**
+     * 将驼峰命名转换为下划线命名
+     */
     private String toSnakeCase(String value) {
         if (value == null || value.isEmpty()) {
             return value;

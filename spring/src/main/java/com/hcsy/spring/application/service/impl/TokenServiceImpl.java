@@ -25,6 +25,9 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * TokenService 的实现，基于 JWT 与 Redis 会话哈希维护登录会话，校验令牌签名与反向索引，支持刷新令牌轮换、多设备管理与过期会话清理
+ */
 @Service
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
@@ -35,6 +38,9 @@ public class TokenServiceImpl implements TokenService {
     private final JwtUtil jwtUtil;
     private final SimpleLogger logger;
 
+    /**
+     * 校验访问令牌的JWT签名及Redis反向索引、会话记录与用户在线状态，通过后返回用户身份的Mono结果
+     */
     @Override
     public Mono<AuthIdentityDTO> validateAccessToken(String accessToken) {
         return Mono.defer(() -> {
@@ -68,6 +74,9 @@ public class TokenServiceImpl implements TokenService {
         });
     }
 
+    /**
+     * 从Authorization头、令牌参数或转发URI查询参数中提取访问令牌并复用统一校验逻辑，返回用户身份
+     */
     @Override
     public Mono<AuthIdentityDTO> validateGatewayAccessToken(
         String authorization, String accessToken, String forwardedUri) {
@@ -78,6 +87,9 @@ public class TokenServiceImpl implements TokenService {
         return validateAccessToken(token);
     }
 
+    /**
+     * 生成会话ID与访问刷新双令牌，写入Redis会话哈希、反向索引及会话集合，返回含在线设备数的登录信息
+     */
     @Override
     public Mono<UserLoginVO> createLoginSession(Long userId, String username) {
         String sessionId = UUID.randomUUID().toString().replace("-", "");
@@ -120,6 +132,9 @@ public class TokenServiceImpl implements TokenService {
             });
     }
 
+    /**
+     * 在分布式锁保护下校验并轮换刷新令牌，锁被占用时拒绝本次刷新
+     */
     @Override
     public Mono<TokenRefreshVO> refreshToken(String refreshToken) {
         return Mono.defer(() -> {
@@ -137,6 +152,9 @@ public class TokenServiceImpl implements TokenService {
         });
     }
 
+    /**
+     * 持锁后校验刷新令牌的反向索引与会话记录，校验通过则执行令牌轮换
+     */
     private Mono<TokenRefreshVO> refreshTokenLocked(String refreshToken, Long userId, String sessionId) {
         String sessionKey = RedisKeys.userSession(userId, sessionId);
         String expectedValue = userId + ":" + sessionId;
@@ -158,6 +176,9 @@ public class TokenServiceImpl implements TokenService {
             });
     }
 
+    /**
+     * 在操作完成或失败后释放刷新令牌的分布式锁并透传原结果或异常
+     */
     private <T> Mono<T> releaseRefreshLockAfter(String lockKey, String lockValue, Mono<T> operation) {
         return operation
             .flatMap(result -> distributedLock.unlock(lockKey, lockValue).thenReturn(result))
@@ -166,6 +187,9 @@ public class TokenServiceImpl implements TokenService {
                 .then(Mono.error(error)));
     }
 
+    /**
+     * 轮换令牌对，生成新的访问与刷新令牌并更新会话哈希与反向索引，删除旧令牌索引后返回刷新结果
+     */
     private Mono<TokenRefreshVO> rotateTokens(
         Long userId, String sessionId, String username, String oldRefreshToken, String oldAccessToken) {
         String newAccessToken = jwtUtil.generateAccessToken(userId, username, sessionId);
@@ -203,6 +227,9 @@ public class TokenServiceImpl implements TokenService {
         }));
     }
 
+    /**
+     * 通过访问令牌的反向索引解析出用户与会话ID后删除对应会话
+     */
     @Override
     public Mono<Void> removeSessionByAccessToken(String accessToken) {
         return redisUtil.get(RedisKeys.userAccess(accessToken))
@@ -216,6 +243,9 @@ public class TokenServiceImpl implements TokenService {
             .then();
     }
 
+    /**
+     * 删除指定会话的令牌反向索引与会话记录并移出会话集合，剩余会话为空时将用户置为离线
+     */
     @Override
     public Mono<Void> removeSession(Long userId, String sessionId) {
         String sessionKey = RedisKeys.userSession(userId, sessionId);
@@ -245,6 +275,9 @@ public class TokenServiceImpl implements TokenService {
         });
     }
 
+    /**
+     * 校验访问令牌的Redis反向索引与会话哈希中存储的令牌是否一致，返回Boolean的Mono结果
+     */
     @Override
     public Mono<Boolean> validateAccessTokenInRedis(Long userId, String sessionId, String accessToken) {
         String expectedValue = userId + ":" + sessionId;
@@ -254,16 +287,25 @@ public class TokenServiceImpl implements TokenService {
             .map(values -> expectedValue.equals(values.getT1()) && accessToken.equals(values.getT2()));
     }
 
+    /**
+     * 以用户会话集合的大小作为在线设备数量返回
+     */
     @Override
     public Mono<Long> getUserOnlineDeviceCount(Long userId) {
         return redisUtil.getSetSize(RedisKeys.userSessions(userId));
     }
 
+    /**
+     * 读取Redis中用户的会话ID集合并以列表返回
+     */
     @Override
     public Mono<List<String>> getUserSessions(Long userId) {
         return redisUtil.getSet(RedisKeys.userSessions(userId));
     }
 
+    /**
+     * 并发删除用户全部会话并将登录状态置为离线，实现强制下线
+     */
     @Override
     public Mono<Void> forceLogoutUser(Long userId) {
         return redisUtil.getSet(RedisKeys.userSessions(userId))
@@ -274,6 +316,9 @@ public class TokenServiceImpl implements TokenService {
             .then();
     }
 
+    /**
+     * 删除除当前访问令牌对应会话外的其他全部会话，返回移除数量并按需刷新会话集合过期时间
+     */
     @Override
     public Mono<Integer> removeOtherSessions(Long userId, String currentAccessToken) {
         String currentSessionId = jwtUtil.extractSessionId(currentAccessToken);
@@ -291,6 +336,9 @@ public class TokenServiceImpl implements TokenService {
                     : Mono.just(removed)));
     }
 
+    /**
+     * 扫描所有用户会话键并清理其中已失效的会话，记录清理总数
+     */
     @Override
     public Mono<Void> cleanupExpiredTokens() {
         return redisUtil.getKeys(RedisKeys.userSessionsPattern())
@@ -300,6 +348,9 @@ public class TokenServiceImpl implements TokenService {
             .then();
     }
 
+    /**
+     * 清理单个用户会话集合下已失效的会话，返回清理数量并容忍键解析异常
+     */
     private Mono<Integer> cleanupUserSessions(String key) {
         Long userId;
         try {
@@ -326,6 +377,9 @@ public class TokenServiceImpl implements TokenService {
             });
     }
 
+    /**
+     * 通过会话内刷新令牌的反向索引判断该会话是否仍然有效
+     */
     private Mono<Boolean> isSessionValid(Long userId, String sessionId) {
         String sessionKey = RedisKeys.userSession(userId, sessionId);
         return redisUtil.getHash(sessionKey, "refreshToken")
@@ -334,6 +388,9 @@ public class TokenServiceImpl implements TokenService {
             .defaultIfEmpty(false);
     }
 
+    /**
+     * 依次从Authorization头、令牌参数及转发URI的token查询参数中提取并解码访问令牌
+     */
     private String extractGatewayAccessToken(String authorization, String accessToken, String forwardedUri) {
         if (authorization != null && !authorization.isBlank()) {
             return authorization.startsWith(BEARER_PREFIX)
@@ -360,6 +417,9 @@ public class TokenServiceImpl implements TokenService {
         return null;
     }
 
+    /**
+     * 构建HTTP 401未授权状态码的业务异常
+     */
     private BusinessException unauthorized(String message) {
         return BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(message).build();
     }

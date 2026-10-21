@@ -44,6 +44,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 分类控制器，聚合 /category 下的分类与子分类增删改查、层级分页查询及Neo4j同步数据接口
+ */
 @RestController
 @RequestMapping("/category")
 @RequiredArgsConstructor
@@ -52,6 +55,9 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
+    /**
+     * POST /category 接口，管理员新增文章分类并返回新分类ID，结果同步Neo4j图谱与数仓
+     */
     @Operation(summary = "新增分类", description = "管理员新增文章分类，分类信息同步写入 Neo4j 图谱并记录操作日志")
     @PostMapping()
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.CATEGORY, paramSource = ParamSource.BODY,
@@ -62,6 +68,9 @@ public class CategoryController {
         return categoryService.addCategory(dto).map(Result::success);
     }
 
+    /**
+     * PUT /category 接口，管理员修改指定分类信息，结果同步Neo4j图谱与数仓
+     */
     @Operation(summary = "修改分类", description = "管理员修改文章分类信息，修改结果同步更新 Neo4j 图谱并记录操作日志")
     @PutMapping()
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.CATEGORY, paramSource = ParamSource.BODY,
@@ -72,6 +81,9 @@ public class CategoryController {
         return categoryService.updateCategory(dto).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * DELETE /category/{id} 接口，管理员删除指定分类并级联删除其下子分类，同时同步删除图谱节点
+     */
     @Operation(summary = "删除分类（级联删除子分类）", description = "管理员删除指定分类，级联删除其下所有子分类，并同步删除 Neo4j 图谱中的对应节点")
     @DeleteMapping("/{id}")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.CATEGORY, paramSource = ParamSource.PATH_SINGLE,
@@ -82,6 +94,9 @@ public class CategoryController {
         return categoryService.deleteCategory(id).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * DELETE /category/batch/{ids} 接口，管理员按逗号分隔的ID列表批量删除分类，逐个级联删除子分类并同步图谱
+     */
     @Operation(summary = "批量删除分类（级联删除子分类）", description = "管理员按逗号分隔的ID列表批量删除分类，逐个级联删除子分类，并同步删除 Neo4j 图谱节点")
     @DeleteMapping("/batch/{ids}")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.CATEGORY, paramSource = ParamSource.PATH_SINGLE,
@@ -97,6 +112,9 @@ public class CategoryController {
         return categoryService.deleteCategories(idList).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * POST /category/sub 接口，管理员在指定分类下新增子分类并返回新子分类ID，结果同步图谱与数仓
+     */
     @Operation(summary = "新增子分类", description = "管理员在指定分类下新增子分类，同步写入 Neo4j 图谱并记录操作日志")
     @PostMapping("/sub")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.SUB_CATEGORY, paramSource = ParamSource.BODY,
@@ -107,6 +125,9 @@ public class CategoryController {
         return categoryService.addSubCategory(dto).map(Result::success);
     }
 
+    /**
+     * PUT /category/sub 接口，管理员修改指定子分类信息，结果同步图谱与数仓
+     */
     @Operation(summary = "修改子分类", description = "管理员修改指定子分类信息，修改结果同步更新 Neo4j 图谱并记录操作日志")
     @PutMapping("/sub")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.SUB_CATEGORY, paramSource = ParamSource.BODY,
@@ -117,6 +138,9 @@ public class CategoryController {
         return categoryService.updateSubCategory(dto).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * DELETE /category/sub/{id} 接口，管理员删除指定子分类并同步删除图谱节点
+     */
     @Operation(summary = "删除子分类", description = "管理员删除指定子分类，并同步删除 Neo4j 图谱中的对应节点")
     @DeleteMapping("/sub/{id}")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.SUB_CATEGORY,
@@ -128,6 +152,9 @@ public class CategoryController {
         return categoryService.deleteSubCategory(id).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * DELETE /category/sub/batch/{ids} 接口，管理员按逗号分隔的ID列表批量删除子分类并同步图谱
+     */
     @Operation(summary = "批量删除子分类", description = "管理员按逗号分隔的ID列表批量删除子分类，并同步删除 Neo4j 图谱节点")
     @DeleteMapping("/sub/batch/{ids}")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.SUB_CATEGORY,
@@ -144,6 +171,9 @@ public class CategoryController {
         return categoryService.deleteSubCategories(idList).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * GET /category/list 接口，分页返回分类列表及各分类下子分类的层级结构信息
+     */
     @Operation(summary = "分页查询分类（含子分类信息）", description = "按页码与每页大小分页查询分类列表，返回分类及其子分类的层级结构信息")
     @GetMapping("/list")
     @ApiLog("分页查询分类")
@@ -153,6 +183,9 @@ public class CategoryController {
             .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
+    /**
+     * GET /category/{id} 接口，按ID返回分类详情及子分类层级信息，不存在时返回404
+     */
     @Operation(summary = "根据ID查询分类（含子分类信息）", description = "根据分类ID查询单个分类详情，返回分类及其子分类的层级结构信息，不存在时返回404")
     @GetMapping("/{id}")
     @ApiLog("根据ID查询分类")
@@ -162,6 +195,9 @@ public class CategoryController {
             .defaultIfEmpty(Result.<CategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_CATEGORY));
     }
 
+    /**
+     * POST /category/batch 内部接口，按ID列表批量返回分类信息
+     */
     @PostMapping("/batch")
     @Operation(summary = "批量查询分类（内部）", description = "根据ID列表批量查询分类，供内部服务远程调用")
     @RequireInternalToken
@@ -177,6 +213,9 @@ public class CategoryController {
             .map(Result::success);
     }
 
+    /**
+     * POST /category/sub/batch 内部接口，按ID列表批量返回子分类信息
+     */
     @PostMapping("/sub/batch")
     @Operation(summary = "批量查询子分类（内部）", description = "根据ID列表批量查询子分类，供内部服务远程调用")
     @RequireInternalToken
@@ -192,6 +231,9 @@ public class CategoryController {
             .map(Result::success);
     }
 
+    /**
+     * GET /category/internal/all 内部接口，不分页返回全部分类列表
+     */
     @GetMapping("/internal/all")
     @Operation(summary = "获取所有分类（内部）", description = "获取所有分类列表，供内部服务远程调用")
     @RequireInternalToken
@@ -207,6 +249,9 @@ public class CategoryController {
             .map(Result::success);
     }
 
+    /**
+     * GET /category/internal/sub/with-parent 内部接口，返回所有子分类及其父分类名称的层级信息
+     */
     @GetMapping("/internal/sub/with-parent")
     @Operation(summary = "获取子分类及其父分类信息（内部）", description = "获取所有子分类及对应的父分类名称，供内部服务远程调用")
     @RequireInternalToken
@@ -217,6 +262,9 @@ public class CategoryController {
             .map(Result::success);
     }
 
+    /**
+     * GET /category/internal/neo4j-sync 内部接口，按 updatedAfter 增量返回分类表数据供 FastAPI 同步 Neo4j
+     */
     @GetMapping("/internal/neo4j-sync")
     @Operation(summary = "获取分类表数据用于Neo4j同步（内部）", description = "获取分类表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
@@ -226,6 +274,9 @@ public class CategoryController {
         return categoryService.getNeo4jSyncCategories(updatedAfter).map(Result::success);
     }
 
+    /**
+     * GET /category/internal/sub/neo4j-sync 内部接口，按 updatedAfter 增量返回子分类表数据供 FastAPI 同步 Neo4j
+     */
     @GetMapping("/internal/sub/neo4j-sync")
     @Operation(summary = "获取子分类表数据用于Neo4j同步（内部）", description = "获取子分类表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken

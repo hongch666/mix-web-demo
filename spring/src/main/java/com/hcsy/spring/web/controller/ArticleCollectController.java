@@ -40,6 +40,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 文章收藏控制器，聚合 /collects 下的收藏、取消收藏、收藏状态与列表查询及各类收藏统计接口
+ */
 @RestController
 @RequestMapping("/collects")
 @RequiredArgsConstructor
@@ -48,6 +51,9 @@ public class ArticleCollectController {
 
     private final ArticleCollectService articleCollectService;
 
+    /**
+     * POST /collects 接口，为指定用户新增一条文章收藏记录，重复收藏时返回409冲突
+     */
     @PostMapping
     @Operation(summary = "添加收藏", description = "为文章添加收藏")
     @ArticleSync(action = SyncAction.COLLECT, resource = SyncResource.COLLECTS, description = "收藏了1篇文章")
@@ -62,6 +68,9 @@ public class ArticleCollectController {
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.COLLECT_FAIL));
     }
 
+    /**
+     * DELETE /collects 接口，按文章ID与用户ID取消收藏
+     */
     @DeleteMapping
     @Operation(summary = "取消收藏", description = "取消对文章的收藏")
     @ArticleSync(action = SyncAction.UNCOLLECT, resource = SyncResource.COLLECTS, description = "取消收藏了1篇文章")
@@ -80,6 +89,9 @@ public class ArticleCollectController {
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.UNCOLLECT_FAIL));
     }
 
+    /**
+     * GET /collects/user/{user_id} 接口，分页返回指定用户的收藏列表，含收藏总数与带文章详情的收藏记录，需管理员或本人权限
+     */
     @GetMapping("/user/{user_id}")
     @Operation(summary = "查询用户的所有收藏", description = "分页查询某个用户的所有收藏记录（包含文章详情）")
     @ApiLog("查询用户收藏")
@@ -94,6 +106,9 @@ public class ArticleCollectController {
             .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
+    /**
+     * GET /collects/check 接口，按文章ID与用户ID查询是否已收藏，返回布尔结果
+     */
     @GetMapping("/check")
     @Operation(summary = "检查用户是否收藏", description = "查询用户是否收藏过某篇文章")
     @ApiLog("检查收藏状态")
@@ -109,6 +124,9 @@ public class ArticleCollectController {
             .map(collected -> Result.success(new CollectCheckVO(collected)));
     }
 
+    /**
+     * GET /collects/count/{article_id} 接口，返回指定文章的总收藏数
+     */
     @GetMapping("/count/{article_id}")
     @Operation(summary = "获取文章的收藏数", description = "获取某篇文章的总收藏数")
     @ApiLog("获取收藏数")
@@ -118,6 +136,9 @@ public class ArticleCollectController {
             .map(count -> Result.success(new CollectCountVO(count)));
     }
 
+    /**
+     * POST /collects/counts/batch 内部接口，按文章ID列表批量返回各文章的收藏数
+     */
     @PostMapping("/counts/batch")
     @Operation(summary = "批量查询收藏数（内部）", description = "根据文章ID列表批量查询收藏数，供内部服务远程调用")
     @RequireInternalToken
@@ -127,6 +148,9 @@ public class ArticleCollectController {
             .map(Result::success);
     }
 
+    /**
+     * GET /collects/statistics/total 内部接口，返回全站文章的总收藏数
+     */
     @GetMapping("/statistics/total")
     @Operation(summary = "获取总收藏数（内部）", description = "获取所有文章的总收藏数，供内部服务远程调用")
     @RequireInternalToken
@@ -135,6 +159,9 @@ public class ArticleCollectController {
         return articleCollectService.getTotalCollects().map(Result::success);
     }
 
+    /**
+     * GET /collects/statistics/average 内部接口，返回每篇文章的平均收藏数
+     */
     @GetMapping("/statistics/average")
     @Operation(summary = "获取平均收藏数（内部）", description = "获取每篇文章的平均收藏数，供内部服务远程调用")
     @RequireInternalToken
@@ -143,6 +170,9 @@ public class ArticleCollectController {
         return articleCollectService.getAverageCollects().map(Result::success);
     }
 
+    /**
+     * GET /collects/statistics/monthly-trend/{userId} 内部接口，返回指定用户本月的收藏趋势统计
+     */
     @GetMapping("/statistics/monthly-trend/{userId}")
     @Operation(summary = "获取用户月度收藏趋势（内部）", description = "获取用户本月收藏的趋势，供内部服务远程调用")
     @RequireInternalToken
@@ -151,6 +181,9 @@ public class ArticleCollectController {
         return articleCollectService.getMonthlyCollectTrend(userId).map(Result::success);
     }
 
+    /**
+     * GET /collects/neo4j-sync 内部接口，按 updatedAfter 增量返回收藏表数据供 FastAPI 同步 Neo4j
+     */
     @GetMapping("/neo4j-sync")
     @Operation(summary = "获取收藏表数据用于Neo4j同步（内部）", description = "获取收藏表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken

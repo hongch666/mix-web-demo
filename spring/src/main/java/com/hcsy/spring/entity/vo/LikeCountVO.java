@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 文章点赞数量响应，返回该文章的点赞总数
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

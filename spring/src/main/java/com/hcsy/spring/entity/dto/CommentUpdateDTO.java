@@ -8,6 +8,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+/**
+ * 更新评论请求，在创建字段基础上追加评论ID
+ */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor

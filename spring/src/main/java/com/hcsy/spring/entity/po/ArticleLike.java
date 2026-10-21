@@ -8,6 +8,9 @@ import org.springframework.data.relational.core.mapping.Table;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+/**
+ * 对应 likes 表的文章点赞记录实体，记录用户ID、文章ID与点赞时间
+ */
 @Data
 @Table("likes")
 @Schema(description = "文章点赞")

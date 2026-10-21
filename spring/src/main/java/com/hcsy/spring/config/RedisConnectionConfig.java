@@ -23,6 +23,9 @@ public class RedisConnectionConfig {
 
     private final RedisProperties redisProperties;
 
+    /**
+     * 装配开启 TCP keepalive 与命令超时的 Lettuce 客户端定制器，避免共享连接静默失效
+     */
     @Bean
     LettuceClientConfigurationBuilderCustomizer lettuceKeepAliveCustomizer() {
         Duration connectTimeout = redisProperties.getConnectTimeout() != null

@@ -7,6 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 为指定用户创建 GitHub 登录一次性票据的请求，携带用户ID与用户名
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

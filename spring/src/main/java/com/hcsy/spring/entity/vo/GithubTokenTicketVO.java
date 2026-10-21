@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * GitHub 登录一次性票据响应，包含票据内容及有效期秒数
+ */
 @Data
 @Builder
 @NoArgsConstructor

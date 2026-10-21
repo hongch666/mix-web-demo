@@ -9,6 +9,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+/**
+ * 更新用户请求，在创建字段基础上追加用户ID并允许指定 admin 或 user 角色
+ */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor

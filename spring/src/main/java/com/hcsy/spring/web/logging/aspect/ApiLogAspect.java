@@ -89,6 +89,9 @@ public class ApiLogAspect {
         return result;
     }
 
+    /**
+     * 在接口方法执行前按注解配置的日志级别输出请求起始日志，includeParams 开启时附带剔除敏感字段后的参数信息
+     */
     private void logStart(ProceedingJoinPoint pjp, ApiLog apiLog, String httpMethod, String requestPath) {
         StringBuilder message = new StringBuilder(
             String.format(Messages.API_LOG_START, httpMethod, requestPath, apiLog.value()));
@@ -188,11 +191,17 @@ public class ApiLogAspect {
         return base + withLeadingSlash(methodPath);
     }
 
+    /**
+     * 读取控制器类上 @RequestMapping 声明的路径前缀数组
+     */
     private String[] getClassPaths(Class<?> clazz) {
         RequestMapping requestMapping = clazz.getAnnotation(RequestMapping.class);
         return requestMapping == null ? new String[0] : requestMapping.value();
     }
 
+    /**
+     * 按方法上的各HTTP映射注解类型读取其路径定义数组
+     */
     private String[] getMethodPaths(Method method) {
         if (method.isAnnotationPresent(GetMapping.class)) {
             return method.getAnnotation(GetMapping.class).value();
@@ -215,10 +224,16 @@ public class ApiLogAspect {
         return new String[0];
     }
 
+    /**
+     * 取路径数组中的首个非空路径并去除首尾空白，无可用路径时返回空串
+     */
     private String firstPath(String[] paths) {
         return paths.length == 0 || paths[0] == null ? "" : paths[0].trim();
     }
 
+    /**
+     * 为路径补充开头的斜杠，已有斜杠或为空时原样返回
+     */
     private String withLeadingSlash(String path) {
         if (path.isEmpty() || path.startsWith("/")) {
             return path;
@@ -300,6 +315,9 @@ public class ApiLogAspect {
         return node;
     }
 
+    /**
+     * 递归遍历JSON节点树并移除注解声明的敏感字段，对象与数组嵌套层级均生效
+     */
     private void stripSensitiveFields(JsonNode node, Set<String> excludeFields) {
         if (node instanceof ObjectNode objectNode) {
             objectNode.remove(excludeFields);

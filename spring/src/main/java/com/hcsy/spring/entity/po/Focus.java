@@ -8,6 +8,9 @@ import org.springframework.data.relational.core.mapping.Table;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+/**
+ * 对应 focus 表的用户关注关系实体，记录发起关注与被关注用户的ID及关注时间
+ */
 @Data
 @Table("focus")
 @Schema(description = "用户关注")

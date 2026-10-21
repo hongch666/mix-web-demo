@@ -36,6 +36,9 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * CategoryService 的实现，在事务中维护分类与子分类并级联删除子分类，通过多级缓存加速分类查询并在写操作后失效缓存
+ */
 @Service
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
@@ -49,6 +52,9 @@ public class CategoryServiceImpl implements CategoryService {
     private final CacheUtil cacheUtil;
     private final TransactionalOperator transactionalOperator;
 
+    /**
+     * 实现新增分类并清除分类缓存
+     */
     @Override
     public Mono<Long> addCategory(CategoryCreateDTO dto) {
         Category category = new Category();
@@ -57,6 +63,9 @@ public class CategoryServiceImpl implements CategoryService {
             .flatMap(saved -> evictAllCategoryCaches().thenReturn(saved.getId()));
     }
 
+    /**
+     * 实现更新分类名称，分类不存在时抛404异常
+     */
     @Override
     public Mono<Void> updateCategory(CategoryUpdateDTO dto) {
         Mono<Void> databaseOperation = categoryRepository.findById(dto.getId())
@@ -70,6 +79,9 @@ public class CategoryServiceImpl implements CategoryService {
             .then(evictAllCategoryCaches());
     }
 
+    /**
+     * 实现在事务中删除分类并级联删除子分类，随后清缓存
+     */
     @Override
     public Mono<Void> deleteCategory(Long id) {
         Mono<Void> databaseOperation = categoryRepository.findById(id)
@@ -80,6 +92,9 @@ public class CategoryServiceImpl implements CategoryService {
             .then(evictAllCategoryCaches());
     }
 
+    /**
+     * 实现批量删除分类并级联删除各自子分类
+     */
     @Override
     public Mono<Void> deleteCategories(List<Long> ids) {
         List<Long> distinctIds = normalizeIds(ids);
@@ -98,6 +113,9 @@ public class CategoryServiceImpl implements CategoryService {
             .then(evictAllCategoryCaches());
     }
 
+    /**
+     * 实现新增子分类并清除分类缓存
+     */
     @Override
     public Mono<Long> addSubCategory(SubCategoryCreateDTO dto) {
         SubCategory subCategory = new SubCategory();
@@ -107,6 +125,9 @@ public class CategoryServiceImpl implements CategoryService {
             .flatMap(saved -> evictAllCategoryCaches().thenReturn(saved.getId()));
     }
 
+    /**
+     * 实现更新子分类名称与所属分类，子分类不存在时抛404异常
+     */
     @Override
     public Mono<Void> updateSubCategory(SubCategoryUpdateDTO dto) {
         Mono<Void> databaseOperation = subCategoryRepository.findById(dto.getId())
@@ -121,6 +142,9 @@ public class CategoryServiceImpl implements CategoryService {
             .then(evictAllCategoryCaches());
     }
 
+    /**
+     * 实现删除指定子分类并清除分类缓存
+     */
     @Override
     public Mono<Void> deleteSubCategory(Long id) {
         Mono<Void> databaseOperation = subCategoryRepository.findById(id)
@@ -130,6 +154,9 @@ public class CategoryServiceImpl implements CategoryService {
             .then(evictAllCategoryCaches());
     }
 
+    /**
+     * 实现批量删除子分类，任一ID不存在时抛404异常
+     */
     @Override
     public Mono<Void> deleteSubCategories(List<Long> ids) {
         List<Long> distinctIds = normalizeIds(ids);
@@ -145,6 +172,9 @@ public class CategoryServiceImpl implements CategoryService {
             .then(evictAllCategoryCaches());
     }
 
+    /**
+     * 实现查询分类详情含子分类列表，走多级缓存
+     */
     @Override
     public Mono<CategoryVO> getCategoryById(Long id) {
         String cacheKey = RedisKeys.categoryId(id);
@@ -152,6 +182,9 @@ public class CategoryServiceImpl implements CategoryService {
             CategoryVO.class, () -> loadCategory(id));
     }
 
+    /**
+     * 实现分页查询分类详情，走多级缓存
+     */
     @Override
     public Mono<PageDTO<CategoryVO>> pageCategory(long page, long size) {
         String cacheKey = RedisKeys.categoryPage(page, size);
@@ -160,16 +193,25 @@ public class CategoryServiceImpl implements CategoryService {
             }, () -> loadCategoryPage(page, size));
     }
 
+    /**
+     * 实现按ID批量流式查询分类
+     */
     @Override
     public Flux<Category> listByIds(Collection<Long> ids) {
         return categoryRepository.findAllById(ids);
     }
 
+    /**
+     * 实现按ID批量流式查询子分类
+     */
     @Override
     public Flux<SubCategory> listSubCategoriesByIds(Collection<Long> ids) {
         return subCategoryRepository.findAllById(ids);
     }
 
+    /**
+     * 缓存未命中时从数据库加载分类详情并组装子分类列表
+     */
     private Mono<CategoryVO> loadCategory(Long id) {
         return categoryRepository.findById(id).flatMap(category -> {
             CategoryVO vo = new CategoryVO();
@@ -188,6 +230,9 @@ public class CategoryServiceImpl implements CategoryService {
         });
     }
 
+    /**
+     * 缓存未命中时从数据库加载分类分页并逐条填充子分类
+     */
     private Mono<PageDTO<CategoryVO>> loadCategoryPage(long page, long size) {
         PageRequest pageable = PageRequest.of(toPageIndex(page), toPageSize(size));
         Mono<List<CategoryVO>> records = categoryRepository.findAllByOrderByIdAsc(pageable)
@@ -204,18 +249,30 @@ public class CategoryServiceImpl implements CategoryService {
         });
     }
 
+    /**
+     * 清除分类详情与分类分页的全部本地与Redis缓存
+     */
     private Mono<Void> evictAllCategoryCaches() {
         return cacheUtil.evictAll(RedisKeys.categoryAllPattern(), CATEGORY_BY_ID_CACHE, CATEGORY_PAGE_CACHE);
     }
 
+    /**
+     * 将1起始页码转换为0起始的分页索引，最小为0
+     */
     private int toPageIndex(long page) {
         return (int) Math.max(0, page - 1);
     }
 
+    /**
+     * 将每页大小限制在1到1000之间
+     */
     private int toPageSize(long size) {
         return (int) Math.max(1, Math.min(size, 1000));
     }
 
+    /**
+     * 对ID列表去空并去重，空入参返回空列表
+     */
     private List<Long> normalizeIds(List<Long> ids) {
         if (ids == null) {
             return List.of();
@@ -223,6 +280,9 @@ public class CategoryServiceImpl implements CategoryService {
         return ids.stream().filter(id -> id != null).distinct().toList();
     }
 
+    /**
+     * 构造404资源不存在的业务异常
+     */
     private BusinessException notFound(String message) {
         return BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(message).build();
     }
@@ -234,6 +294,9 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryRepository.findAll();
     }
 
+    /**
+     * 实现查询所有子分类并批量关联父分类名称，避免N+1查询
+     */
     @Override
     public Flux<SubCategoryWithParentVO> listAllSubCategoriesWithParent() {
         return subCategoryRepository.findAll()
@@ -259,6 +322,9 @@ public class CategoryServiceImpl implements CategoryService {
             });
     }
 
+    /**
+     * 实现查询分类数据用于Neo4j同步，支持按更新时间增量
+     */
     @Override
     public Mono<List<CategorySyncVO>> getNeo4jSyncCategories(String updatedAfter) {
         if (updatedAfter == null || updatedAfter.isBlank()) {
@@ -274,6 +340,9 @@ public class CategoryServiceImpl implements CategoryService {
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
+    /**
+     * 实现查询子分类数据用于Neo4j同步，支持按更新时间增量
+     */
     @Override
     public Mono<List<SubCategorySyncVO>> getNeo4jSyncSubCategories(String updatedAfter) {
         if (updatedAfter == null || updatedAfter.isBlank()) {

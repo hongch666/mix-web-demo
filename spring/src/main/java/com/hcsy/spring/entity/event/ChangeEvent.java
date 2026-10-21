@@ -59,6 +59,9 @@ public class ChangeEvent {
             .build();
     }
 
+    /**
+     * 判断事件是否未携带受影响主键，为空时下游退化为全量同步
+     */
     public boolean isEmptyIds() {
         return ids == null || ids.isEmpty();
     }

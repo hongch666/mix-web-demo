@@ -21,6 +21,9 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 全局异常处理器，统一将业务异常、参数校验异常与其余未捕获异常转换为标准 Result 响应并记录日志
+ */
 @RestControllerAdvice
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
@@ -69,6 +72,9 @@ public class GlobalExceptionHandler {
             .body(Result.error(HttpCode.INTERNAL_SERVER_ERROR, Messages.SYSTEM_EXCEPTION_BACK)));
     }
 
+    /**
+     * 按异常类型提取参数校验失败的可读错误消息，区分字段校验、约束校验与请求体格式错误，无法识别时回退到系统异常文案
+     */
     private String extractValidationMessage(Exception ex) {
         if (ex instanceof WebExchangeBindException webExchangeBindException) {
             return extractFieldMessage(webExchangeBindException.getBindingResult());
@@ -98,6 +104,9 @@ public class GlobalExceptionHandler {
         return Messages.SYSTEM_EXCEPTION_BACK;
     }
 
+    /**
+     * 从绑定结果中取首个字段校验错误的默认消息，为空时回退到系统异常文案
+     */
     private String extractFieldMessage(BindingResult bindingResult) {
         if (bindingResult == null) {
             return Messages.SYSTEM_EXCEPTION_BACK;

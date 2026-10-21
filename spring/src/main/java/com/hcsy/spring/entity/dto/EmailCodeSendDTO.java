@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 发送邮箱验证码请求，携带收件邮箱及 register、login 或 reset 使用场景
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

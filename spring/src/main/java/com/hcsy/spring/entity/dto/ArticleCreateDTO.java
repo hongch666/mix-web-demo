@@ -10,6 +10,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 创建文章请求，携带标题、内容、作者、标签、发布状态及所属子分类
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

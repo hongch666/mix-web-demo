@@ -6,6 +6,9 @@ import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+/**
+ * 通用分页结果封装，包含当前页码、每页条数、总记录数与当前页记录
+ */
 @Data
 @Schema(description = "分页结果")
 public class PageDTO<T> implements Serializable {

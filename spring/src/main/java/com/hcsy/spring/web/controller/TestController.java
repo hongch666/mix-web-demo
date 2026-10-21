@@ -13,12 +13,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 测试控制器，提供 /test/spring 健康检查接口用于验证 Spring 服务是否正常运行
+ */
 @RestController
 @RequestMapping("/test")
 @RequiredArgsConstructor
 @Tag(name = "测试模块", description = "服务测试相关API，用于验证各个微服务是否正常运行")
 public class TestController {
 
+    /**
+     * GET /test/spring 接口，返回固定的欢迎信息，用于验证Spring服务是否正常运行
+     */
     @GetMapping("/spring")
     @Operation(summary = "Spring自己的测试", description = "输出欢迎信息")
     @ApiLog("测试Spring服务")

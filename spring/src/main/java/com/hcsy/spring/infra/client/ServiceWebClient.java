@@ -30,6 +30,9 @@ import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 封装微服务间 HTTP 请求，统一附加内部令牌与用户上下文并应用超时、重试、熔断与调用指标记录
+ */
 @Component
 @RequiredArgsConstructor
 public class ServiceWebClient {
@@ -64,6 +67,9 @@ public class ServiceWebClient {
             serviceClientProperties.timeout(), fallbackMessage);
     }
 
+    /**
+     * 以指定超时时间发起微服务 HTTP 请求，统一附加内部令牌与用户上下文，并应用重试、熔断与调用指标记录
+     */
     public Mono<Result<?>> request(
         HttpMethod method,
         String serviceName,
@@ -119,6 +125,9 @@ public class ServiceWebClient {
         });
     }
 
+    /**
+     * 按服务名解析目标主机并拼接路径、查询参数与路径变量，构建请求 URI
+     */
     private URI buildUri(
         UriBuilder uriBuilder,
         String serviceName,
@@ -135,6 +144,9 @@ public class ServiceWebClient {
         return target.build(pathVariables == null ? Map.of() : pathVariables);
     }
 
+    /**
+     * 向 URI 追加单个查询参数，值为空列表时仅输出参数名
+     */
     private void addQueryParameter(UriBuilder uriBuilder, String name, List<String> values) {
         if (values == null || values.isEmpty()) {
             uriBuilder.queryParam(name);
@@ -143,6 +155,9 @@ public class ServiceWebClient {
         uriBuilder.queryParam(name, values.toArray());
     }
 
+    /**
+     * 为请求设置 JSON 接受类型、内部令牌、用户上下文与访问令牌等请求头
+     */
     private void applyHeaders(
         HttpHeaders requestHeaders,
         HttpHeaders customHeaders,
@@ -164,6 +179,9 @@ public class ServiceWebClient {
             accessToken == null || accessToken.isBlank() ? null : BEARER_PREFIX + accessToken);
     }
 
+    /**
+     * 设置请求头，值为空时移除该请求头
+     */
     private void setOrRemove(HttpHeaders headers, String name, String value) {
         if (value == null) {
             headers.remove(name);
@@ -172,6 +190,9 @@ public class ServiceWebClient {
         headers.set(name, value);
     }
 
+    /**
+     * 确保请求路径以斜杠开头
+     */
     private String normalizePath(String path) {
         return path.startsWith("/") ? path : "/" + path;
     }

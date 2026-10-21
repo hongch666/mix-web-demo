@@ -20,6 +20,9 @@ import com.hcsy.spring.infra.client.GoZeroClient;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * AsyncSyncService 的实现，在数据变更后按需异步调用 go-zero 服务同步 ES、FastAPI 同步向量库与数仓并提交 Neo4j 同步事件
+ */
 @Service
 @RequiredArgsConstructor
 public class AsyncSyncServiceImpl implements AsyncSyncService {
@@ -28,6 +31,9 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     private final FastAPIClient fastAPIClient;
     private final SimpleLogger logger;
 
+    /**
+     * 实现文章变更后异步同步ES、向量库与数仓，按需跳过目标
+     */
     @Override
     public Mono<Void> syncArticleAsync(Long userId, String username, boolean syncES, boolean syncVector,
         ChangeEvent event) {
@@ -45,15 +51,24 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
         return execute(userId, username, buildSyncTargets(syncES, syncVector), Mono.when(tasks));
     }
 
+    /**
+     * 实现按资源类型异步同步数仓统计口径
+     */
     @Override
     public Mono<Void> syncWarehouseAsync(Long userId, String username, Set<String> resources) {
         return execute(userId, username, Messages.SYNC_TARGET_WAREHOUSE, warehouseTask(resources));
     }
 
+    /**
+     * 构造数仓同步任务，响应码非成功时转为错误
+     */
     private Mono<Void> warehouseTask(Set<String> resources) {
         return reactiveCall(() -> fastAPIClient.syncWarehouse(resources), Messages.WAREHOUSE_SYNC_SUCCESS);
     }
 
+    /**
+     * 实现向FastAPI提交Neo4j同步事件并记录响应与失败日志
+     */
     @Override
     public Mono<Void> syncNeo4jAsync(String methodName, String description, ChangeEvent event) {
         return fastAPIClient.syncNeo4j(List.of(event))
@@ -108,6 +123,9 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
         return String.join("、", targets);
     }
 
+    /**
+     * 执行响应式同步调用，响应码非成功时转为错误并记录成功日志
+     */
     private Mono<Void> reactiveCall(Supplier<Mono<Result<?>>> action, String successMessage) {
         return Mono.defer(action)
             .flatMap(result -> result.getCode() != null && result.getCode() == HttpCode.OK

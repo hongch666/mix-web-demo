@@ -42,6 +42,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 文章控制器，聚合 /articles 下的文章增删改查、发布、阅读量、用户文章分页、标题检索与统计导出等接口
+ */
 @RestController
 @RequestMapping("/articles")
 @RequiredArgsConstructor
@@ -50,6 +53,9 @@ public class ArticleController {
 
     private final ArticleService articleService;
 
+    /**
+     * POST /articles 接口，根据创建DTO新增文章并返回新文章ID，作者不存在时返回404
+     */
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
     @ArticleSync(action = SyncAction.ADD, esSync = true, vectorSync = true, description = "创建了1篇文章")
@@ -59,6 +65,9 @@ public class ArticleController {
             .defaultIfEmpty(Result.<Long>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
     }
 
+    /**
+     * GET /articles/list 内部接口，分页返回所有已发布文章
+     */
     @GetMapping("/list")
     @Operation(summary = "获取文章列表", description = "返回所有已发布的文章")
     @RequireInternalToken
@@ -70,6 +79,9 @@ public class ArticleController {
             .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
+    /**
+     * GET /articles/user/{id} 接口，分页返回指定用户的文章（含分类信息），可通过 published 参数筛选仅已发布文章
+     */
     @GetMapping("user/{id}")
     @Operation(summary = "获取用户文章", description = "返回用户文章，可指定是否只查询已发布的文章")
     @ApiLog("获取用户文章")
@@ -82,6 +94,9 @@ public class ArticleController {
             .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
+    /**
+     * GET /articles/{id} 接口，按ID返回文章详情（含分类信息），不存在时返回404
+     */
     @GetMapping("/{id}")
     @Operation(summary = "获取文章详情", description = "根据ID获取文章详情")
     @ApiLog("获取文章详情")
@@ -91,6 +106,9 @@ public class ArticleController {
             .defaultIfEmpty(Result.<ArticleWithCategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE));
     }
 
+    /**
+     * PUT /articles 接口，根据更新DTO修改文章内容，需管理员或作者本人权限
+     */
     @PutMapping
     @Operation(summary = "更新文章", description = "根据DTO更新文章信息")
     @RequirePermission(roles = {
@@ -103,6 +121,9 @@ public class ArticleController {
             .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
     }
 
+    /**
+     * DELETE /articles/{id} 接口，按ID删除文章，需管理员或作者本人权限
+     */
     @DeleteMapping("/{id}")
     @Operation(summary = "删除文章", description = "根据ID删除文章")
     @RequirePermission(roles = {
@@ -114,6 +135,9 @@ public class ArticleController {
         return articleService.deleteArticle(id).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * DELETE /articles/batch/{ids} 接口，按逗号分隔的ID列表批量删除文章，仅管理员可用
+     */
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除文章", description = "根据ID数组批量删除文章，多个ID用英文逗号分隔")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.ARTICLE, paramSource = ParamSource.PATH_SINGLE,
@@ -129,6 +153,9 @@ public class ArticleController {
         return articleService.deleteArticles(idList).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * PUT /articles/publish/{id} 接口，将指定文章状态改为已发布，仅管理员可用
+     */
     @PutMapping("/publish/{id}")
     @Operation(summary = "发布文章", description = "将文章状态修改为发布")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.ARTICLE, paramSource = ParamSource.PATH_SINGLE,
@@ -139,6 +166,9 @@ public class ArticleController {
         return articleService.publishArticle(id).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * PUT /articles/view/{id} 接口，将指定文章阅读量加一并触发浏览日志与下游同步
+     */
     @PutMapping("/view/{id}")
     @Operation(summary = "增加文章阅读量", description = "增加文章阅读量")
     @ArticleSync(action = SyncAction.VIEW, description = "浏览了1篇文章")
@@ -147,6 +177,9 @@ public class ArticleController {
         return articleService.addViewArticle(id).thenReturn(Result.<Void>success());
     }
 
+    /**
+     * GET /articles/unpublished/list 接口，分页返回所有未发布文章（含分类信息），仅管理员可用
+     */
     @GetMapping("/unpublished/list")
     @Operation(summary = "获取所有未发布文章", description = "返回所有未发布的文章，支持分页")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.ARTICLE)
@@ -158,6 +191,9 @@ public class ArticleController {
             .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
+    /**
+     * POST /articles/batch 内部接口，按ID列表批量返回文章详情（含分类信息）
+     */
     @PostMapping("/batch")
     @Operation(summary = "批量查询文章（内部）", description = "根据ID列表批量查询文章，供内部服务远程调用")
     @RequireInternalToken
@@ -166,6 +202,9 @@ public class ArticleController {
         return articleService.getArticleDetailsByIds(dto.getIds()).map(Result::success);
     }
 
+    /**
+     * GET /articles/by-title 内部接口，按标题模糊搜索并返回文章详情列表
+     */
     @GetMapping("/by-title")
     @Operation(summary = "根据标题模糊搜索文章（内部）", description = "根据标题模糊搜索，供内部服务远程调用")
     @RequireInternalToken
@@ -174,6 +213,9 @@ public class ArticleController {
         return articleService.getArticleDetailsByTitle(title).map(Result::success);
     }
 
+    /**
+     * POST /articles/views/batch 内部接口，按ID列表批量返回各文章的阅读量
+     */
     @PostMapping("/views/batch")
     @Operation(summary = "批量查询文章阅读量（内部）", description = "根据ID列表批量查询文章阅读量，供内部服务远程调用")
     @RequireInternalToken
@@ -193,6 +235,9 @@ public class ArticleController {
         return articleService.getTotalViews().map(Result::success);
     }
 
+    /**
+     * GET /articles/statistics/total 内部接口，返回文章总数
+     */
     @GetMapping("/statistics/total")
     @Operation(summary = "获取文章总数（内部）", description = "获取文章总数，供内部服务远程调用")
     @RequireInternalToken
@@ -201,6 +246,9 @@ public class ArticleController {
         return articleService.getTotalArticles().map(Result::success);
     }
 
+    /**
+     * GET /articles/statistics/active-authors 内部接口，返回有过发文行为的活跃作者数
+     */
     @GetMapping("/statistics/active-authors")
     @Operation(summary = "获取活跃作者数（内部）", description = "获取活跃作者数，供内部服务远程调用")
     @RequireInternalToken
@@ -209,6 +257,9 @@ public class ArticleController {
         return articleService.getActiveAuthors().map(Result::success);
     }
 
+    /**
+     * GET /articles/statistics/average-views 内部接口，返回文章的平均阅读量
+     */
     @GetMapping("/statistics/average-views")
     @Operation(summary = "获取平均阅读量（内部）", description = "获取平均阅读量，供内部服务远程调用")
     @RequireInternalToken
@@ -217,6 +268,9 @@ public class ArticleController {
         return articleService.getAverageViews().map(Result::success);
     }
 
+    /**
+     * GET /articles/statistics/excel-export 内部接口，返回导出Excel所需的全部文章数据
+     */
     @GetMapping("/statistics/excel-export")
     @Operation(summary = "获取导出Excel所需文章数据（内部）", description = "获取导出Excel所需文章数据，供内部服务远程调用")
     @RequireInternalToken
@@ -225,6 +279,9 @@ public class ArticleController {
         return articleService.getArticlesForExcelExport().map(Result::success);
     }
 
+    /**
+     * GET /articles/statistics/top10 内部接口，返回按阅读量降序排列的Top10文章
+     */
     @GetMapping("/statistics/top10")
     @Operation(summary = "获取Top10文章（内部）", description = "获取Top10文章（按阅读量降序），供内部服务远程调用")
     @RequireInternalToken
@@ -233,6 +290,9 @@ public class ArticleController {
         return articleService.getTop10Articles().map(Result::success);
     }
 
+    /**
+     * GET /articles/statistics/category-count 内部接口，返回按子分类统计的文章数量分布
+     */
     @GetMapping("/statistics/category-count")
     @Operation(summary = "获取按子分类统计的文章数量（内部）", description = "获取按子分类统计的文章数量，供内部服务远程调用")
     @RequireInternalToken
@@ -241,6 +301,9 @@ public class ArticleController {
         return articleService.getCategoryArticleCount().map(Result::success);
     }
 
+    /**
+     * GET /articles/statistics/monthly-publish-count 内部接口，返回最近24个月的月度文章发布数量统计
+     */
     @GetMapping("/statistics/monthly-publish-count")
     @Operation(summary = "获取最近24个月文章发布数量统计（内部）", description = "获取最近24个月文章发布数量统计，供内部服务远程调用")
     @RequireInternalToken
@@ -249,6 +312,9 @@ public class ArticleController {
         return articleService.getMonthlyPublishCount().map(Result::success);
     }
 
+    /**
+     * GET /articles/neo4j-sync 内部接口，按 updatedAfter 增量返回文章表数据供 FastAPI 同步 Neo4j
+     */
     @GetMapping("/neo4j-sync")
     @Operation(summary = "获取文章表数据用于Neo4j同步（内部）", description = "获取文章表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken

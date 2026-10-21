@@ -17,6 +17,9 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+/**
+ * ImageCaptchaService 的实现，在 boundedElastic 线程池生成图形验证码写入Redis（5分钟有效），校验时忽略大小写
+ */
 @Service
 @RequiredArgsConstructor
 public class ImageCaptchaServiceImpl implements ImageCaptchaService {
@@ -28,6 +31,9 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
     private final RedisUtil redisUtil;
     private final SimpleLogger logger;
 
+    /**
+     * 实现生成图形验证码写入Redis（5分钟有效）并返回ID与Base64图片
+     */
     @Override
     public Mono<ImageCaptchaVO> createCaptcha() {
         return Mono.fromCallable(this::generateCaptcha)
@@ -37,6 +43,9 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
                 .thenReturn(generated.vo()));
     }
 
+    /**
+     * 实现校验图形验证码，忽略大小写，过期或不存在返回 false
+     */
     @Override
     public Mono<Boolean> verifyCaptcha(String captchaId, String captchaText) {
         return redisUtil.get(RedisKeys.imageCaptcha(captchaId))
@@ -50,6 +59,9 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
             }));
     }
 
+    /**
+     * 实现删除已使用的图形验证码缓存
+     */
     @Override
     public Mono<Void> deleteCaptcha(String captchaId) {
         return redisUtil.delete(RedisKeys.imageCaptcha(captchaId))
@@ -57,6 +69,9 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
             .then();
     }
 
+    /**
+     * 生成随机ID的图形验证码及其Redis键与Base64图片
+     */
     private GeneratedCaptcha generateCaptcha() {
         String captchaId = UUID.randomUUID().toString().replace("-", "");
         SpecCaptcha captcha = new SpecCaptcha(CAPTCHA_WIDTH, CAPTCHA_HEIGHT, CAPTCHA_LENGTH);
@@ -69,6 +84,9 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
         return new GeneratedCaptcha(captchaId, RedisKeys.imageCaptcha(captchaId), text, vo);
     }
 
+    /**
+     * 承载一次生成的验证码ID、Redis键、明文与视图对象
+     */
     private record GeneratedCaptcha(String id, String key, String text, ImageCaptchaVO vo) {
     }
 }

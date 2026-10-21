@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 用户收藏文章请求，携带文章ID与用户ID
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

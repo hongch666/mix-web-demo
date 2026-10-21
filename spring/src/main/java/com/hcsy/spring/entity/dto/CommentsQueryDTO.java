@@ -3,6 +3,9 @@ package com.hcsy.spring.entity.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+/**
+ * 评论分页查询请求，支持按用户名、文章标题与评论内容模糊筛选
+ */
 @Data
 @Schema(description = "评论查询参数")
 public class CommentsQueryDTO {

@@ -23,6 +23,9 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 封装内部服务令牌的生成、校验与用户ID解析，用于微服务间请求的身份互信
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -31,6 +34,9 @@ public class InternalTokenUtil {
     private final SimpleLogger logger;
     private Key key;
 
+    /**
+     * 启动时校验并初始化内部服务令牌的 HMAC 签名密钥
+     */
     @PostConstruct
     public void initKey() {
         if (internalTokenProperties.secret() == null || internalTokenProperties.secret().isEmpty()) {

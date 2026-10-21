@@ -7,6 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 关注用户列表响应，包含被关注用户的资料及关注时间
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

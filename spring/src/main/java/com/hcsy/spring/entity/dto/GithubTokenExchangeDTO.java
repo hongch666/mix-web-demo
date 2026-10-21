@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * GitHub 登录时用一次性票据换取访问令牌的请求
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

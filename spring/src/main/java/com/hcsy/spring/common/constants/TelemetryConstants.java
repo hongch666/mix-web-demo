@@ -5,6 +5,9 @@ package com.hcsy.spring.common.constants;
  */
 public final class TelemetryConstants {
 
+    /**
+     * 聚合 OpenTelemetry 日志关联的 traceId 占位符与日志行格式常量
+     */
     private TelemetryConstants() {
     }
 

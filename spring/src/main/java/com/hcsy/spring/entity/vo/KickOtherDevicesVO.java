@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 踢出其他设备结果响应，包含用户ID、已移除会话数与剩余在线设备数
+ */
 @Data
 @Builder
 @NoArgsConstructor

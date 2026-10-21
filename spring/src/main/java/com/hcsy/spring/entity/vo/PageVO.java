@@ -7,6 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 通用分页响应封装，包含总记录数与当前页数据列表
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

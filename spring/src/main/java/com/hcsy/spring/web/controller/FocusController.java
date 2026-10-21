@@ -40,6 +40,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * 用户关注控制器，聚合 /focus 下的关注与取关、关注与粉丝列表查询及各类关注统计接口
+ */
 @RestController
 @RequestMapping("/focus")
 @RequiredArgsConstructor
@@ -48,6 +51,9 @@ public class FocusController {
 
     private final FocusService focusService;
 
+    /**
+     * POST /focus 接口，为指定用户新增一条关注记录，重复关注时返回409冲突
+     */
     @PostMapping
     @Operation(summary = "新增关注", description = "用户关注另一个用户")
     @ArticleSync(action = SyncAction.FOCUS, resource = SyncResource.FOCUS, description = "关注了1个用户")
@@ -62,6 +68,9 @@ public class FocusController {
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.FOCUS_FAIL));
     }
 
+    /**
+     * DELETE /focus 接口，按用户ID与被关注用户ID取消关注
+     */
     @DeleteMapping
     @Operation(summary = "取消关注", description = "用户取消关注另一个用户")
     @ArticleSync(action = SyncAction.UNFOCUS, resource = SyncResource.FOCUS, description = "取消关注了1个用户")
@@ -79,6 +88,9 @@ public class FocusController {
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.UNFOCUS_FAIL));
     }
 
+    /**
+     * GET /focus/check 接口，查询指定用户是否已关注某个用户，返回布尔结果
+     */
     @GetMapping("/check")
     @Operation(summary = "检查关注状态", description = "查询用户是否关注了某个用户")
     @ApiLog("检查关注状态")
@@ -93,6 +105,9 @@ public class FocusController {
             .map(focused -> Result.success(new FocusCheckVO(focused)));
     }
 
+    /**
+     * GET /focus/authors/{user_id} 接口，分页返回指定用户关注的所有作者信息
+     */
     @GetMapping("/authors/{user_id}")
     @Operation(summary = "查询用户的所有关注作者", description = "分页查询某个用户关注的所有作者信息")
     @ApiLog("查询用户关注")
@@ -104,6 +119,9 @@ public class FocusController {
             .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
+    /**
+     * GET /focus/followers/{user_id} 接口，分页返回指定用户的所有粉丝信息
+     */
     @GetMapping("/followers/{user_id}")
     @Operation(summary = "查询用户的所有粉丝", description = "分页查询某个用户的所有粉丝信息")
     @ApiLog("查询用户粉丝")
@@ -115,6 +133,9 @@ public class FocusController {
             .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
+    /**
+     * GET /focus/count/focus/{user_id} 接口，返回指定用户的关注人数
+     */
     @GetMapping("/count/focus/{user_id}")
     @Operation(summary = "获取用户的关注数", description = "查询用户关注的人数")
     @ApiLog("查询关注数")
@@ -124,6 +145,9 @@ public class FocusController {
             .map(count -> Result.success(new CountVO(count)));
     }
 
+    /**
+     * GET /focus/count/follower/{user_id} 接口，返回指定用户的粉丝数量
+     */
     @GetMapping("/count/follower/{user_id}")
     @Operation(summary = "获取用户的粉丝数", description = "查询用户的粉丝数量")
     @ApiLog("查询粉丝数")
@@ -133,6 +157,9 @@ public class FocusController {
             .map(count -> Result.success(new CountVO(count)));
     }
 
+    /**
+     * POST /focus/counts/batch 内部接口，按用户ID列表批量返回各用户的粉丝数
+     */
     @PostMapping("/counts/batch")
     @Operation(summary = "批量查询粉丝数（内部）", description = "根据用户ID列表批量查询粉丝数，供内部服务远程调用")
     @RequireInternalToken
@@ -142,6 +169,9 @@ public class FocusController {
             .map(Result::success);
     }
 
+    /**
+     * GET /focus/statistics/followers-in-period/{userId} 内部接口，返回指定用户在起止时间段内新增的粉丝数
+     */
     @GetMapping("/statistics/followers-in-period/{userId}")
     @Operation(summary = "获取时间段内粉丝数（内部）", description = "获取指定时间段内的新增粉丝数，供内部服务远程调用")
     @RequireInternalToken
@@ -155,6 +185,9 @@ public class FocusController {
         return focusService.getFollowersInPeriod(userId, startDate, endDate).map(Result::success);
     }
 
+    /**
+     * GET /focus/statistics/daily-follows/{userId} 内部接口，返回指定用户在时间段内每天的关注数分布
+     */
     @GetMapping("/statistics/daily-follows/{userId}")
     @Operation(summary = "获取每日关注数（内部）", description = "获取指定时间段内每天的关注数，供内部服务远程调用")
     @RequireInternalToken
@@ -168,6 +201,9 @@ public class FocusController {
         return focusService.getDailyFollows(userId, startDate, endDate).map(Result::success);
     }
 
+    /**
+     * GET /focus/statistics/total-follows/{userId} 内部接口，返回指定用户的总关注数
+     */
     @GetMapping("/statistics/total-follows/{userId}")
     @Operation(summary = "获取总关注数（内部）", description = "获取用户的总关注数，供内部服务远程调用")
     @RequireInternalToken
@@ -176,6 +212,9 @@ public class FocusController {
         return focusService.getTotalFollows(userId).map(Result::success);
     }
 
+    /**
+     * GET /focus/neo4j-sync 内部接口，按 updatedAfter 增量返回关注关系表数据供 FastAPI 同步 Neo4j
+     */
     @GetMapping("/neo4j-sync")
     @Operation(summary = "获取关注表数据用于Neo4j同步（内部）", description = "获取关注表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken

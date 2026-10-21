@@ -5,6 +5,9 @@ package com.hcsy.spring.common.constants;
  */
 public class Defaults {
 
+    /**
+     * 聚合默认文案、AI用户配置、缓存 TTL 与分布式锁过期时间等默认值常量
+     */
     private Defaults() {
     }
 

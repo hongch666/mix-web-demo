@@ -15,6 +15,9 @@ import com.hcsy.spring.infra.client.NestjsClient;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * EmailVerificationService 的实现，生成6位验证码存入Redis（10分钟有效）并调用 NestJS 邮件服务发送，校验通过后立即删除防重放
+ */
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationServiceImpl implements EmailVerificationService {
@@ -26,6 +29,9 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     private final SimpleLogger logger;
     private final NestjsClient nestjsClient;
 
+    /**
+     * 实现生成6位验证码存入Redis（10分钟有效）并调用邮件服务发送
+     */
     @Override
     public Mono<Void> sendVerificationCode(String email, String type) {
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
@@ -37,6 +43,9 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
             .then();
     }
 
+    /**
+     * 实现校验邮箱验证码，正确后立即删除防重放，过期或出错返回 false
+     */
     @Override
     public Mono<Boolean> verifyCode(String email, String code) {
         String key = RedisKeys.emailVerify(email);
@@ -60,11 +69,17 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
             });
     }
 
+    /**
+     * 实现查询邮箱是否已通过验证
+     */
     @Override
     public Mono<Boolean> isEmailVerified(String email) {
         return redisUtil.exists(RedisKeys.emailVerified(email));
     }
 
+    /**
+     * 实现将邮箱标记为已验证并保留24小时
+     */
     @Override
     public Mono<Void> markEmailAsVerified(String email) {
         return redisUtil.set(RedisKeys.emailVerified(email), "true", 24 * 60 * 60).then();

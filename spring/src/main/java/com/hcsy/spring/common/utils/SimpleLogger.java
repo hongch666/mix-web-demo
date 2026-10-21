@@ -45,21 +45,33 @@ public class SimpleLogger {
         log.info(Messages.LOG_INIT, logPath);
     }
 
+    /**
+     * 记录 INFO 级日志并同时写入按日期滚动的日志文件
+     */
     public void info(String message) {
         log.info(message);
         writeLog(message, "INFO");
     }
 
+    /**
+     * 记录 ERROR 级日志并同时写入按日期滚动的日志文件
+     */
     public void error(String message) {
         log.error(message);
         writeLog(message, "ERROR");
     }
 
+    /**
+     * 记录 WARNING 级日志并同时写入按日期滚动的日志文件
+     */
     public void warning(String message) {
         log.warn(message);
         writeLog(message, "WARNING");
     }
 
+    /**
+     * 记录 DEBUG 级日志并同时写入按日期滚动的日志文件
+     */
     public void debug(String message) {
         log.debug(message);
         writeLog(message, "DEBUG");
@@ -70,14 +82,23 @@ public class SimpleLogger {
         info(String.format(format, args));
     }
 
+    /**
+     * ERROR 级格式化日志变体
+     */
     public void error(String format, Object... args) {
         error(String.format(format, args));
     }
 
+    /**
+     * WARNING 级格式化日志变体
+     */
     public void warning(String format, Object... args) {
         warning(String.format(format, args));
     }
 
+    /**
+     * DEBUG 级格式化日志变体
+     */
     public void debug(String format, Object... args) {
         debug(String.format(format, args));
     }

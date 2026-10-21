@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 用户关注请求，携带发起关注与被关注用户的ID
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

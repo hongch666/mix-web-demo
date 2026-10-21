@@ -7,6 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 用户点赞列表响应，包含被点赞文章的标题、作者、分类信息与点赞时间
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

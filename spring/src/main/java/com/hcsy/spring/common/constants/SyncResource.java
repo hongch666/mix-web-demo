@@ -6,6 +6,9 @@ package com.hcsy.spring.common.constants;
  */
 public final class SyncResource {
 
+    /**
+     * 私有构造器，防止常量类被实例化
+     */
     private SyncResource() {
     }
 

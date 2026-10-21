@@ -7,6 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 用户收藏列表响应，包含被收藏文章的标题、作者、分类信息与收藏时间
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

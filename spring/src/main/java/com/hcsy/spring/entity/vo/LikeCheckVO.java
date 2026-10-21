@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 文章点赞状态响应，表示当前用户是否已点赞该文章
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

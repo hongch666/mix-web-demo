@@ -8,6 +8,9 @@ import org.springframework.data.relational.core.mapping.Table;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+/**
+ * 对应 sub_category 表的子分类实体，包含名称、所属父分类与创建、更新时间
+ */
 @Data
 @Table("sub_category")
 @Schema(description = "子分类")
