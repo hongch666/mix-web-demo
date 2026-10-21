@@ -83,6 +83,7 @@ class SimpleCircuitBreaker:
         failure_threshold: Optional[int] = None,
         recovery_timeout: Optional[float] = None,
     ) -> None:
+        """初始化熔断器的失败阈值与恢复时长（缺省取远程调用配置），并将失败计数与熔断截止时间清零"""
         config = _get_remote_call_config()
         cb_config = config.get("circuit_breaker", {})
         self.failure_threshold: int = failure_threshold or cb_config.get(
@@ -95,15 +96,18 @@ class SimpleCircuitBreaker:
         self.open_until: float = 0.0
 
     def allow_request(self) -> None:
+        """熔断器处于打开状态且未到恢复时间时抛出异常拦截请求，否则放行"""
         now: float = time.monotonic()
         if self.open_until > now:
             raise CircuitBreakerOpenError(Messages.CIRCUIT_BREAKER_OPEN)
 
     def record_success(self) -> None:
+        """调用成功后清零失败计数并解除熔断状态"""
         self.failure_count = 0
         self.open_until = 0.0
 
     def record_failure(self) -> None:
+        """累计失败次数，达到阈值后按恢复时长打开熔断器"""
         self.failure_count += 1
         if self.failure_count >= self.failure_threshold:
             self.open_until = time.monotonic() + self.recovery_timeout
@@ -113,6 +117,7 @@ _SERVICE_BREAKERS: dict[str, SimpleCircuitBreaker] = {}
 
 
 def _get_service_breaker(service_name: str) -> SimpleCircuitBreaker:
+    """按服务名获取对应的熔断器实例，不存在时创建并缓存"""
     breaker: Optional[SimpleCircuitBreaker] = _SERVICE_BREAKERS.get(service_name)
     if breaker is None:
         breaker = SimpleCircuitBreaker()

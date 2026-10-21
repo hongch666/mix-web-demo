@@ -45,9 +45,11 @@ class UserMapper:
     """用户分析数仓 Mapper，查询使用 SQLAlchemy ClickHouse ORM"""
 
     def __init__(self, session_factory: ClickHouseSessionFactory) -> None:
+        """保存 ClickHouse 会话工厂供各数仓查询使用"""
         self._session_factory = session_factory
 
     async def _execute_mappings(self, statement: Any) -> list[dict[str, Any]]:
+        """在 ClickHouse 会话中执行查询并把结果行转为字典列表"""
         async with self._session_factory() as session:
             result = await session.execute(statement)
             return [dict(row) for row in result.mappings().all()]
@@ -55,6 +57,7 @@ class UserMapper:
     async def get_new_followers_by_day(
         self, user_id: int, start_date: datetime, end_date: datetime
     ) -> list[dict[str, Any]]:
+        """查询指定用户在日期区间内每日新增关注数"""
         statement = (
             select(
                 AdsUserDay.stat_date.label("date"),
@@ -74,6 +77,7 @@ class UserMapper:
         ]
 
     async def get_article_view_distribution(self, user_id: int) -> dict[str, Any]:
+        """查询指定用户的各文章阅读分布并汇总总阅读量"""
         statement = (
             select(
                 AdsUserViewArticle.article_id,
@@ -102,6 +106,7 @@ class UserMapper:
     async def get_author_follow_statistics(
         self, user_id: int, start_date: datetime, end_date: datetime
     ) -> dict[str, Any]:
+        """并发查询指定用户的关注作者总数与区间内每日关注趋势"""
         total_statement = select(
             AdsUserStats.total_followers.label("total_followers")
         ).where(AdsUserStats.user_id == user_id)
@@ -137,6 +142,7 @@ class UserMapper:
     async def get_monthly_action_trend(
         self, user_id: int, metric: str, start_date: datetime, end_date: datetime
     ) -> dict[str, Any]:
+        """按评论、点赞或收藏指标查询指定用户的每日行为趋势与总量"""
         metric_columns = {
             "comment_count": AdsUserDay.comment_count,
             "like_count": AdsUserDay.like_count,
@@ -165,6 +171,7 @@ class UserMapper:
         return {"total": sum(item["count"] for item in trends), "daily_trends": trends}
 
     async def get_user_profile(self, user_id: int) -> dict[str, Any]:
+        """联表查询指定用户的画像统计（发文、获赞、粉丝等），无记录时抛出异常"""
         statement = (
             select(
                 AdsUserStats.user_id,
@@ -206,4 +213,5 @@ class UserMapper:
 
 @lru_cache
 def get_user_mapper(session_factory: ClickHouseSessionFactory) -> UserMapper:
+    """获取用户分析数仓 Mapper 的进程级单例"""
     return UserMapper(session_factory)

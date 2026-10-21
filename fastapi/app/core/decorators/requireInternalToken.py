@@ -45,8 +45,11 @@ def requireInternalToken[**P, R](
     service_name = required_service_name
 
     def decorator(f: AsyncFunc[P, R]) -> AsyncFunc[P, R]:
+        """包装异步端点函数，在执行前进行内部服务令牌校验"""
+
         @wraps(f)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            """从请求上下文取出内部令牌并验证签名与有效期，可校验令牌来源服务名，通过后将声明写入 request.state 再调用原函数"""
             request: Optional[Request] = _get_request_from_args(args, kwargs)
             if request is None:
                 Logger.error(Messages.INTERNAL_TOKEN_MISSING)

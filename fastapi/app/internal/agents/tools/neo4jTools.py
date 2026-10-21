@@ -25,6 +25,7 @@ class Neo4jQueryTools:
     """
 
     def __init__(self) -> None:
+        """初始化图谱查询工具并注册预定义查询的 OGM 处理函数后连接 Neo4j 客户端"""
         self.logger = Logger
         self.client: Optional[Any] = None
         # query_name -> OGM 异步处理函数
@@ -43,6 +44,7 @@ class Neo4jQueryTools:
         return list(self._ogm_handlers) + list(Scripts.INTENT_TO_CYPHER)
 
     def _init_client(self) -> None:
+        """获取共享 Neo4j 客户端，失败时置空并记录初始化告警"""
         try:
             self.client = get_neo4j_client()
             self.logger.info(Messages.NEO4J_QUERY_TOOLS_INITIALIZED_MESSAGE)
@@ -52,6 +54,7 @@ class Neo4jQueryTools:
 
     @staticmethod
     def _normalize_limit(params: dict[str, Any]) -> dict[str, Any]:
+        """将查询参数中的 limit 收敛到 1 到 50 的合法区间"""
         normalized = dict(params)
         try:
             limit = int(normalized.get("limit", 10))
@@ -287,6 +290,7 @@ class Neo4jQueryTools:
 
     @staticmethod
     def _is_read_only_cypher(cypher_query: str) -> bool:
+        """校验 Cypher 语句是否为单条以 MATCH、RETURN 等只读前缀开头且不含写操作的查询"""
         normalized = re.sub(r"\s+", " ", (cypher_query or "").strip()).upper()
         if not normalized:
             return False
@@ -317,6 +321,8 @@ class Neo4jQueryTools:
         """获取 LangChain 工具对象"""
 
         class PredefinedQueryInput(BaseModel):
+            """预定义图谱查询工具的参数模型，包含查询名与查询参数"""
+
             query_name: str = Field(
                 description=Messages.NEO4J_QUERY_NAME_INPUT_DESC
                 + ", ".join(self.available_query_names)
@@ -327,6 +333,8 @@ class Neo4jQueryTools:
             )
 
         class CustomCypherInput(BaseModel):
+            """自定义 Cypher 查询工具的参数模型，cypher_query 为要执行的语句"""
+
             cypher_query: str = Field(
                 description=Messages.NEO4J_CUSTOM_CYPHER_INPUT_DESC
             )

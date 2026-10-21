@@ -55,6 +55,7 @@ SQLALCHEMY_MODELS: tuple[
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
+    """应用生命周期管理：启动时初始化 LangSmith、创建业务与数仓表、注册 Nacos、连接 Neo4j 与 RabbitMQ、启动定时任务调度器和内外网 httpx 连接池，关闭时按序释放全部资源"""
     scheduler: Optional[AsyncIOScheduler] = None
     # LangSmith 初始化（追踪关闭或失败时均不阻断业务启动）
     langsmith_config = load_langsmith_config()
@@ -78,6 +79,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     analyze_service: AnalyzeService = resolve_analyze_service()
 
     def db_factory() -> AsyncSession:
+        """构造一个新的异步数据库会话，供定时任务执行时使用"""
         return AsyncSessionLocal()
 
     # 定时任务开关关闭时不注册本地调度任务，任务改由外部调度器（DolphinScheduler）触发 /task/* 接口

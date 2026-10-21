@@ -5,6 +5,8 @@ from ..base import WarehouseModel
 
 
 class AdsTop10Article(WarehouseModel):
+    """ClickHouse ADS 层热门文章 Top10 表 ads_top10_articles，记录文章标题、标签、浏览量、作者与子分类信息"""
+
     __tablename__ = "ads_top10_articles"
     id = Column(types.Int64, primary_key=True)
     title = Column(types.String)

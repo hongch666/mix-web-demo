@@ -1,4 +1,6 @@
 class MetricNames:
+    """集中定义 HTTP、任务、数据库连接池、AI 与 RAG 等 Prometheus 监控指标名称的常量类"""
+
     HTTP_REQUESTS = "mix_http_requests_total"
     HTTP_DURATION = "mix_http_request_duration_seconds"
     CLIENT_REQUESTS = "mix_client_requests_total"

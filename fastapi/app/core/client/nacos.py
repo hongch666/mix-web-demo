@@ -58,6 +58,7 @@ def _resolve_nacos_log_dir() -> str:
 
 
 def _build_client() -> nacos.NacosClient:
+    """按 Nacos 配置（命名空间、账号密码、日志目录）构建 NacosClient 实例"""
     kwargs: dict[str, Any] = {"namespace": NAMESPACE}
     if USERNAME:
         kwargs["username"] = USERNAME
@@ -95,8 +96,8 @@ def _get_registration_ip(ip: str) -> str:
 
 
 def register_instance(ip: str = IP, port: int = PORT) -> None:
-
     # 获取实际用于注册的 IP 地址
+    """向 Nacos 注册服务实例，失败时按配置次数与间隔重试直至抛出异常"""
     registration_ip: str = _get_registration_ip(ip)
 
     last_error: Exception | None = None
@@ -149,10 +150,12 @@ def get_service_instance(service_name: str) -> dict[str, Any]:
 
 
 def start_nacos(ip: str = "127.0.0.1", port: int = 8084) -> None:
+    """注册服务实例并启动守护线程周期性发送心跳保持在线"""
     register_instance(ip=ip, port=port)
     registration_ip: str = _get_registration_ip(ip)
 
     def keep_heartbeat() -> None:
+        """按配置间隔循环向 Nacos 发送心跳，异常仅记录日志不中断循环"""
         while True:
             try:
                 client.send_heartbeat(

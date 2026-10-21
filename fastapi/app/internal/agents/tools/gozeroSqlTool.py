@@ -17,6 +17,7 @@ class GozeroSqlTool:
     """GoZero 服务 SQL 查询工具（远程代理）"""
 
     def __init__(self, gozero_client: GozeroClient) -> None:
+        """初始化 GoZero SQL 工具并注入 GoZero 远程客户端"""
         self.logger = Logger
         self._client: GozeroClient = gozero_client
 
@@ -56,12 +57,16 @@ class GozeroSqlTool:
         """获取 LangChain Tool 对象列表"""
 
         class GetGozeroTableSchemaInput(BaseModel):
+            """获取 GoZero 表结构工具的参数模型，table_name 指定要查询的表名"""
+
             table_name: str = Field(
                 default="",
                 description=Messages.SQL_TOOL_TABLE_SCHEMA_INPUT_DESC,
             )
 
         class ExecuteGozeroSqlQueryInput(BaseModel):
+            """执行 GoZero SQL 查询工具的参数模型，包含 SQL 语句与可选参数字典"""
+
             query: str = Field(description=Messages.SQL_TOOL_QUERY_INPUT_DESC)
             params: JsonObjectArgument = Field(
                 default_factory=dict,

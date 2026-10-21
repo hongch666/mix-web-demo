@@ -62,10 +62,12 @@ from .mappers import (
 
 
 def provide_algorithm_service() -> AlgorithmService:
+    """装配搜索算法服务单例，无外部依赖"""
     return get_algorithm_service()
 
 
 def provide_chat_service() -> ChatService:
+    """装配基础聊天服务单例，无外部依赖"""
     return get_chat_service()
 
 
@@ -80,6 +82,7 @@ def provide_analyze_service(
     nestjs_client: NestjsClientDep,
     logger: LoggerDep,
 ) -> AnalyzeService:
+    """装配数据分析服务单例，依赖文章数仓 Mapper、五类缓存及 Spring 与 NestJS 客户端"""
     return get_analyze_service(
         article_mapper,
         article_cache,
@@ -121,6 +124,7 @@ def provide_generate_service(
     spring_client: SpringClientDep,
     logger: LoggerDep,
 ) -> GenerateService:
+    """装配 AI 内容生成服务单例，依赖六个大模型服务与 Spring 客户端"""
     return get_generate_service(
         glm_service,
         gemini_service,
@@ -139,6 +143,7 @@ def provide_ai_history_service(
     ai_user_summary_mapper: AiUserSummaryMapperDep,
     logger: LoggerDep,
 ) -> AiHistoryService:
+    """装配 AI 历史服务单例，依赖历史与记忆摘要 Mapper 及 Spring 客户端"""
     return get_ai_history_service(
         ai_history_mapper, spring_client, ai_user_summary_mapper, logger
     )
@@ -149,10 +154,12 @@ def provide_api_log_service(
     api_log_mapper: ApiLogMapperDep,
     logger: LoggerDep,
 ) -> ApiLogService:
+    """装配 API 日志服务单例，依赖 NestJS 客户端与 API 日志数仓 Mapper"""
     return get_apilog_service(nestjs_client, api_log_mapper, logger)
 
 
 def provide_graph_search_service(logger: LoggerDep) -> GraphSearchService:
+    """装配知识图谱检索服务单例，logger 由 FastAPI 依赖注入提供"""
     return get_graph_search_service(logger)
 
 
@@ -162,6 +169,7 @@ def provide_user_service(
     user_mapper: UserMapperDep,
     logger: LoggerDep,
 ) -> UserService:
+    """装配用户分析服务单例，依赖 Spring 与 NestJS 客户端及用户数仓 Mapper"""
     return get_user_service(spring_client, nestjs_client, user_mapper, logger)
 
 
@@ -169,6 +177,7 @@ def provide_vector_search_service(
     vector_mapper: VectorMapperDep,
     logger: LoggerDep,
 ) -> VectorSearchService:
+    """装配向量检索服务单例，依赖向量库 Mapper"""
     return get_vector_search_service(vector_mapper, logger)
 
 
@@ -189,6 +198,7 @@ def provide_chat_application_service(
     history_service: AiHistoryServiceDep,
     logger: LoggerDep,
 ) -> ChatApplicationService:
+    """装配聊天应用服务单例，依赖六个大模型服务与 AI 历史服务"""
     return get_chat_application_service(
         gpt_service,
         gemini_service,

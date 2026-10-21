@@ -5,6 +5,8 @@ from ..base import WarehouseModel
 
 
 class DwsApiDay(WarehouseModel):
+    """ClickHouse 汇总层表 dws_api_day，按日与接口维度汇总调用次数和响应耗时"""
+
     __tablename__ = "dws_api_day"
     action_date = Column(types.Date, primary_key=True)
     api_path = Column(types.String, primary_key=True)

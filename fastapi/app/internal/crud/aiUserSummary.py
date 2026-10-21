@@ -63,4 +63,5 @@ class AiUserSummaryMapper:
 
 @lru_cache
 def get_ai_user_summary_mapper() -> AiUserSummaryMapper:
+    """获取用户聊天记忆摘要 Mapper 的进程级单例"""
     return AiUserSummaryMapper()

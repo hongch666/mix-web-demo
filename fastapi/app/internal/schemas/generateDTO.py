@@ -13,6 +13,7 @@ class GenerateDTO(BaseModel):
     @field_validator("text")
     @classmethod
     def validate_text(cls, value: str) -> str:
+        """校验待生成标签的文本内容不能为空"""
         if not value.strip():
             raise PydanticCustomError("text_empty", "需要生成标签的文本内容不能为空")
         return value

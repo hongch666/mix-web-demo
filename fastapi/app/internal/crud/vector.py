@@ -35,6 +35,7 @@ class VectorMapper:
         collection_name: str = VectorConstants.COLLECTION_NAME,
         logger: LoggerProtocol | None = None,
     ) -> None:
+        """初始化文本切分器并建立 PGVector 向量库连接，绑定 embedding 模型"""
         self._logger: LoggerProtocol = logger or Logger
         self._text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=VectorConstants.CHUNK_SIZE,

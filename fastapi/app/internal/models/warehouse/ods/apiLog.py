@@ -5,6 +5,8 @@ from ..base import WarehouseModel
 
 
 class OdsApiLog(WarehouseModel):
+    """ClickHouse ODS 层接口日志表 ods_api_log，存储从 MongoDB 同步的 API 调用原始记录"""
+
     __tablename__ = "ods_api_log"
     event_id = Column(types.String, primary_key=True)
     user_id = Column(types.Int64)

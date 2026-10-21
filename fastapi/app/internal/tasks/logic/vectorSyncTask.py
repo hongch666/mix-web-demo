@@ -633,6 +633,7 @@ async def initialize_article_content_hash_cache_async(
     mysql_db_factory: Optional[Any] = None,
     dependencies: Optional[VectorSyncDependencies] = None,
 ) -> None:
+    """启动时全量初始化文章内容哈希的 Redis 缓存作为增量同步基线"""
     await _initialize_article_content_hash_cache(
         dependencies or build_vector_sync_dependencies(),
     )

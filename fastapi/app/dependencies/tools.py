@@ -30,34 +30,42 @@ from .mappers import VectorMapperDep
 
 
 def provide_fastapi_sql_tool() -> FastapiSqlTool:
+    """装配本服务数据库的 SQL 查询工具单例，无外部依赖"""
     return get_fastapi_sql_tool()
 
 
 def provide_spring_sql_tool(spring_client: SpringClientDep) -> SpringSqlTool:
+    """装配 Spring 库的 SQL 查询工具单例，依赖 Spring 客户端"""
     return get_spring_sql_tool(spring_client)
 
 
 def provide_gozero_sql_tool(gozero_client: GozeroClientDep) -> GozeroSqlTool:
+    """装配 GoZero 库的 SQL 查询工具单例，依赖 GoZero 客户端"""
     return get_gozero_sql_tool(gozero_client)
 
 
 def provide_nestjs_sql_tool(nestjs_client: NestjsClientDep) -> NestjsSqlTool:
+    """装配 NestJS 库的 SQL 查询工具单例，依赖 NestJS 客户端"""
     return get_nestjs_sql_tool(nestjs_client)
 
 
 def provide_mongodb_tools(nestjs_client: NestjsClientDep) -> MongoDBTools:
+    """装配 MongoDB 日志查询工具单例，依赖 NestJS 客户端"""
     return get_mongodb_tools(nestjs_client)
 
 
 def provide_rag_tools(vector_mapper: VectorMapperDep) -> RAGTools:
+    """装配 RAG 检索工具单例，依赖向量库 Mapper"""
     return get_rag_tools(vector_mapper)
 
 
 def provide_neo4j_tools() -> Neo4jQueryTools:
+    """装配 Neo4j 知识图谱查询工具单例，无外部依赖"""
     return get_neo4j_tools()
 
 
 def provide_warehouse_tools() -> ClickHouseWarehouseTools:
+    """装配 ClickHouse 数仓查询工具单例，无外部依赖"""
     return get_warehouse_tools()
 
 

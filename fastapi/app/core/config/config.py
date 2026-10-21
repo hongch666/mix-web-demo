@@ -21,6 +21,7 @@ def resolve_env_vars_in_string(text: str) -> str:
     pattern: str = r"\$\{([^:}]+)(?::([^}]*))?\}"
 
     def replace_var(match: re.Match[str]) -> str:
+        """将单个环境变量占位符替换为对应环境变量值，未设置时使用默认值"""
         var_name: str = match.group(1)
         default_value: str = match.group(2) or ""
         return os.getenv(var_name, default_value)

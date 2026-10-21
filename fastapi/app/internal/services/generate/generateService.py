@@ -50,6 +50,7 @@ class GenerateService:
         logger: Optional[LoggerProtocol] = None,
     ) -> None:
         # 各模型服务允许缺省，调用失败由各调用点按异常兜底降级，因此按 Any 持有
+        """注入六个大模型服务、Spring 客户端与日志器，模型服务允许缺省由调用点降级"""
         self.glm_service: Any = glm_service
         self.gpt_service: Any = gpt_service
         self.gemini_service: Any = gemini_service
@@ -148,6 +149,7 @@ class GenerateService:
         """并发调用各模型生成评论，单模型异常按返回值透传，由构建阶段降级"""
 
         async def call_model(model: AiCommentModel) -> Any:
+            """单模型评论调用闭包：计时执行 basic_chat，异常时记录耗时日志并返回异常对象交由构建阶段降级"""
             start = time.time()
             try:
                 result = await model.service.basic_chat(prompt)
@@ -177,6 +179,7 @@ class GenerateService:
         """并发调用各模型基于参考文本生成评论，单模型异常按返回值透传"""
 
         async def call_model(model: AiCommentModel) -> Any:
+            """单模型参考评论调用闭包：计时执行 with_reference_chat，异常时记录耗时日志并返回异常对象"""
             start = time.time()
             try:
                 result = await model.service.with_reference_chat(
@@ -202,8 +205,8 @@ class GenerateService:
         return list(responses)
 
     async def generate_ai_comments(self, article_id: int) -> None:
-
         # 1. 判断是否需要生成AI评论
+        """为文章生成 AI 评论：清理已有 AI 评论后构建评价提示词，并发调用各模型生成评论，最后并行写入 Spring 评论接口"""
         ai_comments_count = await self._spring_client.get_ai_comments_num_by_article_id(
             article_id
         )
@@ -251,6 +254,7 @@ class GenerateService:
 
         # 4. 保存AI评论到数据库（通过Spring远程调用并行插入，互不干扰）
         async def _insert_comment(comment: dict[str, Any]) -> None:
+            """将单条 AI 评论通过 Spring 远程接口写入评论表"""
             await self._spring_client.create_comment(comment)
 
         await asyncio.gather(*(_insert_comment(comment) for comment in comments))
@@ -262,6 +266,7 @@ class GenerateService:
 
     # 定义工具函数解析大模型返回结果
     def _parse_ai_comment_response(self, response: str) -> tuple[str, float]:
+        """用正则从模型返回文本提取评价内容和评分，缺失时回退为前 200 字与默认 6 分"""
         content = ""
         star = 6.0
         # 提取评价内容
@@ -362,6 +367,7 @@ class GenerateService:
 
                 # 定义各大模型的总结函数
                 async def summarize_with(model: AiCommentModel, content: str) -> str:
+                    """调用指定模型把参考内容总结到 1500 字以内，失败时回退为原文前 1500 字"""
                     try:
                         return await model.service.summarize_content(
                             content, max_length=1500
@@ -447,6 +453,7 @@ class GenerateService:
 
         # 8. 保存AI评论到数据库（通过Spring远程调用并行插入，互不干扰）
         async def _insert_comment_ref(comment: dict[str, Any]) -> None:
+            """将基于参考文本生成的单条 AI 评论通过 Spring 远程接口写入评论表"""
             await self._spring_client.create_comment(comment)
 
         await asyncio.gather(*(_insert_comment_ref(comment) for comment in comments))
@@ -506,6 +513,7 @@ class GenerateService:
             total_start_time = time.time()
 
             async def timed_glm_summarize() -> Optional[str]:
+                """计时调用 GLM 总结权威参考原文，失败时记录耗时日志并返回 None"""
                 start = time.time()
                 try:
                     result = await self.glm_service.summarize_content(
@@ -526,6 +534,7 @@ class GenerateService:
                     return None
 
             async def timed_gemini_summarize() -> Optional[str]:
+                """计时调用 Gemini 总结权威参考原文，失败时记录耗时日志并返回 None"""
                 start = time.time()
                 try:
                     result = await self.gemini_service.summarize_content(
@@ -546,6 +555,7 @@ class GenerateService:
                     return None
 
             async def timed_gpt_summarize() -> Optional[str]:
+                """计时调用 GPT 总结权威参考原文，失败时记录耗时日志并返回 None"""
                 start = time.time()
                 try:
                     result = await self.gpt_service.summarize_content(
@@ -630,6 +640,7 @@ def get_generate_service(
     spring_client: SpringClient,
     logger: Optional[LoggerProtocol] = None,
 ) -> GenerateService:
+    """装配六个大模型服务与 Spring 客户端并缓存 GenerateService 单例"""
     return GenerateService(
         glm_service,
         gemini_service,

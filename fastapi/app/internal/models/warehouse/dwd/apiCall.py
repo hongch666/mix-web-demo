@@ -5,6 +5,8 @@ from ..base import WarehouseModel
 
 
 class DwdApiCall(WarehouseModel):
+    """ClickHouse 明细层表 dwd_api_call，记录每次 API 调用的路径、方法、用户与响应耗时"""
+
     __tablename__ = "dwd_api_call"
     event_id = Column(types.String, primary_key=True)
     api_path = Column(types.String)

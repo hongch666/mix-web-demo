@@ -21,4 +21,5 @@ class McpServerConfigMapper:
 
 @lru_cache
 def get_mcp_server_config_mapper() -> McpServerConfigMapper:
+    """获取 MCP 服务配置 Mapper 的进程级单例"""
     return McpServerConfigMapper()

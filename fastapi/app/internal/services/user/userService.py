@@ -21,6 +21,7 @@ class UserService:
         user_mapper: UserMapper,
         logger: LoggerProtocol | None = None,
     ) -> None:
+        """注入 Spring 与 NestJS 客户端、用户 Mapper 与日志器"""
         self._spring_client: SpringClient = spring_client
         self._nestjs_client: NestjsClient = nestjs_client
         self._user_mapper: UserMapper = user_mapper
@@ -29,6 +30,7 @@ class UserService:
 
     @staticmethod
     def _period_dates(period: str) -> tuple[datetime, datetime, int, str]:
+        """按 day、month 或 year 周期返回起始时间、结束时间、时间轴点数与粒度标识"""
         now = datetime.now()
         if period == "day":
             start = (now - timedelta(days=6)).replace(
@@ -55,6 +57,7 @@ class UserService:
     def _build_period_timeline(
         period: str, start: datetime, count: int, rows: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
+        """将查询结果按时间轴逐点对齐补零，生成完整的日、月或年趋势序列"""
         values = {str(row["date"]): int(row["count"]) for row in rows}
         timeline: list[dict[str, Any]] = []
         for index in range(count - 1, -1, -1):
@@ -108,6 +111,7 @@ class UserService:
             if period == "day":
                 # 7个独立时间窗口查询改为 asyncio.gather 并行
                 async def _one_day(days_ago: int) -> dict[str, Any]:
+                    """远程查询指定某天用户的新增粉丝数，返回日期与数量的字典"""
                     date: datetime = datetime.now() - timedelta(days=days_ago)
                     start_date: datetime = date.replace(
                         hour=0, minute=0, second=0, microsecond=0
@@ -126,6 +130,7 @@ class UserService:
             elif period == "month":
                 # 6个独立月份窗口查询改为 asyncio.gather 并行
                 async def _one_month(months_ago: int) -> dict[str, Any]:
+                    """远程查询指定某月用户的新增粉丝数，返回月份与数量的字典"""
                     date = datetime.now() - relativedelta(months=months_ago)
                     start_date = date.replace(
                         day=1, hour=0, minute=0, second=0, microsecond=0
@@ -144,6 +149,7 @@ class UserService:
             elif period == "year":
                 # 3个独立年份窗口查询改为 asyncio.gather 并行
                 async def _one_year(years_ago: int) -> dict[str, Any]:
+                    """远程查询指定某年用户的新增粉丝数，返回年份与数量的字典"""
                     date = datetime.now() - relativedelta(years=years_ago)
                     start_date = date.replace(
                         month=1, day=1, hour=0, minute=0, second=0, microsecond=0
@@ -211,6 +217,7 @@ class UserService:
         try:
             # 总数查询与7天循环查询相互独立，gather 并行降低延迟
             async def _one_day_follow(days_ago: int) -> dict[str, Any]:
+                """远程查询指定某天用户关注作者数，返回日期与数量的字典"""
                 date = datetime.now() - timedelta(days=days_ago)
                 start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
                 end_date = date.replace(
@@ -226,6 +233,7 @@ class UserService:
                 return {"date": date.strftime("%Y-%m-%d"), "count": count}
 
             async def _total_follows() -> int:
+                """远程查询用户关注作者的总数"""
                 return await self._spring_client.get_total_follows(user_id)
 
             total_authors, *daily_follows = await asyncio.gather(

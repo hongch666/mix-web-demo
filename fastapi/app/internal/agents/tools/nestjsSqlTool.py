@@ -17,6 +17,7 @@ class NestjsSqlTool:
     """NestJS 服务 SQL 查询工具（远程代理）"""
 
     def __init__(self, nestjs_client: NestjsClient) -> None:
+        """初始化 NestJS SQL 工具并注入 NestJS 远程客户端"""
         self.logger = Logger
         self._client: NestjsClient = nestjs_client
 
@@ -56,12 +57,16 @@ class NestjsSqlTool:
         """获取 LangChain Tool 对象列表"""
 
         class GetNestjsTableSchemaInput(BaseModel):
+            """获取 NestJS 表结构工具的参数模型，table_name 指定要查询的表名"""
+
             table_name: str = Field(
                 default="",
                 description=Messages.SQL_TOOL_TABLE_SCHEMA_INPUT_DESC,
             )
 
         class ExecuteNestjsSqlQueryInput(BaseModel):
+            """执行 NestJS SQL 查询工具的参数模型，包含 SQL 语句与可选参数字典"""
+
             query: str = Field(description=Messages.SQL_TOOL_QUERY_INPUT_DESC)
             params: JsonObjectArgument = Field(
                 default_factory=dict,

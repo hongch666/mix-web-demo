@@ -47,6 +47,7 @@ class ChatRequest(BaseModel):
     @field_validator("message")
     @classmethod
     def validate_message(cls, value: str) -> str:
+        """校验聊天请求的用户消息不能为空字符串"""
         if not value.strip():
             raise PydanticCustomError("message_empty", "用户消息不能为空")
         return value
@@ -54,6 +55,7 @@ class ChatRequest(BaseModel):
     @field_validator("service", mode="before")
     @classmethod
     def validate_service(cls, value: object) -> object:
+        """校验 AI 服务类型必须是六个受支持的取值之一"""
         allowed_values = {
             AIServiceType.GPT.value,
             AIServiceType.GEMINI.value,

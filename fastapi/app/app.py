@@ -34,6 +34,7 @@ def create_app() -> FastAPI:
     async def record_http_metrics(
         request: Request, call_next: Callable[[Request], Coroutine[Any, Any, Response]]
     ) -> Response:
+        """FastAPI HTTP 中间件，统计每个请求的调用次数与响应耗时 Prometheus 指标"""
         started_at: float = perf_counter()
         response = await call_next(request)
         route: str = getattr(request.scope.get("route"), "path", "UNKNOWN")
@@ -45,6 +46,7 @@ def create_app() -> FastAPI:
 
     # 覆写 openapi 方法以设置 OpenAPI 版本
     def custom_openapi():
+        """生成并缓存 OpenAPI 文档，以配置指定的 OpenAPI 版本覆写默认行为"""
         if app.openapi_schema:
             return app.openapi_schema
         openapi_schema = get_openapi(

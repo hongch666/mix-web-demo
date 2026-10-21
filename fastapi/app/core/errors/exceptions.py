@@ -16,6 +16,7 @@ class BusinessException(Exception):
         status_code: int = HttpCode.BAD_REQUEST,
         error: str = "BUSINESS_ERROR",
     ) -> None:
+        """初始化业务异常的客户端提示信息、HTTP 状态码与错误标识"""
         self.message: str = message
         self.status_code: int = status_code
         self.error: str = error

@@ -48,4 +48,5 @@ async def persist_chat_history(
 
 @lru_cache
 def get_chat_service() -> ChatService:
+    """缓存并返回 ChatService 单例"""
     return ChatService()

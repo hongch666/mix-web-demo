@@ -5,6 +5,8 @@ from ..base import WarehouseModel
 
 
 class AdsApiCalledCount(WarehouseModel):
+    """ClickHouse ADS 层接口调用次数表 ads_api_called_count，按路径、方法与描述统计调用量和平均耗时"""
+
     __tablename__ = "ads_api_called_count"
     api_path = Column(types.String, primary_key=True)
     api_method = Column(types.String, primary_key=True)

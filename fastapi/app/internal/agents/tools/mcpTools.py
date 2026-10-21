@@ -28,6 +28,7 @@ class MCPServerTools:
     """
 
     def __init__(self, mapper: Optional[McpServerConfigMapper] = None) -> None:
+        """初始化 MCP 工具组并注入服务配置 Mapper，缺省取共享单例"""
         self._mapper: McpServerConfigMapper = mapper or get_mcp_server_config_mapper()
 
     def get_langchain_tools(self) -> list[StructuredTool]:
@@ -40,6 +41,7 @@ class MCPServerTools:
 
     async def _load_tools_async(self) -> list[StructuredTool]:
         # 本方法运行在线程池的临时事件循环中，禁止使用共享的
+        """用独立临时引擎读取启用的 MCP 服务配置并并发发现各服务的工具列表"""
         engine = create_async_engine(
             ASYNC_DATABASE_URL,
             pool_pre_ping=True,
@@ -103,6 +105,7 @@ class MCPServerTools:
         description: str = str(remote_tool.description or config.description or "")
 
         async def run_tool(**kwargs: Any) -> Any:
+            """包装远程 MCP 工具的执行闭包，调用时按短连接转发参数并执行"""
             return await self._invoke_remote_tool(config, remote_tool.name, kwargs)
 
         # args_schema 允许为空，仅在远程工具提供了 schema 时传入

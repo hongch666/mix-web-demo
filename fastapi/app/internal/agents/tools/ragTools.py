@@ -75,6 +75,7 @@ class RAGTools:
                 self.logger.warning(Messages.HYDE_LLM_INIT_FAILED(hyde_error))
 
     def _build_disabled_message(self) -> str:
+        """返回 RAG 服务初始化失败的原因文案或默认未初始化提示"""
         return self._init_error_message or Messages.RAG_SERVICE_NOT_INITIALIZED_MESSAGE
 
     def _deduplicate_articles(
@@ -314,6 +315,7 @@ class RAGTools:
         """
 
         async def _search_tool(query: str) -> str:
+            """包装向量相似检索为异步搜索工具，按配置 top_k 返回相似文章"""
             return await self.search_similar_articles(query, k=self.top_k)
 
         return [

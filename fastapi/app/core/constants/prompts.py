@@ -6,6 +6,7 @@ class Prompts:
     # ===== Agent 提示词模板 =====
     @staticmethod
     def AGENT_PROMPT() -> str:
+        """构造 Agent 系统提示词，规定工具选择规则、多服务数据划分与安全约束"""
         return f"""你是一个中文 AI 助手，负责查询数据库信息、搜索文章内容、分析系统日志和使用知识图谱分析实体关系。
 
         你可以直接调用绑定好的工具，不需要手写 Thought/Action/Observation 这种文本格式。
@@ -42,6 +43,7 @@ class Prompts:
 
     @staticmethod
     def CONTENT_SUMMARIZE(content: str, max_length: int) -> str:
+        """构造按指定字数对内容做精要总结的提示词模板"""
         return f"""请对以下内容进行精要总结，提取关键信息和核心观点：
 
         原文内容：
@@ -58,6 +60,7 @@ class Prompts:
     def USER_MEMORY_COMPACT(
         existing_summary: str, new_content: str, max_length: int
     ) -> str:
+        """构造把既有摘要与新增对话合并为长期记忆摘要的压缩提示词"""
         return f"""请把既有摘要与新增对话合并成一份新的对话记忆摘要：
 
         既有摘要：
@@ -76,6 +79,7 @@ class Prompts:
 
     @staticmethod
     def REFERENCE_BASED_EVALUATION(message: str, reference_content: str) -> str:
+        """构造基于权威参考文本对内容评价并打分的提示词"""
         return f"""请基于以下权威参考文本，对文章或内容进行评价。
 
         权威参考文本：
@@ -95,6 +99,7 @@ class Prompts:
 
     @staticmethod
     def ARTICLE_EVALUATION(title: str, tags: str, content: str) -> str:
+        """构造对文章标题标签内容进行评价并给出评分的提示词"""
         return f"""请对以下文章进行评价，并给出评分。
         要求：
         1. 给出简短的评价（100-200字）
@@ -109,6 +114,7 @@ class Prompts:
 
     @staticmethod
     def ARTICLE_REFERENCE_CONTENT(title: str, tags: str, content: str) -> str:
+        """构造待评价文章的标题标签与内容摘要输入文本"""
         return f"""标题：{title}
         标签：{tags}
         内容摘要（前500字）：{content[:500] if content else "无"}
@@ -117,6 +123,7 @@ class Prompts:
     # ===== HyDE 提示词 =====
     @staticmethod
     def HYDE_GENERATION_PROMPT(query: str) -> str:
+        """构造 HyDE 假设性文档生成的提示词"""
         return f"请用一段话回答以下问题，使用专业语言：\n\n{query}"
 
     # ===== 意图路由提示词 =====

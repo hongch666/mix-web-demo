@@ -115,6 +115,7 @@ class MongoDBTools:
         """本地预校验聚合管道，把问题定位到具体阶段后回给模型，避免无效远程调用"""
 
         def describe(value: Any) -> str:
+            """将任意值序列化为不超过 120 字符的 JSON 片段用于错误提示"""
             try:
                 return json.dumps(value, ensure_ascii=False)[:120]
             except (TypeError, ValueError):
@@ -141,9 +142,13 @@ class MongoDBTools:
         """获取 LangChain Tool 对象列表"""
 
         class EmptyInput(BaseModel):
+            """列出 MongoDB 集合工具的无参数输入模型"""
+
             pass
 
         class AggregateMongoInput(BaseModel):
+            """聚合查询工具的参数模型，包含集合名、聚合管道与返回条数上限"""
+
             collection_name: str = Field(
                 description=Messages.MONGODB_COLLECTION_NAME_INPUT_DESC
             )
@@ -161,6 +166,8 @@ class MongoDBTools:
             )
 
         class QueryMongoInput(BaseModel):
+            """普通查询工具的参数模型，包含集合名、过滤条件与返回条数上限"""
+
             collection_name: str = Field(
                 description=Messages.MONGODB_COLLECTION_NAME_INPUT_DESC
             )

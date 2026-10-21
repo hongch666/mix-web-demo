@@ -30,6 +30,7 @@ _metrics_server: Any = None
 
 
 def _create_ratio_sampler(ratio_value: Any) -> TraceIdRatioBased:
+    """校验采样比例取值在 0 到 1 之间并创建基于 traceId 比例的采样器"""
     try:
         ratio: float = float(ratio_value)
     except (TypeError, ValueError) as error:
@@ -40,6 +41,7 @@ def _create_ratio_sampler(ratio_value: Any) -> TraceIdRatioBased:
 
 
 def _create_sampler(config: dict[str, Any]) -> Sampler:
+    """按配置中的采样器名称创建对应的 OpenTelemetry 采样器，遇到不支持的名称抛出异常"""
     sampler_name: str = str(config["sampler"])
     if sampler_name == TelemetryConstants.SAMPLER_ALWAYS_ON:
         return ALWAYS_ON

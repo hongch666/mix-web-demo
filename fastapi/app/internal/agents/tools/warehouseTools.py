@@ -19,6 +19,7 @@ class ClickHouseWarehouseTools:
     _USER_DATASETS: frozenset[str] = WarehouseScripts.WAREHOUSE_AGENT_USER_DATASETS
 
     def __init__(self) -> None:
+        """初始化 ClickHouse 数仓查询工具并注入日志器"""
         self.logger = Logger
 
     async def list_datasets(self) -> str:
@@ -77,15 +78,20 @@ class ClickHouseWarehouseTools:
 
     @staticmethod
     def _result_columns(dataset: str) -> list[str]:
+        """返回指定数据集 ADS 查询结果对应的列名列表"""
         return WarehouseScripts.WAREHOUSE_AGENT_RESULT_COLUMNS[dataset]
 
     def get_langchain_tools(self) -> list[StructuredTool]:
         """获取 LangChain 数仓工具对象列表"""
 
         class EmptyInput(BaseModel):
+            """列出数仓数据集工具的无参数输入模型"""
+
             pass
 
         class WarehouseQueryInput(BaseModel):
+            """数仓查询工具的参数模型，包含数据集名、用户 ID、日期区间与返回条数"""
+
             dataset: WarehouseDataset = Field(
                 description=(
                     Messages.WAREHOUSE_DATASET_INPUT_DESC

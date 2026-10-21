@@ -26,26 +26,32 @@ internal_token_ctx_var: contextvars.ContextVar[Optional[str]] = contextvars.Cont
 
 
 def get_current_user_id() -> Optional[int]:
+    """从上下文变量获取当前请求的登录用户 ID"""
     return user_id_ctx_var.get()
 
 
 def get_current_username() -> Optional[str]:
+    """从上下文变量获取当前请求的用户名"""
     return username_ctx_var.get()
 
 
 def get_current_session_id() -> Optional[str]:
+    """从上下文变量获取当前请求的会话 ID"""
     return session_id_ctx_var.get()
 
 
 def get_current_token() -> Optional[str]:
+    """从上下文变量获取当前请求的用户访问令牌"""
     return token_ctx_var.get()
 
 
 def get_current_internal_token() -> Optional[str]:
+    """从上下文变量获取当前请求的内部服务令牌"""
     return internal_token_ctx_var.get()
 
 
 def get_current_trace_id() -> Optional[str]:
+    """获取当前 OpenTelemetry 链路 span 的 trace_id 并格式化为固定宽度十六进制，无有效链路时返回 None"""
     span_context = get_current_span().get_span_context()
     if span_context.is_valid:
         return format(
@@ -63,9 +69,12 @@ def _extract_bearer_token(header: Optional[str]) -> Optional[str]:
 
 
 class ContextMiddleware(BaseHTTPMiddleware):
+    """请求上下文中间件，从请求头提取用户身份、会话与令牌写入 contextvars 供全链路读取"""
+
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
+        """解析请求头中的用户 ID、用户名、会话 ID 与两类令牌并设置到上下文，请求结束后重置全部上下文变量"""
         raw_user_id: Optional[str] = request.headers.get("X-User-Id")
         user_id: Optional[int] = None
         if raw_user_id:

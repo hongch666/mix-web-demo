@@ -43,6 +43,8 @@ from .chatService import persist_chat_history, select_chat_model
 
 @dataclass(frozen=True)
 class ChatSession:
+    """一次聊天会话的上下文数据，含用户、会话 ID 与 LangSmith 追踪标签元数据"""
+
     user_id: str
     conversation_id: str
     chat_id: str
@@ -53,6 +55,8 @@ class ChatSession:
 
 @dataclass(frozen=True)
 class ChatStreamEvent:
+    """单个流式聊天事件，kind 区分正文、思考或错误等消息类型"""
+
     kind: str
     content: str
 
@@ -66,12 +70,14 @@ class ChatApplicationService:
         history_service: Any,
         logger: LoggerProtocol | None = None,
     ) -> None:
+        """注入各模型服务映射、AI 历史服务与日志器"""
         self._models = models
         self._history_service = history_service
         # 日志器可注入，缺省回退全局单例
         self._logger: LoggerProtocol = logger or Logger
 
     def _prepare(self, request: ChatRequest, streaming: bool) -> ChatSession:
+        """构建聊天会话上下文：解析用户身份（缺省回退系统用户）、生成会话与请求 ID，组装 LangSmith 标签元数据和 SSE 帧上下文"""
         current_user_id: Optional[int] = get_current_user_id()
         if current_user_id is None:
             self._logger.warning(
@@ -134,6 +140,7 @@ class ChatApplicationService:
         )
 
     async def send(self, request: ChatRequest, db: AsyncSession) -> ChatResponseData:
+        """同步聊天：按请求类型选定模型调用 simple_chat 获取完整回复，保存历史并返回响应数据"""
         session = self._prepare(request, streaming=False)
         with get_langsmith_context(
             name="chat.send", tags=session.tags, metadata=session.metadata
@@ -190,9 +197,11 @@ class ChatApplicationService:
     def stream(
         self, request: ChatStreamRequest
     ) -> tuple[StreamFrameContext, AsyncGenerator[ChatStreamEvent, None]]:
+        """流式聊天：返回 SSE 帧上下文与事件生成器，逐块区分思考和正文并累积，结束后保存聊天历史"""
         session = self._prepare(request, streaming=True)
 
         async def generate() -> AsyncGenerator[ChatStreamEvent, None]:
+            """stream 内嵌的异步生成器，逐块转发模型流式输出并在结束时持久化聊天历史"""
             message_acc = ""
             thinking_acc = ""
             runnable_config = {
@@ -324,6 +333,7 @@ def get_chat_application_service(
     history_service: Any,
     logger: LoggerProtocol | None = None,
 ) -> ChatApplicationService:
+    """将六个模型服务装配为按类型索引的模型映射并缓存 ChatApplicationService 单例"""
     return ChatApplicationService(
         {
             AIServiceType.GPT: gpt_service,

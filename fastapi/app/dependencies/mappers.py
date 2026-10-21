@@ -25,22 +25,26 @@ from .logger import LoggerDep
 def provide_api_log_mapper(
     session_factory: ClickHouseSessionFactoryDep,
 ) -> ApiLogMapper:
+    """装配 API 日志数仓 Mapper 单例，ClickHouse 会话工厂来自 core.db"""
     return get_api_log_mapper(session_factory)
 
 
 def provide_article_mapper(
     session_factory: ClickHouseSessionFactoryDep,
 ) -> ArticleMapper:
+    """装配文章数仓 Mapper 单例，ClickHouse 会话工厂来自 core.db"""
     return get_article_mapper(session_factory)
 
 
 def provide_user_mapper(
     session_factory: ClickHouseSessionFactoryDep,
 ) -> UserMapper:
+    """装配用户分析数仓 Mapper 单例，ClickHouse 会话工厂来自 core.db"""
     return get_user_mapper(session_factory)
 
 
 def provide_vector_store_mapper(logger: LoggerDep) -> VectorMapper:
+    """装配 PGVector 向量库 Mapper 单例，logger 由 FastAPI 依赖注入提供"""
     return get_vector_store_mapper(logger)
 
 

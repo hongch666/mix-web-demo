@@ -24,6 +24,7 @@ class AiHistoryService:
         ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
         logger: Optional[LoggerProtocol] = None,
     ) -> None:
+        """注入 AI 历史 Mapper、Spring 客户端、用户记忆摘要 Mapper 与日志器"""
         self.ai_history_mapper: AiHistoryMapper = (
             ai_history_mapper or get_ai_history_mapper()
         )
@@ -35,6 +36,7 @@ class AiHistoryService:
         self._logger: LoggerProtocol = logger or Logger
 
     async def create_ai_history(self, ai_history: Any, db: Any) -> Any:
+        """归一化入参后构建 AiHistory 实体并写入数据库，空 thinking 统一置为 NULL"""
         data: dict[str, Any] = self._normalize_ai_history_data(ai_history)
         thinking: Optional[Any] = data.get("thinking")
         if thinking == "":
@@ -51,6 +53,7 @@ class AiHistoryService:
         return await self.ai_history_mapper.create_ai_history_async(history, db)
 
     async def get_all_ai_history(self, user_id: int, db: Any) -> list[dict[str, Any]]:
+        """查询指定用户的全部 AI 历史并序列化为响应字典列表"""
         histories = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
             db, user_id, None
         )
@@ -58,6 +61,7 @@ class AiHistoryService:
 
     async def delete_ai_history_by_userid(self, user_id: int, db: Any) -> None:
         # 检查用户是否存在（通过SpringClient远程查询）
+        """校验用户存在后在同一事务内删除其 AI 历史与记忆摘要，失败整体回滚"""
         users = await self._spring_client.get_users_by_ids([user_id])
         if not users:
             raise BusinessException(
@@ -123,6 +127,7 @@ def get_ai_history_service(
     ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
     logger: Optional[LoggerProtocol] = None,
 ) -> AiHistoryService:
+    """按依赖参数缓存并返回 AiHistoryService 单例"""
     return AiHistoryService(
         ai_history_mapper,
         spring_client,

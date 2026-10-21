@@ -53,6 +53,7 @@ class AnalyzeService:
         logger: Optional[LoggerProtocol] = None,
     ) -> None:
         # 依赖由工厂显式传入，缺省时回退进程内单例，字段本身不再需要允许 None
+        """注入文章 Mapper、五类分析缓存、Spring 与 NestJS 客户端，并初始化单飞锁表与日志器"""
         self.articleMapper: ArticleMapper = articleMapper or get_article_mapper()
         # 注入缓存对象
         self._article_cache: ArticleCache = article_cache or get_article_cache()
@@ -83,6 +84,7 @@ class AnalyzeService:
         )
 
     async def _get_singleflight_lock(self, key: str) -> asyncio.Lock:
+        """按 key 取出或创建单飞锁，用保护锁保证并发协程下的创建安全"""
         async with self._singleflight_guard:
             lock: Optional[asyncio.Lock] = self._singleflight_locks.get(key)
             if lock is None:
@@ -112,6 +114,7 @@ class AnalyzeService:
             return await loader()
 
     async def _get_top10_cached(self) -> Optional[list[dict[str, Any]]]:
+        """从文章缓存读取 Top10 数据，缓存异常时返回 None 走回源"""
         try:
             return await self._article_cache.get()
         except Exception as e:
@@ -119,6 +122,7 @@ class AnalyzeService:
             return None
 
     async def _get_wordcloud_cached(self) -> Optional[str]:
+        """从词云缓存读取词云图 OSS URL，缓存异常时返回 None 走回源"""
         try:
             return await self._wordcloud_cache.get()
         except Exception as e:
@@ -128,6 +132,7 @@ class AnalyzeService:
             return None
 
     async def _get_statistics_cached(self) -> Optional[dict[str, Any]]:
+        """从统计缓存读取文章统计数据，缓存异常时返回 None 走回源"""
         try:
             return await self._statistics_cache.get()
         except Exception as e:
@@ -139,6 +144,7 @@ class AnalyzeService:
     async def _get_category_article_count_cached(
         self,
     ) -> Optional[list[dict[str, Any]]]:
+        """从分类缓存读取各分类文章数，缓存异常时返回 None 走回源"""
         try:
             return await self._category_cache.get()
         except Exception as e:
@@ -150,6 +156,7 @@ class AnalyzeService:
             return None
 
     async def _get_monthly_publish_count_cached(self) -> Optional[list[dict[str, Any]]]:
+        """从发布时间缓存读取月度发文数，缓存异常时返回 None 走回源"""
         try:
             return await self._publish_time_cache.get()
         except Exception as e:
@@ -161,6 +168,7 @@ class AnalyzeService:
     async def get_top10_articles_service_sf(
         self, db: AsyncSession
     ) -> list[dict[str, Any]]:
+        """带单飞合并地获取 Top10 文章，缓存未命中时回源 get_top10_articles_service"""
         return await self._run_with_singleflight(
             "analyze:top10",
             self._get_top10_cached,
@@ -168,6 +176,7 @@ class AnalyzeService:
         )
 
     async def get_wordcloud_service_sf(self) -> str:
+        """带单飞合并地获取词云图 OSS URL，缓存未命中时回源 get_wordcloud_service"""
         return await self._run_with_singleflight(
             "analyze:wordcloud",
             self._get_wordcloud_cached,
@@ -177,6 +186,7 @@ class AnalyzeService:
     async def get_article_statistics_service_sf(
         self, db: AsyncSession
     ) -> dict[str, Any]:
+        """带单飞合并地获取文章统计，缓存未命中时回源 get_article_statistics_service"""
         return await self._run_with_singleflight(
             "analyze:statistics",
             self._get_statistics_cached,
@@ -186,6 +196,7 @@ class AnalyzeService:
     async def get_category_article_count_service_sf(
         self, db: AsyncSession
     ) -> list[dict[str, Any]]:
+        """带单飞合并地获取分类文章数，缓存未命中时回源 get_category_article_count_service"""
         return await self._run_with_singleflight(
             "analyze:category_article_count",
             self._get_category_article_count_cached,
@@ -195,6 +206,7 @@ class AnalyzeService:
     async def get_monthly_publish_count_service_sf(
         self, db: AsyncSession
     ) -> list[dict[str, Any]]:
+        """带单飞合并地获取月度发文数，缓存未命中时回源 get_monthly_publish_count_service"""
         return await self._run_with_singleflight(
             "analyze:monthly_publish_count",
             self._get_monthly_publish_count_cached,
@@ -318,6 +330,7 @@ class AnalyzeService:
         return {keyword: 1 for keyword in all_keywords}
 
     def generate_wordcloud(self, keywords_dic: dict[str, int]) -> None:
+        """按配置生成搜索关键词词云图并写入本地图片文件，关键词为空时抛业务异常"""
         if len(keywords_dic) == 0:
             raise BusinessException(
                 Messages.KEYWORDS_EMPTY,
@@ -362,6 +375,7 @@ class AnalyzeService:
             raise
 
     async def upload_wordcloud_to_oss(self) -> str:
+        """将本地词云图片以 UUID 随机文件名上传 OSS 并返回 URL"""
         FILE_PATH: str = load_config("files")["pic_path"]
         # 使用 UUID 生成随机文件名
         random_filename = f"{uuid.uuid4()}.png"
@@ -417,6 +431,7 @@ class AnalyzeService:
         return oss_url
 
     async def export_articles_to_excel(self, db: AsyncSession) -> str:
+        """从 Spring 拉取文章数据并用 openpyxl 写出含表头的 Excel 文件，返回文件路径"""
         FILE_PATH: str = load_config("files")["excel_path"]
         # os.getcwd/os.path 仅做路径拼接，不产生磁盘 IO
         file_path: str = os.path.normpath(  # noqa: ASYNC240
@@ -485,6 +500,7 @@ class AnalyzeService:
         return file_path
 
     async def upload_excel_to_oss(self, file_path: str) -> str:
+        """将导出的 Excel 文件以 UUID 随机文件名上传 OSS 并返回 URL"""
         random_filename = f"{uuid.uuid4()}.xlsx"
         oss_url: str = await self.upload_file(
             file_path=file_path,
@@ -493,6 +509,7 @@ class AnalyzeService:
         return oss_url
 
     async def export_and_upload_articles_excel(self, db: AsyncSession) -> str:
+        """串联执行导出文章 Excel 与上传 OSS，返回最终的 OSS URL"""
         file_path = await self.export_articles_to_excel(db)
         return await self.upload_excel_to_oss(file_path)
 
@@ -820,6 +837,7 @@ def get_analyze_service(
     nestjs_client: NestjsClient,
     logger: Optional[LoggerProtocol] = None,
 ) -> AnalyzeService:
+    """装配文章 Mapper、五类缓存与远程客户端依赖并缓存 AnalyzeService 单例"""
     return AnalyzeService(
         articleMapper,
         article_cache,

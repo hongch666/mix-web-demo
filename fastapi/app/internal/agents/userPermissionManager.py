@@ -45,6 +45,7 @@ class UserPermissionManager:
             return Messages.ROLE_USER
 
     async def is_admin_async(self, user_id: int, db: Session) -> bool:
+        """通过远程获取的用户角色判断指定用户是否为管理员"""
         role: Optional[str] = await self.get_user_role_async(user_id, db)
         return role == Messages.ROLE_ADMIN
 

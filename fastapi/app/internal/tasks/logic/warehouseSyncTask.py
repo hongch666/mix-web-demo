@@ -54,6 +54,7 @@ def _should_sync_log_sources(resources: Optional[set[str]]) -> bool:
 
 
 def _parse_watermark(value: Optional[str]) -> datetime:
+    """将水位字符串解析为 naive datetime，解析失败回落纪元时间"""
     if not value:
         return WarehouseScripts.EPOCH_DATETIME
     try:
@@ -63,10 +64,12 @@ def _parse_watermark(value: Optional[str]) -> datetime:
 
 
 def _format_watermark(value: datetime) -> str:
+    """将 datetime 格式化为水位存储使用的字符串"""
     return value.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _to_datetime(value: Any) -> datetime:
+    """将任意字段值转为 datetime，空值与非法值回落纪元时间"""
     if isinstance(value, datetime):
         return value
     if value is None:
@@ -75,6 +78,7 @@ def _to_datetime(value: Any) -> datetime:
 
 
 def _is_mongo_cursor(value: Any) -> bool:
+    """判断字符串是否为 24 位十六进制的 MongoDB ObjectId 游标"""
     cursor = str(value or "")
     return len(cursor) == 24 and all(
         character in "0123456789abcdefABCDEF" for character in cursor
@@ -82,12 +86,14 @@ def _is_mongo_cursor(value: Any) -> bool:
 
 
 async def _read_watermark(table_name: str) -> datetime:
+    """从 ClickHouse 读取指定源表的同步水位时间，缺省为纪元时间"""
     value = await _read_watermark_value(table_name)
     return _parse_watermark(value) if value else WarehouseScripts.EPOCH_DATETIME
 
 
 async def _read_watermark_value(table_name: str) -> str:
     # ReplacingMergeTree 后台合并前可能同时存在新旧水位，按更新时间取最新一行
+    """读取源表最新一条水位原始字符串，按更新时间取最新行"""
     statement = (
         select(SyncWatermark.last_watermark)
         .where(SyncWatermark.table_name == table_name)
@@ -101,11 +107,13 @@ async def _read_watermark_value(table_name: str) -> str:
 
 
 async def _write_watermark(table_name: str, value: datetime) -> None:
+    """以 datetime 形式写入指定源表的同步水位"""
     await _write_watermark_value(table_name, _format_watermark(value))
 
 
 async def _write_watermark_value(table_name: str, value: str) -> None:
     # ClickHouse 没有行级 UPSERT，先清理同一张源表的旧水位，再插入唯一新水位
+    """先删除同源表旧水位再插入唯一新水位完成 ClickHouse 水位更新"""
     await execute_clickhouse_sql(
         WarehouseScripts.WATERMARK_DELETE_BY_TABLE,
         {"table_name": table_name},
@@ -122,6 +130,7 @@ async def _write_watermark_value(table_name: str, value: str) -> None:
 
 
 async def _insert_rows(model: type[Any], rows: list[dict[str, Any]]) -> None:
+    """将归一化后的行批量写入 ClickHouse 目标 ODS 表"""
     if not rows:
         return
     async with clickhouse_async_engine.connect() as connection:
@@ -150,6 +159,7 @@ def _collect_dirty_partitions(table_name: str, items: list[dict[str, Any]]) -> s
 
 
 def _normalize_row(item: dict[str, Any], columns: Sequence[str]) -> dict[str, Any]:
+    """按列类型映射将源表行字段归一化为 ClickHouse 可写入的类型"""
     row: dict[str, Any] = {}
     for column in columns:
         value = item.get(column)
@@ -414,6 +424,7 @@ async def _sync_warehouse(
     nestjs_client: Optional[NestjsClient] = None,
     resources: Optional[set[str]] = None,
 ) -> None:
+    """执行数仓全链路同步：并发拉取 ODS 源表、同步日志表并刷新快照表与脏分区"""
     await create_warehouse_tables_async()
     # 按资源名收窄源表范围，实现表粒度精确同步
     sources = [

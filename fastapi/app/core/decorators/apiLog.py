@@ -30,6 +30,7 @@ class ApiLogConfig:
         log_level: str = "info",
         exclude_fields: Optional[list[str]] = None,
     ) -> None:
+        """初始化 API 日志配置：日志消息、是否记录业务参数、日志级别与排除字段列表"""
         self.message: str = message
         self.include_params: bool = include_params
         self.log_level: str = log_level
@@ -61,8 +62,11 @@ def apiLog(
     """
 
     def decorator(func: AsyncFunc[P, R]) -> AsyncFunc[P, R]:
+        """包装异步接口函数，注入请求日志记录、耗时统计与 API 日志上报能力"""
+
         @wraps(func)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            """记录用户、请求方法路径与参数日志后执行原函数，统计耗时并将结构化 API 日志发送到 RabbitMQ"""
             # 处理配置
             log_config: ApiLogConfig = (
                 ApiLogConfig(config) if isinstance(config, str) else config
@@ -146,6 +150,7 @@ def apiLog(
                     captured_log_config: ApiLogConfig = log_config
 
                     async def tracked_generator() -> AsyncGenerator[Content, None]:
+                        """包装流式响应的生成器，流式输出完成后记录耗时并上报 API 日志到 RabbitMQ"""
                         try:
                             async for chunk in original_generator:
                                 yield chunk

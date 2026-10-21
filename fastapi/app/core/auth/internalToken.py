@@ -19,6 +19,7 @@ class InternalTokenUtil:
     _expiration: int = 0
 
     def __new__(cls) -> "InternalTokenUtil":
+        """实现单例模式，保证 InternalTokenUtil 全进程仅创建一个实例"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance

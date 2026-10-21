@@ -19,22 +19,27 @@ from .logger import LoggerDep
 
 
 def provide_article_cache(logger: LoggerDep) -> ArticleCache:
+    """装配文章缓存单例，logger 由 FastAPI 依赖注入提供"""
     return get_article_cache(logger)
 
 
 def provide_category_cache(logger: LoggerDep) -> CategoryCache:
+    """装配分类缓存单例，logger 由 FastAPI 依赖注入提供"""
     return get_category_cache(logger)
 
 
 def provide_publish_time_cache(logger: LoggerDep) -> PublishTimeCache:
+    """装配文章发布时间缓存单例，logger 由 FastAPI 依赖注入提供"""
     return get_publish_time_cache(logger)
 
 
 def provide_statistics_cache(logger: LoggerDep) -> StatisticsCache:
+    """装配平台统计缓存单例，logger 由 FastAPI 依赖注入提供"""
     return get_statistics_cache(logger)
 
 
 def provide_wordcloud_cache(logger: LoggerDep) -> WordcloudCache:
+    """装配词云缓存单例，logger 由 FastAPI 依赖注入提供"""
     return get_wordcloud_cache(logger)
 
 

@@ -5,6 +5,8 @@ from ..base import WarehouseModel
 
 
 class AdsApiAverageSpeed(WarehouseModel):
+    """ClickHouse ADS 层接口平均响应速度表 ads_api_average_speed，按路径、方法与描述记录平均耗时和调用次数"""
+
     __tablename__ = "ads_api_average_speed"
     api_path = Column(types.String, primary_key=True)
     api_method = Column(types.String, primary_key=True)

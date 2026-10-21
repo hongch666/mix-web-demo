@@ -17,6 +17,7 @@ class SpringSqlTool:
     """Spring 服务 SQL 查询工具（远程代理）"""
 
     def __init__(self, spring_client: SpringClient) -> None:
+        """初始化 Spring SQL 工具并注入 Spring 远程客户端"""
         self.logger = Logger
         self._client: SpringClient = spring_client
 
@@ -56,12 +57,16 @@ class SpringSqlTool:
         """获取 LangChain Tool 对象列表"""
 
         class GetSpringTableSchemaInput(BaseModel):
+            """获取 Spring 表结构工具的参数模型，table_name 指定要查询的表名"""
+
             table_name: str = Field(
                 default="",
                 description=Messages.SQL_TOOL_TABLE_SCHEMA_INPUT_DESC,
             )
 
         class ExecuteSpringSqlQueryInput(BaseModel):
+            """执行 Spring SQL 查询工具的参数模型，包含 SQL 语句与可选参数字典"""
+
             query: str = Field(description=Messages.SQL_TOOL_QUERY_INPUT_DESC)
             params: JsonObjectArgument = Field(
                 default_factory=dict,

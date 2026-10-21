@@ -15,6 +15,7 @@ def build_admin_checker(spring_client: SpringClient) -> AdminChecker:
     """基于已注入的 Spring 客户端创建管理员检查器"""
 
     async def checker(user_id: int) -> bool:
+        """调用 Spring 接口按用户 ID 查询角色，判断该用户是否为管理员"""
         try:
             users = await spring_client.get_users_by_ids([int(user_id)])
             user_role: str = (
@@ -38,8 +39,11 @@ def requireAdmin(
     """管理员权限检查装饰器"""
 
     def decorator(target: Callable[..., Any]) -> Callable[..., Any]:
+        """包装目标异步函数，在执行前插入管理员权限校验逻辑"""
+
         @wraps(target)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+            """选择校验器（注入或默认）并执行管理员权限检查，通过后调用原函数"""
             checker: AdminChecker = admin_checker or _default_admin_checker
             return await _run_admin_check(checker, target, args, kwargs)
 
@@ -56,6 +60,7 @@ async def _run_admin_check(
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
 ) -> Any:
+    """校验当前登录用户是否为管理员，未登录或非管理员抛出对应业务异常，校验异常统一转换为权限检查失败"""
     user_id: Optional[int] = get_current_user_id()
     if not user_id:
         Logger.warning(Messages.USER_NOT_LOGGED_IN_MESSAGE)
@@ -89,4 +94,5 @@ async def _run_admin_check(
 
 
 async def _default_admin_checker(user_id: int) -> bool:
+    """使用默认 Spring 客户端构造管理员校验器并查询用户角色"""
     return await build_admin_checker(get_spring_client())(user_id)

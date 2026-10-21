@@ -5,6 +5,8 @@ from ..base import WarehouseModel
 
 
 class DimCategory(WarehouseModel):
+    """ClickHouse 维度表 dim_category，存储子分类与所属父分类的映射关系"""
+
     __tablename__ = "dim_category"
     sub_category_id = Column(types.Int64, primary_key=True)
     sub_category_name = Column(types.String)

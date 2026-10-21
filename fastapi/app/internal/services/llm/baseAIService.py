@@ -166,6 +166,7 @@ class BaseAiService:
         ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
         logger: Optional[LoggerProtocol] = None,
     ) -> None:
+        """归一化代理环境变量后注入历史 Mapper、记忆摘要 Mapper、服务名配置与工具装配工厂，并触发 LLM 服务初始化"""
         self._normalize_proxy_env()
         # 日志器可注入，缺省回退全局单例
         self._logger: LoggerProtocol = logger or Logger
@@ -200,6 +201,7 @@ class BaseAiService:
 
     @staticmethod
     def _normalize_proxy_env() -> None:
+        """把形如 socks:// 的代理环境变量改写为 socks5:// 以兼容底层 SDK"""
         proxy_keys = [
             "HTTP_PROXY",
             "HTTPS_PROXY",
@@ -777,24 +779,31 @@ class BaseAiService:
         self.all_tools = []
 
     def _build_initialization_success_message(self) -> str:
+        """构建模型服务初始化成功的提示消息"""
         return Messages.LLM_INITIALIZATION_SUCCESS(self.service_name)
 
     def _build_configuration_incomplete_message(self) -> str:
+        """构建模型服务配置不完整的提示消息"""
         return Messages.LLM_CONFIGURATION_INCOMPLETE(self.service_name)
 
     def _build_client_initialization_error_message(self, error: Exception) -> str:
+        """构建模型客户端初始化失败的错误消息"""
         return Messages.LLM_CLIENT_INITIALIZATION_FAILED(self.service_name, error)
 
     def _build_invalid_api_key_error_message(self) -> str:
+        """构建 API Key 无效的错误消息"""
         return Messages.LLM_INVALID_API_KEY(self.service_name)
 
     def _build_quota_exceeded_error_message(self) -> str:
+        """构建模型配额超限的错误消息"""
         return Messages.LLM_QUOTA_EXCEEDED(self.service_name)
 
     def _build_rate_limit_exceeded_error_message(self) -> str:
+        """构建触发模型限流的错误消息"""
         return Messages.LLM_RATE_LIMIT_EXCEEDED(self.service_name)
 
     def _build_call_failed_error_message(self) -> str:
+        """构建 LLM 调用失败的错误消息"""
         return Messages.LLM_CALL_FAILED(self.service_name)
 
     def _resolve_service_error_message(self, error_message: str) -> str:

@@ -26,12 +26,14 @@ class KnowledgeGraphSyncService:
         neo4j_client: Neo4jClient,
         spring_client: SpringClient,
     ) -> None:
+        """初始化知识图谱同步服务，注入 Neo4j 客户端与 Spring 客户端"""
         self.logger = Logger
         self.client = neo4j_client
         self.spring_client = spring_client
 
     @staticmethod
     def _format_datetime(value: Any) -> str:
+        """将 datetime 或字符串统一转为 ISO 格式时间串，空值回落当前时间"""
         if isinstance(value, datetime):
             return value.isoformat()
         if value:
@@ -40,15 +42,18 @@ class KnowledgeGraphSyncService:
 
     @staticmethod
     def _compute_content_hash(title: Any, content: Any, tags: Any) -> str:
+        """按标题、内容、标签拼接后计算文章内容 MD5 指纹"""
         raw_text = f"{title or ''}||{content or ''}||{tags or ''}"
         return hashlib.md5(raw_text.encode()).hexdigest()
 
     @staticmethod
     def _build_relation_key(*parts: Any) -> str:
+        """用冒号拼接各部分生成图谱关系的唯一键"""
         return ":".join(str(part) for part in parts)
 
     @staticmethod
     def _extract_deleted_count(summary: Any) -> int:
+        """从 Neo4j 写入结果统计中提取删除的节点与关系总数"""
         counters = getattr(summary, "counters", None)
         if counters is None:
             return 0
@@ -60,6 +65,7 @@ class KnowledgeGraphSyncService:
     def _build_article_tag_relations(
         articles: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
+        """将文章的逗号分隔标签拆解为文章与标签的关联行"""
         relations: list[dict[str, Any]] = []
         for article in articles:
             article_id = article.get("id")
@@ -129,6 +135,7 @@ class KnowledgeGraphSyncService:
         }
 
     def _normalize_users(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """将 Spring 返回的用户原始行归一化为图谱用户节点字段"""
         return [
             {
                 "id": int(row.get("id") or 0),
@@ -145,6 +152,7 @@ class KnowledgeGraphSyncService:
         ]
 
     def _normalize_categories(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """将 Spring 返回的一级分类原始行归一化为图谱分类节点字段"""
         return [
             {
                 "id": int(row["id"]),
@@ -158,6 +166,7 @@ class KnowledgeGraphSyncService:
     def _normalize_sub_categories(
         self, rows: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
+        """将子分类原始行归一化为图谱子分类节点字段并保留父分类 ID"""
         return [
             {
                 "id": int(row["id"]),
@@ -172,6 +181,7 @@ class KnowledgeGraphSyncService:
         ]
 
     def _normalize_articles(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """将文章原始行归一化为图谱文章节点字段并附加内容哈希"""
         return [
             {
                 "id": int(row["id"]),
@@ -197,6 +207,7 @@ class KnowledgeGraphSyncService:
         ]
 
     def _normalize_likes(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """将点赞记录归一化为用户与文章两端的关系字段"""
         return [
             {
                 "userId": int(row["user_id"]),
@@ -208,9 +219,11 @@ class KnowledgeGraphSyncService:
         ]
 
     def _normalize_collects(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """将收藏记录复用点赞归一化逻辑转为关系字段"""
         return self._normalize_likes(rows)
 
     def _normalize_comments(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """将评论记录归一化为评论关系字段"""
         return [
             {
                 "commentId": int(row["id"]),
@@ -223,6 +236,7 @@ class KnowledgeGraphSyncService:
         ]
 
     def _normalize_focus(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """将关注记录归一化为关注者与被关注者两端的关系字段"""
         return [
             {
                 "followerId": int(row["user_id"]),
@@ -244,6 +258,7 @@ class KnowledgeGraphSyncService:
         label: str,
         batch_size: int = 500,
     ) -> int:
+        """将归一化数据按批次执行 Cypher 写入并记录同步进度"""
         if not rows:
             self.logger.info(Messages.NEO4J_SYNC_NO_DATA(label))
             return 0
@@ -261,6 +276,7 @@ class KnowledgeGraphSyncService:
     ) -> int:
         # 防御性保护：当待保留的键集合为空时，Cypher 的 `WHERE NOT key IN []`
         # 会等价于 `WHERE true`，从而误删图中全部对应关系/节点，这通常意味着上游快照抓取失败（返回空），属于异常情况，必须跳过而非执行全量删除
+        """按保留键分批清理图谱中已不存在的节点或关系，保留键为空时跳过防误删"""
         keep_keys = params.get("keys") or params.get("ids") or params.get("names")
         if not keep_keys:
             self.logger.warning(Messages.NEO4J_CLEANUP_SKIP_EMPTY(label))
@@ -286,6 +302,7 @@ class KnowledgeGraphSyncService:
         return total_deleted
 
     async def _has_graph_data(self) -> bool:
+        """查询图谱节点总数判断图中是否已存在数据"""
         records = await self.client.run_query(Messages.NEO4J_GRAPH_COUNT_CYPHER)
         if not records:
             return False
@@ -783,6 +800,7 @@ class KnowledgeGraphSyncService:
     async def _sync_article_changes(
         self, items: list[dict[str, Any]]
     ) -> dict[str, int]:
+        """按变更事件同步文章节点及其子分类、作者、标签关系，删除时按 ID 清理"""
         upsert_ids, delete_ids, _, _ = self._split_change_items(items)
         result: dict[str, int] = {}
         if upsert_ids:
@@ -827,6 +845,7 @@ class KnowledgeGraphSyncService:
         return result
 
     async def _sync_user_changes(self, items: list[dict[str, Any]]) -> dict[str, int]:
+        """按变更事件按 ID 拉取用户数据并同步或删除图谱用户节点"""
         upsert_ids, delete_ids, _, _ = self._split_change_items(items)
         result: dict[str, int] = {}
         if upsert_ids:
@@ -845,6 +864,7 @@ class KnowledgeGraphSyncService:
     async def _sync_category_changes(
         self, items: list[dict[str, Any]]
     ) -> dict[str, int]:
+        """按变更事件按 ID 拉取分类数据并同步或删除图谱分类节点"""
         upsert_ids, delete_ids, _, _ = self._split_change_items(items)
         result: dict[str, int] = {}
         if upsert_ids:
@@ -865,6 +885,7 @@ class KnowledgeGraphSyncService:
     async def _sync_sub_category_changes(
         self, items: list[dict[str, Any]]
     ) -> dict[str, int]:
+        """按变更事件同步子分类节点及其与父分类的从属关系"""
         upsert_ids, delete_ids, _, _ = self._split_change_items(items)
         result: dict[str, int] = {}
         if upsert_ids:
@@ -893,6 +914,7 @@ class KnowledgeGraphSyncService:
         return result
 
     async def _sync_like_changes(self, items: list[dict[str, Any]]) -> dict[str, int]:
+        """按变更事件同步用户对文章的点赞关系写入或删除"""
         return await self._sync_article_relation_changes(
             items,
             Scripts.NEO4J_MERGE_LIKES_CYPHER,
@@ -903,6 +925,7 @@ class KnowledgeGraphSyncService:
     async def _sync_collect_changes(
         self, items: list[dict[str, Any]]
     ) -> dict[str, int]:
+        """按变更事件同步用户对文章的收藏关系写入或删除"""
         return await self._sync_article_relation_changes(
             items,
             Scripts.NEO4J_MERGE_COLLECTS_CYPHER,
@@ -944,6 +967,7 @@ class KnowledgeGraphSyncService:
         return result
 
     async def _sync_focus_changes(self, items: list[dict[str, Any]]) -> dict[str, int]:
+        """按变更事件同步用户之间的关注关系写入或删除"""
         upsert_rows: list[dict[str, Any]] = []
         delete_rows: list[dict[str, Any]] = []
         for event in items:
@@ -978,6 +1002,7 @@ class KnowledgeGraphSyncService:
     async def _sync_comment_changes(
         self, items: list[dict[str, Any]]
     ) -> dict[str, int]:
+        """按变更事件按 ID 拉取评论并同步或删除评论关系"""
         upsert_ids, delete_ids, _, _ = self._split_change_items(items)
         result: dict[str, int] = {}
         if upsert_ids:

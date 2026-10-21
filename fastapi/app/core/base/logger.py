@@ -18,13 +18,21 @@ class LoggerProtocol(Protocol):
     （模块级函数、静态方法、装饰器、调度回调等）直接使用全局 Logger 单例
     """
 
-    def info(self, message: str) -> None: ...
+    def info(self, message: str) -> None:
+        """记录 INFO 级别日志"""
+        ...
 
-    def error(self, message: str) -> None: ...
+    def error(self, message: str) -> None:
+        """记录 ERROR 级别日志"""
+        ...
 
-    def warning(self, message: str) -> None: ...
+    def warning(self, message: str) -> None:
+        """记录 WARNING 级别日志"""
+        ...
 
-    def debug(self, message: str) -> None: ...
+    def debug(self, message: str) -> None:
+        """记录 DEBUG 级别日志"""
+        ...
 
 
 def write_log(message: str, level: str = "INFO") -> None:
@@ -52,36 +60,46 @@ def write_log(message: str, level: str = "INFO") -> None:
 
 
 def log_info(message: str) -> None:
+    """以 INFO 级别同时输出日志到 uvicorn 控制台和当日日志文件"""
     logger.info(message)
     write_log(message, "INFO")
 
 
 def log_error(message: str) -> None:
+    """以 ERROR 级别同时输出日志到 uvicorn 控制台和当日日志文件"""
     logger.error(message)
     write_log(message, "ERROR")
 
 
 def log_warning(message: str) -> None:
+    """以 WARNING 级别同时输出日志到 uvicorn 控制台和当日日志文件"""
     logger.warning(message)
     write_log(message, "WARNING")
 
 
 def log_debug(message: str) -> None:
+    """以 DEBUG 级别同时输出日志到 uvicorn 控制台和当日日志文件"""
     logger.debug(message)
     write_log(message, "DEBUG")
 
 
 class SimpleLogger:
+    """封装各日志级别的简易日志器，同时写入控制台与按日期滚动的日志文件并附带 trace_id"""
+
     def info(self, message: str) -> None:
+        """SimpleLogger 的 info 实现，委托 log_info 输出"""
         log_info(message)
 
     def error(self, message: str) -> None:
+        """SimpleLogger 的 error 实现，委托 log_error 输出"""
         log_error(message)
 
     def warning(self, message: str) -> None:
+        """SimpleLogger 的 warning 实现，委托 log_warning 输出"""
         log_warning(message)
 
     def debug(self, message: str) -> None:
+        """SimpleLogger 的 debug 实现，委托 log_debug 输出"""
         log_debug(message)
 
 

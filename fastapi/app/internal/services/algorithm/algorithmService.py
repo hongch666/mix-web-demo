@@ -9,6 +9,7 @@ class AlgorithmService:
     """搜索排序权重服务 — 所有排序公式权重的权威来源"""
 
     def get_weights(self) -> dict[str, Any]:
+        """遍历权重定义常量，返回含 key、数值和描述的搜索排序权重列表"""
         weights: list[ScoreWeightItem] = []
         for key, value, desc in AlgorithmConstants.WEIGHT_DEFINITIONS:
             weights.append(
@@ -49,4 +50,5 @@ class AlgorithmService:
 
 @lru_cache
 def get_algorithm_service() -> AlgorithmService:
+    """缓存并返回 AlgorithmService 单例"""
     return AlgorithmService()

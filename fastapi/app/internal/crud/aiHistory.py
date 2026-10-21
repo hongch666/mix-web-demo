@@ -13,6 +13,7 @@ class AiHistoryMapper:
     async def create_ai_history_async(
         self, ai_history: AiHistory, db: AsyncSession
     ) -> AiHistory:
+        """写入一条 AI 历史记录并提交后返回"""
         db.add(ai_history)
         await db.commit()
         await db.refresh(ai_history)
@@ -96,4 +97,5 @@ class AiHistoryMapper:
 
 @lru_cache
 def get_ai_history_mapper() -> AiHistoryMapper:
+    """获取 AI 历史记录 Mapper 的进程级单例"""
     return AiHistoryMapper()

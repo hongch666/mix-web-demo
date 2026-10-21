@@ -17,6 +17,7 @@ class ApiLogService:
         api_log_mapper: ApiLogMapper,
         logger: LoggerProtocol | None = None,
     ) -> None:
+        """注入 NestJS 客户端、API 日志 Mapper 与日志器"""
         self._nestjs_client: NestjsClient = nestjs_client
         self._apiLogMapper: ApiLogMapper = api_log_mapper
         # 日志器可注入，缺省回退全局单例
@@ -60,4 +61,5 @@ def get_apilog_service(
     api_log_mapper: ApiLogMapper,
     logger: LoggerProtocol | None = None,
 ) -> ApiLogService:
+    """按依赖参数缓存并返回 ApiLogService 单例"""
     return ApiLogService(nestjs_client, api_log_mapper, logger)

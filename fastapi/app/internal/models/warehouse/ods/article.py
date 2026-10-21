@@ -5,6 +5,8 @@ from ..base import WarehouseModel
 
 
 class OdsArticle(WarehouseModel):
+    """ClickHouse ODS 层文章表 ods_articles，存储从 MySQL 同步的文章原始快照"""
+
     __tablename__ = "ods_articles"
     id = Column(types.Int64, primary_key=True)
     title = Column(types.String)

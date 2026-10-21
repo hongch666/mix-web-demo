@@ -18,6 +18,7 @@ class DeepseekService(BaseAiService):
         tool_factories: Optional[AgentToolFactories] = None,
         ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
     ) -> None:
+        """以 DeepSeek 服务名与模型配置键初始化基类，并注入 Spring 客户端"""
         super().__init__(
             ai_history_mapper,
             service_name="DeepSeek",

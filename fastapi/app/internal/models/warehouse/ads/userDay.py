@@ -5,6 +5,8 @@ from ..base import WarehouseModel
 
 
 class AdsUserDay(WarehouseModel):
+    """ClickHouse ADS 层用户日活跃表 ads_user_day，按日统计用户点赞、收藏、评论、关注与浏览量"""
+
     __tablename__ = "ads_user_day"
     stat_date = Column(types.Date, primary_key=True)
     user_id = Column(types.Int64, primary_key=True)

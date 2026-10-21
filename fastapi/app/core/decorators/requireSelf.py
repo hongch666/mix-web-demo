@@ -20,6 +20,7 @@ def build_admin_checker(spring_client: SpringClient) -> AdminChecker:
     """基于已注入的 Spring 客户端创建管理员检查器"""
 
     async def checker(user_id: int) -> bool:
+        """调用 Spring 接口查询用户角色判断是否管理员，查询失败按非管理员处理"""
         try:
             users: list[dict[str, Any]] = await spring_client.get_users_by_ids(
                 [int(user_id)]
@@ -56,11 +57,13 @@ def requireSelf[**P, R](
     """
 
     def decorator(f: AsyncFunc[P, R]) -> AsyncFunc[P, R]:
+        """包装异步端点函数，在执行前校验目标用户与登录用户一致或为管理员"""
         if not iscoroutinefunction(f):
             raise TypeError(Messages.REQUIRE_SELF_ASYNC_ERROR)
 
         @wraps(f)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            """校验 kwargs 中的 user_id 与当前登录用户一致，非本人时要求管理员权限后调用原函数"""
             current_user_id: Optional[int] = get_current_user_id()
             if current_user_id is None:
                 Logger.warning(Messages.USER_IDENTITY_MISSING_MESSAGE)

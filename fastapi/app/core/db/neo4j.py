@@ -26,6 +26,7 @@ class CypherDebugLogHandler(logging.Handler):
     """
 
     def emit(self, record: logging.LogRecord) -> None:
+        """将 neomodel 的 Cypher 调试日志记录转交项目日志封装以 debug 级别输出"""
         try:
             Logger.debug(record.getMessage())
         except Exception:
@@ -94,6 +95,7 @@ class Neo4jClient:
     """
 
     def __init__(self) -> None:
+        """初始化日志器并将 Neo4j 连接参数清空，随后加载配置并接管 Cypher 调试日志"""
         self.logger = Logger
         self.uri: str = ""
         self.user: str = ""

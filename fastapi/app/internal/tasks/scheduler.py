@@ -25,6 +25,7 @@ from .logic.warehouseSyncTask import sync_warehouse_async
 async def _run_measured_task(
     task_name: str, task_func: Callable[[], Awaitable[Any]]
 ) -> Any:
+    """执行定时任务并记录运行次数与耗时到 Prometheus 指标"""
     started_at: float = asyncio.get_running_loop().time()
     result: str = "success"
     try:

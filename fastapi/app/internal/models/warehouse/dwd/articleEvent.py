@@ -5,6 +5,8 @@ from ..base import WarehouseModel
 
 
 class DwdArticleEvent(WarehouseModel):
+    """ClickHouse 明细层表 dwd_article_event，记录文章事件及所属分类与作者信息"""
+
     __tablename__ = "dwd_article_event"
     id = Column(types.Int64, primary_key=True)
     title = Column(types.String)

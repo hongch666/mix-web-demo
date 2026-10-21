@@ -30,6 +30,7 @@ class VersionedCache(BaseCache):
     VERSION_MODEL: ClassVar[Any] = None
 
     def __init__(self, logger: LoggerProtocol | None = None) -> None:
+        """调用父类完成两级缓存依赖初始化，并将数仓版本号置为未加载状态"""
         super().__init__(logger)
         # 版本号
         self._cache_version: Optional[str] = None

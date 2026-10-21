@@ -28,6 +28,7 @@ class GraphSearchService:
         candidate_limit: int = 200,
         logger: LoggerProtocol | None = None,
     ) -> None:
+        """初始化五路图谱信号的权重、候选文章上限与可注入日志器"""
         self.TAG_INTEREST_WEIGHT: float = tag_interest_weight
         self.FOLLOWED_AUTHOR_WEIGHT: float = followed_author_weight
         self.SAME_SUB_CATEGORY_WEIGHT: float = same_sub_category_weight

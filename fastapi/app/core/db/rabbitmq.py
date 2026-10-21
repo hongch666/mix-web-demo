@@ -15,6 +15,7 @@ class RabbitMQClient:
     """RabbitMQ 客户端"""
 
     def __init__(self) -> None:
+        """将 RabbitMQ 连接与信道初始化为空，等待调用 connect 时按需建立"""
         self.connection: Optional[AbstractRobustConnection] = None
         self.channel: Optional[AbstractChannel] = None
 

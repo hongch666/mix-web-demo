@@ -14,6 +14,7 @@ from app.core.db import (
 
 
 def provide_db_session_factory() -> Callable[[], AsyncSession]:
+    """装配 MySQL 异步会话工厂，供需要自管会话生命周期的服务使用"""
     return AsyncSessionLocal
 
 

@@ -140,6 +140,7 @@ class ContextPlan:
 
     @property
     def should_compact(self) -> bool:
+        """判断是否存在需折叠进摘要的更早轮次，有则表示本轮应触发记忆压缩"""
         return bool(self.compact_targets)
 
 

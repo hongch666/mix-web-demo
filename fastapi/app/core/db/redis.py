@@ -21,6 +21,7 @@ class RedisClient:
     _pool: Optional[Any] = None
 
     def __new__(cls) -> "RedisClient":
+        """实现 RedisClient 单例构造，首次实例化时加载 Redis 配置"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialize()
@@ -41,6 +42,7 @@ class RedisClient:
             self._init_lock = Lock()
 
     def _build_pool_params(self) -> dict[str, Any]:
+        """根据 Redis 配置组装连接池参数，含连接超时与可选的账号密码"""
         redis_config: dict[str, Any] = self._redis_config or {}
         pool_params: dict[str, Any] = {
             "host": redis_config["host"],

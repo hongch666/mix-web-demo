@@ -5,6 +5,8 @@ from ..base import WarehouseModel
 
 
 class DwsUserDay(WarehouseModel):
+    """ClickHouse 汇总层表 dws_user_day，按日与用户维度汇总点赞、收藏、评论与关注量"""
+
     __tablename__ = "dws_user_day"
     stat_date = Column(types.Date, primary_key=True)
     user_id = Column(types.Int64, primary_key=True)

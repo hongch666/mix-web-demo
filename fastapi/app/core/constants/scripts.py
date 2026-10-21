@@ -7,6 +7,7 @@ class Scripts:
     def NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT(
         base_sql: str, timestamp_column: str, sync_time_text: str
     ) -> str:
+        """按时间戳列为增量同步 SQL 拼接 WHERE 与 ORDER BY 后缀"""
         return f"{base_sql} WHERE {timestamp_column} >= '{sync_time_text}' ORDER BY {timestamp_column} ASC"
 
     # ===== ClickHouse SQL 模板 =====

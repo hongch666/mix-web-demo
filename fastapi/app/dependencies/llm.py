@@ -28,6 +28,7 @@ def provide_gpt_service(
     tool_factories: AgentToolFactoriesDep,
     ai_user_summary_mapper: AiUserSummaryMapperDep,
 ) -> GptService:
+    """装配 GPT 服务单例，依赖 AI 历史与记忆摘要 Mapper、Spring 客户端及 agent 工具工厂"""
     return get_gpt_service(
         ai_history_mapper, spring_client, tool_factories, ai_user_summary_mapper
     )
@@ -39,6 +40,7 @@ def provide_gemini_service(
     tool_factories: AgentToolFactoriesDep,
     ai_user_summary_mapper: AiUserSummaryMapperDep,
 ) -> GeminiService:
+    """装配 Gemini 服务单例，依赖 AI 历史与记忆摘要 Mapper、Spring 客户端及 agent 工具工厂"""
     return get_gemini_service(
         ai_history_mapper, spring_client, tool_factories, ai_user_summary_mapper
     )
@@ -50,6 +52,7 @@ def provide_glm_service(
     tool_factories: AgentToolFactoriesDep,
     ai_user_summary_mapper: AiUserSummaryMapperDep,
 ) -> GlmService:
+    """装配 GLM 服务单例，依赖 AI 历史与记忆摘要 Mapper、Spring 客户端及 agent 工具工厂"""
     return get_glm_service(
         ai_history_mapper, spring_client, tool_factories, ai_user_summary_mapper
     )
@@ -61,6 +64,7 @@ def provide_deepseek_service(
     tool_factories: AgentToolFactoriesDep,
     ai_user_summary_mapper: AiUserSummaryMapperDep,
 ) -> DeepseekService:
+    """装配 DeepSeek 服务单例，依赖 AI 历史与记忆摘要 Mapper、Spring 客户端及 agent 工具工厂"""
     return get_deepseek_service(
         ai_history_mapper, spring_client, tool_factories, ai_user_summary_mapper
     )
@@ -72,6 +76,7 @@ def provide_claude_service(
     tool_factories: AgentToolFactoriesDep,
     ai_user_summary_mapper: AiUserSummaryMapperDep,
 ) -> ClaudeService:
+    """装配 Claude 服务单例，依赖 AI 历史与记忆摘要 Mapper、Spring 客户端及 agent 工具工厂"""
     return get_claude_service(
         ai_history_mapper, spring_client, tool_factories, ai_user_summary_mapper
     )
@@ -83,6 +88,7 @@ def provide_qwen_service(
     tool_factories: AgentToolFactoriesDep,
     ai_user_summary_mapper: AiUserSummaryMapperDep,
 ) -> QwenService:
+    """装配 Qwen 服务单例，依赖 AI 历史与记忆摘要 Mapper、Spring 客户端及 agent 工具工厂"""
     return get_qwen_service(
         ai_history_mapper, spring_client, tool_factories, ai_user_summary_mapper
     )
