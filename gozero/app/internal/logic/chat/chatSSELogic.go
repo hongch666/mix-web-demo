@@ -15,6 +15,7 @@ import (
 	"app/internal/types"
 )
 
+// ChatSSELogic 处理 SSE 连接请求的逻辑对象，负责解析连接发起用户
 type ChatSSELogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext

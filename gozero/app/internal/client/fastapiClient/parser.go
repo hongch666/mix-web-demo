@@ -99,6 +99,7 @@ func getMapValue(m map[string]any, keys ...string) any {
 	return nil
 }
 
+// toInt64 将任意值宽松转换为 int64，仅接受 float64、int64、int，其他类型返回失败
 func toInt64(v any) (int64, bool) {
 	switch val := v.(type) {
 	case float64:
@@ -112,6 +113,7 @@ func toInt64(v any) (int64, bool) {
 	}
 }
 
+// toFloat64 将任意值宽松转换为 float64，仅接受 float64、int、int64，其他类型返回失败
 func toFloat64(v any) (float64, bool) {
 	switch val := v.(type) {
 	case float64:
@@ -125,11 +127,13 @@ func toFloat64(v any) (float64, bool) {
 	}
 }
 
+// toString 将任意值断言为字符串，类型不符时返回失败
 func toString(v any) (string, bool) {
 	s, ok := v.(string)
 	return s, ok
 }
 
+// parseRelations 解析图谱增强结果中的关系列表，元素不合法时跳过
 func parseRelations(v any) []GraphRelation {
 	rawList, ok := v.([]any)
 	if !ok {
@@ -156,6 +160,7 @@ func parseRelations(v any) []GraphRelation {
 	return relations
 }
 
+// parseStringSlice 将任意值解析为字符串切片，非字符串元素被忽略
 func parseStringSlice(v any) []string {
 	rawList, ok := v.([]any)
 	if !ok {
@@ -170,6 +175,7 @@ func parseStringSlice(v any) []string {
 	return result
 }
 
+// parseVectorMatchedChunks 解析向量增强结果中的匹配片段列表，元素不合法时跳过
 func parseVectorMatchedChunks(v any) []VectorMatchedChunk {
 	rawList, ok := v.([]any)
 	if !ok {

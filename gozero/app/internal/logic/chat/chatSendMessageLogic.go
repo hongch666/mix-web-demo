@@ -18,6 +18,7 @@ import (
 	"app/model/chatMessages"
 )
 
+// ChatSendMessageLogic 处理发送聊天消息接口请求的逻辑对象
 type ChatSendMessageLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -33,6 +34,7 @@ func NewChatSendMessageLogic(ctx context.Context, svcCtx *svc.ServiceContext) *C
 	}
 }
 
+// ChatSendMessage 处理发送聊天消息接口请求，消息落库后经实时总线或本机分发器推送 WebSocket 消息与 SSE 通知
 func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (resp *types.ChatSendMessageResp, err error) {
 	// 校验器只负责边界检查，内容在此统一去除首尾空白后再落库与推送
 	content := strings.TrimSpace(req.Content)

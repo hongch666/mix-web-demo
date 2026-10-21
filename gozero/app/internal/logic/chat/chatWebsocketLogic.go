@@ -15,6 +15,7 @@ import (
 	"app/internal/types"
 )
 
+// ChatWebsocketLogic 处理 WebSocket 连接请求的逻辑对象，负责解析连接发起用户
 type ChatWebsocketLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext

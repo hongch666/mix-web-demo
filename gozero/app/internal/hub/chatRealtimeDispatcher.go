@@ -60,6 +60,7 @@ func (d *ChatRealtimeDispatcher) Handle(payload []byte) {
 	}
 }
 
+// logError 记录实时事件分发过程中的错误日志，分发器或日志器未初始化时静默跳过
 func (d *ChatRealtimeDispatcher) logError(message string) {
 	if d == nil || d.logger == nil {
 		return

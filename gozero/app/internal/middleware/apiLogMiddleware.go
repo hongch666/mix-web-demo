@@ -17,6 +17,7 @@ import (
 	rabbitmq "github.com/wagslane/go-rabbitmq"
 )
 
+// 记录 API 请求日志并将日志异步投递到 RabbitMQ 的中间件
 type ApiLogMiddleware struct {
 	description     string
 	excludeFields   []string
@@ -24,6 +25,7 @@ type ApiLogMiddleware struct {
 	*utils.ZeroLogger
 }
 
+// NewApiLogMiddleware 创建 API 日志中间件，可指定接口描述与敏感字段排除列表
 func NewApiLogMiddleware(description string, rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, excludeFields ...string) *ApiLogMiddleware {
 	return &ApiLogMiddleware{
 		description:     description,
@@ -282,6 +284,7 @@ func sanitizeBody(data any, excludeFields []string) any {
 	return doSanitize(data, excludeSet)
 }
 
+// doSanitize 递归遍历 map 和切片，将命中排除列表的字段值替换为脱敏占位符
 func doSanitize(data any, excludeSet map[string]struct{}) any {
 	switch v := data.(type) {
 	case map[string]any:

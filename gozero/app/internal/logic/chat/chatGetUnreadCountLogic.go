@@ -13,6 +13,7 @@ import (
 	"app/internal/types"
 )
 
+// ChatGetUnreadCountLogic 处理获取两个用户间未读消息数接口请求的逻辑对象
 type ChatGetUnreadCountLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -28,6 +29,7 @@ func NewChatGetUnreadCountLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
+// ChatGetUnreadCount 处理获取未读消息数接口请求，查询当前用户对指定对方的未读消息数
 func (l *ChatGetUnreadCountLogic) ChatGetUnreadCount(req *types.ChatGetUnreadCountReq) (resp *types.ChatGetUnreadCountResp, err error) {
 	// 获取两个用户间的未读消息数
 	unreadCount, err := l.svcCtx.ChatMessagesModel.GetUnreadCount(l.ctx, req.UserId, req.OtherId)

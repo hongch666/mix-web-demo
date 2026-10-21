@@ -15,6 +15,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
+// 根据给定 Redis 客户端创建分布式锁实例的工厂函数类型
 type RedisLockFactory func(*redis.Client) *utils.RedisDistributedLock
 
 // NewTaskScheduler 创建并启动定时任务调度器，由调用方挂到 ServiceContext 上

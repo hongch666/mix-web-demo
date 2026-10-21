@@ -28,6 +28,7 @@ type SSEHubManager struct {
 	*utils.ZeroLogger
 }
 
+// NewSSEHub 创建 SSE 中心管理器并初始化空的客户端连接表
 func NewSSEHub(logger *utils.ZeroLogger) *SSEHubManager {
 	return &SSEHubManager{
 		clients:    make(map[int64]map[string]*SSEClient),

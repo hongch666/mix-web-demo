@@ -35,6 +35,7 @@ type RemoteCallConfig struct {
 	MaxBackoff     time.Duration
 }
 
+// 基于 Nacos 服务发现与 httpc 的下游服务调用客户端，内置实例缓存、轮询负载均衡与重试配置
 type ServiceDiscovery struct {
 	namingClient naming_client.INamingClient
 	httpClient   *http.Client
@@ -47,6 +48,7 @@ type ServiceDiscovery struct {
 	logger       *utils.ZeroLogger        // 运行期日志（可为 nil，nil 时退化为仅 logx）
 }
 
+// NewServiceDiscovery 创建服务发现客户端并初始化统一的 HTTP 客户端与负载均衡索引
 func NewServiceDiscovery(client naming_client.INamingClient, cfg RemoteCallConfig, logger *utils.ZeroLogger) *ServiceDiscovery {
 	return &ServiceDiscovery{
 		namingClient: client,
@@ -192,6 +194,7 @@ func (sd *ServiceDiscovery) CallService(ctx context.Context, serviceName string,
 	return result, nil
 }
 
+// callWithRetry 按最大重试次数循环调用下游服务，失败时指数退避等待，不可重试或上下文取消时提前终止
 func (sd *ServiceDiscovery) callWithRetry(ctx context.Context, serviceName string, path string, opts RequestOptions) (Result, error) {
 	var lastErr error
 
@@ -219,6 +222,7 @@ func (sd *ServiceDiscovery) callWithRetry(ctx context.Context, serviceName strin
 	return Result{}, lastErr
 }
 
+// doCall 执行单次下游调用：选择实例并拼装 URL、构建请求体后经 httpc 发送，校验 HTTP 状态码与业务码
 func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path string, opts RequestOptions) (Result, error) {
 	var result Result
 
@@ -297,6 +301,7 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 	return result, nil
 }
 
+// buildRequestBody 按请求数据类型序列化请求体并返回对应的 Content-Type
 func buildRequestBody(data any) ([]byte, string, error) {
 	switch v := data.(type) {
 	case nil:
@@ -322,6 +327,7 @@ func buildRequestBody(data any) ([]byte, string, error) {
 	}
 }
 
+// calculateBackoff 计算第 attempt 次重试的指数退避时长，超过 maxBackoff 时封顶
 func calculateBackoff(attempt int, initialBackoff, maxBackoff time.Duration) time.Duration {
 	backoff := float64(initialBackoff) * math.Pow(2, float64(attempt-1))
 	if backoff > float64(maxBackoff) {
@@ -361,6 +367,7 @@ func (sd *ServiceDiscovery) getServiceInstances(serviceName string) ([]model.Ins
 	return instances, nil
 }
 
+// 服务实例缓存条目，保存实例列表与更新时间，30 秒内直接复用缓存
 type serviceCache struct {
 	instances []model.Instance
 	timestamp time.Time

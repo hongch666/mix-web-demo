@@ -8,6 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/rest"
 )
 
+// 服务总配置，聚合 REST、任务调度、Nacos、存储、消息队列、日志与远程调用配置
 type Config struct {
 	rest.RestConf
 	Prefix        string              `json:"prefix"`
@@ -26,6 +27,7 @@ type TaskConfig struct {
 	Enabled bool `json:"enabled"`
 }
 
+// Nacos 注册中心连接参数与命名空间配置
 type NacosConfig struct {
 	IpAddr      string `json:"ipAddr"`
 	Port        int    `json:"port"`
@@ -37,6 +39,7 @@ type NacosConfig struct {
 	LogDir      string `json:"logDir"`
 }
 
+// MySQL 连接参数与 SQL 日志开关、慢查询阈值配置
 type MysqlConfig struct {
 	Host          string `json:"host"`
 	Port          int    `json:"port"`
@@ -57,6 +60,7 @@ func (m MysqlConfig) GetSlowThreshold() time.Duration {
 	return time.Duration(m.SlowThreshold) * time.Millisecond
 }
 
+// Elasticsearch 连接参数与查询 DSL 日志开关配置
 type ESConfig struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
@@ -67,12 +71,14 @@ type ESConfig struct {
 	DSLLogEnabled bool `json:"dslLogEnabled"`
 }
 
+// 存储层配置集合，聚合 MySQL、ES 与 Redis
 type DatabaseConfig struct {
 	Mysql MysqlConfig `json:"mysql"`
 	ES    ESConfig    `json:"es"`
 	Redis RedisConfig `json:"redis"`
 }
 
+// Redis 连接参数配置
 type RedisConfig struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
@@ -81,6 +87,7 @@ type RedisConfig struct {
 	DB       string `json:"db"`
 }
 
+// RabbitMQ 连接参数配置
 type MQConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -89,15 +96,18 @@ type MQConfig struct {
 	Vhost    string `json:"vhost"`
 }
 
+// 内部服务调用令牌的密钥与过期时间配置
 type InternalTokenConfig struct {
 	Secret     string `json:"secret"`
 	Expiration int64  `json:"expiration"`
 }
 
+// 日志文件输出路径配置
 type LogsConfig struct {
 	Path string `json:"path"`
 }
 
+// 远程服务调用的超时、重试与退避策略配置
 type RemoteCallConfig struct {
 	Timeout        int                  `json:"timeout"`        // 请求超时时间（毫秒）
 	MaxRetries     int                  `json:"maxRetries"`     // 最大重试次数
@@ -106,6 +116,7 @@ type RemoteCallConfig struct {
 	CircuitBreaker CircuitBreakerConfig `json:"circuitBreaker"` // 熔断器配置
 }
 
+// 熔断器的失败阈值与恢复超时配置
 type CircuitBreakerConfig struct {
 	FailureThreshold int `json:"failureThreshold"` // 失败阈值
 	RecoveryTimeout  int `json:"recoveryTimeout"`  // 恢复超时时间（毫秒）

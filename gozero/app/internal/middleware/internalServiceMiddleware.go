@@ -10,10 +10,12 @@ import (
 	"app/common/utils"
 )
 
+// 校验内部服务调用令牌的中间件
 type InternalServiceMiddleware struct {
 	*utils.ZeroLogger
 }
 
+// NewInternalServiceMiddleware 创建内部服务令牌校验中间件
 func NewInternalServiceMiddleware(log *utils.ZeroLogger) *InternalServiceMiddleware {
 	return &InternalServiceMiddleware{ZeroLogger: log}
 }

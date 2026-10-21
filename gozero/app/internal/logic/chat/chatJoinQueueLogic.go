@@ -12,6 +12,7 @@ import (
 	"app/internal/types"
 )
 
+// ChatJoinQueueLogic 处理加入聊天队列接口请求的逻辑对象
 type ChatJoinQueueLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -27,6 +28,7 @@ func NewChatJoinQueueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cha
 	}
 }
 
+// ChatJoinQueue 处理加入聊天队列接口请求，未在队列时以无连接的虚拟客户端入队
 func (l *ChatJoinQueueLogic) ChatJoinQueue(req *types.ChatJoinQueueReq) (resp *types.ChatJoinQueueResp, err error) {
 	// 手动加入队列（不建立WebSocket连接）
 	resp = &types.ChatJoinQueueResp{

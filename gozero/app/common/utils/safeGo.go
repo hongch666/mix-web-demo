@@ -7,6 +7,7 @@ import (
 	"app/common/constants"
 )
 
+// panicLogger panic 日志输出接口，SafeGo 用它记录 recover 到的异常信息
 type panicLogger interface {
 	Error(msg string)
 }

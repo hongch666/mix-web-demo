@@ -306,6 +306,7 @@ func initRedis(c config.Config, logger *utils.ZeroLogger) *redis.Client {
 	return client
 }
 
+// resolveNacosRegisterIP 确定 Nacos 注册 IP，优先取配置的监听地址，未指定或全零地址时自动探测本机 IP
 func resolveNacosRegisterIP(listenHost string) string {
 	listenHost = strings.TrimSpace(listenHost)
 	if listenHost != "" && !isUnspecifiedHost(listenHost) {
@@ -318,6 +319,7 @@ func resolveNacosRegisterIP(listenHost string) string {
 	return listenHost
 }
 
+// isUnspecifiedHost 判断主机地址是否为空串或 0.0.0.0、:: 等未指定地址
 func isUnspecifiedHost(host string) bool {
 	switch strings.TrimSpace(host) {
 	case "", "0.0.0.0", "::", "[::]":
@@ -327,6 +329,7 @@ func isUnspecifiedHost(host string) bool {
 	}
 }
 
+// getLocalIPv4Address 遍历网卡获取首个已启用且非回环的 IPv4 地址
 func getLocalIPv4Address() (string, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
@@ -365,6 +368,7 @@ func getLocalIPv4Address() (string, error) {
 	return "", fmt.Errorf(constants.LOCAL_IPV4_ADDRESS_NOT_FOUND_ERROR)
 }
 
+// trimSlashPrefix 去除字符串开头的斜杠，用于拼接 RabbitMQ 连接地址中的 vhost
 func trimSlashPrefix(value string) string {
 	if len(value) > 0 && value[0] == '/' {
 		return value[1:]
@@ -372,6 +376,7 @@ func trimSlashPrefix(value string) string {
 	return value
 }
 
+// 将 ES 客户端运行期日志适配转发到 ZeroLogger 输出
 type esLoggerAdapter struct {
 	logger *utils.ZeroLogger
 }

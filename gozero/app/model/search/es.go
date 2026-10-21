@@ -20,6 +20,7 @@ const (
 	articlesIndexName = "articles"
 )
 
+// SearchArticle 按关键词与过滤条件检索文章索引，支持脚本复合打分与高亮，并用 Spring 实时统计覆盖 ES 快照数据
 func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, esScript string, weights *SearchWeights, paramMap ScriptParamMapping) ([]ArticleES, int, error) {
 	if m.esClient == nil {
 		return nil, 0, ErrNilESClient

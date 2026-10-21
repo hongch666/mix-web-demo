@@ -18,15 +18,18 @@ import (
 	"github.com/zeromicro/go-zero/rest/pathvar"
 )
 
+// 判断用户是否为管理员的接口抽象，供本人或管理员访问校验使用
 type AdminChecker interface {
 	IsAdminUser(ctx context.Context, userID int64) (bool, error)
 }
 
+// 限制用户只能访问本人数据、管理员可访问他人数据的鉴权中间件
 type AllowSelfMiddleware struct {
 	adminChecker AdminChecker
 	*utils.ZeroLogger
 }
 
+// NewAllowSelfMiddleware 创建自身或管理员访问校验中间件
 func NewAllowSelfMiddleware(adminChecker AdminChecker, logger *utils.ZeroLogger) *AllowSelfMiddleware {
 	return &AllowSelfMiddleware{
 		adminChecker: adminChecker,
@@ -51,6 +54,7 @@ func (m *AllowSelfMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// requireSelfOrAdmin 校验当前登录用户是否为目标用户本人或管理员，否则返回 403
 func requireSelfOrAdmin(ctx context.Context, targetUserID int64, checker AdminChecker) error {
 	currentUserID, _ := ctx.Value(keys.UserIDKey).(int64)
 	if currentUserID <= 0 {
@@ -76,6 +80,7 @@ func requireSelfOrAdmin(ctx context.Context, targetUserID int64, checker AdminCh
 	return nil
 }
 
+// resolveTargetUserID 依次从请求体、路径参数、查询参数解析目标用户 ID，均缺失时回退为当前登录用户
 func resolveTargetUserID(r *http.Request) (int64, error) {
 	targetUserID, found, err := targetUserIDFromBody(r)
 	if err != nil {
@@ -95,6 +100,7 @@ func resolveTargetUserID(r *http.Request) (int64, error) {
 	return currentUserID, nil
 }
 
+// targetUserIDFromBody 读取并回填请求体，从 JSON 的 user_id 或 sender_id 字段提取目标用户 ID
 func targetUserIDFromBody(r *http.Request) (int64, bool, error) {
 	if r.Body == nil {
 		return 0, false, nil
@@ -129,6 +135,7 @@ func targetUserIDFromBody(r *http.Request) (int64, bool, error) {
 	return 0, false, nil
 }
 
+// parseTargetUserID 将字符串解析为正整数用户 ID，非法或非正值返回参数错误
 func parseTargetUserID(value string) (int64, error) {
 	targetUserID, err := strconv.ParseInt(value, 10, 64)
 	if err != nil || targetUserID <= 0 {

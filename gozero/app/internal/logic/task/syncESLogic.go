@@ -13,6 +13,7 @@ import (
 	"app/internal/types"
 )
 
+// SyncESLogic 处理手动触发同步 ES 任务接口请求的逻辑对象
 type SyncESLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -36,6 +37,7 @@ var runSyncInBackground = func(l *SyncESLogic, task func()) {
 	utils.SafeGo(l.ZeroLogger, constants.SAFE_GO_SYNC_ES_DATA, task)
 }
 
+// SyncES 处理手动触发同步 ES 任务接口请求，拷贝请求字段后在后台异步执行并立即返回成功
 func (l *SyncESLogic) SyncES(req *types.SyncESReq) (resp *types.SyncESResp, err error) {
 	l.Info(constants.TASK_SYNC_ES_STARTED_MESSAGE)
 

@@ -9,6 +9,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
+// main 加载配置文件并启动 GoZero 服务，启动失败时记录错误日志并以非零状态码退出
 func main() {
 	// 获取配置文件路径
 	configFile := boot.GetConfigFilePath()

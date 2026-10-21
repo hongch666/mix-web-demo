@@ -23,6 +23,7 @@ type ServiceContext struct {
 	*MiddlewareContext
 }
 
+// NewServiceContext 初始化日志与内部令牌工具，装配基础设施、模型、Hub 等各分域依赖并构造服务上下文
 func NewServiceContext(c config.Config) *ServiceContext {
 	serviceContext, cancel := context.WithCancel(context.Background())
 

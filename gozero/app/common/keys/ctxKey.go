@@ -1,5 +1,6 @@
 package keys
 
+// contextKey 用户上下文键类型，避免与其他包写入 context 的键冲突
 type contextKey string
 
 const (

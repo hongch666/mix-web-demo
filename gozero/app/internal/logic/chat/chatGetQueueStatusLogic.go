@@ -11,6 +11,7 @@ import (
 	"app/internal/types"
 )
 
+// ChatGetQueueStatusLogic 处理获取聊天队列状态接口请求的逻辑对象
 type ChatGetQueueStatusLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -26,6 +27,7 @@ func NewChatGetQueueStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
+// ChatGetQueueStatus 处理获取聊天队列状态接口请求，返回队列中全部在线用户及人数
 func (l *ChatGetQueueStatusLogic) ChatGetQueueStatus() (resp *types.ChatGetQueueStatusResp, err error) {
 	// 获取队列中所有用户
 	users := l.svcCtx.ChatHub.GetAllUsersInQueue()

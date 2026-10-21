@@ -15,6 +15,7 @@ import (
 	"app/internal/types"
 )
 
+// SqlToolsQueryLogic 处理只读 SQL 查询接口请求的逻辑对象
 type SqlToolsQueryLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -30,6 +31,7 @@ func NewSqlToolsQueryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Sql
 	}
 }
 
+// SqlToolsQuery 处理只读 SQL 查询接口请求，校验并替换命名参数后用标准库执行查询，返回动态列结果
 func (l *SqlToolsQueryLogic) SqlToolsQuery(req *types.SqlToolsQueryReq) (resp *types.SqlToolsQueryResp, err error) {
 	normalized, err := l.validateQuery(req.Query)
 	if err != nil {

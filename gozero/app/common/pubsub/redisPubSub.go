@@ -50,6 +50,7 @@ func (p *RedisPubSub) Start(ctx context.Context, handler MessageHandler) {
 	go p.run(ctx, handler)
 }
 
+// run 订阅循环：建立频道订阅并持续分发消息，断线后记录日志、等待 1 秒后自动重连
 func (p *RedisPubSub) run(ctx context.Context, handler MessageHandler) {
 	for {
 		if ctx.Err() != nil || p.isClosed() {
@@ -106,12 +107,14 @@ func (p *RedisPubSub) Close() {
 	}
 }
 
+// isClosed 返回消息总线是否已关闭
 func (p *RedisPubSub) isClosed() bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.closed
 }
 
+// setPubSub 保存当前订阅对象，若总线已关闭则直接关闭新订阅
 func (p *RedisPubSub) setPubSub(pubsub *redis.PubSub) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -122,6 +125,7 @@ func (p *RedisPubSub) setPubSub(pubsub *redis.PubSub) {
 	p.pubsub = pubsub
 }
 
+// closeCurrentPubSub 关闭指定订阅，仅当其仍是当前订阅时才清空引用
 func (p *RedisPubSub) closeCurrentPubSub(pubsub *redis.PubSub) {
 	p.mu.Lock()
 	if p.pubsub == pubsub {
@@ -131,12 +135,14 @@ func (p *RedisPubSub) closeCurrentPubSub(pubsub *redis.PubSub) {
 	_ = pubsub.Close()
 }
 
+// logError 通过注入的日志实例记录错误，未装配日志时静默忽略
 func (p *RedisPubSub) logError(err error) {
 	if p.logger != nil {
 		p.logger.Error(err.Error())
 	}
 }
 
+// waitForRetry 等待 1 秒后允许重试，上下文取消时返回 false 以终止订阅循环
 func waitForRetry(ctx context.Context) bool {
 	timer := time.NewTimer(time.Second)
 	defer timer.Stop()

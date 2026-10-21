@@ -27,6 +27,7 @@ const (
 	esChangeTypeDelete = "delete"
 )
 
+// 统计一次 ES 同步过程中新增、更新、删除的文章数量
 type esSyncStats struct {
 	Added   int
 	Updated int
@@ -387,6 +388,7 @@ func buildArticleESBatchFromRemote(
 	return docs, nil
 }
 
+// loadExistingESArticles 滚动扫描 articles 索引，构造文档 ID 到内容哈希的映射供增量比对
 func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (map[int64]string, error) {
 	existingDocs := make(map[int64]string)
 
@@ -424,6 +426,7 @@ func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (ma
 	return existingDocs, nil
 }
 
+// deleteStaleESArticles 分批删除 ES 中数据库已不存在的过期文章文档
 func deleteStaleESArticles(ctx context.Context, svcCtx *svc.ServiceContext, staleDocs map[int64]string) (int, error) {
 	if len(staleDocs) == 0 {
 		return 0, nil
@@ -459,6 +462,7 @@ func deleteStaleESArticles(ctx context.Context, svcCtx *svc.ServiceContext, stal
 	return deleted, nil
 }
 
+// executeESBulk 执行 ES 批量请求，存在失败项时记录详情并返回错误
 func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest *elastic.BulkService) error {
 	if bulkRequest.NumberOfActions() == 0 {
 		return nil
@@ -623,6 +627,7 @@ func ensureArticlesIndex(ctx context.Context, svcCtx *svc.ServiceContext) error 
 	return nil
 }
 
+// hashArticleES 将文章文档序列化后计算 SHA256 哈希，用于判断内容是否变化
 func hashArticleES(doc search.ArticleES) (string, error) {
 	payload, err := json.Marshal(doc)
 	if err != nil {
@@ -633,6 +638,7 @@ func hashArticleES(doc search.ArticleES) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
+// logAndWrapError 记录错误日志并返回附加了上下文信息的包装错误
 func logAndWrapError(svcCtx *svc.ServiceContext, message string, err error) error {
 	if svcCtx != nil && svcCtx.Logger != nil {
 		svcCtx.Logger.Error(fmt.Sprintf("%s: %v", message, err))

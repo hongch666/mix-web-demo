@@ -14,6 +14,7 @@ import (
 	"app/internal/types"
 )
 
+// SqlToolsGetTablesLogic 处理获取表结构信息接口请求的逻辑对象
 type SqlToolsGetTablesLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -29,6 +30,7 @@ func NewSqlToolsGetTablesLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
+// SqlToolsGetTables 处理获取表结构信息接口请求，指定表名时返回单表结构，否则返回全部白名单表
 func (l *SqlToolsGetTablesLogic) SqlToolsGetTables(req *types.SqlToolsGetTablesReq) (resp *types.SqlToolsGetTablesResp, err error) {
 	tableName := strings.TrimSpace(req.Table)
 
@@ -51,6 +53,7 @@ func (l *SqlToolsGetTablesLogic) SqlToolsGetTables(req *types.SqlToolsGetTablesR
 	return &types.SqlToolsGetTablesResp{Data: tables}, nil
 }
 
+// getSingleTableSchema 校验表名在白名单内并返回单张表的列结构
 func (l *SqlToolsGetTablesLogic) getSingleTableSchema(tableName string) (*types.SqlToolsGetTablesResp, error) {
 	tableName = strings.ToLower(tableName)
 	if !constants.SqlToolsTableWhitelist[tableName] {

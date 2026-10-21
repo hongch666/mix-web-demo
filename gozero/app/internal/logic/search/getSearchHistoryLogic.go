@@ -14,6 +14,7 @@ import (
 	"app/internal/types"
 )
 
+// GetSearchHistoryLogic 处理获取搜索历史接口请求的逻辑对象
 type GetSearchHistoryLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -29,6 +30,7 @@ func NewGetSearchHistoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
+// GetSearchHistory 处理获取搜索历史接口请求，远程调用 NestJS 内部接口并解析为关键词列表
 func (l *GetSearchHistoryLogic) GetSearchHistory(req *types.GetSearchHistoryReq) (resp *types.GetSearchHistoryResp, err error) {
 	// 从路径参数中解析userID
 	userIDStr := req.UserId

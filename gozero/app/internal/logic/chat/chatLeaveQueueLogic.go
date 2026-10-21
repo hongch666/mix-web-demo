@@ -11,6 +11,7 @@ import (
 	"app/internal/types"
 )
 
+// ChatLeaveQueueLogic 处理离开聊天队列接口请求的逻辑对象
 type ChatLeaveQueueLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -26,6 +27,7 @@ func NewChatLeaveQueueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ch
 	}
 }
 
+// ChatLeaveQueue 处理离开聊天队列接口请求，在队列中时移除用户并关闭其全部连接
 func (l *ChatLeaveQueueLogic) ChatLeaveQueue(req *types.ChatLeaveQueueReq) (resp *types.ChatLeaveQueueResp, err error) {
 	// 离开队列
 	resp = &types.ChatLeaveQueueResp{

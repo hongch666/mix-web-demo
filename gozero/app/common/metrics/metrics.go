@@ -32,6 +32,7 @@ var (
 	}, []string{LabelMode})
 )
 
+// Init 将客户端调用、定时任务与搜索等全部 Prometheus 指标注册到默认注册表
 func Init() {
 	prometheus.MustRegister(ClientRequests, ClientDuration, TaskRuns, TaskDuration, SearchRequests, SearchDuration)
 }

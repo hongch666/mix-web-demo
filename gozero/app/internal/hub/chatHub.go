@@ -30,21 +30,25 @@ type Client struct {
 
 var chatConnectionSeq atomic.Uint64
 
+// 聊天在线连接队列，按用户与连接 ID 两级索引管理 WebSocket 客户端
 type ChatQueue struct {
 	clients map[int64]map[string]*Client // userID -> connectionID -> client
 	mu      sync.RWMutex
 }
 
+// 聊天中心管理，聚合连接队列与消息已读回执写入能力
 type ChatHub struct {
 	queue    *ChatQueue
 	markRead func(context.Context, int64, int64, uint64) error
 	*utils.ZeroLogger
 }
 
+// NewChatQueue 创建空的聊天连接队列
 func NewChatQueue() *ChatQueue {
 	return &ChatQueue{clients: make(map[int64]map[string]*Client)}
 }
 
+// NewChatHub 创建聊天 Hub 并初始化空队列
 func NewChatHub(logger *utils.ZeroLogger) *ChatHub {
 	return &ChatHub{queue: NewChatQueue(), ZeroLogger: logger}
 }
@@ -283,6 +287,7 @@ func (c *Client) SafeSend(message []byte) (ok bool) {
 	}
 }
 
+// ReadPump 持续读取 WebSocket 消息，处理心跳应答与已读回执，连接断开时从队列移除自身
 func (c *Client) ReadPump() {
 	defer func() {
 		chatHub := c.hub
@@ -338,6 +343,7 @@ func (c *Client) ReadPump() {
 	}
 }
 
+// handleReadReceipt 处理已读回执消息，调用 MarkRead 标记已读并向客户端回执确认
 func (c *Client) handleReadReceipt(message *types.ChatWsMessage) error {
 	if message == nil || message.SenderId <= 0 || message.MessageId == 0 {
 		return fmt.Errorf("%s", constants.WS_READ_RECEIPT_INVALID)
@@ -367,6 +373,7 @@ func (c *Client) handleReadReceipt(message *types.ChatWsMessage) error {
 	return nil
 }
 
+// WritePump 将发送队列中的消息写出并按周期发送 Ping 保活，写出失败或队列关闭时退出
 func (c *Client) WritePump() {
 	defer c.Shutdown()
 	pingTicker := time.NewTicker(constants.WebSocketPingInterval)

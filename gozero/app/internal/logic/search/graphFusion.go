@@ -7,6 +7,7 @@ import (
 	"app/internal/types"
 )
 
+// 搜索融合重排的输入配置，包含权重参数与向量、图谱增强启用状态
 type FusionConfig struct {
 	VectorScoreWeight float64
 	GraphScoreWeight  float64
@@ -257,6 +258,7 @@ func FillDefaultScores(articles []types.ArticleEsItem) {
 	}
 }
 
+// clamp01 将数值截断到 0 到 1 区间
 func clamp01(v float64) float64 {
 	if v < 0 {
 		return 0
@@ -267,6 +269,7 @@ func clamp01(v float64) float64 {
 	return v
 }
 
+// roundTo4 将浮点数截断保留 4 位小数
 func roundTo4(v float64) float64 {
 	return float64(int(v*10000)) / 10000
 }

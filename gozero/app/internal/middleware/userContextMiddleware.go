@@ -9,8 +9,10 @@ import (
 	"app/common/keys"
 )
 
+// 从网关透传的请求头解析用户信息并写入请求上下文的中间件
 type UserContextMiddleware struct{}
 
+// NewUserContextMiddleware 创建用户上下文注入中间件
 func NewUserContextMiddleware() *UserContextMiddleware {
 	return &UserContextMiddleware{}
 }

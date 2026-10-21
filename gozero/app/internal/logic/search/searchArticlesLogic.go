@@ -24,6 +24,7 @@ import (
 	"github.com/zeromicro/go-zero/core/mr"
 )
 
+// SearchArticlesLogic 处理搜索文章接口请求的逻辑对象
 type SearchArticlesLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -39,6 +40,7 @@ func NewSearchArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Se
 	}
 }
 
+// SearchArticles 处理搜索文章接口请求，按脚本获取结果决定降级或执行 ES 检索、向量与图谱增强融合重排，并异步记录搜索日志
 func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp *types.SearchArticlesResp, err error) {
 	startedAt := time.Now()
 	mode := "hybrid"
@@ -390,6 +392,7 @@ func extractTagsFromItems(items []types.ArticleEsItem) []string {
 	return tags
 }
 
+// limitArticleIDs 将文章 ID 列表截断到指定数量上限
 func limitArticleIDs(articleIDs []int64, limit int) []int64 {
 	if limit <= 0 || limit > len(articleIDs) {
 		limit = len(articleIDs)
@@ -430,6 +433,7 @@ func pageSlice(items []types.ArticleEsItem, page int, size int) []types.ArticleE
 	return items[start:end]
 }
 
+// clearExplainFields 清空结果中的解释字段，未开启 explain 时用于精简响应
 func clearExplainFields(items []types.ArticleEsItem) {
 	for i := range items {
 		items[i].Reason = ""
@@ -439,6 +443,7 @@ func clearExplainFields(items []types.ArticleEsItem) {
 	}
 }
 
+// getCurrentUserFromContext 从请求上下文中读取当前登录用户的 ID 与用户名
 func getCurrentUserFromContext(ctx context.Context) (int64, string) {
 	userID, _ := ctx.Value(keys.UserIDKey).(int64)
 	username, _ := ctx.Value(keys.UsernameKey).(string)

@@ -15,6 +15,7 @@ var (
 	ErrSearchHitsEmpty = errors.New("es search hits is nil")
 )
 
+// 文章搜索请求参数，包含关键词、作者与分类等过滤条件及分页信息
 type ArticleSearchDTO struct {
 	Keyword         string  `form:"keyword"`
 	UserID          *uint64 `form:"user_id"`
@@ -27,6 +28,7 @@ type ArticleSearchDTO struct {
 	Size            int     `form:"size,default=10"`
 }
 
+// 文章索引文档结构，含标题、内容等基础字段与浏览点赞收藏及评分统计快照
 type ArticleES struct {
 	ID                int64   `json:"id"`
 	Title             string  `json:"title"`
@@ -88,10 +90,12 @@ type SearchModelDeps struct {
 	Logger *utils.ZeroLogger
 }
 
+// 文章搜索模型接口，提供基于 ES 的文章检索能力
 type SearchModel interface {
 	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, esScript string, weights *SearchWeights, paramMap ScriptParamMapping) ([]ArticleES, int, error)
 }
 
+// SearchModel 的默认实现，持有 ES 客户端、Spring 客户端与查询 DSL 日志配置
 type searchModel struct {
 	esClient     *elastic.Client
 	springClient springClient.Client
@@ -101,6 +105,7 @@ type searchModel struct {
 	logger *utils.ZeroLogger
 }
 
+// NewSearchModel 根据依赖项创建文章搜索模型实例
 func NewSearchModel(deps SearchModelDeps) SearchModel {
 	return &searchModel{
 		esClient:      deps.ESClient,

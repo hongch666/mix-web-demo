@@ -23,6 +23,7 @@ type httpStatusError struct {
 	Body       string
 }
 
+// Error 返回携带状态码与响应体内容的 HTTP 状态码错误描述
 func (e *httpStatusError) Error() string {
 	return fmt.Sprintf(constants.UNEXPECTED_STATUS_CODE, e.StatusCode, e.Body)
 }

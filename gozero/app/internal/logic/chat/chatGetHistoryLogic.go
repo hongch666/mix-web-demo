@@ -16,6 +16,7 @@ import (
 	"github.com/zeromicro/go-zero/core/mr"
 )
 
+// ChatGetHistoryLogic 处理获取聊天历史接口请求的逻辑对象
 type ChatGetHistoryLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -31,6 +32,7 @@ func NewChatGetHistoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ch
 	}
 }
 
+// ChatGetHistory 处理获取聊天历史接口请求，并行查询分页消息与标记已读后返回消息列表和总数
 func (l *ChatGetHistoryLogic) ChatGetHistory(req *types.ChatGetHistoryReq) (resp *types.ChatGetHistoryResp, err error) {
 	// 设置分页参数
 	page := req.Page

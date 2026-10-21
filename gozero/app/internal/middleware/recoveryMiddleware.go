@@ -10,10 +10,12 @@ import (
 	"app/common/utils"
 )
 
+// 捕获 handler panic 并统一转换为错误响应的恢复中间件
 type RecoveryMiddleware struct {
 	*utils.ZeroLogger
 }
 
+// NewRecoveryMiddleware 创建 panic 恢复中间件
 func NewRecoveryMiddleware(log *utils.ZeroLogger) *RecoveryMiddleware {
 	return &RecoveryMiddleware{ZeroLogger: log}
 }

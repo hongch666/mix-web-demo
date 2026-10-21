@@ -10,6 +10,7 @@ import (
 var _ ChatMessagesModel = (*customChatMessagesModel)(nil)
 
 type (
+	// ChatMessagesModel 聊天消息数据访问接口，提供消息 CRUD、历史分页查询、未读统计与已读标记能力
 	ChatMessagesModel interface {
 		Insert(context.Context, *ChatMessages) error
 		FindOne(context.Context, uint64) (*ChatMessages, error)
@@ -23,33 +24,40 @@ type (
 		MarkChatHistoryAsRead(context.Context, int64, int64) error
 		MarkChatHistoryAsReadThrough(context.Context, int64, int64, uint64) error
 	}
+	// customChatMessagesModel 聊天消息模型的默认实现，组合数据库连接与生成的基础模型
 	customChatMessagesModel struct {
 		conn      sqlx.SqlConn
 		baseModel *defaultChatMessagesModel
 	}
 )
 
+// NewChatMessagesModel 创建聊天消息模型实例
 func NewChatMessagesModel(conn sqlx.SqlConn) ChatMessagesModel {
 	return &customChatMessagesModel{conn: conn, baseModel: newChatMessagesModel(conn)}
 }
 
+// Insert 插入一条聊天消息
 func (m *customChatMessagesModel) Insert(ctx context.Context, data *ChatMessages) error {
 	_, err := m.baseModel.Insert(ctx, data)
 	return err
 }
 
+// FindOne 按主键查询聊天消息
 func (m *customChatMessagesModel) FindOne(ctx context.Context, id uint64) (*ChatMessages, error) {
 	return m.baseModel.FindOne(ctx, id)
 }
 
+// Update 更新聊天消息记录
 func (m *customChatMessagesModel) Update(ctx context.Context, data *ChatMessages) error {
 	return m.baseModel.Update(ctx, data)
 }
 
+// Delete 按主键删除聊天消息
 func (m *customChatMessagesModel) Delete(ctx context.Context, id uint64) error {
 	return m.baseModel.Delete(ctx, id)
 }
 
+// CreateChatMessage 插入聊天消息并把数据库生成的 id、created_at 等字段回写到入参对象
 func (m *customChatMessagesModel) CreateChatMessage(ctx context.Context, message *ChatMessages) error {
 	result, err := m.baseModel.Insert(ctx, message)
 	if err != nil {
@@ -69,6 +77,7 @@ func (m *customChatMessagesModel) CreateChatMessage(ctx context.Context, message
 	return nil
 }
 
+// GetChatHistory 分页查询两人之间的聊天记录并返回消息总数，按创建时间升序排列
 func (m *customChatMessagesModel) GetChatHistory(ctx context.Context, userID, otherID int64, offset, limit int) ([]*ChatMessages, int64, error) {
 	var total int64
 	where := "(sender_id = ? and receiver_id = ?) or (sender_id = ? and receiver_id = ?)"
@@ -88,12 +97,14 @@ func (m *customChatMessagesModel) GetChatHistory(ctx context.Context, userID, ot
 	return result, total, nil
 }
 
+// GetUnreadCount 统计指定用户收到来自另一用户的未读消息数
 func (m *customChatMessagesModel) GetUnreadCount(ctx context.Context, userID, otherID int64) (int64, error) {
 	var count int64
 	err := m.conn.QueryRowCtx(ctx, &count, fmt.Sprintf("select count(*) from %s where receiver_id = ? and sender_id = ? and is_read = 0", m.baseModel.table), userID, otherID)
 	return count, err
 }
 
+// GetAllUnreadCounts 按发送者分组统计用户收到的全部未读消息数
 func (m *customChatMessagesModel) GetAllUnreadCounts(ctx context.Context, userID int64) (map[int64]int64, error) {
 	var rows []struct {
 		SenderID int64 `db:"sender_id"`
@@ -110,16 +121,19 @@ func (m *customChatMessagesModel) GetAllUnreadCounts(ctx context.Context, userID
 	return result, nil
 }
 
+// MarkAsRead 按消息 id 将单条消息标记为已读
 func (m *customChatMessagesModel) MarkAsRead(ctx context.Context, messageID uint64) error {
 	_, err := m.conn.ExecCtx(ctx, fmt.Sprintf("update %s set is_read = 1 where id = ?", m.baseModel.table), messageID)
 	return err
 }
 
+// MarkChatHistoryAsRead 将用户收到来自另一用户的全部消息标记为已读
 func (m *customChatMessagesModel) MarkChatHistoryAsRead(ctx context.Context, userID, otherID int64) error {
 	_, err := m.conn.ExecCtx(ctx, fmt.Sprintf("update %s set is_read = 1 where receiver_id = ? and sender_id = ?", m.baseModel.table), userID, otherID)
 	return err
 }
 
+// MarkChatHistoryAsReadThrough 将指定会话中 id 不超过 lastMessageID 的未读消息批量标记为已读
 func (m *customChatMessagesModel) MarkChatHistoryAsReadThrough(
 	ctx context.Context,
 	userID int64,

@@ -11,6 +11,7 @@ import (
 	"app/internal/types"
 )
 
+// TestGoZeroLogic 处理测试 GoZero 服务接口请求的逻辑对象
 type TestGoZeroLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -26,6 +27,7 @@ func NewTestGoZeroLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestGo
 	}
 }
 
+// TestGoZero 处理测试 GoZero 服务接口请求，直接返回欢迎消息
 func (l *TestGoZeroLogic) TestGoZero() (resp *types.TestGoZeroResp, err error) {
 	// 直接返回GoZero的欢迎消息
 	resp = &types.TestGoZeroResp{
