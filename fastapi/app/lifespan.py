@@ -42,6 +42,7 @@ from app.internal.tasks import resolve_task_enabled, start_scheduler
 server_config: dict[str, Any] = load_config("server")
 IP: str = Messages.INIT_IP
 PORT: int = server_config["port"]
+SERVER_MODE: str = str(server_config["mode"])
 
 # 导入并保留实体引用，确保模型已注册到 Base.metadata
 SQLALCHEMY_MODELS: tuple[
@@ -114,6 +115,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     Logger.info(Messages.HTTP_CLIENT_POOL_INITIALIZED)
 
     Logger.info(Messages.STARTUP_MESSAGE)
+    Logger.info(Messages.STARTUP_SERVER_MODE(SERVER_MODE))
     Logger.info(Messages.STARTUP_SERVICE_ADDRESS(IP, PORT))
     Logger.info(Messages.STARTUP_SWAGGER_ADDRESS(IP, PORT))
     Logger.info(Messages.STARTUP_REDOC_ADDRESS(IP, PORT))

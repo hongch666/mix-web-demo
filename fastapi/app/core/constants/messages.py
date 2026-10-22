@@ -34,6 +34,11 @@ class Messages:
         return f"ReDoc文档地址: http://{ip}:{port}/redoc"
 
     @staticmethod
+    def STARTUP_SERVER_MODE(mode: str) -> str:
+        """构造运行模式的提示消息"""
+        return f"运行模式:{mode}"
+
+    @staticmethod
     def LLM_INITIALIZATION_SUCCESS(service_name: str) -> str:
         """构造 Agent 服务初始化成功的提示消息"""
         return f"{service_name} Agent服务初始化完成"
