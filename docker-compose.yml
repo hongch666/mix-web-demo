@@ -84,7 +84,11 @@ services:
   loki:
     image: grafana/loki:3.0.0
     container_name: loki
-    command: ["-config.file=/etc/loki/config.yaml"]
+    # 每次容器启动先清空数据目录：旧日志完全不保留，重启即空
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "rm -rf /tmp/loki/* && exec /usr/bin/loki -config.file=/etc/loki/config.yaml"
     environment:
       <<: *no-proxy-env
     depends_on:
