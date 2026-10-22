@@ -17,6 +17,9 @@ export class Messages {
     message: string,
   ): string => `令牌验证失败: ${message}`;
 
+  static readonly STARTUP_SERVER_MODE = (mode: string): string =>
+    `运行模式: ${mode}`;
+
   static readonly STARTUP_SERVICE_ADDRESS = (
     ip: string,
     port: number,

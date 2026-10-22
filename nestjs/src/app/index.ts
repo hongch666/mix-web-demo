@@ -110,10 +110,12 @@ export async function createApp(): Promise<NestFastifyApplication> {
   // 读取yaml文件中的端口和IP
   const configService: ConfigService<unknown, boolean> = app.get(ConfigService);
   const port: number = configService.get<number>("server.port")!;
+  const mode: string = configService.get<string>("server.mode")!;
   const ip: string = Defaults.INIT_IP;
   // 输出启动信息和Swagger地址（从容器获取日志服务）
   const logger: LoggerService = app.get(LoggerService);
   logger.info(Messages.START_WELCOME);
+  logger.info(Messages.STARTUP_SERVER_MODE(mode));
   logger.info(Messages.STARTUP_SERVICE_ADDRESS(ip, port));
   logger.info(Messages.STARTUP_SWAGGER_ADDRESS(ip, port));
   // 返回 app
