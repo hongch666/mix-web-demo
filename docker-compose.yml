@@ -112,6 +112,34 @@ services:
       retries: 12
       start_period: 20s
 
+  # 启动前预置采集位点到「当前文件末尾」：
+  # promtail 自身保存的位点在本环境多次重启后未被加载（每次都从 offset 0 重读历史文件），
+  # 这里在它启动前直接把每个日志文件的字节数写成位点，避免历史日志被重复灌入 Loki
+  promtail-positions-init:
+    image: grafana/promtail:2.9.7
+    container_name: promtail-positions-init
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        mkdir -p /tmp/positions
+        tmp=/tmp/positions/positions.yaml.tmp
+        printf 'positions:\n' > "$$tmp"
+        for f in /app/logs/*/app_*.log /app/logs/gateway/*.log; do
+          [ -f "$$f" ] || continue
+          size=$$(wc -c < "$$f")
+          printf '  %s: "%s"\n' "$$f" "$$size" >> "$$tmp"
+        done
+        mv "$$tmp" /tmp/positions/positions.yaml
+        echo "positions seeded: $$(grep -c 'app_\|gateway' /tmp/positions/positions.yaml) files"
+    volumes:
+      - ./logs:/app/logs:ro
+      - promtail-data:/tmp/positions
+    networks:
+      - hcsy
+    restart: "no"
+
   promtail:
     image: grafana/promtail:2.9.7
     container_name: promtail
@@ -121,6 +149,8 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+      promtail-positions-init:
+        condition: service_completed_successfully
     volumes:
       - ./loki-config/promtail.yaml:/etc/promtail/config.yaml:ro
       - ./logs:/app/logs:ro
@@ -244,6 +274,8 @@ services:
       DB_HOST: mysql
       REDIS_HOST: redis
       RABBITMQ_HOST: mq
+      # 容器模式下日志行不带时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
+      LOG_INCLUDE_TIMESTAMP: "false"
       OTEL_ENABLED: "true"
       OTEL_SERVICE_NAME: spring
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
@@ -294,6 +326,8 @@ services:
       DB_MONGODB_HOST: mongodb
       RABBITMQ_HOST: mq
       LOGS_PATH: /app/logs/gozero
+      # 容器模式下日志行不带时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
+      LOG_INCLUDE_TIMESTAMP: "false"
       OTEL_ENABLED: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4318
     volumes:
@@ -341,6 +375,8 @@ services:
       DB_MONGODB_HOST: mongodb
       RABBITMQ_HOST: mq
       LOGS_PATH: /app/logs/nestjs
+      # 容器模式下日志行不带时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
+      LOG_INCLUDE_TIMESTAMP: "false"
       OTEL_ENABLED: "true"
       OTEL_SERVICE_NAME: nestjs
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
@@ -392,6 +428,8 @@ services:
       DB_REDIS_HOST: redis
       DB_CLICKHOUSE_HOST: clickhouse
       LOGS_PATH: /app/logs/fastapi
+      # 容器模式下日志行不带时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
+      LOG_INCLUDE_TIMESTAMP: "false"
       OTEL_ENABLED: "true"
       OTEL_SERVICE_NAME: fastapi
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
