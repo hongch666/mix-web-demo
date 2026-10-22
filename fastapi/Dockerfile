@@ -29,8 +29,11 @@ RUN set -eux; \
     apt-get -o Acquire::Retries=5 \
     -o Acquire::http::Timeout=30 \
     -o Acquire::https::Timeout=30 \
-    install -y --no-install-recommends fonts-noto-cjk; \
+    install -y --no-install-recommends fonts-noto-cjk tzdata; \
     rm -rf /var/lib/apt/lists/*
+
+# 进程时区固定为东八区，保证日志行时间与 APScheduler 任务按本地时间触发
+ENV TZ=Asia/Shanghai
 
 # 先复制依赖清单，单独安装依赖，方便缓存复用
 COPY requirements.txt /app/

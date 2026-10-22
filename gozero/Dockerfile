@@ -54,6 +54,9 @@ RUN apk update && \
     tzdata && \
     rm -rf /var/cache/apk/*
 
+# 进程时区固定为东八区，保证日志行时间、cron 调度与业务日期口径一致
+ENV TZ=Asia/Shanghai
+
 # 从构建阶段复制应用
 COPY --from=builder /app/gozero-app .
 

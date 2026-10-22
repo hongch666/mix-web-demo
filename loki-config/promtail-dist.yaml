@@ -32,6 +32,7 @@ scrape_configs:
       - timestamp:
           source: simple_ts
           format: '2006-01-02 15:04:05'
+          location: Asia/Shanghai
           action_on_failure: skip
       - regex:
           expression: 'trace_id=(?P<trace_id>[0-9a-f]{32})'
@@ -52,6 +53,7 @@ scrape_configs:
       - timestamp:
           source: ts
           format: '2006-01-02 15:04:05'
+          location: Asia/Shanghai
           action_on_failure: skip
       - regex:
           expression: 'trace_id=(?P<trace_id>[0-9a-f]{32})'
@@ -72,6 +74,7 @@ scrape_configs:
       - timestamp:
           source: ts
           format: '2006-01-02 15:04:05'
+          location: Asia/Shanghai
           action_on_failure: skip
       - regex:
           expression: 'trace_id=(?P<trace_id>[0-9a-f]{32})'
@@ -92,6 +95,7 @@ scrape_configs:
       - timestamp:
           source: ts
           format: '2006-01-02 15:04:05'
+          location: Asia/Shanghai
           action_on_failure: skip
       - regex:
           expression: 'trace_id=(?P<trace_id>[0-9a-f]{32})'

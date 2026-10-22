@@ -34,8 +34,11 @@ WORKDIR /app
 
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
-# 安装基础工具
-RUN apk add --no-cache curl ca-certificates
+# 安装基础工具与时区数据：alpine 默认不带 tzdata，缺少时 TZ 环境变量会被忽略并回退 UTC
+RUN apk add --no-cache curl ca-certificates tzdata
+
+# 进程时区固定为东八区，保证日志行时间与 @Cron 表达式按本地时间触发
+ENV TZ=Asia/Shanghai
 
 # 复制生产依赖和package文件
 COPY --from=builder /app/package*.json ./

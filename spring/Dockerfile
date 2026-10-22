@@ -31,8 +31,11 @@ ARG OTEL_JAVA_AGENT_VERSION=2.31.1
 
 WORKDIR /app
 
-# 安装基础工具
-RUN apk add --no-cache curl ca-certificates
+# 安装基础工具与时区数据：alpine 默认不带 tzdata，缺少时 TZ 环境变量会被忽略并回退 UTC
+RUN apk add --no-cache curl ca-certificates tzdata
+
+# 进程时区固定为东八区，保证日志行时间、定时任务 cron 与业务日期口径一致
+ENV TZ=Asia/Shanghai
 
 RUN curl -fsSL \
     "https://maven.aliyun.com/repository/public/io/opentelemetry/javaagent/opentelemetry-javaagent/${OTEL_JAVA_AGENT_VERSION}/opentelemetry-javaagent-${OTEL_JAVA_AGENT_VERSION}.jar" \

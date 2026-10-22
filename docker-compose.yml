@@ -235,6 +235,7 @@ services:
     environment:
       <<: *no-proxy-env
       HOME: /tmp
+      TZ: Asia/Shanghai
       NACOS_SERVER: nacos:8848
       DB_HOST: mysql
       REDIS_HOST: redis
@@ -281,6 +282,7 @@ services:
     environment:
       <<: *no-proxy-env
       HOME: /tmp
+      TZ: Asia/Shanghai
       SERVER_IP: 0.0.0.0
       NACOS_IP: nacos
       DB_MYSQL_HOST: mysql
@@ -327,6 +329,7 @@ services:
     environment:
       <<: *no-proxy-env
       HOME: /tmp
+      TZ: Asia/Shanghai
       SERVER_IP: 0.0.0.0
       NACOS_SERVER: nacos
       NACOS_PORT: 8848
@@ -375,6 +378,7 @@ services:
     environment:
       <<: *no-proxy-env
       HOME: /tmp
+      TZ: Asia/Shanghai
       SERVER_IP: 0.0.0.0
       NACOS_SERVER: nacos:8848
       RABBITMQ_HOST: mq
