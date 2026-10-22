@@ -13,4 +13,9 @@ public final class TelemetryConstants {
 
     public static final String EMPTY_TRACE_ID = "-";
     public static final String LOG_ENTRY_FORMAT = "%s - %s - trace_id=%s - %s%n";
+
+    /**
+     * 不写时间戳的日志行格式，用于容器部署（时间戳由 Loki 采集侧提供，避免同一行出现两个日期）
+     */
+    public static final String LOG_ENTRY_FORMAT_NO_TIMESTAMP = "%s - trace_id=%s - %s%n";
 }

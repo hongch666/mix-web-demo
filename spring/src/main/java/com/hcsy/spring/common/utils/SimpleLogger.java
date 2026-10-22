@@ -34,6 +34,12 @@ public class SimpleLogger {
     private String logPath;
 
     /**
+     * 是否在日志行写入时间戳，容器部署关闭后由 Loki 采集时间承担，避免行内出现两个日期
+     */
+    @Value("${logging.include-timestamp:true}")
+    private boolean includeTimestamp;
+
+    /**
      * 初始化日志目录
      */
     @PostConstruct
@@ -125,12 +131,16 @@ public class SimpleLogger {
             String traceId = spanContext.isValid()
                 ? spanContext.getTraceId()
                 : TelemetryConstants.EMPTY_TRACE_ID;
-            String logEntry = String.format(
-                TelemetryConstants.LOG_ENTRY_FORMAT,
-                timestamp,
-                level,
-                traceId,
-                message);
+            String logEntry = includeTimestamp
+                ? String.format(TelemetryConstants.LOG_ENTRY_FORMAT,
+                    timestamp,
+                    level,
+                    traceId,
+                    message)
+                : String.format(TelemetryConstants.LOG_ENTRY_FORMAT_NO_TIMESTAMP,
+                    level,
+                    traceId,
+                    message);
 
             // 写入文件，指定UTF-8编码
             try (OutputStreamWriter writer = new OutputStreamWriter(

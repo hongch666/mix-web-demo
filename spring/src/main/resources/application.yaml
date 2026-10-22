@@ -73,6 +73,8 @@ springdoc:
     disable-swagger-default-url: true # 禁用 springdoc 默认 URL 配置
 
 logging:
+  # 是否在日志行写入时间戳，容器部署置 false（时间由 Loki 采集侧提供，避免行内出现两个日期）
+  include-timestamp: ${LOG_INCLUDE_TIMESTAMP:true}
   file:
     path: ${LOGGING_PATH:../logs/spring}
   level:
