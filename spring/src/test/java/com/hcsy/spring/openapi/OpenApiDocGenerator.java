@@ -31,6 +31,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 
 import com.hcsy.spring.config.SwaggerConfig;
+import com.hcsy.spring.config.properties.ServerProperties;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
@@ -231,6 +232,12 @@ class OpenApiDocGenerator {
         @Bean
         static BeanFactoryPostProcessor autoMockBeanFactoryPostProcessor() {
             return new AutoMockBeanFactoryPostProcessor();
+        }
+
+        /** SwaggerConfig 依赖服务端配置，切片测试不会加载 @ConfigurationPropertiesScan，这里显式提供 */
+        @Bean
+        ServerProperties serverProperties() {
+            return new ServerProperties("dev", 8081);
         }
     }
 }

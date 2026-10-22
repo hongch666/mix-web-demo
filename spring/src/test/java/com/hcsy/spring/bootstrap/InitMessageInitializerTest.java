@@ -4,21 +4,21 @@ import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.Environment;
 
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.config.properties.ServerProperties;
 
 class InitMessageInitializerTest {
     // 验证该场景的预期行为
     @Test
-    @DisplayName("启动时输出服务地址")
+    @DisplayName("启动时输出运行模式与服务地址")
     void logsStartupAddress() {
         SimpleLogger logger = mock(SimpleLogger.class);
-        Environment env = mock(Environment.class);
-        when(env.getProperty("server.port", "8081")).thenReturn("9000");
-        new InitMessageInitializer(logger, env).run(null);
+        new InitMessageInitializer(logger, new ServerProperties("dev", 9000)).run(null);
         verify(logger).info(Defaults.INIT_MSG);
-        verify(logger, times(2)).info(anyString(), anyString(), anyString());
+        verify(logger).info(Defaults.INIT_MODE, "dev");
+        verify(logger).info(Defaults.INIT_ADDR, Defaults.INIT_IP, 9000);
+        verify(logger).info(Defaults.INIT_SWAGGER_ADDR, Defaults.INIT_IP, 9000);
     }
 }

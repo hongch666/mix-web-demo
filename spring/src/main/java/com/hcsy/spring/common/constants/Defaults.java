@@ -47,8 +47,8 @@ public class Defaults {
 
     // ===== 启动 =====
     public static final String INIT_IP = "localhost";
-    public static final String INIT_PORT = "8081";
     public static final String INIT_MSG = "Spring Boot应用已启动";
+    public static final String INIT_MODE = "运行模式: %s";
     public static final String INIT_ADDR = "服务地址: http://%s:%s/";
     public static final String INIT_SWAGGER_ADDR = "Swagger文档地址: http://%s:%s/swagger-ui/index.html";
 

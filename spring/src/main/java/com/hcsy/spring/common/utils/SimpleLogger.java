@@ -8,15 +8,17 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.TelemetryConstants;
+import com.hcsy.spring.config.properties.LoggingFileProperties;
+import com.hcsy.spring.config.properties.LoggingProperties;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -25,30 +27,25 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SimpleLogger {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    @Value("${logging.file.path}")
-    private String logPath;
-
-    /**
-     * 是否在日志行写入时间戳，容器部署关闭后由 Loki 采集时间承担，避免行内出现两个日期
-     */
-    @Value("${logging.include-timestamp:true}")
-    private boolean includeTimestamp;
+    private final LoggingProperties loggingProperties;
+    private final LoggingFileProperties loggingFileProperties;
 
     /**
      * 初始化日志目录
      */
     @PostConstruct
     public void init() {
-        File logDir = new File(logPath);
+        File logDir = new File(loggingFileProperties.path());
         if (!logDir.exists()) {
             logDir.mkdirs();
         }
-        log.info(Messages.LOG_INIT, logPath);
+        log.info(Messages.LOG_INIT, loggingFileProperties.path());
     }
 
     /**
@@ -115,7 +112,7 @@ public class SimpleLogger {
     private void writeLog(String message, String level) {
         try {
             // 确保日志目录存在
-            File logDir = new File(logPath);
+            File logDir = new File(loggingFileProperties.path());
             if (!logDir.exists()) {
                 logDir.mkdirs();
             }
@@ -131,7 +128,7 @@ public class SimpleLogger {
             String traceId = spanContext.isValid()
                 ? spanContext.getTraceId()
                 : TelemetryConstants.EMPTY_TRACE_ID;
-            String logEntry = includeTimestamp
+            String logEntry = loggingProperties.includeTimestamp()
                 ? String.format(TelemetryConstants.LOG_ENTRY_FORMAT,
                     timestamp,
                     level,

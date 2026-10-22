@@ -6,10 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.config.properties.JwtProperties;
+import com.hcsy.spring.config.properties.LoggingFileProperties;
+import com.hcsy.spring.config.properties.LoggingProperties;
 
 class JwtUtilTest {
     private JwtUtil jwt;
@@ -17,8 +18,9 @@ class JwtUtilTest {
     @BeforeEach
     void setUp() {
         String secret = "01234567890123456789012345678901";
-        SimpleLogger logger = new SimpleLogger();
-        ReflectionTestUtils.setField(logger, "logPath", "target/test-logs");
+        SimpleLogger logger = new SimpleLogger(
+            new LoggingProperties(true),
+            new LoggingFileProperties("target/test-logs"));
         jwt = new JwtUtil(new JwtProperties(secret, 60_000L, 120_000L), logger);
         jwt.initKey();
     }

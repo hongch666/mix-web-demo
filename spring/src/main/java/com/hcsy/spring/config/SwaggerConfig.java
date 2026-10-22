@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.springdoc.core.customizers.OpenApiCustomizer;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hcsy.spring.common.constants.Defaults;
+import com.hcsy.spring.config.properties.ServerProperties;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -24,12 +24,16 @@ import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.servers.Server;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 装配 OpenAPI 文档信息，并统一定制下划线命名、空数据声明与 401 错误响应
  */
 @Configuration
+@RequiredArgsConstructor
 public class SwaggerConfig {
+
+    private final ServerProperties serverProperties;
 
     /** 统一响应的数据字段名 */
     private static final String UNIFIED_DATA_FIELD = "data";
@@ -51,9 +55,6 @@ public class SwaggerConfig {
     /** 401 响应的 JSON 媒体类型 */
     private static final String JSON_MEDIA_TYPE = "application/json";
 
-    @Value("${server.port}")
-    private String port;
-
     @Bean
     OpenAPI customOpenAPI() {
         return new OpenAPI()
@@ -62,7 +63,7 @@ public class SwaggerConfig {
                 .version(Defaults.SWAGGER_VERSION)
                 .description(Defaults.SWAGGER_DESC))
             .servers(List.of(
-                new Server().url(Defaults.SWAGGER_URL_PREFIX + port).description("baseURL")));
+                new Server().url(Defaults.SWAGGER_URL_PREFIX + serverProperties.port()).description("baseURL")));
     }
 
     /**
@@ -178,7 +179,7 @@ public class SwaggerConfig {
     }
 
     /** 注册 401 统一错误响应的 schema，结构与 Result.error(401, msg) 的实际输出一致 */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ "rawtypes" })
     private void registerUnauthorizedSchema(OpenAPI openApi) {
         if (openApi.getComponents() == null || openApi.getComponents().getSchemas() == null) {
             return;
