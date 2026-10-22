@@ -11,6 +11,7 @@ const (
 	// 测试/启动
 	TEST_MESSAGE         = "Hello,I am GoZero!"
 	SERVER_START_MESSAGE = "服务启动于 %s:%d..."
+	SERVER_MODE_MESSAGE  = "运行模式: %s"
 	SWAGGER_DOCS_MESSAGE = "Swagger 文档地址 http://%s:%d/swagger/index.html"
 	INIT_IP              = "127.0.0.1"
 	SERVER_START_SUCCESS = "服务启动成功"

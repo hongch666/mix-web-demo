@@ -19,6 +19,7 @@ func PrintStartupInfo(c config.Config) {
 		panic(err)
 	}
 	logger.Infof(constants.SERVER_START_MESSAGE, host, port)
+	logger.Infof(constants.SERVER_MODE_MESSAGE, c.Mode)
 	logger.Infof(constants.SWAGGER_DOCS_MESSAGE, host, port)
 	logger.Info(constants.SERVER_START_SUCCESS)
 }
