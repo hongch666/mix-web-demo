@@ -43,7 +43,8 @@ def write_log(message: str, level: str = "INFO") -> None:
         message: 日志消息
         level: 日志级别 (INFO, WARNING, ERROR, DEBUG)
     """
-    LOG_PATH: str = load_config("logs")["path"]
+    logs_config = load_config("logs")
+    LOG_PATH: str = logs_config["path"]
     if not os.path.exists(LOG_PATH):
         os.makedirs(LOG_PATH, exist_ok=True)
     log_file: str = os.path.join(
@@ -51,9 +52,15 @@ def write_log(message: str, level: str = "INFO") -> None:
     )
     timestamp: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     trace_id: str = get_current_trace_id() or TelemetryConstants.EMPTY_TRACE_ID
+    # 容器部署关闭行内时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
+    include_timestamp: bool = (
+        str(logs_config.get("include_timestamp", True)).strip().lower() != "false"
+    )
     log_entry: str = (
         f"{timestamp} - {level} - "
         f"{TelemetryConstants.TRACE_ID_FIELD}={trace_id} - {message}\n"
+        if include_timestamp
+        else f"{level} - {TelemetryConstants.TRACE_ID_FIELD}={trace_id} - {message}\n"
     )
     with open(log_file, "a", encoding="utf-8") as f:
         f.write(log_entry)
