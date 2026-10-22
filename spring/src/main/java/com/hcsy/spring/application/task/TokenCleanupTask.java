@@ -43,6 +43,8 @@ public class TokenCleanupTask {
         long startedAt = System.nanoTime();
         String lockKey = RedisKeys.lockTaskTokenCleanup();
         return distributedLock.tryLock(lockKey, Defaults.LOCK_TASK_TOKEN_CLEANUP_EXPIRE)
+            .switchIfEmpty(Mono.fromRunnable(
+                () -> logger.info(String.format(Messages.LOCK_ACQUIRE_FAIL, lockKey))))
             .doOnNext(ignored -> logger.info(String.format(Messages.LOCK_ACQUIRE_SUCCESS, lockKey)))
             .flatMap(lockValue -> tokenService.cleanupExpiredTokens()
                 .doOnSubscribe(ignored -> logger.info(Messages.TASK_START))
@@ -63,8 +65,6 @@ public class TokenCleanupTask {
                         logger.warning(String.format(Messages.LOCK_RELEASE_FAIL, lockKey));
                     }
                 })
-                .then())
-            .switchIfEmpty(Mono.fromRunnable(
-                () -> logger.info(String.format(Messages.LOCK_ACQUIRE_FAIL, lockKey))));
+                .then());
     }
 }
