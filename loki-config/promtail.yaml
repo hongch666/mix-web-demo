@@ -21,7 +21,8 @@ scrape_configs:
         labels: {job: service-logs, mode: local, __path__: /app/logs/spring/app_*.log, service: spring}
     pipeline_stages:
       - multiline:
-          firstline: '^(?:\d{4}-\d{2}-\d{2}T|\d{4}-\d{2}-\d{2} )'
+          # 兼容两种行首：带时间戳（dev 模式）与不带时间戳（容器模式，行首为日志级别）
+          firstline: '^(?:\d{4}-\d{2}-\d{2}T|\d{4}-\d{2}-\d{2} |(?:INFO|WARNING|ERROR|DEBUG) - trace_id=)'
           max_wait_time: 1s
       # 2026-09-10T20:29:20.540+08:00
       - regex:
@@ -48,7 +49,8 @@ scrape_configs:
         labels: {job: service-logs, mode: local, __path__: /app/logs/gozero/app_*.log, service: gozero}
     pipeline_stages:
       - multiline:
-          firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
+          # 兼容两种行首：带时间戳（dev 模式）与不带时间戳（容器模式，行首为日志级别）
+          firstline: '^(?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}|(?:INFO|WARNING|ERROR|DEBUG|WARN) - trace_id=)'
           max_wait_time: 1s
       # 2026-09-12 00:03:11
       - regex:
@@ -69,7 +71,8 @@ scrape_configs:
         labels: {job: service-logs, mode: local, __path__: /app/logs/nestjs/app_*.log, service: nestjs}
     pipeline_stages:
       - multiline:
-          firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
+          # 兼容两种行首：带时间戳（dev 模式）与不带时间戳（容器模式，行首为日志级别）
+          firstline: '^(?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}|(?:INFO|WARNING|ERROR|DEBUG|WARN) - trace_id=)'
           max_wait_time: 1s
       # 2026-09-11 00:20:12
       - regex:
@@ -90,7 +93,8 @@ scrape_configs:
         labels: {job: service-logs, mode: local, __path__: /app/logs/fastapi/app_*.log, service: fastapi}
     pipeline_stages:
       - multiline:
-          firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
+          # 兼容两种行首：带时间戳（dev 模式）与不带时间戳（容器模式，行首为日志级别）
+          firstline: '^(?:\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}|(?:INFO|WARNING|ERROR|DEBUG|WARN) - trace_id=)'
           max_wait_time: 1s
       # 2026-09-11 00:20:17
       - regex:
