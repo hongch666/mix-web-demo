@@ -52,6 +52,8 @@ files:
 
 logs:
   path: ${LOGS_PATH:../logs/nestjs}
+  # 是否在日志行写入时间戳，容器部署置 false（时间由 Loki 采集侧提供，避免行内出现两个日期）
+  include_timestamp: ${LOG_INCLUDE_TIMESTAMP:true}
 
 telemetry:
   enabled: ${OTEL_ENABLED:false}

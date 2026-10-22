@@ -15,6 +15,10 @@ import { Messages, TelemetryConstants } from "src/common/constants";
 export class LoggerService implements OnModuleInit {
   private readonly nestLogger = new NestLogger(LoggerService.name);
   private logPath!: string;
+  /**
+   * 是否在日志行写入时间戳，容器部署关闭后由 Loki 采集时间承担，避免行内出现两个日期
+   */
+  private includeTimestamp: boolean = true;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -49,6 +53,15 @@ export class LoggerService implements OnModuleInit {
         this.configService.get<string>("logs.path");
 
       this.logPath = logPathFromEnv || logPathFromYaml || "logs";
+
+      // 时间戳开关：YAML 里的值经环境变量替换后是字符串，按常见假值统一归一
+      const includeTimestampFromYaml: string | boolean | undefined =
+        this.configService.get<string | boolean>("logs.include_timestamp");
+      this.includeTimestamp =
+        String(includeTimestampFromYaml ?? "true")
+          .trim()
+          .toLowerCase() !== "false";
+
       this.nestLogger.log(Messages.LOG_CONFIG_LOADED(this.logPath));
     } catch (error: unknown) {
       const errorMessage: string =
@@ -89,7 +102,9 @@ export class LoggerService implements OnModuleInit {
       spanContext && isSpanContextValid(spanContext)
         ? spanContext.traceId
         : TelemetryConstants.EMPTY_TRACE_ID;
-    const logEntry: string = `${timestamp} - ${level} - ${TelemetryConstants.TRACE_ID_FIELD}=${traceId} - ${message}\n`;
+    const logEntry: string = this.includeTimestamp
+      ? `${timestamp} - ${level} - ${TelemetryConstants.TRACE_ID_FIELD}=${traceId} - ${message}\n`
+      : `${level} - ${TelemetryConstants.TRACE_ID_FIELD}=${traceId} - ${message}\n`;
 
     try {
       fs.appendFileSync(logFile, logEntry, "utf8");
