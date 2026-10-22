@@ -1,84 +1,22 @@
 {
   "properties": [
     {
-      "name": "jwt.secret",
-      "type": "java.lang.String",
-      "description": "JWT 签名密钥"
-    },
-    {
-      "name": "jwt.access-expiration",
-      "type": "java.lang.String",
-      "description": "Access Token 过期时间（毫秒），默认 15 分钟"
-    },
-    {
-      "name": "jwt.refresh-expiration",
-      "type": "java.lang.String",
-      "description": "Refresh Token 过期时间（毫秒），默认 7 天"
-    },
-    {
-      "name": "internal-token.secret",
-      "type": "java.lang.String",
-      "description": "内部服务令牌密钥"
-    },
-    {
-      "name": "internal-token.expiration",
-      "type": "java.lang.String",
-      "description": "内部服务令牌过期时间（毫秒）"
+      "name": "logging.include-timestamp",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "是否在文件日志行写入时间戳，容器部署置 false，由 Loki 采集时间承担，避免同一行出现两个日期"
     },
     {
       "name": "server.mode",
       "type": "java.lang.String",
-      "description": "服务运行模式"
-    },
-    {
-      "name": "user.default-password",
-      "type": "java.lang.String",
-      "description": "默认用户密码"
-    },
-    {
-      "name": "user.reset-password",
-      "type": "java.lang.String",
-      "description": "重置用户密码"
-    },
-    {
-      "name": "service-client.timeout",
-      "type": "java.lang.String",
-      "description": "A description for 'service-client.timeout'"
-    },
-    {
-      "name": "management.server.port",
-      "type": "java.lang.Integer",
-      "description": "Actuator 管理端口，与业务端口分离"
-    },
-    {
-      "name": "management.endpoint.prometheus.enabled",
-      "type": "java.lang.Boolean",
-      "description": "是否启用 Prometheus 指标端点"
-    },
-    {
-      "name": "management.endpoint.health.show-details",
-      "type": "java.lang.String",
-      "description": "健康检查端点详情显示级别"
-    },
-    {
-      "name": "management.endpoints.web.exposure.include",
-      "type": "java.lang.String",
-      "description": "通过 Web 暴露的 Actuator 端点"
-    },
-    {
-      "name": "management.prometheus.metrics.export.enabled",
-      "type": "java.lang.Boolean",
-      "description": "是否启用 Prometheus 指标导出"
-    },
-    {
-      "name": "management.metrics.tags.application",
-      "type": "java.lang.String",
-      "description": "应用指标统一标签"
+      "defaultValue": "dev",
+      "description": "运行模式标识（如 dev/prod），用于区分环境相关行为"
     },
     {
       "name": "task.enabled",
       "type": "java.lang.Boolean",
-      "description": "定时任务开关，false 时不注册本地 @Scheduled 任务（改由 Dolphin 调度器触发 /task 接口）"
+      "defaultValue": true,
+      "description": "定时任务开关，false 时不注册本地 @Scheduled 任务，改由外部调度器触发 /task/* 接口"
     }
   ]
 }
