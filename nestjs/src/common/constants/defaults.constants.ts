@@ -11,7 +11,10 @@ export class Defaults {
 
   // ===== Redis 分布式锁过期时间 =====
   static readonly LOCK_TASK_API_LOG_CLEANUP_EXPIRE = 3600;
-  static readonly LOCK_TASK_ARTICLE_LOG_CLEANUP_EXPIRE = 3600;
+
+  // ===== 日志保留期限 =====
+  /** 日志保留月数：API 日志与文章日志超过该期限后由定时任务分批清理 */
+  static readonly LOG_RETENTION_MONTHS = 3;
 
   // ===== RabbitMQ 日志攒批配置 =====
   /** 批量大小：达到此数量立即 flush */
@@ -20,6 +23,8 @@ export class Defaults {
   static readonly LOG_BATCH_FLUSH_INTERVAL_MS = 1000;
   /** 缓冲区最大容量：超过后强制 flush 防止 OOM */
   static readonly LOG_BATCH_MAX_BUFFER_SIZE = 5000;
+  /** 日志清理单批删除上限：分批执行 deleteMany，避免一次性删除整月数据造成数据库压力尖峰 */
+  static readonly LOG_CLEANUP_BATCH_SIZE = 5000;
 
   // ===== 远程调用连接池 =====
   /** 内网服务调用的最大并发连接数 */

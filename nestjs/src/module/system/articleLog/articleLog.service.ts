@@ -372,19 +372,6 @@ export class ArticleLogService {
   }
 
   /**
-   * 删除指定日期之前的过期日志
-   * 供 TaskModule 定时任务调用，避免 common 层直接操作 system 层 schema
-   * @param before 删除此日期之前的日志
-   * @returns 删除的日志数量
-   */
-  async cleanupOldLogs(before: Date): Promise<number> {
-    const result = await this.logModel
-      .deleteMany({ createdAt: { $lt: before } })
-      .exec();
-    return result.deletedCount;
-  }
-
-  /**
    * 获取用户搜索历史关键词（供 GoZero 内部远程调用）
    * 从 articlelogs 集合中聚合出指定用户最近去重后的搜索关键词，最多 10 条
    * @param userId 用户ID

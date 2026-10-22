@@ -121,17 +121,10 @@ export class Messages {
     `上传阿里云OSS错误: ${message}`;
 
   static readonly API_LOG_CLEANUP_COMPLETED = (deletedCount: number): string =>
-    `API 日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`;
+    `API 日志清理完成，删除了 ${deletedCount} 条超过3个月的日志`;
 
   static readonly API_LOG_CLEANUP_FAILED = (errorMessage: string): string =>
     `清理 API 日志失败: ${errorMessage}`;
-
-  static readonly ARTICLE_LOG_CLEANUP_COMPLETED = (
-    deletedCount: number,
-  ): string => `文章日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`;
-
-  static readonly ARTICLE_LOG_CLEANUP_FAILED = (errorMessage: string): string =>
-    `清理文章日志失败: ${errorMessage}`;
 
   static readonly LOCAL_IP_CONVERTED = (registrationIp: string): string =>
     `本地 IP 已转换为: ${registrationIp}`;
@@ -504,9 +497,7 @@ export class Messages {
 
   // ===== 定时任务 =====
 
-  static readonly TASK_CLEAN = "开始清理超过1个月的 API 日志";
-
-  static readonly TASK_ARTICLE_CLEAN = "开始清理超过1个月的文章日志";
+  static readonly TASK_CLEAN = "开始清理超过3个月的 API 日志";
 
   // ===== 通用错误消息 =====
 

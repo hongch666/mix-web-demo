@@ -150,7 +150,7 @@ paths:
         - 邮件模块
   /task/apilog:
     post:
-      description: 手动触发清理超过1个月的API日志任务
+      description: 手动触发清理超过3个月的API日志任务
       operationId: TaskController_executeCleanupOldApiLogsTask
       parameters: []
       responses:
@@ -187,529 +187,6 @@ paths:
       summary: 手动执行清理API日志任务
       tags:
         - 定时任务模块
-  /task/articlelog:
-    post:
-      description: 手动触发清理超过1个月的文章日志任务
-      operationId: TaskController_executeCleanupOldArticleLogsTask
-      parameters: []
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
-        '401':
-          description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
-      summary: 手动执行清理文章日志任务
-      tags:
-        - 定时任务模块
-  /article-logs/list:
-    get:
-      description: 可根据用户ID、文章ID、操作类型查询，支持分页
-      operationId: ArticleLogController_findByFilter
-      parameters:
-        - name: user_id
-          required: false
-          in: query
-          description: 用户ID
-          schema:
-            type: string
-        - name: article_id
-          required: false
-          in: query
-          description: 文章ID
-          schema:
-            type: string
-        - name: username
-          required: false
-          in: query
-          description: 用户名（模糊搜索）
-          schema:
-            type: string
-        - name: article_title
-          required: false
-          in: query
-          description: 文章标题（模糊搜索）
-          schema:
-            type: string
-        - name: action
-          required: false
-          in: query
-          description: 操作类型
-          schema:
-            type: string
-            enum:
-              - add
-              - search
-              - edit
-              - delete
-              - publish
-              - view
-              - like
-              - unlike
-              - collect
-              - uncollect
-              - focus
-              - unfocus
-        - name: start_time
-          required: false
-          in: query
-          description: 开始时间（格式：yyyy-MM-dd HH:mm:ss）
-          schema:
-            type: string
-        - name: end_time
-          required: false
-          in: query
-          description: 结束时间（格式：yyyy-MM-dd HH:mm:ss）
-          schema:
-            type: string
-        - name: page
-          required: false
-          in: query
-          description: 页码
-          schema:
-            example: '1'
-            type: string
-        - name: size
-          required: false
-          in: query
-          description: 每页条数
-          schema:
-            example: '10'
-            type: string
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: 文章日志分页结果
-                    properties:
-                      total:
-                        type: number
-                        description: 日志总数
-                      list:
-                        type: array
-                        description: 日志列表
-                        items:
-                          type: object
-                          description: 文章日志记录
-                          properties:
-                            _id:
-                              type: string
-                              description: 日志 ID
-                            user_id:
-                              type: number
-                              description: 用户 ID
-                            username:
-                              type: string
-                              description: 用户名
-                            article_id:
-                              type: number
-                              description: 文章 ID
-                            article_title:
-                              type: string
-                              description: 文章标题
-                            action:
-                              type: string
-                              description: 操作类型
-                            content:
-                              type: object
-                              description: 操作内容
-                            msg:
-                              type: string
-                              description: 操作说明
-                            created_at:
-                              type: string
-                              description: 创建时间
-                            updated_at:
-                              type: string
-                              description: 更新时间
-                required:
-                  - code
-                  - msg
-                  - data
-        '401':
-          description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
-      summary: 查询文章日志
-      tags:
-        - 文章日志模块
-  /article-logs/sync:
-    get:
-      description: 供 FastAPI 数仓按 MongoDB ID 游标增量同步文章日志
-      operationId: ArticleLogController_sync
-      parameters:
-        - name: cursor
-          required: true
-          in: query
-          schema:
-            type: string
-        - name: limit
-          required: true
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: 文章日志增量同步结果
-                    properties:
-                      list:
-                        type: array
-                        description: 日志列表
-                        items:
-                          type: object
-                          description: 文章日志记录
-                          properties:
-                            _id:
-                              type: string
-                              description: 日志 ID
-                            user_id:
-                              type: number
-                              description: 用户 ID
-                            username:
-                              type: string
-                              description: 用户名
-                            article_id:
-                              type: number
-                              description: 文章 ID
-                            article_title:
-                              type: string
-                              description: 文章标题
-                            action:
-                              type: string
-                              description: 操作类型
-                            content:
-                              type: object
-                              description: 操作内容
-                            msg:
-                              type: string
-                              description: 操作说明
-                            created_at:
-                              type: string
-                              description: 创建时间
-                            updated_at:
-                              type: string
-                              description: 更新时间
-                      next_cursor:
-                        type: string
-                        description: 下一页游标
-                required:
-                  - code
-                  - msg
-                  - data
-        '401':
-          description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
-      summary: 游标同步文章日志
-      tags:
-        - 文章日志模块
-  /article-logs/{id}:
-    delete:
-      description: 通过文章日志 ID 删除日志
-      operationId: ArticleLogController_remove
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
-        '401':
-          description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
-      summary: 删除文章日志
-      tags:
-        - 文章日志模块
-  /article-logs/batch/{ids}:
-    delete:
-      description: 通过日志ID路径参数批量删除，多个ID用英文逗号分隔
-      operationId: ArticleLogController_removeByIds
-      parameters:
-        - name: ids
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
-        '401':
-          description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
-      summary: 批量删除文章日志
-      tags:
-        - 文章日志模块
-  /article-logs/search-history/{user_id}:
-    get:
-      description: 根据用户ID获取最近去重的搜索关键词，供 GoZero 内部远程调用
-      operationId: ArticleLogController_getSearchHistory
-      parameters:
-        - name: user_id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: 用户最近搜索关键词
-                    properties:
-                      keywords:
-                        type: array
-                        description: 去重后的搜索关键词列表
-                        items:
-                          type: string
-                          description: 搜索关键词
-                required:
-                  - code
-                  - msg
-                  - data
-        '401':
-          description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
-      summary: 获取搜索历史
-      tags:
-        - 文章日志模块
-  /article-logs/view-distribution/{user_id}:
-    get:
-      description: 根据用户ID获取浏览过的文章及浏览次数分布，供 FastAPI 内部远程调用
-      operationId: ArticleLogController_getViewDistribution
-      parameters:
-        - name: user_id
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: 文章浏览次数分布
-                    properties:
-                      total_views:
-                        type: number
-                        description: 总浏览次数
-                      articles:
-                        type: array
-                        description: 文章浏览统计列表
-                        items:
-                          type: object
-                          properties:
-                            article_id:
-                              type: number
-                              description: 文章 ID
-                            title:
-                              type: string
-                              description: 文章标题
-                            views:
-                              type: number
-                              description: 浏览次数
-                          description: 列表项
-                required:
-                  - code
-                  - msg
-                  - data
-        '401':
-          description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
-      summary: 获取文章浏览分布
-      tags:
-        - 文章日志模块
-  /article-logs/search-keywords:
-    get:
-      description: 获取所有去重的搜索关键词，供 FastAPI 词云功能内部远程调用
-      operationId: ArticleLogController_getSearchKeywords
-      parameters: []
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: array
-                    description: 所有去重后的搜索关键词
-                    items:
-                      type: string
-                      description: 搜索关键词
-                required:
-                  - code
-                  - msg
-                  - data
-        '401':
-          description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
-      summary: 获取搜索关键词
-      tags:
-        - 文章日志模块
   /api-logs/list:
     get:
       description: 可根据用户ID、用户名、API路径等条件查询，支持分页
@@ -1199,6 +676,490 @@ paths:
       summary: NestJS自己的测试
       tags:
         - 测试模块
+  /article-logs/list:
+    get:
+      description: 可根据用户ID、文章ID、操作类型查询，支持分页
+      operationId: ArticleLogController_findByFilter
+      parameters:
+        - name: user_id
+          required: false
+          in: query
+          description: 用户ID
+          schema:
+            type: string
+        - name: article_id
+          required: false
+          in: query
+          description: 文章ID
+          schema:
+            type: string
+        - name: username
+          required: false
+          in: query
+          description: 用户名（模糊搜索）
+          schema:
+            type: string
+        - name: article_title
+          required: false
+          in: query
+          description: 文章标题（模糊搜索）
+          schema:
+            type: string
+        - name: action
+          required: false
+          in: query
+          description: 操作类型
+          schema:
+            type: string
+            enum:
+              - add
+              - search
+              - edit
+              - delete
+              - publish
+              - view
+              - like
+              - unlike
+              - collect
+              - uncollect
+              - focus
+              - unfocus
+        - name: start_time
+          required: false
+          in: query
+          description: 开始时间（格式：yyyy-MM-dd HH:mm:ss）
+          schema:
+            type: string
+        - name: end_time
+          required: false
+          in: query
+          description: 结束时间（格式：yyyy-MM-dd HH:mm:ss）
+          schema:
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: 页码
+          schema:
+            example: '1'
+            type: string
+        - name: size
+          required: false
+          in: query
+          description: 每页条数
+          schema:
+            example: '10'
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 统一接口响应体
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    example: success
+                    description: 响应消息
+                  data:
+                    type: object
+                    description: 文章日志分页结果
+                    properties:
+                      total:
+                        type: number
+                        description: 日志总数
+                      list:
+                        type: array
+                        description: 日志列表
+                        items:
+                          type: object
+                          description: 文章日志记录
+                          properties:
+                            _id:
+                              type: string
+                              description: 日志 ID
+                            user_id:
+                              type: number
+                              description: 用户 ID
+                            username:
+                              type: string
+                              description: 用户名
+                            article_id:
+                              type: number
+                              description: 文章 ID
+                            article_title:
+                              type: string
+                              description: 文章标题
+                            action:
+                              type: string
+                              description: 操作类型
+                            content:
+                              type: object
+                              description: 操作内容
+                            msg:
+                              type: string
+                              description: 操作说明
+                            created_at:
+                              type: string
+                              description: 创建时间
+                            updated_at:
+                              type: string
+                              description: 更新时间
+                required:
+                  - code
+                  - msg
+                  - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+      summary: 查询文章日志
+      tags:
+        - 文章日志模块
+  /article-logs/sync:
+    get:
+      description: 供 FastAPI 数仓按 MongoDB ID 游标增量同步文章日志
+      operationId: ArticleLogController_sync
+      parameters:
+        - name: cursor
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 统一接口响应体
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    example: success
+                    description: 响应消息
+                  data:
+                    type: object
+                    description: 文章日志增量同步结果
+                    properties:
+                      list:
+                        type: array
+                        description: 日志列表
+                        items:
+                          type: object
+                          description: 文章日志记录
+                          properties:
+                            _id:
+                              type: string
+                              description: 日志 ID
+                            user_id:
+                              type: number
+                              description: 用户 ID
+                            username:
+                              type: string
+                              description: 用户名
+                            article_id:
+                              type: number
+                              description: 文章 ID
+                            article_title:
+                              type: string
+                              description: 文章标题
+                            action:
+                              type: string
+                              description: 操作类型
+                            content:
+                              type: object
+                              description: 操作内容
+                            msg:
+                              type: string
+                              description: 操作说明
+                            created_at:
+                              type: string
+                              description: 创建时间
+                            updated_at:
+                              type: string
+                              description: 更新时间
+                      next_cursor:
+                        type: string
+                        description: 下一页游标
+                required:
+                  - code
+                  - msg
+                  - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+      summary: 游标同步文章日志
+      tags:
+        - 文章日志模块
+  /article-logs/{id}:
+    delete:
+      description: 通过文章日志 ID 删除日志
+      operationId: ArticleLogController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 统一接口响应体
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    example: success
+                    description: 响应消息
+                  data:
+                    type: 'null'
+                    description: 返回数据
+                required:
+                  - code
+                  - msg
+                  - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+      summary: 删除文章日志
+      tags:
+        - 文章日志模块
+  /article-logs/batch/{ids}:
+    delete:
+      description: 通过日志ID路径参数批量删除，多个ID用英文逗号分隔
+      operationId: ArticleLogController_removeByIds
+      parameters:
+        - name: ids
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 统一接口响应体
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    example: success
+                    description: 响应消息
+                  data:
+                    type: 'null'
+                    description: 返回数据
+                required:
+                  - code
+                  - msg
+                  - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+      summary: 批量删除文章日志
+      tags:
+        - 文章日志模块
+  /article-logs/search-history/{user_id}:
+    get:
+      description: 根据用户ID获取最近去重的搜索关键词，供 GoZero 内部远程调用
+      operationId: ArticleLogController_getSearchHistory
+      parameters:
+        - name: user_id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 统一接口响应体
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    example: success
+                    description: 响应消息
+                  data:
+                    type: object
+                    description: 用户最近搜索关键词
+                    properties:
+                      keywords:
+                        type: array
+                        description: 去重后的搜索关键词列表
+                        items:
+                          type: string
+                          description: 搜索关键词
+                required:
+                  - code
+                  - msg
+                  - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+      summary: 获取搜索历史
+      tags:
+        - 文章日志模块
+  /article-logs/view-distribution/{user_id}:
+    get:
+      description: 根据用户ID获取浏览过的文章及浏览次数分布，供 FastAPI 内部远程调用
+      operationId: ArticleLogController_getViewDistribution
+      parameters:
+        - name: user_id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 统一接口响应体
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    example: success
+                    description: 响应消息
+                  data:
+                    type: object
+                    description: 文章浏览次数分布
+                    properties:
+                      total_views:
+                        type: number
+                        description: 总浏览次数
+                      articles:
+                        type: array
+                        description: 文章浏览统计列表
+                        items:
+                          type: object
+                          properties:
+                            article_id:
+                              type: number
+                              description: 文章 ID
+                            title:
+                              type: string
+                              description: 文章标题
+                            views:
+                              type: number
+                              description: 浏览次数
+                          description: 列表项
+                required:
+                  - code
+                  - msg
+                  - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+      summary: 获取文章浏览分布
+      tags:
+        - 文章日志模块
+  /article-logs/search-keywords:
+    get:
+      description: 获取所有去重的搜索关键词，供 FastAPI 词云功能内部远程调用
+      operationId: ArticleLogController_getSearchKeywords
+      parameters: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 统一接口响应体
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    example: success
+                    description: 响应消息
+                  data:
+                    type: array
+                    description: 所有去重后的搜索关键词
+                    items:
+                      type: string
+                      description: 搜索关键词
+                required:
+                  - code
+                  - msg
+                  - data
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+      summary: 获取搜索关键词
+      tags:
+        - 文章日志模块
   /download/word/{id}:
     get:
       description: 通过id下载对应文章Word

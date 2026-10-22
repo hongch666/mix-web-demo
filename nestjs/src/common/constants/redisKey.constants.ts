@@ -11,8 +11,6 @@ export class RedisKeys {
 
   // ===== 分布式锁 Key =====
   static readonly LOCK_TASK_API_LOG_CLEANUP = "lock:task:api:log:cleanup";
-  static readonly LOCK_TASK_ARTICLE_LOG_CLEANUP =
-    "lock:task:article:log:cleanup";
 
   // ===== Lua 脚本 =====
   /** 解锁脚本: 仅锁持有者可释放 */

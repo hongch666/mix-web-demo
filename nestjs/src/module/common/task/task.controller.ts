@@ -18,12 +18,12 @@ export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
   /**
-   * 手动触发清理超过一个月的 API 日志任务，后台异步执行并立即返回
+   * 手动触发清理超过3个月的 API 日志任务，后台异步执行并立即返回
    */
   @Post("apilog")
   @ApiOperation({
     summary: "手动执行清理API日志任务",
-    description: "手动触发清理超过1个月的API日志任务",
+    description: "手动触发清理超过3个月的API日志任务",
   })
   @RequireInternalToken()
   @ApiLog("手动执行清理API日志任务")
@@ -31,23 +31,6 @@ export class TaskController {
   async executeCleanupOldApiLogsTask(): Promise<ApiResponse<null>> {
     // 后台异步执行，不阻塞接口响应
     void this.taskService.cleanupOldApiLogs();
-    return success(null);
-  }
-
-  /**
-   * 手动触发清理超过一个月的文章日志任务，后台异步执行并立即返回
-   */
-  @Post("articlelog")
-  @ApiOperation({
-    summary: "手动执行清理文章日志任务",
-    description: "手动触发清理超过1个月的文章日志任务",
-  })
-  @RequireInternalToken()
-  @ApiLog("手动执行清理文章日志任务")
-  @ApiResponseModel({ data: SwaggerNullData })
-  async executeCleanupOldArticleLogsTask(): Promise<ApiResponse<null>> {
-    // 后台异步执行，不阻塞接口响应
-    void this.taskService.cleanupOldArticleLogs();
     return success(null);
   }
 }

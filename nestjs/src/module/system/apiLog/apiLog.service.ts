@@ -5,7 +5,7 @@ import isLeapYear from "dayjs/plugin/isLeapYear";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { Model, Types } from "mongoose";
-import { Messages } from "src/common/constants";
+import { Defaults, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { CreateApiLogDto, QueryApiLogDto } from "./dto/apiLog.dto";
@@ -254,10 +254,34 @@ export class ApiLogService {
    * @returns 删除的日志数量
    */
   async cleanupOldLogs(before: Date): Promise<number> {
-    const result = await this.apiLogModel
-      .deleteMany({ createdAt: { $lt: before } })
-      .exec();
-    return result.deletedCount;
+    let total: number = 0;
+    for (;;) {
+      // 每轮按批次查出待删文档的 _id，再用 deleteMany 按主键删除，避免单次大事务
+      const batch: ApiLogDocument[] = await this.apiLogModel
+        .find({ createdAt: { $lt: before } })
+        .select("_id")
+        .limit(Defaults.LOG_CLEANUP_BATCH_SIZE)
+        .lean()
+        .exec();
+      if (batch.length === 0) {
+        break;
+      }
+      const ids: Types.ObjectId[] = batch.map(
+        (item) => item._id as Types.ObjectId,
+      );
+      const result = await this.apiLogModel
+        .deleteMany({ _id: { $in: ids } })
+        .exec();
+      // 删除失败或无进展时退出，防止同一批数据死循环
+      if (result.deletedCount === 0) {
+        break;
+      }
+      total += result.deletedCount;
+      if (batch.length < Defaults.LOG_CLEANUP_BATCH_SIZE) {
+        break;
+      }
+    }
+    return total;
   }
 
   /**
