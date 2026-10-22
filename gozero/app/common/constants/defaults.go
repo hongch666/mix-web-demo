@@ -10,6 +10,8 @@ const (
 	EmptyTraceID = "-"
 	// TraceLogFormat 统一文件日志中的 Trace ID 字段格式
 	TraceLogFormat = "%s - %s - trace_id=%s - %s\n"
+	// TraceLogFormatNoTime 不写时间戳的文件日志格式，用于容器部署（时间由 Loki 采集侧提供）
+	TraceLogFormatNoTime = "%s - trace_id=%s - %s\n"
 )
 
 // 配置默认值类 — 锁过期时间等

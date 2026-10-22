@@ -13,7 +13,7 @@ import (
 func PrintStartupInfo(c config.Config) {
 	host := constants.INIT_IP
 	port := c.Port
-	logger, err := utils.NewZeroLogger(c.Logs.Path)
+	logger, err := utils.NewZeroLogger(c.Logs.Path, c.Logs.TimestampEnabled())
 	if err != nil {
 		logx.Errorf(constants.ZERO_LOGGER_INIT_FAIL, err)
 		panic(err)

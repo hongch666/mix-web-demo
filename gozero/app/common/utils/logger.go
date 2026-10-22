@@ -30,11 +30,14 @@ type ZeroLogger struct {
 	logPath string
 	ctx     context.Context
 	holder  *logFileHolder
+	// 是否在日志行写入时间戳，容器部署关闭后由 Loki 采集时间承担
+	includeTimestamp bool
 }
 
 // NewZeroLogger 创建新的日志实例
 // logPath: 日志文件存放目录，必须由配置显式提供，例如 "../../logs/gozero"
-func NewZeroLogger(logPath string) (*ZeroLogger, error) {
+// includeTimestamp: 可选开关，缺省写入时间戳
+func NewZeroLogger(logPath string, includeTimestamp ...bool) (*ZeroLogger, error) {
 	// 路径缺失时直接报错，不再回退到进程工作目录，避免日志写到意外的位置
 	if strings.TrimSpace(logPath) == "" {
 		return nil, errors.New(constants.LOGGER_PATH_EMPTY_ERROR)
@@ -54,10 +57,16 @@ func NewZeroLogger(logPath string) (*ZeroLogger, error) {
 		return nil, fmt.Errorf(constants.LOGGER_CREATE_DIR_ERROR, err)
 	}
 
+	enabled := true
+	if len(includeTimestamp) > 0 {
+		enabled = includeTimestamp[0]
+	}
+
 	logger := &ZeroLogger{
-		logPath: logPath,
-		ctx:     context.Background(),
-		holder:  &logFileHolder{},
+		logPath:          logPath,
+		ctx:              context.Background(),
+		holder:           &logFileHolder{},
+		includeTimestamp: enabled,
 	}
 
 	return logger, nil
@@ -72,9 +81,10 @@ func (z *ZeroLogger) WithContext(ctx context.Context) *ZeroLogger {
 		z.holder = &logFileHolder{}
 	}
 	return &ZeroLogger{
-		logPath: z.logPath,
-		ctx:     ctx,
-		holder:  z.holder,
+		logPath:          z.logPath,
+		ctx:              ctx,
+		holder:           z.holder,
+		includeTimestamp: z.includeTimestamp,
 	}
 }
 
@@ -89,7 +99,12 @@ func (z *ZeroLogger) writeToFile(message string, level string) {
 	if traceID == "" {
 		traceID = constants.EmptyTraceID
 	}
-	logEntry := fmt.Sprintf(constants.TraceLogFormat, timestamp, level, traceID, message)
+	var logEntry string
+	if z.includeTimestamp {
+		logEntry = fmt.Sprintf(constants.TraceLogFormat, timestamp, level, traceID, message)
+	} else {
+		logEntry = fmt.Sprintf(constants.TraceLogFormatNoTime, level, traceID, message)
+	}
 
 	z.holder.mu.Lock()
 	defer z.holder.mu.Unlock()

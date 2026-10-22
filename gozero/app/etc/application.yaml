@@ -64,6 +64,9 @@ mq:
 
 logs:
   path: ${LOGS_PATH}
+  # 是否在日志行写入时间戳，容器部署置 false（时间由 Loki 采集侧提供，避免行内出现两个日期）
+  # 用引号强制按字符串解析：go-zero 会把不带引号的 true 解析成布尔值，与字符串字段类型冲突
+  include_timestamp: "${LOG_INCLUDE_TIMESTAMP:true}"
 
 internal-token:
   secret: ${INTERNAL_TOKEN_SECRET:}

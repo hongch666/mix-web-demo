@@ -28,7 +28,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	serviceContext, cancel := context.WithCancel(context.Background())
 
 	// 初始化日志
-	zLogger, err := utils.NewZeroLogger(c.Logs.Path)
+	zLogger, err := utils.NewZeroLogger(c.Logs.Path, c.Logs.TimestampEnabled())
 	if err != nil {
 		logx.Errorf(constants.ZERO_LOGGER_INIT_FAIL, err)
 		panic(err)

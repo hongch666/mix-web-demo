@@ -3,6 +3,7 @@
 package config
 
 import (
+	"strings"
 	"time"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -102,9 +103,17 @@ type InternalTokenConfig struct {
 	Expiration int64  `json:"expiration"`
 }
 
-// 日志文件输出路径配置
+// 日志文件输出配置
 type LogsConfig struct {
 	Path string `json:"path"`
+	// 是否在日志行写入时间戳，容器部署置 false，时间由 Loki 采集侧提供
+	IncludeTimestamp string `json:"include_timestamp"`
+}
+
+// TimestampEnabled 判断日志行是否写入时间戳，未配置时默认开启
+func (l LogsConfig) TimestampEnabled() bool {
+	value := strings.ToLower(strings.TrimSpace(l.IncludeTimestamp))
+	return value != "false" && value != "0" && value != "no" && value != "off"
 }
 
 // 远程服务调用的超时、重试与退避策略配置
