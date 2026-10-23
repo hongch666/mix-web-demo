@@ -18,7 +18,7 @@ export class TaskService {
   ) {}
 
   /**
-   * 每天凌晨2点执行，删除超过3个月的API日志
+   * 每天凌晨2点执行的调度入口，负责分布式锁获取与释放、运行次数与耗时指标等后台处理，并调用日志清理逻辑
    * Cron 表达式: 秒 分 时 日 月 星期
    * '0 0 2 * * *' = 每天凌晨2点，频率提高后单次清理量小，且错过单次窗口仅影响一天
    * Service 层分批删除，锁过期时间只需覆盖单日清理时长
@@ -43,19 +43,7 @@ export class TaskService {
     let result: string = "success";
 
     try {
-      this.logger.info(Messages.TASK_CLEAN);
-
-      // 计算保留期限对应的过期时间点
-      const expireBefore: Date = new Date();
-      expireBefore.setMonth(
-        expireBefore.getMonth() - Defaults.LOG_RETENTION_MONTHS,
-      );
-
-      // 通过 ApiLogService 清理日志（不再直接操作 Model，消除跨层引用）
-      const deletedCount: number =
-        await this.apiLogService.cleanupOldLogs(expireBefore);
-
-      this.logger.info(Messages.API_LOG_CLEANUP_COMPLETED(deletedCount));
+      await this.executeApiLogCleanup();
     } catch (error: unknown) {
       result = "failure";
       const errorMessage: string =
@@ -77,5 +65,36 @@ export class TaskService {
         );
       }
     }
+  }
+
+  /**
+   * 手动触发一次 API 日志清理任务，供控制器调用
+   * 完整任务流程在后台异步执行，不等待完成，异常兜底记录日志避免未处理的 Promise 拒绝
+   */
+  async triggerApiLogCleanup(): Promise<void> {
+    void this.cleanupOldApiLogs().catch((error: unknown) => {
+      const errorMessage: string =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(Messages.API_LOG_CLEANUP_FAILED(errorMessage));
+    });
+  }
+
+  /**
+   * API 日志清理的业务逻辑，按保留期限计算过期时间点并分批删除过期日志，由定时调度入口调用
+   */
+  async executeApiLogCleanup(): Promise<void> {
+    this.logger.info(Messages.TASK_CLEAN);
+
+    // 计算保留期限对应的过期时间点
+    const expireBefore: Date = new Date();
+    expireBefore.setMonth(
+      expireBefore.getMonth() - Defaults.LOG_RETENTION_MONTHS,
+    );
+
+    // 通过 ApiLogService 清理日志（不再直接操作 Model，消除跨层引用）
+    const deletedCount: number =
+      await this.apiLogService.cleanupOldLogs(expireBefore);
+
+    this.logger.info(Messages.API_LOG_CLEANUP_COMPLETED(deletedCount));
   }
 }

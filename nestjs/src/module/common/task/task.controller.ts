@@ -29,8 +29,8 @@ export class TaskController {
   @ApiLog("手动执行清理API日志任务")
   @ApiResponseModel({ data: SwaggerNullData })
   async executeCleanupOldApiLogsTask(): Promise<ApiResponse<null>> {
-    // 后台异步执行，不阻塞接口响应
-    void this.taskService.cleanupOldApiLogs();
+    // 交给服务层在后台异步执行，不阻塞接口响应
+    await this.taskService.triggerApiLogCleanup();
     return success(null);
   }
 }
