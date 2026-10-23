@@ -18,22 +18,6 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 class TokenCleanupTaskTest {
-    @Test
-    @DisplayName("手动触发任务会在任务组件内订阅清理链")
-    void triggerCleanupSubscribesToCleanup() {
-        TokenService service = mock(TokenService.class);
-        RedisDistributedLock lock = mock(RedisDistributedLock.class);
-        when(lock.tryLock(anyString(), anyLong())).thenReturn(Mono.just("lock"));
-        when(service.cleanupExpiredTokens()).thenReturn(Mono.empty());
-        when(lock.unlock(anyString(), eq("lock"))).thenReturn(Mono.just(true));
-
-        new TokenCleanupTask(service, mock(SimpleLogger.class), lock,
-            mock(com.hcsy.spring.observability.MetricsRecorder.class)).triggerCleanup();
-
-        verify(service).cleanupExpiredTokens();
-        verify(lock).unlock(anyString(), eq("lock"));
-    }
-
     // 验证该场景的预期行为
     @Test
     @DisplayName("获取任务锁后执行清理并释放锁")

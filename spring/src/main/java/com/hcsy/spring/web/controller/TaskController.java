@@ -4,7 +4,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.hcsy.spring.application.task.TokenCleanupTask;
+import com.hcsy.spring.application.service.TaskService;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
@@ -22,7 +22,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @Tag(name = "定时任务模块", description = "手动触发定时任务相关API")
 public class TaskController {
-    private final TokenCleanupTask tokenCleanupTask;
+    private final TaskService taskService;
 
     /**
      * POST /task/clean 内部接口，手动触发清理过期Token任务并立即返回成功
@@ -32,7 +32,6 @@ public class TaskController {
     @RequireInternalToken
     @ApiLog("手动执行清理过期Token任务")
     public Mono<Result<Void>> executeTokenCleanup() {
-        tokenCleanupTask.triggerCleanup();
-        return Mono.just(Result.success());
+        return taskService.triggerTokenCleanup().thenReturn(Result.success());
     }
 }
