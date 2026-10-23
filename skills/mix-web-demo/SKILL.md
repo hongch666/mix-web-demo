@@ -69,6 +69,7 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
 3. SQL 一律参数化，禁止字符串拼接用户值。各服务占位风格：Spring R2DBC 用 `:param`；FastAPI ClickHouse 用 `%(name)s`；GoZero sqlx 用 `?`；NestJS 走 ORM 方法 API
 4. **每次生成或修改代码后必须执行代码格式化与格式检查**：先跑 `./mix format <service>` 自动格式化，再跑 `./mix lint <service>` 确认检查通过，不允许把未格式化的代码交付；省略服务名时处理 spring、gozero、nestjs、fastapi 全部，`gateway` 为配置驱动不参与
 5. **交付前必须验证编译通过**：格式与 lint 之后跑 `./mix compile <service>`（只编译校验，不产出打包目录），未通过不得交付；该步骤与「验证命令」章节里各服务的编译命令等价，省略服务名时处理四个服务全部。`./mix compile` 与打包命令 `./mix dist build` 职责不同，不要用后者替代前者（后者会清理 dist 并产出可运行产物）。对应工具未安装时该服务返回码 2 自动跳过，不允许据此判定通过
+   - **Windows 环境下所有 `./mix` 命令必须用 Git Bash 执行**，例如 PowerShell 中：`& "C:\Program Files\Git\bin\bash.exe" -c "./mix format spring"`。禁止用 PowerShell 直接 `./mix`（会被静默空跑，退出码 0 但什么都没做），也禁止用 WSL 的 `bash`（WSL 侧没有各服务工具链，会导致 gozero/fastapi 等被「工具未安装」跳过、NestJS 的 `tsc` 找不到 `node_modules/.bin` shim 而误报失败）。确认 Git Bash 安装路径不存在时改用本机服务工具链直接验证（如 `go build ./...`、`node node_modules/typescript/bin/tsc --noEmit`、`python -m compileall`），并如实说明未跑 mix
 6. 常量抽取：四个服务均有常量类，消息类字符串必须进常量类引用
    - Spring：`common/constants/Messages.java`、`HttpCode.java`
    - NestJS：`common/constants/`（`Messages`、`HttpCode`、`Defaults`、`ErrorIds`）
