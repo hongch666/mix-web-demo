@@ -4,21 +4,8 @@ from fastapi import APIRouter, BackgroundTasks, Body, Query, Request
 
 from app.core.base import ApiResponse, success
 from app.core.decorators import log, requireInternalToken
-from app.dependencies import (
-    AnalyzeServiceDep,
-    DbSessionFactoryDep,
-    NestjsClientDep,
-    SpringClientDep,
-)
+from app.dependencies import TaskServiceDep
 from app.internal.schemas import Neo4jSyncDTO, VectorSyncDTO, WarehouseSyncDTO
-from app.internal.tasks import (
-    build_vector_sync_dependencies,
-    initialize_article_content_hash_cache_async,
-    sync_article_vectors_manually_async,
-    sync_neo4j_manually_async,
-    sync_warehouse_async,
-    update_analyze_caches_manually_async,
-)
 
 router: APIRouter = APIRouter(
     prefix="/task",
@@ -38,14 +25,11 @@ router: APIRouter = APIRouter(
 async def task_update_analyze_caches(
     request: Request,
     background_tasks: BackgroundTasks,
-    analyze_service: AnalyzeServiceDep,
-    db_factory: DbSessionFactoryDep,
+    task_service: TaskServiceDep,
 ) -> ApiResponse:
     """手动触发更新分析接口缓存任务接口"""
 
-    background_tasks.add_task(
-        update_analyze_caches_manually_async, analyze_service, db_factory
-    )
+    task_service.trigger_update_analyze_caches(background_tasks)
     return success()
 
 
@@ -61,6 +45,7 @@ async def task_update_analyze_caches(
 async def task_export_vector(
     request: Request,
     background_tasks: BackgroundTasks,
+    task_service: TaskServiceDep,
     payload: Annotated[Optional[VectorSyncDTO], Body()] = None,
 ) -> ApiResponse:
     """手动触发向量数据库同步任务接口
@@ -68,11 +53,10 @@ async def task_export_vector(
     携带文章主键时按主键精确同步，否则执行全量增量同步
     """
 
-    background_tasks.add_task(
-        sync_article_vectors_manually_async,
+    task_service.trigger_vector_sync(
+        background_tasks,
         payload.change_type if payload else "",
         payload.ids if payload else [],
-        build_vector_sync_dependencies(),
     )
     return success()
 
@@ -87,14 +71,13 @@ async def task_export_vector(
 @requireInternalToken
 @log("初始化文章内容 hash 缓存")
 async def task_init_hash_cache(
-    request: Request, background_tasks: BackgroundTasks
+    request: Request,
+    background_tasks: BackgroundTasks,
+    task_service: TaskServiceDep,
 ) -> ApiResponse:
     """初始化文章内容 hash 缓存接口"""
 
-    background_tasks.add_task(
-        initialize_article_content_hash_cache_async,
-        dependencies=build_vector_sync_dependencies(),
-    )
+    task_service.trigger_init_hash_cache(background_tasks)
     return success()
 
 
@@ -110,11 +93,11 @@ async def task_init_hash_cache(
 async def task_clear_analyze_caches(
     request: Request,
     background_tasks: BackgroundTasks,
-    analyze_service: AnalyzeServiceDep,
+    task_service: TaskServiceDep,
 ) -> ApiResponse:
     """清除所有分析相关缓存接口"""
 
-    background_tasks.add_task(analyze_service.clear_analyze_caches)
+    task_service.trigger_clear_analyze_caches(background_tasks)
     return success()
 
 
@@ -130,6 +113,7 @@ async def task_clear_analyze_caches(
 async def task_sync_neo4j(
     request: Request,
     background_tasks: BackgroundTasks,
+    task_service: TaskServiceDep,
     force_full: bool = Query(
         default=False, description="是否全量同步（含清理），默认增量同步"
     ),
@@ -142,7 +126,7 @@ async def task_sync_neo4j(
 
     events = [event.model_dump() for event in (payload.events if payload else [])]
     full_sync = force_full or bool(payload and payload.force_full)
-    background_tasks.add_task(sync_neo4j_manually_async, events, full_sync)
+    task_service.trigger_neo4j_sync(background_tasks, events, full_sync)
     return success()
 
 
@@ -158,8 +142,7 @@ async def task_sync_neo4j(
 async def task_sync_warehouse(
     request: Request,
     background_tasks: BackgroundTasks,
-    spring_client: SpringClientDep,
-    nestjs_client: NestjsClientDep,
+    task_service: TaskServiceDep,
     payload: Annotated[Optional[WarehouseSyncDTO], Body()] = None,
 ) -> ApiResponse:
     """手动触发 ClickHouse 数仓同步任务接口
@@ -167,10 +150,7 @@ async def task_sync_warehouse(
     携带资源名时只同步对应源表，否则全表同步
     """
 
-    background_tasks.add_task(
-        sync_warehouse_async,
-        spring_client=spring_client,
-        nestjs_client=nestjs_client,
-        resources=payload.resources if payload else None,
+    task_service.trigger_warehouse_sync(
+        background_tasks, resources=payload.resources if payload else None
     )
     return success()

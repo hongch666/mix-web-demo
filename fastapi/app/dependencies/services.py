@@ -19,6 +19,7 @@ from app.internal.services import (
     ChatService,
     GenerateService,
     GraphSearchService,
+    TaskService,
     UserService,
     VectorSearchService,
     get_ai_history_service,
@@ -29,6 +30,7 @@ from app.internal.services import (
     get_chat_service,
     get_generate_service,
     get_graph_search_service,
+    get_task_service,
     get_user_service,
     get_vector_search_service,
 )
@@ -41,7 +43,7 @@ from .caches import (
     WordcloudCacheDep,
 )
 from .clients import NestjsClientDep, SpringClientDep
-from .logger import LoggerDep
+from .database import DbSessionFactoryDep
 from .llm import (
     ClaudeServiceDep,
     DeepseekServiceDep,
@@ -50,6 +52,7 @@ from .llm import (
     GptServiceDep,
     QwenServiceDep,
 )
+from .logger import LoggerDep
 from .mappers import (
     AiHistoryMapperDep,
     AiUserSummaryMapperDep,
@@ -181,6 +184,16 @@ def provide_vector_search_service(
     return get_vector_search_service(vector_mapper, logger)
 
 
+def provide_task_service(
+    analyze_service: AnalyzeService,
+    db_factory: DbSessionFactoryDep,
+    spring_client: SpringClientDep,
+    nestjs_client: NestjsClientDep,
+) -> TaskService:
+    """装配定时任务触发服务单例，依赖分析服务、MySQL 会话工厂与 Spring/NestJS 客户端"""
+    return get_task_service(analyze_service, db_factory, spring_client, nestjs_client)
+
+
 AlgorithmServiceDep = Annotated[AlgorithmService, Depends(provide_algorithm_service)]
 ChatServiceDep = Annotated[ChatService, Depends(provide_chat_service)]
 AnalyzeServiceDep = Annotated[AnalyzeService, Depends(provide_analyze_service)]
@@ -222,3 +235,4 @@ UserServiceDep = Annotated[UserService, Depends(provide_user_service)]
 VectorSearchServiceDep = Annotated[
     VectorSearchService, Depends(provide_vector_search_service)
 ]
+TaskServiceDep = Annotated[TaskService, Depends(provide_task_service)]

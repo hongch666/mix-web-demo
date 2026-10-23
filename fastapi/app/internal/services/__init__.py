@@ -11,6 +11,7 @@ from .chat import (
 )
 from .generate import GenerateService, get_generate_service
 from .graphSearch import GraphSearchService, get_graph_search_service
+from .task import TaskService, get_task_service
 from .llm import (
     BaseAiService,
     ClaudeService,
@@ -68,4 +69,6 @@ __all__: list[str] = [
     "get_vector_search_service",
     "AlgorithmService",
     "get_algorithm_service",
+    "TaskService",
+    "get_task_service",
 ]

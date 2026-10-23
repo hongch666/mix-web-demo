@@ -36,6 +36,7 @@ from .services import (
     ChatServiceDep,
     GenerateServiceDep,
     GraphSearchServiceDep,
+    TaskServiceDep,
     UserServiceDep,
     VectorSearchServiceDep,
     resolve_analyze_service,
@@ -77,5 +78,6 @@ __all__: list[str] = [
     "QwenServiceDep",
     "VectorSearchServiceDep",
     "AgentToolFactoriesDep",
+    "TaskServiceDep",
     "resolve_analyze_service",
 ]
