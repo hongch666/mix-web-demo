@@ -116,6 +116,9 @@ func setupRealtime(
 
 	if redisClient != nil {
 		hubCtx.RealtimeBus = pubsub.NewRedisPubSub(redisClient, zLogger, constants.REALTIME_CHAT_CHANNEL)
-		hubCtx.RealtimeBus.Start(serviceCtx, hubCtx.RealtimeDispatcher.Handle)
+		// 订阅回调只接收消息体，这里补上服务上下文，让分发日志带上链路
+		hubCtx.RealtimeBus.Start(serviceCtx, func(payload []byte) {
+			hubCtx.RealtimeDispatcher.Handle(serviceCtx, payload)
+		})
 	}
 }

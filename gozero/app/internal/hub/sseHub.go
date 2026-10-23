@@ -88,10 +88,16 @@ func (hub *SSEHubManager) UnregisterClient(ctx context.Context, userID int64, co
 }
 
 // SendNotificationToUser 发送通知给特定用户
-func (hub *SSEHubManager) SendNotificationToUser(userID int64, notification *types.ChatSSEMessage) {
+// ctx 由触发本次推送的链路（请求、定时任务或 MQ 消费）提供，日志据此关联 trace_id
+func (hub *SSEHubManager) SendNotificationToUser(ctx context.Context, userID int64, notification *types.ChatSSEMessage) {
+	logger := hub.ZeroLogger
+	if logger != nil {
+		logger = logger.WithContext(ctx)
+	}
+
 	if notification == nil {
-		if hub.ZeroLogger != nil {
-			hub.Warning(constants.SSE_SEND_EMPTY_WARNING_MESSAGE)
+		if logger != nil {
+			logger.Warning(constants.SSE_SEND_EMPTY_WARNING_MESSAGE)
 		}
 		return
 	}
@@ -101,8 +107,8 @@ func (hub *SSEHubManager) SendNotificationToUser(userID int64, notification *typ
 	hub.mu.RUnlock()
 
 	if !ok || len(clients) == 0 {
-		if hub.ZeroLogger != nil {
-			hub.Warning(constants.SSE_CLIENT_NOT_FOUND_WARNING_MESSAGE)
+		if logger != nil {
+			logger.Warning(constants.SSE_CLIENT_NOT_FOUND_WARNING_MESSAGE)
 		}
 		return
 	}
@@ -117,19 +123,24 @@ func (hub *SSEHubManager) SendNotificationToUser(userID int64, notification *typ
 		case client.SendCh <- notification:
 			sentAny = true
 		default:
-			if hub.ZeroLogger != nil {
-				hub.Warning(constants.SSE_SEND_FAIL_WARNING_MESSAGE)
+			if logger != nil {
+				logger.Warning(constants.SSE_SEND_FAIL_WARNING_MESSAGE)
 			}
 		}
 	}
 
-	if sentAny && hub.ZeroLogger != nil {
-		hub.Info(constants.SSE_SEND_SUCCESS_MESSAGE)
+	if sentAny && logger != nil {
+		logger.Info(constants.SSE_SEND_SUCCESS_MESSAGE)
 	}
 }
 
 // BroadcastNotification 广播通知给所有客户端
-func (hub *SSEHubManager) BroadcastNotification(notification any) {
+func (hub *SSEHubManager) BroadcastNotification(ctx context.Context, notification any) {
+	logger := hub.ZeroLogger
+	if logger != nil {
+		logger = logger.WithContext(ctx)
+	}
+
 	hub.mu.RLock()
 	defer hub.mu.RUnlock()
 
@@ -141,12 +152,12 @@ func (hub *SSEHubManager) BroadcastNotification(notification any) {
 
 			select {
 			case client.SendCh <- notification:
-				if hub.ZeroLogger != nil {
-					hub.Debug(constants.SSE_BROADCAST_SUCCESS_MESSAGE)
+				if logger != nil {
+					logger.Debug(constants.SSE_BROADCAST_SUCCESS_MESSAGE)
 				}
 			default:
-				if hub.ZeroLogger != nil {
-					hub.Warning(constants.SSE_BROADCAST_FAIL_WARNING_MESSAGE)
+				if logger != nil {
+					logger.Warning(constants.SSE_BROADCAST_FAIL_WARNING_MESSAGE)
 				}
 			}
 		}
@@ -179,7 +190,8 @@ func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Reques
 	}
 	sseMessage := FormatSSEMessage(initMessage)
 	if _, err := io.WriteString(w, sseMessage); err != nil {
-		hub.Error(fmt.Sprintf(constants.SSE_INIT_MESSAGE_SEND_FAIL, err))
+		hub.ZeroLogger.WithContext(r.Context()).Error(
+			fmt.Sprintf(constants.SSE_INIT_MESSAGE_SEND_FAIL, err))
 		return
 	}
 	if f, ok := w.(http.Flusher); ok {

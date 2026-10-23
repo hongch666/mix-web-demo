@@ -40,12 +40,13 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			svcCtx.Logger.Error(constants.WS_CONNECT_FAIL + err.Error())
+			// 用带请求上下文的 logger，避免与根 logger（context.Background）一样丢失 trace_id
+			l.Error(constants.WS_CONNECT_FAIL + err.Error())
 			return
 		}
 
-		svcCtx.Logger.Info(constants.WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE)
+		l.Info(constants.WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE)
 
-		svcCtx.ChatHub.HandleWebSocketConnection(conn, userID)
+		svcCtx.ChatHub.HandleWebSocketConnection(r.Context(), conn, userID)
 	}, constants.API_LOG_WEBSOCKET_CONNECTION)
 }

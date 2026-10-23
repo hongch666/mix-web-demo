@@ -12,6 +12,7 @@ import (
 
 	"app/common/client"
 	"app/common/constants"
+	"app/common/utils"
 	"app/internal/client/springClient"
 	"app/internal/svc"
 	"app/model/search"
@@ -63,9 +64,15 @@ func toESDatePtr(raw string) *string {
 
 // SyncArticlesToES 增量同步文章到 ElasticSearch
 func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
+	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	var logger *utils.ZeroLogger
+	if svcCtx.Logger != nil {
+		logger = svcCtx.Logger.WithContext(ctx)
+	}
 	if svcCtx.ESClient == nil {
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Error(constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
+			logger.Error(constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
 		}
 		return fmt.Errorf("%s", constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
 	}
@@ -93,11 +100,11 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	for {
 		result, err := springCli.GetPublishedArticles(ctx, page, esSyncBatchSize)
 		if err != nil {
-			return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+			return logAndWrapError(logger, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 		}
 		articles, total, err := springClient.ParseArticlePage(result)
 		if err != nil {
-			return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+			return logAndWrapError(logger, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 		}
 		if len(articles) == 0 {
 			break
@@ -115,7 +122,7 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		for _, doc := range docs {
 			docHash, err := hashArticleES(doc)
 			if err != nil {
-				return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+				return logAndWrapError(logger, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 			}
 
 			existingHash, ok := existingDocs[doc.ID]
@@ -150,7 +157,7 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		stats.Updated += batchUpdated
 
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Info(fmt.Sprintf(constants.ES_SYNC_BATCH_COMPLETED_MESSAGE, batchIdx, batchAdded, batchUpdated))
+			logger.Info(fmt.Sprintf(constants.ES_SYNC_BATCH_COMPLETED_MESSAGE, batchIdx, batchAdded, batchUpdated))
 		}
 
 		if int64(page*esSyncBatchSize) >= total {
@@ -170,11 +177,11 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	}
 
 	if svcCtx.Logger != nil {
-		svcCtx.Logger.Info(fmt.Sprintf(constants.ES_INCREMENTAL_SYNC_COMPLETED_MESSAGE, stats.Added, stats.Updated, stats.Deleted))
+		logger.Info(fmt.Sprintf(constants.ES_INCREMENTAL_SYNC_COMPLETED_MESSAGE, stats.Added, stats.Updated, stats.Deleted))
 	}
 
 	if stats.Added == 0 && stats.Updated == 0 && stats.Deleted == 0 && svcCtx.Logger != nil {
-		svcCtx.Logger.Info(constants.NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE)
+		logger.Info(constants.NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE)
 	}
 
 	return nil
@@ -189,6 +196,12 @@ func buildArticleESBatchFromRemote(
 	categoryMap map[int64]string,
 	subCategoryMap map[int64]string,
 ) ([]search.ArticleES, error) {
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
+	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	var logger *utils.ZeroLogger
+	if svcCtx.Logger != nil {
+		logger = svcCtx.Logger.WithContext(ctx)
+	}
 	springCli := svcCtx.SpringClient
 
 	// 收集本批次涉及的主键集合
@@ -241,7 +254,7 @@ func buildArticleESBatchFromRemote(
 
 	if getUserCalled && userErr != nil {
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Error(fmt.Sprintf(constants.BATCH_QUERY_USER_FAIL, userErr))
+			logger.Error(fmt.Sprintf(constants.BATCH_QUERY_USER_FAIL, userErr))
 		}
 	} else if getUserCalled {
 		users, err := springClient.ParseUserVOs(userResult)
@@ -254,7 +267,7 @@ func buildArticleESBatchFromRemote(
 
 	if getSubCategoryCalled && subCategoryErr != nil {
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Error(fmt.Sprintf(constants.BATCH_QUERY_SUBCATEGORY_FAIL, subCategoryErr))
+			logger.Error(fmt.Sprintf(constants.BATCH_QUERY_SUBCATEGORY_FAIL, subCategoryErr))
 		}
 	} else if getSubCategoryCalled {
 		subCategories, err := springClient.ParseSubCategoryVOs(subCategoryResult)
@@ -313,34 +326,34 @@ func buildArticleESBatchFromRemote(
 	)
 
 	if commentErr != nil {
-		return nil, logAndWrapError(svcCtx, constants.CREATE_MESSAGE_ERROR, commentErr)
+		return nil, logAndWrapError(logger, constants.CREATE_MESSAGE_ERROR, commentErr)
 	}
 	if likeErr != nil {
-		return nil, logAndWrapError(svcCtx, constants.LIKE_QUERY_ERROR, likeErr)
+		return nil, logAndWrapError(logger, constants.LIKE_QUERY_ERROR, likeErr)
 	}
 	if collectErr != nil {
-		return nil, logAndWrapError(svcCtx, constants.COLLECT_QUERY_ERROR, collectErr)
+		return nil, logAndWrapError(logger, constants.COLLECT_QUERY_ERROR, collectErr)
 	}
 	if followErr != nil {
-		return nil, logAndWrapError(svcCtx, constants.FOCUS_QUERY_ERROR, followErr)
+		return nil, logAndWrapError(logger, constants.FOCUS_QUERY_ERROR, followErr)
 	}
 
 	// 解析失败必须报错退出：静默降级会把 0 写进 ES，让搜索列表的统计与评分长期为 0
 	commentScores, commentParseErr := springClient.ParseCommentScoresMap(commentResult)
 	if commentParseErr != nil {
-		return nil, logAndWrapError(svcCtx, constants.COMMENT_SCORE_PARSE_ERROR, commentParseErr)
+		return nil, logAndWrapError(logger, constants.COMMENT_SCORE_PARSE_ERROR, commentParseErr)
 	}
 	likeCounts, likeParseErr := springClient.ParseCountsMap(likeResult)
 	if likeParseErr != nil {
-		return nil, logAndWrapError(svcCtx, constants.LIKE_COUNT_PARSE_ERROR, likeParseErr)
+		return nil, logAndWrapError(logger, constants.LIKE_COUNT_PARSE_ERROR, likeParseErr)
 	}
 	collectCounts, collectParseErr := springClient.ParseCountsMap(collectResult)
 	if collectParseErr != nil {
-		return nil, logAndWrapError(svcCtx, constants.COLLECT_COUNT_PARSE_ERROR, collectParseErr)
+		return nil, logAndWrapError(logger, constants.COLLECT_COUNT_PARSE_ERROR, collectParseErr)
 	}
 	authorFollowCounts, followParseErr := springClient.ParseCountsMap(followResult)
 	if followParseErr != nil {
-		return nil, logAndWrapError(svcCtx, constants.FOCUS_COUNT_PARSE_ERROR, followParseErr)
+		return nil, logAndWrapError(logger, constants.FOCUS_COUNT_PARSE_ERROR, followParseErr)
 	}
 
 	// 组装 ES 文档
@@ -390,11 +403,17 @@ func buildArticleESBatchFromRemote(
 
 // loadExistingESArticles 滚动扫描 articles 索引，构造文档 ID 到内容哈希的映射供增量比对
 func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (map[int64]string, error) {
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
+	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	var logger *utils.ZeroLogger
+	if svcCtx.Logger != nil {
+		logger = svcCtx.Logger.WithContext(ctx)
+	}
 	existingDocs := make(map[int64]string)
 
 	exists, err := svcCtx.ESClient.IndexExists(esArticlesIndexName).Do(ctx)
 	if err != nil {
-		return nil, logAndWrapError(svcCtx, constants.INDEX_CHECK_ERROR_MESSAGE, err)
+		return nil, logAndWrapError(logger, constants.INDEX_CHECK_ERROR_MESSAGE, err)
 	}
 	if !exists {
 		return existingDocs, nil
@@ -407,17 +426,17 @@ func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (ma
 			break
 		}
 		if err != nil {
-			return nil, logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+			return nil, logAndWrapError(logger, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 		}
 
 		for _, hit := range result.Hits.Hits {
 			var doc search.ArticleES
 			if err := json.Unmarshal(hit.Source, &doc); err != nil {
-				return nil, logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+				return nil, logAndWrapError(logger, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 			}
 			hashValue, err := hashArticleES(doc)
 			if err != nil {
-				return nil, logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+				return nil, logAndWrapError(logger, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 			}
 			existingDocs[doc.ID] = hashValue
 		}
@@ -464,13 +483,19 @@ func deleteStaleESArticles(ctx context.Context, svcCtx *svc.ServiceContext, stal
 
 // executeESBulk 执行 ES 批量请求，存在失败项时记录详情并返回错误
 func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest *elastic.BulkService) error {
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
+	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	var logger *utils.ZeroLogger
+	if svcCtx.Logger != nil {
+		logger = svcCtx.Logger.WithContext(ctx)
+	}
 	if bulkRequest.NumberOfActions() == 0 {
 		return nil
 	}
 
 	resp, err := bulkRequest.Do(ctx)
 	if err != nil {
-		return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+		return logAndWrapError(logger, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 	}
 
 	if !resp.Errors {
@@ -479,11 +504,11 @@ func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest 
 
 	for _, item := range resp.Failed() {
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Error(fmt.Sprintf(constants.ES_SYNC_FAILURE_DETAILS_MESSAGE, item.Error))
+			logger.Error(fmt.Sprintf(constants.ES_SYNC_FAILURE_DETAILS_MESSAGE, item.Error))
 		}
 	}
 	if svcCtx.Logger != nil {
-		svcCtx.Logger.Error(constants.ES_SYNC_HAS_FAILURES_MESSAGE)
+		logger.Error(constants.ES_SYNC_HAS_FAILURES_MESSAGE)
 	}
 	return fmt.Errorf("%s", constants.ES_SYNC_HAS_FAILURES_MESSAGE)
 }
@@ -491,9 +516,15 @@ func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest 
 // SyncArticleESChanges 按主键精确同步文章到 ElasticSearch
 // delete 直接删除文档，insert、update 拉取快照后按内容 hash 决定是否写入
 func SyncArticleESChanges(ctx context.Context, svcCtx *svc.ServiceContext, changeType string, ids []int64) error {
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
+	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	var logger *utils.ZeroLogger
+	if svcCtx.Logger != nil {
+		logger = svcCtx.Logger.WithContext(ctx)
+	}
 	if svcCtx.ESClient == nil {
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Error(constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
+			logger.Error(constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
 		}
 		return fmt.Errorf("%s", constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
 	}
@@ -504,7 +535,7 @@ func SyncArticleESChanges(ctx context.Context, svcCtx *svc.ServiceContext, chang
 		return err
 	}
 	if svcCtx.Logger != nil {
-		svcCtx.Logger.Info(fmt.Sprintf(constants.ES_EXACT_SYNC_STARTED_MESSAGE, changeType, ids))
+		logger.Info(fmt.Sprintf(constants.ES_EXACT_SYNC_STARTED_MESSAGE, changeType, ids))
 	}
 	if changeType == esChangeTypeDelete {
 		if err := deleteESArticlesByIDs(ctx, svcCtx, ids); err != nil {
@@ -516,20 +547,26 @@ func SyncArticleESChanges(ctx context.Context, svcCtx *svc.ServiceContext, chang
 		}
 	}
 	if svcCtx.Logger != nil {
-		svcCtx.Logger.Info(fmt.Sprintf(constants.ES_EXACT_SYNC_COMPLETED_MESSAGE, changeType, len(ids)))
+		logger.Info(fmt.Sprintf(constants.ES_EXACT_SYNC_COMPLETED_MESSAGE, changeType, len(ids)))
 	}
 	return nil
 }
 
 // upsertESArticlesByIDs 按主键拉取文章快照并写入 ES
 func upsertESArticlesByIDs(ctx context.Context, svcCtx *svc.ServiceContext, ids []int64) error {
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
+	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	var logger *utils.ZeroLogger
+	if svcCtx.Logger != nil {
+		logger = svcCtx.Logger.WithContext(ctx)
+	}
 	result, err := svcCtx.SpringClient.GetArticlesByIDs(ctx, ids)
 	if err != nil {
-		return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+		return logAndWrapError(logger, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 	}
 	articles, err := springClient.ParseArticleVOs(result)
 	if err != nil {
-		return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+		return logAndWrapError(logger, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 	}
 	if len(articles) == 0 {
 		return nil
@@ -552,7 +589,7 @@ func upsertESArticlesByIDs(ctx context.Context, svcCtx *svc.ServiceContext, ids 
 	for _, doc := range docs {
 		docHash, err := hashArticleES(doc)
 		if err != nil {
-			return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+			return logAndWrapError(logger, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 		}
 		if existingHash, ok := existingDocs[doc.ID]; ok && existingHash == docHash {
 			continue
@@ -614,14 +651,20 @@ func deleteESArticlesByIDs(ctx context.Context, svcCtx *svc.ServiceContext, ids 
 
 // ensureArticlesIndex 确保文章索引存在
 func ensureArticlesIndex(ctx context.Context, svcCtx *svc.ServiceContext) error {
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
+	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	var logger *utils.ZeroLogger
+	if svcCtx.Logger != nil {
+		logger = svcCtx.Logger.WithContext(ctx)
+	}
 	exists, err := svcCtx.ESClient.IndexExists(esArticlesIndexName).Do(ctx)
 	if err != nil {
-		return logAndWrapError(svcCtx, constants.INDEX_CHECK_ERROR_MESSAGE, err)
+		return logAndWrapError(logger, constants.INDEX_CHECK_ERROR_MESSAGE, err)
 	}
 	if !exists {
 		mapping := constants.ES_INDEX_MAPPING
 		if _, createErr := svcCtx.ESClient.CreateIndex(esArticlesIndexName).BodyString(mapping).Do(ctx); createErr != nil {
-			return logAndWrapError(svcCtx, constants.INDEX_CREATION_ERROR_MESSAGE, createErr)
+			return logAndWrapError(logger, constants.INDEX_CREATION_ERROR_MESSAGE, createErr)
 		}
 	}
 	return nil
@@ -639,9 +682,11 @@ func hashArticleES(doc search.ArticleES) (string, error) {
 }
 
 // logAndWrapError 记录错误日志并返回附加了上下文信息的包装错误
-func logAndWrapError(svcCtx *svc.ServiceContext, message string, err error) error {
-	if svcCtx != nil && svcCtx.Logger != nil {
-		svcCtx.Logger.Error(fmt.Sprintf("%s: %v", message, err))
+// logAndWrapError 记录错误日志并返回附加了上下文信息的包装错误
+// logger 由调用方从执行上下文派生，保证错误日志带上当前请求或任务的 trace_id
+func logAndWrapError(logger *utils.ZeroLogger, message string, err error) error {
+	if logger != nil {
+		logger.Error(fmt.Sprintf("%s: %v", message, err))
 	}
 	return fmt.Errorf("%s: %w", message, err)
 }

@@ -59,13 +59,17 @@ func (s *ChatHub) ConfigureReadMarker(markRead func(context.Context, int64, int6
 }
 
 // HandleWebSocketConnection 接管已升级的连接并启动读写处理
-func (s *ChatHub) HandleWebSocketConnection(conn *websocket.Conn, userID int64) {
+// ctx 取请求上下文：连接级 logger 由它派生，加入/离开队列等日志才能带上建立连接时的 trace_id
+func (s *ChatHub) HandleWebSocketConnection(ctx context.Context, conn *websocket.Conn, userID int64) {
 	client := &Client{
 		UserID:       userID,
 		ConnectionID: NewConnectionID("ws"),
 		Conn:         conn,
 		Send:         make(chan []byte, constants.WebSocketSendBufferSize),
 		MarkRead:     s.markRead,
+	}
+	if s.ZeroLogger != nil && ctx != nil {
+		client.ZeroLogger = s.ZeroLogger.WithContext(ctx)
 	}
 	s.JoinQueue(userID, client)
 	utils.SafeGo(s.ZeroLogger, "websocket_write_pump", client.WritePump)
@@ -98,11 +102,12 @@ func (s *ChatHub) JoinQueue(userID int64, client *Client) {
 	queue.clients[userID][client.ConnectionID] = client
 	client.hub = s
 	queue.mu.Unlock()
-	if s.ZeroLogger != nil {
+	// 已有连接级 logger（带请求链路）时保留，不要被根 logger 覆盖
+	if client.ZeroLogger == nil && s.ZeroLogger != nil {
 		client.ZeroLogger = s.ZeroLogger
 	}
-	if s.ZeroLogger != nil {
-		s.Info(constants.USER_JOINED_QUEUE_MESSAGE)
+	if client.ZeroLogger != nil {
+		client.ZeroLogger.Info(constants.USER_JOINED_QUEUE_MESSAGE)
 	}
 }
 
@@ -112,21 +117,29 @@ func (s *ChatHub) LeaveQueue(userID int64) {
 	if queue == nil {
 		return
 	}
+	// 优先沿用连接级 logger（带建立连接时的链路），没有时回落到根 logger
+	var logger *utils.ZeroLogger
 	queue.mu.Lock()
 	if clients, ok := queue.clients[userID]; ok {
 		delete(queue.clients, userID)
 		for _, client := range clients {
+			if logger == nil {
+				logger = client.ZeroLogger
+			}
 			client.Shutdown()
 		}
 	}
 	queue.mu.Unlock()
-	if s.ZeroLogger != nil {
-		s.Info(constants.USER_LEFT_QUEUE_MESSAGE)
+	if logger == nil {
+		logger = s.ZeroLogger
+	}
+	if logger != nil {
+		logger.Info(constants.USER_LEFT_QUEUE_MESSAGE)
 	}
 }
 
 // LeaveQueueIfMatch 仅当当前队列中的 client 与传入实例一致时才移除，避免旧连接退出时误删新连接
-func (s *ChatHub) LeaveQueueIfMatch(userID int64, connectionID string, client *Client) {
+func (s *ChatHub) LeaveQueueIfMatch(ctx context.Context, userID int64, connectionID string, client *Client) {
 	if client == nil || connectionID == "" {
 		return
 	}
@@ -146,8 +159,14 @@ func (s *ChatHub) LeaveQueueIfMatch(userID int64, connectionID string, client *C
 		}
 	}
 	queue.mu.Unlock()
-	if ok && exists && currentClient == client && s.ZeroLogger != nil {
-		s.Info(constants.USER_LEFT_QUEUE_MESSAGE)
+	if ok && exists && currentClient == client {
+		logger := client.ZeroLogger
+		if logger == nil {
+			logger = s.ZeroLogger
+		}
+		if logger != nil {
+			logger.Info(constants.USER_LEFT_QUEUE_MESSAGE)
+		}
 	}
 }
 
@@ -205,7 +224,8 @@ func (s *ChatHub) GetUserClients(userID int64) []*Client {
 }
 
 // 向队列中的用户发送消息
-func (s *ChatHub) SendMessageToQueue(userID int64, message []byte) bool {
+// ctx 由触发本次投递的链路提供，日志据此关联 trace_id
+func (s *ChatHub) SendMessageToQueue(ctx context.Context, userID int64, message []byte) bool {
 	clients := s.GetUserClients(userID)
 	if len(clients) == 0 {
 		return false
@@ -229,11 +249,20 @@ func (s *ChatHub) SendMessageToQueue(userID int64, message []byte) bool {
 	}
 
 	for _, client := range failedClients {
-		s.LeaveQueueIfMatch(userID, client.ConnectionID, client)
+		s.LeaveQueueIfMatch(ctx, userID, client.ConnectionID, client)
 	}
 
-	if !sentAny && s.ZeroLogger != nil {
-		s.Warning(constants.USER_IN_QUEUE_NOT_CONNECTED_WARNING)
+	// 优先沿用连接级 logger（带建立连接时的链路），没有时回落到根 logger
+	logger := s.ZeroLogger
+	if logger != nil {
+		if len(clients) > 0 && clients[0] != nil && clients[0].ZeroLogger != nil {
+			logger = clients[0].ZeroLogger
+		} else {
+			logger = logger.WithContext(ctx)
+		}
+	}
+	if !sentAny && logger != nil {
+		logger.Warning(constants.USER_IN_QUEUE_NOT_CONNECTED_WARNING)
 	}
 
 	return sentAny
@@ -294,7 +323,8 @@ func (c *Client) ReadPump() {
 		if chatHub == nil {
 			chatHub = NewChatHub(c.ZeroLogger)
 		}
-		chatHub.LeaveQueueIfMatch(c.UserID, c.ConnectionID, c)
+		// 离开队列的日志优先使用连接级 logger（已带建立连接时的 trace_id），此处 ctx 仅占位
+		chatHub.LeaveQueueIfMatch(context.Background(), c.UserID, c.ConnectionID, c)
 	}()
 
 	c.Conn.SetReadLimit(constants.WebSocketReadLimit)

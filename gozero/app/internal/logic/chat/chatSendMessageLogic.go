@@ -97,11 +97,11 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 	}
 
 	if l.svcCtx.RealtimeBus == nil {
-		l.svcCtx.RealtimeDispatcher.Handle(eventBytes)
+		l.svcCtx.RealtimeDispatcher.Handle(l.ctx, eventBytes)
 	} else {
 		if err := l.svcCtx.RealtimeBus.Publish(l.ctx, eventBytes); err != nil {
 			l.Error(fmt.Sprintf(constants.REDIS_REALTIME_PUBLISH_ERROR, err))
-			l.svcCtx.RealtimeDispatcher.Handle(eventBytes)
+			l.svcCtx.RealtimeDispatcher.Handle(l.ctx, eventBytes)
 		}
 	}
 

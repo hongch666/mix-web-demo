@@ -31,7 +31,8 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		svcCtx.Logger.Info(constants.SSE_CONNECTION_ESTABLISHED_MESSAGE)
+		// 用带请求上下文的 logger，避免与根 logger（context.Background）一样丢失 trace_id
+		l.Info(constants.SSE_CONNECTION_ESTABLISHED_MESSAGE)
 
 		// 委托给 SSEHub 处理连接的完整生命周期
 		svcCtx.SSEHub.HandleConnection(w, r, userID)

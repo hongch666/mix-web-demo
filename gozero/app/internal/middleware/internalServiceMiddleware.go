@@ -28,10 +28,13 @@ func validateInternalToken(
 	m *InternalServiceMiddleware,
 	expectedServiceName string,
 ) (shouldContinue bool) {
+	// 根 logger 的 context 是 Background，链路为空，必须从请求上下文派生才能取到 trace_id
+	logger := m.ZeroLogger.WithContext(r.Context())
+
 	// 从上下文中获取已解析的内部令牌（由 UserContextMiddleware 预先解析）
 	tokenString, _ := r.Context().Value(keys.InternalTokenKey).(string)
 	if tokenString == "" {
-		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_HEADER_MISSING_LOG, constants.HeaderInternalToken, r.URL.Path))
+		logger.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_HEADER_MISSING_LOG, constants.HeaderInternalToken, r.URL.Path))
 		utils.Error(w, constants.HttpUnauthorized, constants.INTERNAL_TOKEN_MISSING)
 		return false
 	}
@@ -39,32 +42,32 @@ func validateInternalToken(
 	// 验证令牌
 	tokenUtil, err := utils.GetTokenUtil()
 	if err != nil {
-		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))
+		logger.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))
 		utils.Error(w, constants.HttpUnauthorized, constants.INTERNAL_TOKEN_INVALID)
 		return false
 	}
 	claims, err := tokenUtil.ValidateInternalToken(tokenString)
 	if err != nil {
-		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))
+		logger.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))
 		utils.Error(w, constants.HttpUnauthorized, constants.INTERNAL_TOKEN_INVALID)
 		return false
 	}
 
 	// 检查令牌是否过期
 	if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
-		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_EXPIRED_LOG, r.URL.Path))
+		logger.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_EXPIRED_LOG, r.URL.Path))
 		utils.Error(w, constants.HttpUnauthorized, constants.INTERNAL_TOKEN_EXPIRED)
 		return false
 	}
 
 	// 验证服务名称（如果指定了）
 	if expectedServiceName != "" && claims.ServiceName != expectedServiceName {
-		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_SERVICE_MISMATCH_LOG, expectedServiceName, claims.ServiceName, r.URL.Path))
+		logger.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_SERVICE_MISMATCH_LOG, expectedServiceName, claims.ServiceName, r.URL.Path))
 		utils.Error(w, constants.HttpForbidden, constants.SERVICE_NAME_MISMATCH)
 		return false
 	}
 
-	m.Info(fmt.Sprintf(constants.INTERNAL_TOKEN_VALIDATE_SUCCESS_LOG, claims.UserID, claims.ServiceName, r.URL.Path))
+	logger.Info(fmt.Sprintf(constants.INTERNAL_TOKEN_VALIDATE_SUCCESS_LOG, claims.UserID, claims.ServiceName, r.URL.Path))
 	return true
 }
 

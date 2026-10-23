@@ -120,7 +120,7 @@ func TestHandleWebSocketConnectionUsesInjectedReadMarker(t *testing.T) {
 		if err != nil {
 			return
 		}
-		hub.HandleWebSocketConnection(conn, 7)
+		hub.HandleWebSocketConnection(context.Background(), conn, 7)
 	}))
 	defer server.Close()
 
@@ -162,7 +162,7 @@ func TestChatHubKeepsOtherConnectionsWhenOneConnectionLeaves(t *testing.T) {
 	hub.JoinQueue(7, first)
 	hub.JoinQueue(7, second)
 
-	hub.LeaveQueueIfMatch(7, first.ConnectionID, first)
+	hub.LeaveQueueIfMatch(context.Background(), 7, first.ConnectionID, first)
 
 	clients := hub.GetUserClients(7)
 	if len(clients) != 1 || clients[0] != second {
@@ -183,7 +183,7 @@ func TestChatHubOldConnectionCannotRemoveReplacement(t *testing.T) {
 	hub.JoinQueue(7, oldClient)
 	hub.JoinQueue(7, newClient)
 
-	hub.LeaveQueueIfMatch(7, oldClient.ConnectionID, oldClient)
+	hub.LeaveQueueIfMatch(context.Background(), 7, oldClient.ConnectionID, oldClient)
 
 	client, ok := hub.GetUserFromQueue(7)
 	if !ok || client != newClient {
@@ -206,7 +206,7 @@ func TestSSEHubTargetsAllConnectionsForUserOnly(t *testing.T) {
 		Message: &types.ChatMessageItem{Id: 99},
 	}
 
-	hub.SendNotificationToUser(7, notification)
+	hub.SendNotificationToUser(context.Background(), 7, notification)
 
 	if len(first) != 1 || len(second) != 1 {
 		t.Fatal("目标用户的所有 SSE 连接都应收到通知")

@@ -46,7 +46,7 @@ func TestRealtimeDispatcherPrefersWebSocketDelivery(t *testing.T) {
 	}
 	payload := marshalRealtimeEventForTest(t, event)
 
-	dispatcher.Handle(payload)
+	dispatcher.Handle(context.Background(), payload)
 
 	if len(wsClient.Send) != 1 {
 		t.Fatal("在线 WebSocket 应收到实时消息")
@@ -74,7 +74,7 @@ func TestRealtimeDispatcherFallsBackToSSEWithoutWebSocket(t *testing.T) {
 	}
 	payload := marshalRealtimeEventForTest(t, event)
 
-	dispatcher.Handle(payload)
+	dispatcher.Handle(context.Background(), payload)
 
 	select {
 	case notification := <-sseMessages:
@@ -132,7 +132,7 @@ func TestRealtimeDispatcherIgnoresInvalidEvents(t *testing.T) {
 			sseHub.RegisterClient(context.Background(), 7, "sse-1", sseMessages, make(chan bool))
 			dispatcher := NewChatRealtimeDispatcher(chatHub, sseHub, nil)
 
-			dispatcher.Handle(tc.payload)
+			dispatcher.Handle(context.Background(), tc.payload)
 
 			if len(wsClient.Send) != 0 {
 				t.Fatal("非法事件不应投递到 WebSocket")
@@ -148,5 +148,5 @@ func TestRealtimeDispatcherIgnoresInvalidEvents(t *testing.T) {
 
 func TestRealtimeDispatcherNilReceiverDoesNotPanic(t *testing.T) {
 	var dispatcher *ChatRealtimeDispatcher
-	dispatcher.Handle([]byte("{}"))
+	dispatcher.Handle(context.Background(), []byte("{}"))
 }

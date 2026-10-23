@@ -46,7 +46,9 @@ func (m *AllowSelfMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		if err := requireSelfOrAdmin(r.Context(), targetUserID, m.adminChecker); err != nil {
-			m.Warningf("allowSelf 权限校验失败: path=%s, targetUserId=%d, error=%v", r.URL.Path, targetUserID, err)
+			// 从请求上下文派生 logger，让越权日志带上本次请求的 trace_id
+			m.ZeroLogger.WithContext(r.Context()).Warningf(
+				"allowSelf 权限校验失败: path=%s, targetUserId=%d, error=%v", r.URL.Path, targetUserID, err)
 			utils.HandleError(w, err)
 			return
 		}
