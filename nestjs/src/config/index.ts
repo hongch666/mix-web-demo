@@ -10,8 +10,7 @@ import * as path from "path";
  * - 解析 YAML 中 ${VAR:default} 占位符为环境变量实际值
  */
 
-// 项目根目录：定位到包含 src/config 的目录
-// 开发态 __dirname = nestjs/src/config；编译后 __dirname = nestjs/dist/config
+// 项目根目录：定位到包含 src/config 的目录，开发态 __dirname = nestjs/src/config；编译后 __dirname = nestjs/dist/config
 const PROJECT_ROOT: string = path.resolve(__dirname, "..", "..");
 
 // 加载根目录下的 .env（不影响原本位于 nestjs/.env 的文件位置）

@@ -2,8 +2,7 @@ import { getConnectionToken } from "@nestjs/mongoose";
 import { Test } from "@nestjs/testing";
 import { getDataSourceToken } from "@nestjs/typeorm";
 
-// uuid@14 为 ESM-only 包，jest-runtime 的 CJS require 无法加载（生产 Node 20.19+ 与 Bun 均支持），
-// 冒烟测试只关心 DI 图解析，与 uuid 的真实实现无关，这里按单测规范在工厂中提供被用到的成员
+// uuid@14 为 ESM-only 包，jest-runtime 的 CJS require 无法加载（生产 Node 20.19+ 与 Bun 均支持），冒烟测试只关心 DI 图解析，与 uuid 的真实实现无关，这里按单测规范在工厂中提供被用到的成员
 jest.mock("uuid", () => ({ v4: () => "mocked-uuid" }));
 
 import { RedisKeys } from "src/common/constants";

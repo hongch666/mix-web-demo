@@ -52,8 +52,7 @@ describe("GithubCallbackQueryDto", () => {
     expect(dto.state).toBe("state123");
   });
 
-  // 验证用户拒绝授权时仅携带错误字段的回调同样放行，全部字段均可选
-  // errorDescription 带 @ExposeName，请求键名为 snake_case 的 error_description
+  // 验证用户拒绝授权时仅携带错误字段的回调同样放行，全部字段均可选，errorDescription 带 @ExposeName，请求键名为 snake_case 的 error_description
   it("验证仅携带错误字段的拒绝授权回调通过校验", async () => {
     const dto = (await pipe.transform(
       {

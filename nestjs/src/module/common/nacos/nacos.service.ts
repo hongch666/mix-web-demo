@@ -168,8 +168,7 @@ export class NacosService implements OnModuleInit, OnModuleDestroy {
 
     await this.client.ready();
 
-    // 网关以容器运行，注册地址必须是容器能回连的地址，固定 127.0.0.1 会让网关连到容器自身
-    // 显式配置了具体 IP 时以它为准，未指定（空、127.0.0.1、0.0.0.0）则自动探测本机 IP
+    // 网关以容器运行，注册地址必须是容器能回连的地址，固定 127.0.0.1 会让网关连到容器自身，显式配置了具体 IP 时以它为准，未指定（空、127.0.0.1、0.0.0.0）则自动探测本机 IP
     let registrationIp: string = this.configService.get<string>("server.ip")!;
     if (
       !registrationIp ||

@@ -29,8 +29,7 @@ describe("InternalEmailCodeSendDto", () => {
     expect(dto.expireMinutes).toBeUndefined();
   });
 
-  // 验证可选的过期时间在范围内时通过校验
-  // expireMinutes 带 @ExposeName，请求键名为 snake_case 的 expire_minutes
+  // 验证可选的过期时间在范围内时通过校验，expireMinutes 带 @ExposeName，请求键名为 snake_case 的 expire_minutes
   it("验证合法过期时间通过校验", async () => {
     const dto = (await pipe.transform(
       { ...validPayload(), expire_minutes: 10 },

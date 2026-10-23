@@ -12,8 +12,7 @@ const pipe = new ValidationPipe({
   transformOptions: { enableImplicitConversion: true },
 });
 
-// 构造合法的文章日志消息体，测试中按需覆盖字段
-// 带 @ExposeName 的字段请求键名为 snake_case
+// 构造合法的文章日志消息体，测试中按需覆盖字段，带 @ExposeName 的字段请求键名为 snake_case
 const validCreatePayload = () => ({
   user_id: 1,
   article_id: 2,

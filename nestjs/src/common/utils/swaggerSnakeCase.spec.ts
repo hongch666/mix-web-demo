@@ -3,8 +3,7 @@
 import { applySwaggerSnakeCase } from "./swaggerSnakeCase";
 
 describe("applySwaggerSnakeCase", () => {
-  // Verify the expected behavior of this unit test
-  // 验证该测试场景的预期行为
+  // Verify the expected behavior of this unit test，验证该测试场景的预期行为
   it("验证该测试场景的预期行为", () => {
     const document = {
       components: {

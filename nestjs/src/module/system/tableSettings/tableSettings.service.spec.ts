@@ -3,8 +3,7 @@
 import { TableSettingsService } from "./tableSettings.service";
 
 describe("TableSettingsService", () => {
-  // Verify the expected behavior of this unit test
-  // 验证该测试场景的预期行为
+  // Verify the expected behavior of this unit test，验证该测试场景的预期行为
   it("验证该测试场景的预期行为", async () => {
     const repository = {
       findOne: jest.fn().mockResolvedValue(null),

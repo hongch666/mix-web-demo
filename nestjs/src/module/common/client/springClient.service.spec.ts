@@ -2,8 +2,7 @@
 
 import { SpringClientService } from "./springClient.service";
 
-// 用假的 NacosService 构造被测服务：本类只负责构造请求，
-// 远程调用、重试与内部令牌注入由 NacosService.call 承担（那边已有覆盖）
+// 用假的 NacosService 构造被测服务：本类只负责构造请求，远程调用、重试与内部令牌注入由 NacosService.call 承担（那边已有覆盖）
 function createService(call: jest.Mock = jest.fn().mockResolvedValue({})) {
   const service = new SpringClientService({ call } as any);
   return { service, call };

@@ -9,8 +9,7 @@ const pipe = new ValidationPipe({
 });
 
 describe("UploadDto", () => {
-  // 验证合法的上传请求通过校验
-  // localFile、ossFile 带 @ExposeName，请求键名为 snake_case
+  // 验证合法的上传请求通过校验，localFile、ossFile 带 @ExposeName，请求键名为 snake_case
   it("验证合法上传请求通过校验", async () => {
     const dto = (await pipe.transform(
       { local_file: "/tmp/test.docx", oss_file: "articles/test.docx" },

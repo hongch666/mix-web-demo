@@ -85,8 +85,7 @@ interface MongoDbConfig {
           configService.get<MongoDbConfig>("database.mongodb")!;
         const { host, port, username, password, dbName, logging } = mongodb;
 
-        // 独立开关开启时把 mongoose 集合操作日志路由到统一日志服务
-        // mongoose.set 是全局生效，本项目只有一个 mongo 连接，无隔离问题
+        // 独立开关开启时把 mongoose 集合操作日志路由到统一日志服务，mongoose.set 是全局生效，本项目只有一个 mongo 连接，无隔离问题
         if (logging) {
           mongoose.set("debug", createMongooseDebugLogger(loggerService));
         }
