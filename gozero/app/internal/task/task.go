@@ -13,6 +13,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
+	zerotrace "github.com/zeromicro/go-zero/core/trace"
 )
 
 // 根据给定 Redis 客户端创建分布式锁实例的工厂函数类型
@@ -66,6 +67,13 @@ func addTask(scheduler *cron.Cron, svcCtx *svc.ServiceContext, lockFactory Redis
 func runWithLock(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory, cfg TaskConfig) {
 	ctx, cancel := context.WithTimeout(svcCtx.Context, cfg.Timeout)
 	defer cancel()
+
+	// 定时任务没有请求入口，手动开启一段根 span，让任务日志与内部调用关联到同一次执行
+	// TracerFromContext 在上下文无 span 时回退到全局 tracer，OTel 关闭时自动退化为 noop
+	tracer := zerotrace.TracerFromContext(ctx)
+	ctx, span := tracer.Start(ctx, fmt.Sprintf("job:%s", cfg.Name))
+	defer span.End()
+
 	logger := svcCtx.Logger.WithContext(ctx)
 
 	// Redis 未配置时无法保证分布式互斥，跳过本次任务

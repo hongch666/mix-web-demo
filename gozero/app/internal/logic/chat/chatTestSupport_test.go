@@ -79,7 +79,7 @@ func newChatMessageTestContext(t *testing.T, model *chatMessageModelFake, withBr
 	logger := newChatTestLogger(t)
 	sseHub := hub.NewSSEHub(logger)
 	notifications := make(chan any, 1)
-	sseHub.RegisterClient(2, "receiver", notifications, make(chan bool))
+	sseHub.RegisterClient(context.Background(), 2, "receiver", notifications, make(chan bool))
 	chatHub := hub.NewChatHub(logger)
 	hubContext := &svc.HubContext{
 		ChatHub:            chatHub,

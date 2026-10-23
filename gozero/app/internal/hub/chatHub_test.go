@@ -198,9 +198,9 @@ func TestSSEHubTargetsAllConnectionsForUserOnly(t *testing.T) {
 	first := make(chan any, 1)
 	second := make(chan any, 1)
 	other := make(chan any, 1)
-	hub.RegisterClient(7, "first", first, make(chan bool))
-	hub.RegisterClient(7, "second", second, make(chan bool))
-	hub.RegisterClient(8, "other", other, make(chan bool))
+	hub.RegisterClient(context.Background(), 7, "first", first, make(chan bool))
+	hub.RegisterClient(context.Background(), 7, "second", second, make(chan bool))
+	hub.RegisterClient(context.Background(), 8, "other", other, make(chan bool))
 	notification := &types.ChatSSEMessage{
 		Type:    "message",
 		Message: &types.ChatMessageItem{Id: 99},

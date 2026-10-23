@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -40,6 +41,15 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 记录开始时间，用于计算处理耗时
 		start := time.Now()
+
+		// 根 logger 的 context 是 Background，链路为空，必须从请求上下文派生才能取到 trace_id；
+		// 异步投递用的 logger 再套一层 WithoutCancel：保留 span（trace_id 仍可读）但脱离请求取消，
+		// 避免 handler 返回后上下文失效影响协程内的后续操作
+		var requestLogger, asyncLogger *utils.ZeroLogger
+		if m.ZeroLogger != nil {
+			requestLogger = m.ZeroLogger.WithContext(r.Context())
+			asyncLogger = m.ZeroLogger.WithContext(context.WithoutCancel(r.Context()))
+		}
 
 		// 获取用户信息
 		userID, _ := r.Context().Value(keys.UserIDKey).(int64)
@@ -87,8 +97,8 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		// 记录日志（请求开始）
 		logMessage := formatLogMessage(method, path, m.description, userID, username, logInfo)
-		if m.ZeroLogger != nil {
-			m.Info(logMessage)
+		if requestLogger != nil {
+			requestLogger.Info(logMessage)
 		}
 
 		// 继续处理请求
@@ -97,17 +107,17 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		// 请求处理完成，记录耗时（毫秒）
 		durationMs := time.Since(start).Milliseconds()
 		timeMessage := fmt.Sprintf(constants.RECORD_DURATION_MESSAGE, method, path, durationMs)
-		if m.ZeroLogger != nil {
-			m.Info(timeMessage)
+		if requestLogger != nil {
+			requestLogger.Info(timeMessage)
 		}
 
 		// 发送 API 日志到队列（异步，不阻塞主流程）
-		if m.ZeroLogger != nil {
+		if asyncLogger != nil {
 			// 队列投递前再次排除敏感字段（防御性，防止中间被篡改）
 			sanitizedRequestBody := sanitizeBody(requestBody, m.excludeFields)
 			sanitizedQueryParams := sanitizeQueryParams(queryParams, m.excludeFields)
-			utils.SafeGo(m.ZeroLogger, "sendApiLogToQueue", func() {
-				sendApiLogToQueue(m.ZeroLogger, m.rabbitPublisher, userID, username, method, path, m.description, sanitizedQueryParams, sanitizedRequestBody, durationMs)
+			utils.SafeGo(asyncLogger, "sendApiLogToQueue", func() {
+				sendApiLogToQueue(asyncLogger, m.rabbitPublisher, userID, username, method, path, m.description, sanitizedQueryParams, sanitizedRequestBody, durationMs)
 			})
 		}
 	}

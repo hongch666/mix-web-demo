@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -33,7 +34,7 @@ func TestRealtimeDispatcherPrefersWebSocketDelivery(t *testing.T) {
 	chatHub.JoinQueue(7, wsClient)
 	sseHub := newSSEHubForTest()
 	sseMessages := make(chan any, 1)
-	sseHub.RegisterClient(7, "sse-1", sseMessages, make(chan bool))
+	sseHub.RegisterClient(context.Background(), 7, "sse-1", sseMessages, make(chan bool))
 	dispatcher := NewChatRealtimeDispatcher(chatHub, sseHub, nil)
 	event := ChatRealtimeEvent{
 		ReceiverID:       7,
@@ -61,7 +62,7 @@ func TestRealtimeDispatcherFallsBackToSSEWithoutWebSocket(t *testing.T) {
 	resetChatQueueForTest(t)
 	sseHub := newSSEHubForTest()
 	sseMessages := make(chan any, 1)
-	sseHub.RegisterClient(7, "sse-1", sseMessages, make(chan bool))
+	sseHub.RegisterClient(context.Background(), 7, "sse-1", sseMessages, make(chan bool))
 	dispatcher := NewChatRealtimeDispatcher(&ChatHub{}, sseHub, nil)
 	event := ChatRealtimeEvent{
 		ReceiverID:       7,
@@ -128,7 +129,7 @@ func TestRealtimeDispatcherIgnoresInvalidEvents(t *testing.T) {
 			chatHub.JoinQueue(7, wsClient)
 			sseHub := newSSEHubForTest()
 			sseMessages := make(chan any, 1)
-			sseHub.RegisterClient(7, "sse-1", sseMessages, make(chan bool))
+			sseHub.RegisterClient(context.Background(), 7, "sse-1", sseMessages, make(chan bool))
 			dispatcher := NewChatRealtimeDispatcher(chatHub, sseHub, nil)
 
 			dispatcher.Handle(tc.payload)

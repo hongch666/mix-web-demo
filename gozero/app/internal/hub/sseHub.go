@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -37,7 +38,8 @@ func NewSSEHub(logger *utils.ZeroLogger) *SSEHubManager {
 }
 
 // RegisterClient 注册SSE客户端
-func (hub *SSEHubManager) RegisterClient(userID int64, connectionID string, sendCh chan any, closeCh chan bool) {
+// hub 是跨请求单例，日志所需链路只能由调用点传入，因此这里显式接收 context
+func (hub *SSEHubManager) RegisterClient(ctx context.Context, userID int64, connectionID string, sendCh chan any, closeCh chan bool) {
 	if connectionID == "" {
 		return
 	}
@@ -56,13 +58,13 @@ func (hub *SSEHubManager) RegisterClient(userID int64, connectionID string, send
 		CloseCh:      closeCh,
 	}
 	if hub.ZeroLogger != nil {
-		hub.Info(constants.SSE_REGISTER_SUCCESS_MESSAGE)
+		hub.ZeroLogger.WithContext(ctx).Info(constants.SSE_REGISTER_SUCCESS_MESSAGE)
 	}
 }
 
 // UnregisterClient 注销SSE客户端
 // 通过 connectionID 进行身份校验，防止旧连接的 defer 误关闭新连接
-func (hub *SSEHubManager) UnregisterClient(userID int64, connectionID string) {
+func (hub *SSEHubManager) UnregisterClient(ctx context.Context, userID int64, connectionID string) {
 	if connectionID == "" {
 		return
 	}
@@ -80,7 +82,7 @@ func (hub *SSEHubManager) UnregisterClient(userID int64, connectionID string) {
 			delete(hub.clients, userID)
 		}
 		if hub.ZeroLogger != nil {
-			hub.Info(constants.SSE_UNREGISTER_SUCCESS_MESSAGE)
+			hub.ZeroLogger.WithContext(ctx).Info(constants.SSE_UNREGISTER_SUCCESS_MESSAGE)
 		}
 	}
 }
@@ -164,10 +166,10 @@ func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Reques
 	sendCh := make(chan any, constants.SSESendBufferSize)
 	closeCh := make(chan bool)
 
-	// 注册客户端
-	hub.RegisterClient(userID, connectionID, sendCh, closeCh)
+	// 注册客户端，SSE 长连接期间请求上下文始终有效，日志可正常关联链路
+	hub.RegisterClient(r.Context(), userID, connectionID, sendCh, closeCh)
 	// 传入 connectionID 作为身份标识，防止旧连接的 defer 误关闭新连接
-	defer hub.UnregisterClient(userID, connectionID)
+	defer hub.UnregisterClient(r.Context(), userID, connectionID)
 
 	// 发送初始化连接消息
 	initMessage := &types.ChatSSEMessage{
