@@ -5,6 +5,8 @@ from functools import partial
 from typing import Any, Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base import Logger
@@ -25,19 +27,28 @@ from .logic.warehouseSyncTask import sync_warehouse_async
 async def _run_measured_task(
     task_name: str, task_func: Callable[[], Awaitable[Any]]
 ) -> Any:
-    """执行定时任务并记录运行次数与耗时到 Prometheus 指标"""
+    """执行定时任务并记录运行次数与耗时到 Prometheus 指标
+
+    定时任务没有请求入口，这里手动开启一段根 span，
+    让任务内所有日志都能关联到同一次执行的 trace_id
+    """
     started_at: float = asyncio.get_running_loop().time()
     result: str = "success"
-    try:
-        return await task_func()
-    except Exception:
-        result = "failure"
-        raise
-    finally:
-        task_runs.labels(task_name, result).inc()
-        task_duration.labels(task_name).observe(
-            asyncio.get_running_loop().time() - started_at
-        )
+    tracer: trace.Tracer = trace.get_tracer(__name__)
+    with tracer.start_as_current_span(f"job:{task_name}") as span:
+        span.set_attribute("job.name", task_name)
+        try:
+            return await task_func()
+        except Exception as error:
+            result = "failure"
+            span.record_exception(error)
+            span.set_status(Status(StatusCode.ERROR, str(error)))
+            raise
+        finally:
+            task_runs.labels(task_name, result).inc()
+            task_duration.labels(task_name).observe(
+                asyncio.get_running_loop().time() - started_at
+            )
 
 
 def resolve_task_enabled(task_config: Optional[dict[str, Any]] = None) -> bool:
