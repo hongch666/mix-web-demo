@@ -18,71 +18,98 @@ import (
 // 根据给定 Redis 客户端创建分布式锁实例的工厂函数类型
 type RedisLockFactory func(*redis.Client) *utils.RedisDistributedLock
 
+// TaskConfig 定时任务定义，新增任务只需在 NewTaskScheduler 中调用 addTask 注册
+type TaskConfig struct {
+	Name       string        // 任务名，用于监控指标标签
+	Schedule   string        // cron 表达式
+	LockKey    string        // 分布式锁 key
+	LockExpire int64         // 锁过期时间（秒），应大于任务执行时间，防止死锁
+	Timeout    time.Duration // 单次执行超时时间
+	Run        TaskFunc      // 任务执行体，返回 error 表示本次执行失败
+}
+
+// TaskFunc 任务执行体函数签名
+type TaskFunc func(ctx context.Context, logger *utils.ZeroLogger, svcCtx *svc.ServiceContext) error
+
 // NewTaskScheduler 创建并启动定时任务调度器，由调用方挂到 ServiceContext 上
 func NewTaskScheduler(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory) *cron.Cron {
 	scheduler := cron.New()
 
 	// 每小时同步一次 ES
-	_, err := scheduler.AddFunc("0 * * * *", func() {
-		ctx, cancel := context.WithTimeout(svcCtx.Context, 30*time.Minute)
-		defer cancel()
-		logger := svcCtx.Logger.WithContext(ctx)
-		lockKey := constants.LOCK_TASK_ES_SYNC
-
-		// 尝试获取分布式锁
-		if svcCtx.RedisClient == nil {
-			// Redis 未配置时无法保证分布式互斥，跳过本次任务
-			logger.Info(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_FAIL, lockKey))
-			return
-		}
-
-		lock := lockFactory(svcCtx.RedisClient)
-		lockValue, err := lock.TryLock(ctx, lockKey, constants.LOCK_TASK_ES_SYNC_EXPIRE)
-		if err != nil {
-			logger.Error(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_ERROR, err))
-			return
-		}
-		if lockValue == "" {
-			logger.Info(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_FAIL, lockKey))
-			return
-		}
-		logger.Info(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_SUCCESS, lockKey))
-		taskStartedAt := time.Now()
-		taskResult := "success"
-		defer func() {
-			metrics.TaskRuns.WithLabelValues("es-sync", taskResult).Inc()
-			metrics.TaskDuration.WithLabelValues("es-sync").Observe(time.Since(taskStartedAt).Seconds())
-		}()
-
-		// 确保任务执行完毕后释放锁
-		defer func() {
-			released, unlockErr := lock.Unlock(ctx, lockKey, lockValue)
-			if unlockErr != nil {
-				logger.Error(fmt.Sprintf(constants.REDIS_LOCK_RELEASE_ERROR, unlockErr))
-				return
-			}
-			if released {
-				logger.Info(fmt.Sprintf(constants.REDIS_LOCK_RELEASE_SUCCESS, lockKey))
-			} else {
-				logger.Info(fmt.Sprintf(constants.REDIS_LOCK_RELEASE_FAIL, lockKey))
-			}
-		}()
-
-		if syncErr := executeESSync(ctx, logger, svcCtx); syncErr != nil {
-			taskResult = "failure"
-		}
+	addTask(scheduler, svcCtx, lockFactory, TaskConfig{
+		Name:       "es-sync",
+		Schedule:   "0 * * * *",
+		LockKey:    constants.LOCK_TASK_ES_SYNC,
+		LockExpire: constants.LOCK_TASK_ES_SYNC_EXPIRE,
+		Timeout:    30 * time.Minute,
+		Run:        executeESSync,
 	})
-	if err != nil {
-		if svcCtx.Logger != nil {
-			svcCtx.Logger.Error(fmt.Sprintf(constants.TASK_SYNC_ES_FAILED_MESSAGE, err))
-		}
-	}
 
 	scheduler.Start()
 	if svcCtx.Logger != nil {
 		svcCtx.Logger.Info(constants.TASK_SCHEDULER_STARTED_MESSAGE)
 	}
 	return scheduler
+}
+
+// addTask 向调度器注册一个带分布式锁保护的定时任务
+func addTask(scheduler *cron.Cron, svcCtx *svc.ServiceContext, lockFactory RedisLockFactory, cfg TaskConfig) {
+	_, err := scheduler.AddFunc(cfg.Schedule, func() {
+		runWithLock(svcCtx, lockFactory, cfg)
+	})
+	if err != nil && svcCtx.Logger != nil {
+		svcCtx.Logger.Error(fmt.Sprintf(constants.TASK_REGISTER_FAILED_MESSAGE, cfg.Name, err))
+	}
+}
+
+// runWithLock 以分布式锁保护的方式执行任务体：获取锁成功才执行，执行完毕释放锁并上报监控指标
+func runWithLock(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory, cfg TaskConfig) {
+	ctx, cancel := context.WithTimeout(svcCtx.Context, cfg.Timeout)
+	defer cancel()
+	logger := svcCtx.Logger.WithContext(ctx)
+
+	// Redis 未配置时无法保证分布式互斥，跳过本次任务
+	if svcCtx.RedisClient == nil {
+		logger.Info(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_FAIL, cfg.LockKey))
+		return
+	}
+
+	lock := lockFactory(svcCtx.RedisClient)
+	lockValue, err := lock.TryLock(ctx, cfg.LockKey, cfg.LockExpire)
+	if err != nil {
+		logger.Error(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_ERROR, err))
+		return
+	}
+	if lockValue == "" {
+		logger.Info(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_FAIL, cfg.LockKey))
+		return
+	}
+	logger.Info(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_SUCCESS, cfg.LockKey))
+
+	taskStartedAt := time.Now()
+	taskResult := "success"
+	defer func() {
+		metrics.TaskRuns.WithLabelValues(cfg.Name, taskResult).Inc()
+		metrics.TaskDuration.WithLabelValues(cfg.Name).Observe(time.Since(taskStartedAt).Seconds())
+	}()
+
+	// 确保任务执行完毕后释放锁
+	defer func() {
+		released, unlockErr := lock.Unlock(ctx, cfg.LockKey, lockValue)
+		if unlockErr != nil {
+			logger.Error(fmt.Sprintf(constants.REDIS_LOCK_RELEASE_ERROR, unlockErr))
+			return
+		}
+		if released {
+			logger.Info(fmt.Sprintf(constants.REDIS_LOCK_RELEASE_SUCCESS, cfg.LockKey))
+		} else {
+			logger.Info(fmt.Sprintf(constants.REDIS_LOCK_RELEASE_FAIL, cfg.LockKey))
+		}
+	}()
+
+	if runErr := cfg.Run(ctx, logger, svcCtx); runErr != nil {
+		taskResult = "failure"
+	}
 }
 
 // executeESSync 执行 ES 同步任务
