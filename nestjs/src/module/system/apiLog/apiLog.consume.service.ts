@@ -79,6 +79,22 @@ export class ApiLogConsumerService implements OnApplicationShutdown {
     queue: "api-log-queue",
   })
   async handleApiLog(msg: unknown): Promise<void> {
+    // MQ 消费没有请求上下文，手动开启一段根 span，让消费日志关联到本次处理
+    await trace
+      .getTracer(Defaults.OTEL_TRACER_NAME)
+      .startActiveSpan("mq:api-log-consume", async (span) => {
+        try {
+          await this.processApiLog(msg);
+        } finally {
+          span.end();
+        }
+      });
+  }
+
+  /**
+   * 处理单条 API 日志消息：格式归一化、字段校验后入攒批队列
+   */
+  private async processApiLog(msg: unknown): Promise<void> {
     try {
       // 处理两种消息格式：
       // 1. 对象

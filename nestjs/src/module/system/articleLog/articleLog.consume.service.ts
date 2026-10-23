@@ -77,6 +77,22 @@ export class LogConsumerService implements OnApplicationShutdown {
     queue: "article-log-queue",
   })
   async handleArticleLog(msg: unknown): Promise<void> {
+    // MQ 消费没有请求上下文，手动开启一段根 span，让消费日志关联到本次处理
+    await trace
+      .getTracer(Defaults.OTEL_TRACER_NAME)
+      .startActiveSpan("mq:article-log-consume", async (span) => {
+        try {
+          await this.processArticleLog(msg);
+        } finally {
+          span.end();
+        }
+      });
+  }
+
+  /**
+   * 处理单条文章日志消息：字段校验与操作类型判断后入攒批队列
+   */
+  private async processArticleLog(msg: unknown): Promise<void> {
     try {
       // 处理两种消息格式：1.对象, 2.JSON 字符串
       let logData: RawArticleLogMessage;

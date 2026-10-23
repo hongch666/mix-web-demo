@@ -18,10 +18,15 @@ import { AppModule } from "./app.module";
  * 用它可以替换数据源与 Mongo 连接：既保留完整 DI 图校验，又不建立真实连接、不残留句柄。
  * then 返回 undefined，保证被 await 时不会被当成 thenable 卡住
  */
-const noop: unknown = new Proxy(function noopFn(): unknown { return noop; }, {
-  get: (_target: unknown, property: string | symbol): unknown =>
-    property === "then" ? undefined : noop,
-});
+const noop: unknown = new Proxy(
+  function noopFn(): unknown {
+    return noop;
+  },
+  {
+    get: (_target: unknown, property: string | symbol): unknown =>
+      property === "then" ? undefined : noop,
+  },
+);
 
 const mongooseConnectionStub = {
   models: {} as Record<string, unknown>,
