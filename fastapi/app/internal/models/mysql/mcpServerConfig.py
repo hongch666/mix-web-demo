@@ -31,8 +31,7 @@ class McpServerConfig(Base):
 
     def to_connection_config(self) -> dict[str, Any]:
         """转换为 langchain-mcp-adapters 的单服务连接配置"""
-        # 模型沿用 SQLAlchemy 旧式 Column 标注，属性静态类型是 Column[T]，
-        # 先读入运行期局部变量再参与条件判断与构造，避免 Pylance 报错
+        # 模型沿用 SQLAlchemy 旧式 Column 标注，属性静态类型是 Column[T]，先读入运行期局部变量再参与条件判断与构造，避免 Pylance 报错
         transport: Any = self.transport_type
         command: Any = self.command
         args_json: Any = self.args_json

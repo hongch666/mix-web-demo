@@ -76,8 +76,7 @@ class _StubLangSmithClient:
         return None
 
 
-# 配置关闭时初始化不创建客户端且不记录错误
-# 关闭态日志直接取 Messages 常量，常量缺失会在初始化阶段抛 AttributeError 被本用例拦住
+# 配置关闭时初始化不创建客户端且不记录错误，关闭态日志直接取 Messages 常量，常量缺失会在初始化阶段抛 AttributeError 被本用例拦住
 def test_init_langsmith_logs_disabled_state(monkeypatch: pytest.MonkeyPatch) -> None:
     init_langsmith(_config(enabled=False))
 
@@ -294,8 +293,7 @@ async def test_async_context_yields_none_when_run_creation_fails(
         assert run is None
 
 
-# 同步根 Trace 会把自身注册为当前父 Run，内部 LangChain 子链路据此挂载
-# 用真实 RunTree 验证，桩客户端吞掉 post/patch 的上报
+# 同步根 Trace 会把自身注册为当前父 Run，内部 LangChain 子链路据此挂载，用真实 RunTree 验证，桩客户端吞掉 post/patch 的上报
 def test_sync_context_registers_parent_run_for_children(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

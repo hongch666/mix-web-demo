@@ -236,8 +236,7 @@ class WarehouseScripts:
     #   2) 快照表：维度表与全局聚合快照，无日期分区，按依赖图只重建本次源表变更影响到的表
     # 两类表的依赖关系与执行顺序见文件末尾的依赖图与 REFRESH 批次
 
-    # ODS 源表 -> 用于推导脏分区的日期字段
-    # 同步时按该字段取出行内日期，作为需要重建的月份分区
+    # ODS 源表 -> 用于推导脏分区的日期字段，同步时按该字段取出行内日期，作为需要重建的月份分区
     SOURCE_DIRTY_DATE_FIELD: Final[dict[str, str]] = {
         "ods_article_log": "created_at",
         "ods_api_log": "created_at",
@@ -250,8 +249,7 @@ class WarehouseScripts:
     # 分区值模板：分区键由 toYYYYMM 生成，形如 202609
     PARTITION_VALUE_TEMPLATE: Final[str] = "toString(toYYYYMM(%s)) = %(partition)s"
 
-    # 分区清理模板：表名与分区值为内部生成的常量（分区值必为纯数字），
-    # ClickHouse 的 DROP PARTITION 不接受绑定参数，与项目内其他 DDL 模板同样采用受控拼接
+    # 分区清理模板：表名与分区值为内部生成的常量（分区值必为纯数字），ClickHouse 的 DROP PARTITION 不接受绑定参数，与项目内其他 DDL 模板同样采用受控拼接
     PARTITION_DROP_TEMPLATE: Final[str] = "ALTER TABLE warehouse.%s DROP PARTITION %s"
 
     TRUNCATE_TEMPLATE: Final[str] = "TRUNCATE TABLE warehouse.%s"
@@ -359,8 +357,7 @@ class WarehouseScripts:
         SELECT parent_category_id, any(parent_category_name), count(), now()
         FROM warehouse.dwd_article_event FINAL GROUP BY parent_category_id
         """,
-        # 不能用 formatDateTime(create_at, '%Y-%m')：SQL 走驱动 pyformat 参数化，
-        # % 会被当成占位符导致 unsupported format character 报错，改等价字符串截取
+        # 不能用 formatDateTime(create_at, '%Y-%m')：SQL 走驱动 pyformat 参数化，% 会被当成占位符导致 unsupported format character 报错，改等价字符串截取
         """
         INSERT INTO warehouse.ads_monthly_publish
         SELECT substring(toString(create_at), 1, 7), count(), now()

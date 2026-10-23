@@ -8,8 +8,7 @@ from app.core.db import execute_clickhouse_query
 
 from .baseCache import BaseCache
 
-# 按版本键记录本次读取缓存时观察到的数仓版本，供写缓存时提交
-# 缓存实例是单例，用实例属性会在并发请求间交叉覆盖，因此用 ContextVar 按协程隔离
+# 按版本键记录本次读取缓存时观察到的数仓版本，供写缓存时提交，缓存实例是单例，用实例属性会在并发请求间交叉覆盖，因此用 ContextVar 按协程隔离
 _READ_VERSIONS: ContextVar[Optional[dict[str, str]]] = ContextVar(
     "cache_read_versions", default=None
 )
@@ -25,8 +24,7 @@ class VersionedCache(BaseCache):
     # 子类需要定义这两个常量
     REDIS_VERSION_KEY: str = ""
 
-    # 版本号校验依据的数仓模型，直接取模型对应表（如 AdsTop10Article 对应 warehouse.ads_top10_articles）
-    # 声明为 ClassVar[Any]：子类用具体模型类型收窄，可变属性的覆盖类型是固定的，基类不能用 Optional[type[Any]] 卡住
+    # 版本号校验依据的数仓模型，直接取模型对应表（如 AdsTop10Article 对应 warehouse.ads_top10_articles），声明为 ClassVar[Any]：子类用具体模型类型收窄，可变属性的覆盖类型是固定的，基类不能用 Optional[type[Any]] 卡住
     VERSION_MODEL: ClassVar[Any] = None
 
     def __init__(self, logger: LoggerProtocol | None = None) -> None:

@@ -109,9 +109,7 @@ def initialize_ai_tools(
 
     # 并行加载所有独立工具组
     with ThreadPoolExecutor(max_workers=5 + len(factories.mcp_servers)) as executor:
-        # ThreadPoolExecutor 不会继承 contextvars，显式复制当前上下文再在线程中执行，
-        # 保证工作线程内的日志仍能关联到当前请求或任务的 trace_id；
-        # 每个任务单独复制一份 Context 对象（同一 Context 不能被并发进入）
+        # ThreadPoolExecutor 不会继承 contextvars，显式复制当前上下文再在线程中执行，保证工作线程内的日志仍能关联到当前请求或任务的 trace_id；每个任务单独复制一份 Context 对象（同一 Context 不能被并发进入）
         futures: dict[str, Any] = {}
 
         if include_sql:
@@ -202,8 +200,7 @@ class BaseAiService:
         self.use_structured_output: bool = use_structured_output
         # 工具组装配工厂由依赖图注入，缺省时回退进程内默认装配
         self._tool_factories: Optional[AgentToolFactories] = tool_factories
-        # 这几个句柄在配置缺失时保持 None，运行期用 getattr/真值判断兜底，
-        # 因此声明为 Any 而不是 Optional[Any]，否则每次成员访问都会被判为可能为 None
+        # 这几个句柄在配置缺失时保持 None，运行期用 getattr/真值判断兜底，因此声明为 Any 而不是 Optional[Any]，否则每次成员访问都会被判为可能为 None
         self.llm: Any = None
         self.agent: Any = None
         self.agent_executor: Any = None
@@ -1145,8 +1142,7 @@ class BaseAiService:
                 self._logger.info(Messages.AGENT_PROCESSING_MESSAGE)
                 config.setdefault("run_name", "agent.execute")
 
-                # 用户身份经 contextvars（ToolScope）随请求传递给工具层，
-                # 单例工具不再持有可变用户字段
+                # 用户身份经 contextvars（ToolScope）随请求传递给工具层，单例工具不再持有可变用户字段
 
                 summary, chat_history = await self._load_agent_memory(
                     normalized_user_id, message, db, config, notes
@@ -1319,8 +1315,7 @@ class BaseAiService:
                 self._logger.info(Messages.AGENT_PROCESSING_MESSAGE)
                 config.setdefault("run_name", "agent.execute")
 
-                # 用户身份经 contextvars（ToolScope）随请求传递给工具层，
-                # 单例工具不再持有可变用户字段
+                # 用户身份经 contextvars（ToolScope）随请求传递给工具层，单例工具不再持有可变用户字段
 
                 summary, chat_history = await self._load_agent_memory(
                     normalized_user_id, message, db, config, notes

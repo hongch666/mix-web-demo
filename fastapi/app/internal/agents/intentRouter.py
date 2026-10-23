@@ -326,8 +326,7 @@ class IntentRouter:
         role = await perm_manager.get_user_role_async(self.user_id, self.db)
         perm_manager.apply_tool_scope(self.user_id, role)
 
-        # 组合意图逐项校验受限领域，任一领域无权限即整体拒绝：
-        # agent 共用同一套工具集，无法按意图裁剪工具，因此不做部分放行
+        # 组合意图逐项校验受限领域，任一领域无权限即整体拒绝：agent 共用同一套工具集，无法按意图裁剪工具，因此不做部分放行
         if "database_query" in intents:
             try:
                 if Messages.is_dangerous_nl_request(question):

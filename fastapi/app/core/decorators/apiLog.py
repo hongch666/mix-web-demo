@@ -467,8 +467,7 @@ def _extract_request_body_for_queue(
                 param_annotation: Any = sig.parameters[key].annotation
                 if param_annotation != inspect.Parameter.empty:
                     annotation_str: str = str(param_annotation)
-                    # 跳过 Query、Path 等参数类型（它们会在 query_params 和 path_params 中显示）
-                    # 只保留 Pydantic 模型（请求体）
+                    # 跳过 Query、Path 等参数类型（它们会在 query_params 和 path_params 中显示），只保留 Pydantic 模型（请求体）
                     if any(
                         t in annotation_str
                         for t in ["Query", "Path", "Header", "Cookie", "Form"]
@@ -495,8 +494,7 @@ def _extract_request_body_for_queue(
                         processed_dict[dict_key] = dict_value
                 request_body_dict.update(processed_dict)
             else:
-                # 其他基础类型只有在不是 int/str 查询参数时才添加
-                # 检查参数默认值，如果有默认值说明可能是查询参数
+                # 其他基础类型只有在不是 int/str 查询参数时才添加，检查参数默认值，如果有默认值说明可能是查询参数
                 if key in sig.parameters:
                     param: inspect.Parameter = sig.parameters[key]
                     # 如果参数有默认值且类型是基础类型（int/str/bool），很可能是查询参数，跳过

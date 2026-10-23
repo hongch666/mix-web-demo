@@ -118,8 +118,7 @@ class SpringClient:
             timeout=timeout,
         )
         data: dict[str, Any] = result.get("data") or {}
-        # spring 的 PageVO 序列化后字段为 total/list；统一归一化为
-        # {total, records}，方便各调用方（vector/neo4j 同步等）直接读取
+        # spring 的 PageVO 序列化后字段为 total/list；统一归一化为，{total, records}，方便各调用方（vector/neo4j 同步等）直接读取
         return {
             "total": int(data.get("total") or 0),
             "records": data.get("list") or data.get("records") or [],

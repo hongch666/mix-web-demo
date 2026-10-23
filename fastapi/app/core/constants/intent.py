@@ -35,8 +35,7 @@ class IntentConstants:
     # 受限意图，需要登录并逐项做工具权限校验
     RESTRICTED: tuple[IntentType, ...] = ("database_query", "log_analysis")
 
-    # 意图关键词表，按优先级排列，文本降级链路用它把模型输出映射为意图并补充多领域信号
-    # 键为意图类型；纯 ASCII 关键词按词边界匹配，避免 log 命中 blog
+    # 意图关键词表，按优先级排列，文本降级链路用它把模型输出映射为意图并补充多领域信号，键为意图类型；纯 ASCII 关键词按词边界匹配，避免 log 命中 blog
     MARKERS: tuple[tuple[str, tuple[str, ...]], ...] = (
         (
             "database_query",

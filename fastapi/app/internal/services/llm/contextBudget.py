@@ -255,8 +255,7 @@ def plan_chat_context(
     if foldable_rounds:
         compact_targets = foldable_rounds
     elif near_limit and len(window) > config.keep_rounds:
-        # 尚未溢出但已接近预算，提前折叠保留窗口之外的轮次；
-        # 这些轮次本轮仍在注入窗口内，会与本轮生成的摘要重复一次，下一轮水位线生效后消失
+        # 尚未溢出但已接近预算，提前折叠保留窗口之外的轮次；这些轮次本轮仍在注入窗口内，会与本轮生成的摘要重复一次，下一轮水位线生效后消失
         compact_targets = history[: len(history) - config.keep_rounds]
     else:
         compact_targets = []

@@ -75,8 +75,7 @@ def shutdown_langsmith() -> None:
 
     if _client is not None:
         try:
-            # LangSmith client 通常不需要显式 flush，
-            # 但为了完整性保留此接口
+            # LangSmith client 通常不需要显式 flush，但为了完整性保留此接口
             Logger.info(Messages.LANGSMITH_CLIENT_CLOSED)
         except Exception as e:
             Logger.warning(Messages.LANGSMITH_CLIENT_CLOSE_FAILED(e))

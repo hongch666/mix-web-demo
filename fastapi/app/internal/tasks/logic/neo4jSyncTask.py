@@ -13,12 +13,10 @@ from app.internal.clients import SpringClient, get_spring_client
 class KnowledgeGraphSyncService:
     """知识图谱同步服务：将 MySQL 业务数据同步到 Neo4j"""
 
-    # 同步抓取专用超时（秒）：全量数据行较多，且需与并发批量评分/文章列表等
-    # 任务抢占 spring R2DBC 连接池，故单独使用较大超时，避免命中默认 5s 读取超时
+    # 同步抓取专用超时（秒）：全量数据行较多，且需与并发批量评分/文章列表等，任务抢占 spring R2DBC 连接池，故单独使用较大超时，避免命中默认 5s 读取超时
     SYNC_FETCH_TIMEOUT: int = 30
 
-    # 清理分批大小：每批单独提交事务，避免单事务 DELETE 过多关系击穿
-    # Neo4j 事务内存上限（dbms.memory.transaction.total.max）
+    # 清理分批大小：每批单独提交事务，避免单事务 DELETE 过多关系击穿，Neo4j 事务内存上限（dbms.memory.transaction.total.max）
     CLEANUP_BATCH_SIZE: int = 1000
 
     def __init__(
@@ -79,13 +77,9 @@ class KnowledgeGraphSyncService:
     ) -> dict[str, list[dict[str, Any]]]:
         """通过Spring各模块独立接口并行获取业务表数据，避免直连MySQL"""
         updated_after = last_sync_time.isoformat() if last_sync_time else None
-        # 同步类抓取返回数据量可能较大（全量几千行），使用专用大超时避免命中
-        # 远程调用默认 5s 读取超时；与并发批量评分/文章列表等任务抢占 spring
-        # R2DBC 连接池时尤为必要
+        # 同步类抓取返回数据量可能较大（全量几千行），使用专用大超时避免命中，远程调用默认 5s 读取超时；与并发批量评分/文章列表等任务抢占 spring，R2DBC 连接池时尤为必要
         fetch_timeout = self.SYNC_FETCH_TIMEOUT
-        # 分类/子分类是基础维度，数据量小（通常数十~数百条）且极少变更
-        # 增量同步窗口内它们常无更新，若走 updated_after 会导致快照为空、
-        # 基础节点永远无法写入 Neo4j，故始终全量抓取，确保基础维度完整
+        # 分类/子分类是基础维度，数据量小（通常数十~数百条）且极少变更，增量同步窗口内它们常无更新，若走 updated_after 会导致快照为空、基础节点永远无法写入 Neo4j，故始终全量抓取，确保基础维度完整
         categories_after = None
         sub_categories_after = None
         (
@@ -274,8 +268,7 @@ class KnowledgeGraphSyncService:
     async def _cleanup_write(
         self, cypher: str, params: dict[str, Any], label: str
     ) -> int:
-        # 防御性保护：当待保留的键集合为空时，Cypher 的 `WHERE NOT key IN []`
-        # 会等价于 `WHERE true`，从而误删图中全部对应关系/节点，这通常意味着上游快照抓取失败（返回空），属于异常情况，必须跳过而非执行全量删除
+        # 防御性保护：当待保留的键集合为空时，Cypher 的 `WHERE NOT key IN []`，会等价于 `WHERE true`，从而误删图中全部对应关系/节点，这通常意味着上游快照抓取失败（返回空），属于异常情况，必须跳过而非执行全量删除
         """按保留键分批清理图谱中已不存在的节点或关系，保留键为空时跳过防误删"""
         keep_keys = params.get("keys") or params.get("ids") or params.get("names")
         if not keep_keys:
@@ -283,9 +276,7 @@ class KnowledgeGraphSyncService:
             return 0
         total_deleted = 0
         if "keys" in params:
-            # 关系类清理（`DELETE r`，通过 `WHERE NOT key IN $keys` 删关系）：
-            # 可分批执行，每批单独提交事务，避免单事务内删除过多关系击穿
-            # Neo4j 事务内存上限（dbms.memory.transaction.total.max）
+            # 关系类清理（`DELETE r`，通过 `WHERE NOT key IN $keys` 删关系）：可分批执行，每批单独提交事务，避免单事务内删除过多关系击穿，Neo4j 事务内存上限（dbms.memory.transaction.total.max）
             batch_size = self.CLEANUP_BATCH_SIZE
             for start in range(0, len(keep_keys), batch_size):
                 batch = keep_keys[start : start + batch_size]

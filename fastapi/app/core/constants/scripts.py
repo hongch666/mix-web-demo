@@ -380,9 +380,7 @@ class Scripts:
 
     # ===== 图谱搜索增强 Cypher（只读查询） =====
 
-    # 信号1：用户兴趣标签 — 候选文章与用户点赞文章共享的标签数
-    # 路径: User-LIKES-Article-TAGGED_AS-Tag
-    # 入参: userId, articleIds  /  返回: articleId, rawScore, matchedTags
+    # 信号1：用户兴趣标签 — 候选文章与用户点赞文章共享的标签数，路径: User-LIKES-Article-TAGGED_AS-Tag，入参: userId, articleIds / 返回: articleId, rawScore, matchedTags
     GRAPH_SEARCH_TAG_INTEREST_CYPHER: str = """
         MATCH (u:User {id: $userId})-[:LIKES]->(liked:Article)-[:TAGGED_AS]->(tag:Tag)
         MATCH (cand:Article)-[:TAGGED_AS]->(tag)
@@ -391,9 +389,7 @@ class Scripts:
         RETURN articleId, size(matchedTags) AS rawScore, matchedTags
     """
 
-    # 信号2：关注作者 — 候选文章作者是否在用户关注列表里
-    # 路径: User-FOLLOWS-User-PUBLISHED_BY-Article
-    # 入参: userId, articleIds  /  返回: articleId, names
+    # 信号2：关注作者 — 候选文章作者是否在用户关注列表里，路径: User-FOLLOWS-User-PUBLISHED_BY-Article，入参: userId, articleIds / 返回: articleId, names
     GRAPH_SEARCH_FOLLOWED_AUTHOR_CYPHER: str = """
         MATCH (u:User {id: $userId})-[:FOLLOWS]->(followed:User)<-[:PUBLISHED_BY]-(cand:Article)
         WHERE cand.id IN $articleIds
@@ -413,9 +409,7 @@ class Scripts:
         RETURN articleId, size(names) AS rawScore, names
     """
 
-    # 信号4：候选间相似标签 — 候选文章两两之间共享的标签数
-    # 路径: Article-TAGGED_AS-Tag-TAGGED_AS-Article
-    # 入参: articleIds  /  返回: articleId, rawScore, names
+    # 信号4：候选间相似标签 — 候选文章两两之间共享的标签数，路径: Article-TAGGED_AS-Tag-TAGGED_AS-Article，入参: articleIds / 返回: articleId, rawScore, names
     GRAPH_SEARCH_CANDIDATE_SIMILARITY_CYPHER: str = """
         MATCH (cand:Article)-[:TAGGED_AS]->(tag:Tag)<-[:TAGGED_AS]-(other:Article)
         WHERE cand.id IN $articleIds
@@ -425,9 +419,7 @@ class Scripts:
         RETURN articleId, size(names) AS rawScore, names
     """
 
-    # 信号5：关键词标签命中 — 候选文章中包含关键词相关标签的文章
-    # 路径: Article-TAGGED_AS-Tag
-    # 入参: articleIds, keyword  /  返回: articleId, rawScore, names
+    # 信号5：关键词标签命中 — 候选文章中包含关键词相关标签的文章，路径: Article-TAGGED_AS-Tag，入参: articleIds, keyword / 返回: articleId, rawScore, names
     GRAPH_SEARCH_KEYWORD_TAG_CYPHER: str = """
         MATCH (cand:Article)-[:TAGGED_AS]->(tag:Tag)
         WHERE cand.id IN $articleIds AND tag.name CONTAINS $keyword

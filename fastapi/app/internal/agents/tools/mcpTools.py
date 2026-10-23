@@ -85,8 +85,7 @@ class MCPServerTools:
         # Column 标注的属性静态类型是 Column[T]，先读入运行期 str 局部变量
         server_name: str = str(config.server_name)
         server_key: str = self._sanitize_server_name(server_name)
-        # langchain-mcp-adapters >= 0.3 已移除 async 上下文管理器，
-        # 直接实例化后 get_tools：会话在每次工具调用时按需建立并关闭
+        # langchain-mcp-adapters >= 0.3 已移除 async 上下文管理器，直接实例化后 get_tools：会话在每次工具调用时按需建立并关闭
         client = MultiServerMCPClient(self._build_connections(config, server_key))
         remote_tools: list[BaseTool] = await client.get_tools()
 
@@ -133,8 +132,7 @@ class MCPServerTools:
         server_name: str = str(config.server_name)
         server_key: str = self._sanitize_server_name(server_name)
         try:
-            # langchain-mcp-adapters >= 0.3 已移除 async 上下文管理器，
-            # 直接实例化后 get_tools：会话在每次工具调用时按需建立并关闭
+            # langchain-mcp-adapters >= 0.3 已移除 async 上下文管理器，直接实例化后 get_tools：会话在每次工具调用时按需建立并关闭
             client = MultiServerMCPClient(self._build_connections(config, server_key))
             remote_tools: list[BaseTool] = await client.get_tools()
             target: Optional[BaseTool] = next(

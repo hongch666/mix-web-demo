@@ -250,8 +250,7 @@ class Neo4jQueryTools:
 
         handler = self._ogm_handlers.get(query_name)
         if handler is not None:
-            # 能用 OGM 函数表达的图谱查询走 neomodel 对象遍历，
-            # 与原始 Cypher 路径一样先确保连接可用
+            # 能用 OGM 函数表达的图谱查询走 neomodel 对象遍历，与原始 Cypher 路径一样先确保连接可用
             if not await self.client.connect():
                 return Messages.NEO4J_SERVICE_UNAVAILABLE_MESSAGE
             try:
