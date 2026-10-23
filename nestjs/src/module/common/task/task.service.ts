@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
+import { trace } from "@opentelemetry/api";
 import { Defaults, Messages, RedisKeys } from "src/common/constants";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { taskDuration, taskRuns } from "../telemetry/metrics";
@@ -26,6 +27,25 @@ export class TaskService {
    */
   @Cron("0 0 2 * * *")
   async cleanupOldApiLogs(): Promise<void> {
+    // 定时任务没有请求入口，手动开启一段根 span，让本次执行的日志关联到同一个 trace_id
+    await trace
+      .getTracer(Defaults.OTEL_TRACER_NAME)
+      .startActiveSpan("job:api-log-cleanup", async (span) => {
+        try {
+          await this.runCleanupWithLock();
+        } catch (error: unknown) {
+          span.recordException(error as Error);
+          throw error;
+        } finally {
+          span.end();
+        }
+      });
+  }
+
+  /**
+   * 清理任务的完整流程：分布式锁获取与释放、运行次数与耗时指标、锁相关日志
+   */
+  private async runCleanupWithLock(): Promise<void> {
     const lockKey = RedisKeys.LOCK_TASK_API_LOG_CLEANUP;
     const lockExpire = Defaults.LOCK_TASK_API_LOG_CLEANUP_EXPIRE;
 

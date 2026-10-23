@@ -1,6 +1,7 @@
 import { RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
 import { Injectable, OnApplicationShutdown } from "@nestjs/common";
 import { Interval } from "@nestjs/schedule";
+import { trace } from "@opentelemetry/api";
 import { Defaults, Messages } from "src/common/constants";
 import { BatchBuffer } from "src/common/utils/batchBuffer";
 import { LoggerService } from "src/module/common/logger/logger.service";
@@ -47,7 +48,19 @@ export class LogConsumerService implements OnApplicationShutdown {
    */
   @Interval(Defaults.LOG_BATCH_FLUSH_INTERVAL_MS)
   async flushPendingLogs(): Promise<void> {
-    await this.batchBuffer.flush();
+    // 定时 flush 没有请求入口，手动开启一段根 span，让批次日志关联到本次执行
+    await trace
+      .getTracer(Defaults.OTEL_TRACER_NAME)
+      .startActiveSpan("job:article-log-flush", async (span) => {
+        try {
+          await this.batchBuffer.flush();
+        } catch (error: unknown) {
+          span.recordException(error as Error);
+          throw error;
+        } finally {
+          span.end();
+        }
+      });
   }
 
   /**

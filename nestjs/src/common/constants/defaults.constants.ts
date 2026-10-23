@@ -12,6 +12,10 @@ export class Defaults {
   // ===== Redis 分布式锁过期时间 =====
   static readonly LOCK_TASK_API_LOG_CLEANUP_EXPIRE = 3600;
 
+  // ===== 链路追踪 =====
+  /** 手动创建 span 时使用的 tracer 名称：定时任务等无请求入口的场景 */
+  static readonly OTEL_TRACER_NAME = "nestjs";
+
   // ===== 日志保留期限 =====
   /** 日志保留月数：API 日志与文章日志超过该期限后由定时任务分批清理 */
   static readonly LOG_RETENTION_MONTHS = 3;
