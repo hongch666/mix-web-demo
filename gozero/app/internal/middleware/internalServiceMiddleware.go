@@ -20,8 +20,7 @@ func NewInternalServiceMiddleware(log *utils.ZeroLogger) *InternalServiceMiddlew
 	return &InternalServiceMiddleware{ZeroLogger: log}
 }
 
-// validateInternalToken 从上下文中提取并校验内部令牌（公共逻辑）
-// 返回 claims、错误响应是否已发送、是否应该继续处理
+// validateInternalToken 从上下文中提取并校验内部令牌（公共逻辑），返回 claims、错误响应是否已发送、是否应该继续处理
 func validateInternalToken(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -71,8 +70,7 @@ func validateInternalToken(
 	return true
 }
 
-// Handle 处理内部服务令牌验证（不校验服务名称）
-// serviceName 为空表示不验证服务名称
+// Handle 处理内部服务令牌验证（不校验服务名称），serviceName 为空表示不验证服务名称
 func (m *InternalServiceMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !validateInternalToken(w, r, m, "") {

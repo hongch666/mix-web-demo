@@ -1,5 +1,4 @@
-// Package pubsub 提供基于 Redis Pub/Sub 的跨实例消息总线
-// 单个 RedisPubSub 实例对应单一频道，频道在构造时确定
+// Package pubsub 提供基于 Redis Pub/Sub 的跨实例消息总线，单个 RedisPubSub 实例对应单一频道，频道在构造时确定
 package pubsub
 
 import (
@@ -17,8 +16,7 @@ import (
 // MessageHandler 处理跨实例实时消息
 type MessageHandler func(payload []byte)
 
-// RedisPubSub 基于 Redis Pub/Sub 的跨实例消息总线
-// 每个实例只订阅并发布构造时绑定的那个频道
+// RedisPubSub 基于 Redis Pub/Sub 的跨实例消息总线，每个实例只订阅并发布构造时绑定的那个频道
 type RedisPubSub struct {
 	client  *redis.Client
 	logger  *utils.ZeroLogger

@@ -79,16 +79,14 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		},
 	)
 
-	// 脚本模板、权重与脚本参数名映射任一失败都降级为普通 ES 条件分页查询
-	// 权重缺失后无法计算融合权重，故降级路径同时放弃召回放大与向量、图谱增强
+	// 脚本模板、权重与脚本参数名映射任一失败都降级为普通 ES 条件分页查询，权重缺失后无法计算融合权重，故降级路径同时放弃召回放大与向量、图谱增强
 	degraded := scriptErr != nil || weightsErr != nil || paramErr != nil
 	if degraded {
 		mode = "keyword"
 		l.Warningf(constants.SEARCH_SCRIPTS_FETCH_DEGRADE_LOG, scriptErr, weightsErr, paramErr)
 	}
 
-	// 解析 ES 召回窗口：浅页放大召回后由业务层切页，深页维持窗口内重排
-	// 降级路径不做融合重排，直接按请求页码与页大小查询
+	// 解析 ES 召回窗口：浅页放大召回后由业务层切页，深页维持窗口内重排，降级路径不做融合重排，直接按请求页码与页大小查询
 	queryPage, querySize := page, size
 	amplified := false
 	if !degraded {

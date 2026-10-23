@@ -64,8 +64,7 @@ func toESDatePtr(raw string) *string {
 
 // SyncArticlesToES 增量同步文章到 ElasticSearch
 func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
-	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
-	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id，Logger 未注入时保持 nil，由各日志点自行判空跳过
 	var logger *utils.ZeroLogger
 	if svcCtx.Logger != nil {
 		logger = svcCtx.Logger.WithContext(ctx)
@@ -196,8 +195,7 @@ func buildArticleESBatchFromRemote(
 	categoryMap map[int64]string,
 	subCategoryMap map[int64]string,
 ) ([]search.ArticleES, error) {
-	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
-	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id，Logger 未注入时保持 nil，由各日志点自行判空跳过
 	var logger *utils.ZeroLogger
 	if svcCtx.Logger != nil {
 		logger = svcCtx.Logger.WithContext(ctx)
@@ -403,8 +401,7 @@ func buildArticleESBatchFromRemote(
 
 // loadExistingESArticles 滚动扫描 articles 索引，构造文档 ID 到内容哈希的映射供增量比对
 func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (map[int64]string, error) {
-	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
-	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id，Logger 未注入时保持 nil，由各日志点自行判空跳过
 	var logger *utils.ZeroLogger
 	if svcCtx.Logger != nil {
 		logger = svcCtx.Logger.WithContext(ctx)
@@ -483,8 +480,7 @@ func deleteStaleESArticles(ctx context.Context, svcCtx *svc.ServiceContext, stal
 
 // executeESBulk 执行 ES 批量请求，存在失败项时记录详情并返回错误
 func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest *elastic.BulkService) error {
-	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
-	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id，Logger 未注入时保持 nil，由各日志点自行判空跳过
 	var logger *utils.ZeroLogger
 	if svcCtx.Logger != nil {
 		logger = svcCtx.Logger.WithContext(ctx)
@@ -513,11 +509,9 @@ func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest 
 	return fmt.Errorf("%s", constants.ES_SYNC_HAS_FAILURES_MESSAGE)
 }
 
-// SyncArticleESChanges 按主键精确同步文章到 ElasticSearch
-// delete 直接删除文档，insert、update 拉取快照后按内容 hash 决定是否写入
+// SyncArticleESChanges 按主键精确同步文章到 ElasticSearch，delete 直接删除文档，insert、update 拉取快照后按内容 hash 决定是否写入
 func SyncArticleESChanges(ctx context.Context, svcCtx *svc.ServiceContext, changeType string, ids []int64) error {
-	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
-	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id，Logger 未注入时保持 nil，由各日志点自行判空跳过
 	var logger *utils.ZeroLogger
 	if svcCtx.Logger != nil {
 		logger = svcCtx.Logger.WithContext(ctx)
@@ -554,8 +548,7 @@ func SyncArticleESChanges(ctx context.Context, svcCtx *svc.ServiceContext, chang
 
 // upsertESArticlesByIDs 按主键拉取文章快照并写入 ES
 func upsertESArticlesByIDs(ctx context.Context, svcCtx *svc.ServiceContext, ids []int64) error {
-	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
-	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id，Logger 未注入时保持 nil，由各日志点自行判空跳过
 	var logger *utils.ZeroLogger
 	if svcCtx.Logger != nil {
 		logger = svcCtx.Logger.WithContext(ctx)
@@ -651,8 +644,7 @@ func deleteESArticlesByIDs(ctx context.Context, svcCtx *svc.ServiceContext, ids 
 
 // ensureArticlesIndex 确保文章索引存在
 func ensureArticlesIndex(ctx context.Context, svcCtx *svc.ServiceContext) error {
-	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id
-	// Logger 未注入时保持 nil，由各日志点自行判空跳过
+	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id，Logger 未注入时保持 nil，由各日志点自行判空跳过
 	var logger *utils.ZeroLogger
 	if svcCtx.Logger != nil {
 		logger = svcCtx.Logger.WithContext(ctx)
@@ -681,9 +673,7 @@ func hashArticleES(doc search.ArticleES) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
-// logAndWrapError 记录错误日志并返回附加了上下文信息的包装错误
-// logAndWrapError 记录错误日志并返回附加了上下文信息的包装错误
-// logger 由调用方从执行上下文派生，保证错误日志带上当前请求或任务的 trace_id
+// logAndWrapError 记录错误日志并返回附加了上下文信息的包装错误 logger 由调用方从执行上下文派生，保证错误日志带上当前请求或任务的 trace_id
 func logAndWrapError(logger *utils.ZeroLogger, message string, err error) error {
 	if logger != nil {
 		logger.Error(fmt.Sprintf("%s: %v", message, err))

@@ -61,9 +61,7 @@ func (m *chatMessageModelFake) MarkChatHistoryAsRead(_ context.Context, _, _ int
 	return m.markErr
 }
 
-// newChatTestLogger 创建测试用日志器并在测试结束后释放
-// t.Cleanup 按后进先出执行：先关日志再清理临时目录，
-// 否则 Windows 下日志文件句柄未释放会导致清理失败
+// newChatTestLogger 创建测试用日志器并在测试结束后释放，t.Cleanup 按后进先出执行：先关日志再清理临时目录，否则 Windows 下日志文件句柄未释放会导致清理失败
 func newChatTestLogger(t *testing.T) *utils.ZeroLogger {
 	t.Helper()
 	logger, err := utils.NewZeroLogger(t.TempDir())

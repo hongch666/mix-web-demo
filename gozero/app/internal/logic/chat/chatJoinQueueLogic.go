@@ -39,8 +39,7 @@ func (l *ChatJoinQueueLogic) ChatJoinQueue(req *types.ChatJoinQueueReq) (resp *t
 	if l.svcCtx.ChatHub.IsUserInQueue(req.UserId) {
 		resp.Status = constants.USER_ALREADY_IN_QUEUE
 	} else {
-		// 创建一个虚拟的客户端（没有WebSocket连接）
-		// 带上本请求的 logger，入队日志才能关联到当前请求的 trace_id
+		// 创建一个虚拟的客户端（没有WebSocket连接），带上本请求的 logger，入队日志才能关联到当前请求的 trace_id
 		client := &hub.Client{
 			UserID:     req.UserId,
 			Conn:       nil, // 没有WebSocket连接

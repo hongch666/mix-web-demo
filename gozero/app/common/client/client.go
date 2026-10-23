@@ -111,8 +111,7 @@ func (sd *ServiceDiscovery) service(serviceName string) httpc.Service {
 	return svc
 }
 
-// Close 释放远程调用持有的连接资源
-// httpc 的 Service 接口不暴露底层客户端，只能在此关闭连接池中的空闲连接
+// Close 释放远程调用持有的连接资源，httpc 的 Service 接口不暴露底层客户端，只能在此关闭连接池中的空闲连接
 func (sd *ServiceDiscovery) Close() {
 	if sd == nil || sd.httpClient == nil {
 		return

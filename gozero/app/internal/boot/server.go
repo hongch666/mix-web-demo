@@ -46,8 +46,7 @@ func CreateServer(c config.Config, ctx *svc.ServiceContext) *rest.Server {
 	return server
 }
 
-// registerTaskScheduler 按开关注册本地定时任务调度器
-// 开关关闭时不注册本地任务，改由外部调度器（DolphinScheduler）触发 /task/* 接口
+// registerTaskScheduler 按开关注册本地定时任务调度器，开关关闭时不注册本地任务，改由外部调度器（DolphinScheduler）触发 /task/* 接口
 func registerTaskScheduler(c config.Config, ctx *svc.ServiceContext) {
 	if !c.Task.Enabled {
 		if ctx.Logger != nil {

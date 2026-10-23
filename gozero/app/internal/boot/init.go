@@ -24,8 +24,7 @@ func GetConfigFilePath() string {
 	return configFile
 }
 
-// Run 启动应用服务
-// 这是应用程序的主启动函数，可从 main 函数中调用
+// Run 启动应用服务，这是应用程序的主启动函数，可从 main 函数中调用
 func Run(configFile string) error {
 	// 加载配置
 	cfg := LoadConfig(configFile)

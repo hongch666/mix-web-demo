@@ -76,8 +76,7 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 	}
 	from := (page - 1) * size
 
-	// 脚本模板与权重齐备时走 ScriptScoreQuery 复合打分
-	// 任一缺失说明 FastAPI 侧脚本三件套获取失败，此处退化为普通条件查询，只依赖 BM25 相关度
+	// 脚本模板与权重齐备时走 ScriptScoreQuery 复合打分，任一缺失说明 FastAPI 侧脚本三件套获取失败，此处退化为普通条件查询，只依赖 BM25 相关度
 	var finalQuery elastic.Query = boolQuery
 	if esScript != "" && weights != nil {
 		scoreScript := elastic.NewScript(esScript).
@@ -170,8 +169,7 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 			authorUserIDs = append(authorUserIDs, article.UserID)
 		}
 
-		// ES 文档里的阅读量、点赞、收藏、粉丝与评分都是同步快照
-		// 检索时统一用 Spring 实时值覆盖，失败则保留 ES 文档原值作为降级
+		// ES 文档里的阅读量、点赞、收藏、粉丝与评分都是同步快照，检索时统一用 Spring 实时值覆盖，失败则保留 ES 文档原值作为降级
 		var viewsResult, likeResult, collectResult, followResult, commentScoreResult client.Result
 		var viewsErr, likeErr, collectErr, followErr, commentScoreErr error
 
@@ -206,8 +204,7 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 			commentScoreResult,
 		)
 
-		// 回填失败的指标跳过覆盖，保留 ES 文档原值作为降级，不阻断搜索主链路
-		// 调用失败与响应结构不符契约（解析失败）一并计入：解析静默失败会让统计与评分长期显示 ES 旧值
+		// 回填失败的指标跳过覆盖，保留 ES 文档原值作为降级，不阻断搜索主链路，调用失败与响应结构不符契约（解析失败）一并计入：解析静默失败会让统计与评分长期显示 ES 旧值
 		metrics := constants.SEARCH_STATS_FILL_METRICS
 		fillErrors := []error{
 			firstError(viewsErr, viewsParseErr),
@@ -247,9 +244,7 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 	return articles, total, nil
 }
 
-// getParamName 从脚本参数映射中获取参数名，返回 FastAPI 定义的脚本参数名
-// paramMap: 从 FastAPI 获取的 weight_key → param_name 映射
-// weightKey: FastAPI 定义的权重 key
+// getParamName 从脚本参数映射中获取参数名，返回 FastAPI 定义的脚本参数名，paramMap: 从 FastAPI 获取的 weight_key → param_name 映射，weightKey: FastAPI 定义的权重 key
 func getParamName(paramMap ScriptParamMapping, weightKey string) string {
 	if paramMap != nil {
 		if name, ok := paramMap[weightKey]; ok && name != "" {
@@ -269,8 +264,7 @@ func firstError(errs ...error) error {
 	return nil
 }
 
-// applyCommentScores 用 Spring 实时评分覆盖 ES 快照中的 AI 与用户评分及其评论数
-// 某类评分缺失（没有该类评论或评分接口降级）时保留 ES 文档原值，与其它统计字段口径一致
+// applyCommentScores 用 Spring 实时评分覆盖 ES 快照中的 AI 与用户评分及其评论数，某类评分缺失（没有该类评论或评分接口降级）时保留 ES 文档原值，与其它统计字段口径一致
 func applyCommentScores(article *ArticleES, scores map[string]springClient.CommentScoreVO) {
 	if aiScores, ok := scores["ai"]; ok {
 		article.AIScore = aiScores.AverageScore

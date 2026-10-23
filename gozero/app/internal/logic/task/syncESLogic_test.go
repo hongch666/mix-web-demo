@@ -39,8 +39,7 @@ func newSyncESTestContext(t *testing.T) *svc.ServiceContext {
 	if err != nil {
 		t.Fatalf("创建测试日志器失败: %v", err)
 	}
-	// t.Cleanup 按后进先出执行：先关日志再清理临时目录，
-	// 否则 Windows 下日志文件句柄未释放会导致清理失败
+	// t.Cleanup 按后进先出执行：先关日志再清理临时目录，否则 Windows 下日志文件句柄未释放会导致清理失败
 	t.Cleanup(func() { _ = logger.Close() })
 	return &svc.ServiceContext{
 		RuntimeContext: &svc.RuntimeContext{Context: context.Background()},
@@ -120,8 +119,7 @@ func TestSyncESReturnsBeforeBackgroundSyncCompletes(t *testing.T) {
 	logic := NewSyncESLogic(context.Background(), svcCtx)
 	t.Cleanup(func() { _ = logic.ZeroLogger.Close() })
 
-	// 用阻塞的同步函数配合真实的后台执行方式，验证接口先于后台任务返回
-	// backgroundDone 在后台任务完全结束后关闭，保证测试清理不与日志写入竞态
+	// 用阻塞的同步函数配合真实的后台执行方式，验证接口先于后台任务返回，backgroundDone 在后台任务完全结束后关闭，保证测试清理不与日志写入竞态
 	release := make(chan struct{})
 	backgroundDone := make(chan struct{})
 	originalDispatch := runSyncInBackground

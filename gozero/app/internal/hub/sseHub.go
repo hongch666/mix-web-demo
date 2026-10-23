@@ -37,8 +37,7 @@ func NewSSEHub(logger *utils.ZeroLogger) *SSEHubManager {
 	}
 }
 
-// RegisterClient 注册SSE客户端
-// hub 是跨请求单例，日志所需链路只能由调用点传入，因此这里显式接收 context
+// RegisterClient 注册SSE客户端，hub 是跨请求单例，日志所需链路只能由调用点传入，因此这里显式接收 context
 func (hub *SSEHubManager) RegisterClient(ctx context.Context, userID int64, connectionID string, sendCh chan any, closeCh chan bool) {
 	if connectionID == "" {
 		return
@@ -62,8 +61,7 @@ func (hub *SSEHubManager) RegisterClient(ctx context.Context, userID int64, conn
 	}
 }
 
-// UnregisterClient 注销SSE客户端
-// 通过 connectionID 进行身份校验，防止旧连接的 defer 误关闭新连接
+// UnregisterClient 注销SSE客户端，通过 connectionID 进行身份校验，防止旧连接的 defer 误关闭新连接
 func (hub *SSEHubManager) UnregisterClient(ctx context.Context, userID int64, connectionID string) {
 	if connectionID == "" {
 		return
@@ -87,8 +85,7 @@ func (hub *SSEHubManager) UnregisterClient(ctx context.Context, userID int64, co
 	}
 }
 
-// SendNotificationToUser 发送通知给特定用户
-// ctx 由触发本次推送的链路（请求、定时任务或 MQ 消费）提供，日志据此关联 trace_id
+// SendNotificationToUser 发送通知给特定用户，ctx 由触发本次推送的链路（请求、定时任务或 MQ 消费）提供，日志据此关联 trace_id
 func (hub *SSEHubManager) SendNotificationToUser(ctx context.Context, userID int64, notification *types.ChatSSEMessage) {
 	logger := hub.ZeroLogger
 	if logger != nil {
@@ -164,9 +161,7 @@ func (hub *SSEHubManager) BroadcastNotification(ctx context.Context, notificatio
 	}
 }
 
-// HandleConnection 处理 SSE 连接的完整生命周期
-// 包括：注册客户端、发送初始化消息、事件循环（心跳+消息分发）
-// Handler 层只需调用此方法，无需关心 SSE 协议细节
+// HandleConnection 处理 SSE 连接的完整生命周期，包括：注册客户端、发送初始化消息、事件循环（心跳+消息分发），Handler 层只需调用此方法，无需关心 SSE 协议细节
 func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Request, userID int64) {
 	// 设置SSE响应头
 	w.Header().Set("Content-Type", "text/event-stream")

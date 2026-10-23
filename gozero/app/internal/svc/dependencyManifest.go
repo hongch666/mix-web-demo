@@ -16,9 +16,7 @@ type dependencyEntry struct {
 	missing  bool
 }
 
-// validateDependencies 在组合根装配完成后统一校验依赖清单
-// 必需依赖（服务发现/聊天持久化/搜索核心）缺失时 panic 快速失败
-// 可选依赖缺失时打一条聚合降级日志，服务以降级能力继续运行
+// validateDependencies 在组合根装配完成后统一校验依赖清单，必需依赖（服务发现/聊天持久化/搜索核心）缺失时 panic 快速失败，可选依赖缺失时打一条聚合降级日志，服务以降级能力继续运行
 func validateDependencies(ic *InfrastructureContext) {
 	entries := []dependencyEntry{
 		{name: "nacos", required: true, missing: ic.NamingClient == nil},

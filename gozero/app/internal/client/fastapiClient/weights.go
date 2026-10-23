@@ -19,16 +19,14 @@ type ScoreWeightItem struct {
 	Description string  `json:"description"`
 }
 
-// ScriptParamItem FastAPI 返回的脚本参数名映射项
-// 告知 GoZero 每个权重 key 在 Painless 脚本中对应的 params.xxx 参数名
+// ScriptParamItem FastAPI 返回的脚本参数名映射项，告知 GoZero 每个权重 key 在 Painless 脚本中对应的 params.xxx 参数名
 type ScriptParamItem struct {
 	WeightKey   string `json:"weight_key"`
 	ParamName   string `json:"param_name"`
 	Description string `json:"description"`
 }
 
-// parseWeights 从 key-value 列表解析为结构化权重
-// 出现未知权重键时返回错误：静默忽略会让该权重长期为 0，且不会留下任何日志
+// parseWeights 从 key-value 列表解析为结构化权重，出现未知权重键时返回错误：静默忽略会让该权重长期为 0，且不会留下任何日志
 func parseWeights(items []ScoreWeightItem) (search.SearchWeights, error) {
 	w := search.SearchWeights{}
 	for _, item := range items {
@@ -210,8 +208,7 @@ func (c *FastapiClient) GetSearchWeights(ctx context.Context) (search.SearchWeig
 	return w, nil
 }
 
-// GetSearchScript 从 FastAPI 获取 ES 搜索脚本模板（缓存 60s）
-// 返回使用 params.xxx 占位符的 Painless 脚本，由调用方通过 elastic.NewScript(script).Param(...) 传入权重后使用
+// GetSearchScript 从 FastAPI 获取 ES 搜索脚本模板（缓存 60s），返回使用 params.xxx 占位符的 Painless 脚本，由调用方通过 elastic.NewScript(script).Param(...) 传入权重后使用
 func (c *FastapiClient) GetSearchScript(ctx context.Context) (search.SearchScript, error) {
 	// 读缓存
 	scriptCacheMutex.RLock()

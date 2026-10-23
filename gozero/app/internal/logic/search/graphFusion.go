@@ -81,8 +81,7 @@ func NewFusionEngine(cfg FusionConfig) *FusionEngine {
 	}
 }
 
-// meanOfVectorItems 计算向量增强结果的均值
-// 该均值用于填充未被向量召回的候选，避免把「未匹配」当成零分
+// meanOfVectorItems 计算向量增强结果的均值，该均值用于填充未被向量召回的候选，避免把「未匹配」当成零分
 func meanOfVectorItems(items []fastapiClient.VectorEnhanceItem) float64 {
 	if len(items) == 0 {
 		return 0
@@ -95,8 +94,7 @@ func meanOfVectorItems(items []fastapiClient.VectorEnhanceItem) float64 {
 	return sum / float64(len(items))
 }
 
-// meanOfGraphItems 计算图谱增强结果的均值
-// 该均值用于填充未被图谱召回的候选，避免把「无关系」当成零分
+// meanOfGraphItems 计算图谱增强结果的均值，该均值用于填充未被图谱召回的候选，避免把「无关系」当成零分
 func meanOfGraphItems(items []fastapiClient.GraphEnhanceItem) float64 {
 	if len(items) == 0 {
 		return 0
@@ -223,8 +221,7 @@ func MergeAndRerank(
 	return articles
 }
 
-// FillDefaultScores 未启用增强时保留 ES 原排序，同时填充分数字段便于前端统一展示
-// 归一化分母同样取候选集内最大 ES 分，与 MergeAndRerank 保持一致
+// FillDefaultScores 未启用增强时保留 ES 原排序，同时填充分数字段便于前端统一展示，归一化分母同样取候选集内最大 ES 分，与 MergeAndRerank 保持一致
 func FillDefaultScores(articles []types.ArticleEsItem) {
 	maxEsScore := 0.0
 	for _, article := range articles {

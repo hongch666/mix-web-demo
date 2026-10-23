@@ -79,8 +79,7 @@ func closeIfNeeded(c any) {
 	}
 }
 
-// Close 释放三个远程客户端持有的连接池
-// 三个字段均为业务契约接口（测试用 mock 实现），生命周期方法不并入接口，故统一按需断言
+// Close 释放三个远程客户端持有的连接池，三个字段均为业务契约接口（测试用 mock 实现），生命周期方法不并入接口，故统一按需断言
 func (cc *ClientContext) Close() {
 	if cc == nil {
 		return

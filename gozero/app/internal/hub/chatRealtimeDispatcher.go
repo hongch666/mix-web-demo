@@ -29,8 +29,7 @@ func NewChatRealtimeDispatcher(
 	}
 }
 
-// Handle 处理一条聊天实时事件，并投递到当前 Pod 的连接
-// ctx 由事件来源提供：Redis 订阅回调用服务上下文，同进程发送用当前请求的上下文
+// Handle 处理一条聊天实时事件，并投递到当前 Pod 的连接，ctx 由事件来源提供：Redis 订阅回调用服务上下文，同进程发送用当前请求的上下文
 func (d *ChatRealtimeDispatcher) Handle(ctx context.Context, payload []byte) {
 	if d == nil {
 		return

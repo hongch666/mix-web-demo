@@ -8,8 +8,7 @@ import (
 	"app/common/constants"
 )
 
-// 解析入口统一走 parseData：Data 为空、序列化失败或结构与契约不符时都返回错误，
-// 由调用方记录降级日志，不要静默吞掉解析错误
+// 解析入口统一走 parseData：Data 为空、序列化失败或结构与契约不符时都返回错误，由调用方记录降级日志，不要静默吞掉解析错误
 
 // parseData 从 client.Result 中解析 Data 字段到目标类型
 func parseData[T any](result client.Result) (T, error) {
@@ -82,8 +81,7 @@ func ParseCountsMap(result client.Result) (map[int64]int64, error) {
 		return nil, err
 	}
 
-	// counts 缺失说明响应结构与契约不符（历史版本直接返回 Map），显式报错让上层记录降级
-	// 合法空结果是 "counts": []，反序列化后是非 nil 空切片，与字段缺失可区分
+	// counts 缺失说明响应结构与契约不符（历史版本直接返回 Map），显式报错让上层记录降级，合法空结果是 "counts": []，反序列化后是非 nil 空切片，与字段缺失可区分
 	if body.Counts == nil {
 		return nil, fmt.Errorf(constants.RESPONSE_DATA_EMPTY)
 	}

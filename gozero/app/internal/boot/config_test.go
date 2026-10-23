@@ -66,8 +66,7 @@ func TestIsNumericAndIsQuoted(t *testing.T) {
 	}
 }
 
-// 校验 ES DSL 日志开关能从配置文件经环境变量展开后正确装配
-// 覆盖 YAML 占位符展开与结构体字段映射，避免开关写错字段名导致静默失效
+// 校验 ES DSL 日志开关能从配置文件经环境变量展开后正确装配，覆盖 YAML 占位符展开与结构体字段映射，避免开关写错字段名导致静默失效
 
 func TestESDSLLogSwitchLoadedFromConfig(t *testing.T) {
 	content, err := os.ReadFile("../../etc/application.yaml")

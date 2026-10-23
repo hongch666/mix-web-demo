@@ -75,8 +75,7 @@ func TestParseCommentScoresMapReadsRoleScores(t *testing.T) {
 	}
 }
 
-// TestParseCountsMapRejectsLegacyMapShape 校验旧的 Map 结构不再被静默接受
-// 契约变更后必须返回错误，上层据此记录降级日志并重刷 ES，而不是把 0 当成真实统计
+// TestParseCountsMapRejectsLegacyMapShape 校验旧的 Map 结构不再被静默接受，契约变更后必须返回错误，上层据此记录降级日志并重刷 ES，而不是把 0 当成真实统计
 func TestParseCountsMapRejectsLegacyMapShape(t *testing.T) {
 	result := client.Result{Data: map[string]any{"5445": 7}}
 

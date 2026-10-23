@@ -101,8 +101,7 @@ func TestHandleErrorWithCodeUsesDefaultStatusForRegularErrors(t *testing.T) {
 	}
 }
 
-// 零字段响应模型（SyncESResp 这类空壳）必须输出 data 为 null，
-// 文档与 NestJS 的空数据响应都声明为 null，不能被序列化成空对象
+// 零字段响应模型（SyncESResp 这类空壳）必须输出 data 为 null，文档与 NestJS 的空数据响应都声明为 null，不能被序列化成空对象
 func TestSuccessWritesNullDataForEmptyResponseModel(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	utils.Success(recorder, &testEmptyResponse{})

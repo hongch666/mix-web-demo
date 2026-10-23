@@ -13,9 +13,7 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-// TestHttpxParseRunsTagValidation 验证 httpx.Parse 会调用注册的校验器
-// 这是标签式校验生效的前提：请求类型不再实现 Validate() 后，才会走 SetValidator 分支
-// 验证该测试场景的预期行为
+// TestHttpxParseRunsTagValidation 验证 httpx.Parse 会调用注册的校验器，这是标签式校验生效的前提：请求类型不再实现 Validate() 后，才会走 SetValidator 分支，验证该测试场景的预期行为
 func TestHttpxParseRunsTagValidation(t *testing.T) {
 	if err := validation.InitValidator(); err != nil {
 		t.Fatalf("注册校验器失败: %v", err)

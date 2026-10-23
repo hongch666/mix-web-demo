@@ -153,8 +153,7 @@ func initES(c config.Config, logger *utils.ZeroLogger) *elastic.Client {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(esURL),
 		elastic.SetSniff(esConf.Sniff),
-		// SetMaxRetries 在 olivere/elastic v7 中标记废弃，但当前仍依赖其重试语义，
-		// 替换为自定义 Retry 实现会影响 ES 寻址行为，这里显式保留并忽略废弃告警
+		// SetMaxRetries 在 olivere/elastic v7 中标记废弃，但当前仍依赖其重试语义，替换为自定义 Retry 实现会影响 ES 寻址行为，这里显式保留并忽略废弃告警
 		//nolint:staticcheck // SA1019: 保留 olivere/elastic 内置重试策略
 		elastic.SetMaxRetries(constants.ESMaxRetries),
 		elastic.SetHealthcheckInterval(constants.ESHealthcheckInterval),
@@ -252,8 +251,7 @@ func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingC
 		panic(err)
 	}
 
-	// 网关以容器运行，注册地址必须是容器能回连的地址，固定 127.0.0.1 会让网关连到容器自身
-	// 显式配置 SERVER_IP 时以它为准，未指定（空、0.0.0.0）则自动探测本机 IP
+	// 网关以容器运行，注册地址必须是容器能回连的地址，固定 127.0.0.1 会让网关连到容器自身，显式配置 SERVER_IP 时以它为准，未指定（空、0.0.0.0）则自动探测本机 IP
 	registerIP := resolveNacosRegisterIP(c.Host)
 
 	if registerIP != "" && c.Port > 0 && nacosConf.ServiceName != "" {

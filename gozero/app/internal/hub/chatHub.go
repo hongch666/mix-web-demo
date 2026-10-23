@@ -58,8 +58,7 @@ func (s *ChatHub) ConfigureReadMarker(markRead func(context.Context, int64, int6
 	s.markRead = markRead
 }
 
-// HandleWebSocketConnection 接管已升级的连接并启动读写处理
-// ctx 取请求上下文：连接级 logger 由它派生，加入/离开队列等日志才能带上建立连接时的 trace_id
+// HandleWebSocketConnection 接管已升级的连接并启动读写处理，ctx 取请求上下文：连接级 logger 由它派生，加入/离开队列等日志才能带上建立连接时的 trace_id
 func (s *ChatHub) HandleWebSocketConnection(ctx context.Context, conn *websocket.Conn, userID int64) {
 	client := &Client{
 		UserID:       userID,
@@ -223,8 +222,7 @@ func (s *ChatHub) GetUserClients(userID int64) []*Client {
 	return result
 }
 
-// 向队列中的用户发送消息
-// ctx 由触发本次投递的链路提供，日志据此关联 trace_id
+// 向队列中的用户发送消息，ctx 由触发本次投递的链路提供，日志据此关联 trace_id
 func (s *ChatHub) SendMessageToQueue(ctx context.Context, userID int64, message []byte) bool {
 	clients := s.GetUserClients(userID)
 	if len(clients) == 0 {

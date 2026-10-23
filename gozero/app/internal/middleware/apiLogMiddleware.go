@@ -340,16 +340,14 @@ func sanitizeQueryParams(params map[string]any, excludeFields []string) map[stri
 	return result
 }
 
-// WithApiLog 为 handler 添加 API 日志中间件
-// WithApiLog 中间件工厂函数
+// WithApiLog 为 handler 添加 API 日志中间件，WithApiLog 中间件工厂函数
 func WithApiLog(rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, description string, excludeFields ...string) func(http.HandlerFunc) http.HandlerFunc {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
 		return NewApiLogMiddleware(description, rabbitPublisher, log, excludeFields...).Handle(handler)
 	}
 }
 
-// ApplyApiLog 直接应用 API 日志中间件到 handler
-// 用法: return middleware.ApplyApiLog(rabbitPublisher, logger, handler, "操作描述", "password", "captcha")
+// ApplyApiLog 直接应用 API 日志中间件到 handler，用法: return middleware.ApplyApiLog(rabbitPublisher, logger, handler, "操作描述", "password", "captcha")
 func ApplyApiLog(rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, handler http.HandlerFunc, description string, excludeFields ...string) http.HandlerFunc {
 	return WithApiLog(rabbitPublisher, log, description, excludeFields...)(handler)
 }

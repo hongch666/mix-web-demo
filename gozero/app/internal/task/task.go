@@ -68,8 +68,7 @@ func runWithLock(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory, cfg T
 	ctx, cancel := context.WithTimeout(svcCtx.Context, cfg.Timeout)
 	defer cancel()
 
-	// 定时任务没有请求入口，手动开启一段根 span，让任务日志与内部调用关联到同一次执行
-	// TracerFromContext 在上下文无 span 时回退到全局 tracer，OTel 关闭时自动退化为 noop
+	// 定时任务没有请求入口，手动开启一段根 span，让任务日志与内部调用关联到同一次执行，TracerFromContext 在上下文无 span 时回退到全局 tracer，OTel 关闭时自动退化为 noop
 	tracer := zerotrace.TracerFromContext(ctx)
 	ctx, span := tracer.Start(ctx, fmt.Sprintf("job:%s", cfg.Name))
 	defer span.End()

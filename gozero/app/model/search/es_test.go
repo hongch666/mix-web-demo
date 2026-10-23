@@ -8,8 +8,7 @@ import (
 	"app/internal/client/springClient"
 )
 
-// TestSearchStatsFillMetricsAreUnique 校验回填指标名无重复且覆盖评论评分
-// 指标名与检索时的并行拉取顺序一一对应，重复或缺失会导致降级日志错位
+// TestSearchStatsFillMetricsAreUnique 校验回填指标名无重复且覆盖评论评分，指标名与检索时的并行拉取顺序一一对应，重复或缺失会导致降级日志错位
 func TestSearchStatsFillMetricsAreUnique(t *testing.T) {
 	seen := make(map[string]bool, len(constants.SEARCH_STATS_FILL_METRICS))
 	for _, metric := range constants.SEARCH_STATS_FILL_METRICS {

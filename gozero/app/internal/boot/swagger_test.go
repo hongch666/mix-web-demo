@@ -8,8 +8,7 @@ import (
 	"app/docs"
 )
 
-// TestEmbeddedSwaggerResourcesAreReadable 校验页面、文档与 swagger-ui 静态资源都已嵌入且非空
-// 路由按文件名读取 embed.FS，文件缺失或改名会让页面返回 500，表现为 Swagger 白屏
+// TestEmbeddedSwaggerResourcesAreReadable 校验页面、文档与 swagger-ui 静态资源都已嵌入且非空，路由按文件名读取 embed.FS，文件缺失或改名会让页面返回 500，表现为 Swagger 白屏
 func TestEmbeddedSwaggerResourcesAreReadable(t *testing.T) {
 	names := []string{
 		"swagger.html",
@@ -32,8 +31,7 @@ func TestEmbeddedSwaggerResourcesAreReadable(t *testing.T) {
 	}
 }
 
-// TestSwaggerContentTypesCoverEmbeddedResources 校验每类内嵌资源都有显式 Content-Type
-// 缺 Content-Type 或类型不对时浏览器会拒绝执行 swagger-ui-bundle.js，页面同样白屏
+// TestSwaggerContentTypesCoverEmbeddedResources 校验每类内嵌资源都有显式 Content-Type，缺 Content-Type 或类型不对时浏览器会拒绝执行 swagger-ui-bundle.js，页面同样白屏
 func TestSwaggerContentTypesCoverEmbeddedResources(t *testing.T) {
 	cases := map[string]string{
 		"swagger.html":                    "text/html; charset=utf-8",
@@ -52,8 +50,7 @@ func TestSwaggerContentTypesCoverEmbeddedResources(t *testing.T) {
 	}
 }
 
-// TestEmbeddedOpenAPIDocumentUsesVersionSupportedBySwaggerUI 校验产物版本与空数据类型写法一致
-// 内嵌 swagger-ui 为 5.x：保留 3.1 才能表达 type: "null"，降到 3.0 会让该 schema 非法
+// TestEmbeddedOpenAPIDocumentUsesVersionSupportedBySwaggerUI 校验产物版本与空数据类型写法一致，内嵌 swagger-ui 为 5.x：保留 3.1 才能表达 type: "null"，降到 3.0 会让该 schema 非法
 func TestEmbeddedOpenAPIDocumentUsesVersionSupportedBySwaggerUI(t *testing.T) {
 	content, err := docs.StaticFiles.ReadFile("openapi.json")
 	if err != nil {

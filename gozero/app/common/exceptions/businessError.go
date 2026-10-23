@@ -6,8 +6,7 @@ import (
 	"app/common/constants"
 )
 
-// BusinessError 业务异常结构体 - 用于返回可向客户端显示的错误信息
-// 其他未捕获的异常会统一返回 "服务器内部错误"
+// BusinessError 业务异常结构体 - 用于返回可向客户端显示的错误信息，其他未捕获的异常会统一返回 "服务器内部错误"
 type BusinessError struct {
 	Code    int    // HTTP 状态码
 	Message string // 返回给客户端的错误信息

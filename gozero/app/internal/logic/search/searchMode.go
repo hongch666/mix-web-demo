@@ -14,8 +14,7 @@ func normalizeSearchMode(req *types.SearchArticlesReq) string {
 	return strings.ToLower(strings.TrimSpace(*req.Mode))
 }
 
-// isVectorEnhanceEnabled 判断本次搜索是否启用向量增强
-// keyword 模式下没有语义检索需求，未提供关键词时也无需计算语义相似度
+// isVectorEnhanceEnabled 判断本次搜索是否启用向量增强，keyword 模式下没有语义检索需求，未提供关键词时也无需计算语义相似度
 func isVectorEnhanceEnabled(req *types.SearchArticlesReq, keyword string) bool {
 	if normalizeSearchMode(req) == "keyword" || strings.TrimSpace(keyword) == "" {
 		return false
@@ -26,8 +25,7 @@ func isVectorEnhanceEnabled(req *types.SearchArticlesReq, keyword string) bool {
 	return true
 }
 
-// isGraphEnhanceEnabled 判断本次搜索是否启用图谱增强
-// 与向量增强不同，图谱按文章关系扩召回，不依赖关键词
+// isGraphEnhanceEnabled 判断本次搜索是否启用图谱增强，与向量增强不同，图谱按文章关系扩召回，不依赖关键词
 func isGraphEnhanceEnabled(req *types.SearchArticlesReq) bool {
 	if normalizeSearchMode(req) == "keyword" {
 		return false

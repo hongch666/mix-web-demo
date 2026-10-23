@@ -14,8 +14,7 @@ import (
 	searchmodel "app/model/search"
 )
 
-// TestResolveRecallWindow 校验召回窗口解析与深分页降级边界
-// 验证该测试场景的预期行为
+// TestResolveRecallWindow 校验召回窗口解析与深分页降级边界，验证该测试场景的预期行为
 func TestResolveRecallWindow(t *testing.T) {
 	cases := []struct {
 		name          string
@@ -51,8 +50,7 @@ func TestResolveRecallWindow(t *testing.T) {
 	}
 }
 
-// TestPageSlice 校验分页切片边界
-// 验证该测试场景的预期行为
+// TestPageSlice 校验分页切片边界，验证该测试场景的预期行为
 func TestPageSlice(t *testing.T) {
 	items := make([]types.ArticleEsItem, 25)
 	for i := range items {
@@ -85,8 +83,7 @@ func TestPageSlice(t *testing.T) {
 	}
 }
 
-// TestFusionMeanFillAndWeights 校验缺失信号均值填充与融合权重归一
-// 验证该测试场景的预期行为
+// TestFusionMeanFillAndWeights 校验缺失信号均值填充与融合权重归一，验证该测试场景的预期行为
 func TestFusionMeanFillAndWeights(t *testing.T) {
 	vectorItems := []fastapiClient.VectorEnhanceItem{
 		{ArticleID: 1, VectorScore: 0.8},

@@ -16,8 +16,7 @@ import (
 // opDial net.OpError 中表示拨号操作的值
 const opDial = "dial"
 
-// httpStatusError 下游返回非预期 HTTP 状态码的错误
-// 用类型携带状态码，使重试判定与错误文案解耦
+// httpStatusError 下游返回非预期 HTTP 状态码的错误，用类型携带状态码，使重试判定与错误文案解耦
 type httpStatusError struct {
 	StatusCode int
 	Body       string
@@ -36,8 +35,7 @@ func newHTTPStatusError(statusCode int, body string) error {
 	}
 }
 
-// shouldRetry 判断错误是否可重试
-// 全部依据错误类型与状态码判定，不匹配错误文案，避免文案调整导致重试静默失效
+// shouldRetry 判断错误是否可重试，全部依据错误类型与状态码判定，不匹配错误文案，避免文案调整导致重试静默失效
 func shouldRetry(err error) bool {
 	if err == nil {
 		return false

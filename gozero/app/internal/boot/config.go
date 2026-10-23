@@ -14,8 +14,7 @@ import (
 	"github.com/zeromicro/go-zero/core/conf"
 )
 
-// expandEnvWithDefaults 展开配置文件中的环境变量，支持 ${VAR:default} 格式
-// 对于嵌套结构中的纯数字值加引号，以确保 YAML 解析为字符串
+// expandEnvWithDefaults 展开配置文件中的环境变量，支持 ${VAR:default} 格式，对于嵌套结构中的纯数字值加引号，以确保 YAML 解析为字符串
 func expandEnvWithDefaults(content string) string {
 	lines := strings.Split(content, "\n")
 	result := make([]string, 0, len(lines))
@@ -62,8 +61,7 @@ func expandLineEnv(line string) string {
 		}
 		value = normalizeModeValue(fieldName, value)
 
-		// 对嵌套字段中的纯数字值加引号（不包括 Port 字段和顶层）
-		// Port、Expiration 等整数字段不加引号，让 YAML 保持数字类型
+		// 对嵌套字段中的纯数字值加引号（不包括 Port 字段和顶层），Port、Expiration 等整数字段不加引号，让 YAML 保持数字类型
 		if isNestedField && value != "" && isNumeric(value) {
 			// 不对 port、expiration 等字段加引号，这些本应是数字类型
 			if strings.ToLower(fieldName) != "port" &&

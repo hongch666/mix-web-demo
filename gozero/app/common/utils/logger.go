@@ -17,8 +17,7 @@ import (
 	zerotrace "github.com/zeromicro/go-zero/core/trace"
 )
 
-// logFileHolder 共享的文件句柄，供同一路径下的派生日志实例复用
-// 派生实例各自持有句柄会在高频请求下不断新建文件描述符，只有等 GC 回收才关闭
+// logFileHolder 共享的文件句柄，供同一路径下的派生日志实例复用，派生实例各自持有句柄会在高频请求下不断新建文件描述符，只有等 GC 回收才关闭
 type logFileHolder struct {
 	mu          sync.Mutex // 保护文件句柄的并发访问
 	file        *os.File   // 当前打开的日志文件句柄
@@ -34,9 +33,7 @@ type ZeroLogger struct {
 	includeTimestamp bool
 }
 
-// NewZeroLogger 创建新的日志实例
-// logPath: 日志文件存放目录，必须由配置显式提供，例如 "../../logs/gozero"
-// includeTimestamp: 可选开关，缺省写入时间戳
+// NewZeroLogger 创建新的日志实例，logPath: 日志文件存放目录，必须由配置显式提供，例如 "../../logs/gozero"，includeTimestamp: 可选开关，缺省写入时间戳
 func NewZeroLogger(logPath string, includeTimestamp ...bool) (*ZeroLogger, error) {
 	// 路径缺失时直接报错，不再回退到进程工作目录，避免日志写到意外的位置
 	if strings.TrimSpace(logPath) == "" {
@@ -183,8 +180,7 @@ func (z *ZeroLogger) Debugf(format string, args ...interface{}) {
 	z.writeToFile(msg, "DEBUG")
 }
 
-// Close 关闭日志文件句柄，刷新缓冲区
-// 派生实例与根实例共享同一句柄，重复关闭是安全的
+// Close 关闭日志文件句柄，刷新缓冲区，派生实例与根实例共享同一句柄，重复关闭是安全的
 func (z *ZeroLogger) Close() error {
 	if z.holder == nil {
 		return nil

@@ -10,8 +10,7 @@ import (
 	"github.com/zeromicro/go-zero/rest"
 )
 
-// swaggerContentTypes 内嵌资源的 Content-Type
-// 显式声明而不走 mime.TypeByExtension：后者在 Windows 上会读取系统 MIME 注册表，结果不可控
+// swaggerContentTypes 内嵌资源的 Content-Type，显式声明而不走 mime.TypeByExtension：后者在 Windows 上会读取系统 MIME 注册表，结果不可控
 var swaggerContentTypes = map[string]string{
 	".html": "text/html; charset=utf-8",
 	".json": "application/json; charset=utf-8",
@@ -20,8 +19,7 @@ var swaggerContentTypes = map[string]string{
 	".png":  "image/png",
 }
 
-// registerSwaggerRoute 注册 Swagger 文档路由
-// 页面、文档与 swagger-ui 资源全部通过 go:embed 编译进二进制，无需运行时磁盘读取
+// registerSwaggerRoute 注册 Swagger 文档路由，页面、文档与 swagger-ui 资源全部通过 go:embed 编译进二进制，无需运行时磁盘读取
 func registerSwaggerRoute(server *rest.Server) {
 	// /swagger 重定向到 /swagger/index.html
 	server.AddRoute(rest.Route{
@@ -59,8 +57,7 @@ func registerSwaggerRoute(server *rest.Server) {
 	}
 }
 
-// serveEmbeddedDocs 从内嵌文件系统读取页面或静态资源并响应
-// 读取失败时按 500 返回对应提示，避免把异常内容当成文档交给 Swagger UI
+// serveEmbeddedDocs 从内嵌文件系统读取页面或静态资源并响应，读取失败时按 500 返回对应提示，避免把异常内容当成文档交给 Swagger UI
 func serveEmbeddedDocs(w http.ResponseWriter, name, notFound string) {
 	content, err := docs.StaticFiles.ReadFile(name)
 	if err != nil {
