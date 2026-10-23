@@ -185,7 +185,7 @@ def provide_vector_search_service(
 
 
 def provide_task_service(
-    analyze_service: AnalyzeService,
+    analyze_service: Annotated[AnalyzeService, Depends(provide_analyze_service)],
     db_factory: DbSessionFactoryDep,
     spring_client: SpringClientDep,
     nestjs_client: NestjsClientDep,
