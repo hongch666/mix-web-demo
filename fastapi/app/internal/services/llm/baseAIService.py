@@ -1,3 +1,4 @@
+import contextvars
 import os
 from collections.abc import AsyncGenerator
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -108,18 +109,36 @@ def initialize_ai_tools(
 
     # 并行加载所有独立工具组
     with ThreadPoolExecutor(max_workers=5 + len(factories.mcp_servers)) as executor:
+        # ThreadPoolExecutor 不会继承 contextvars，显式复制当前上下文再在线程中执行，
+        # 保证工作线程内的日志仍能关联到当前请求或任务的 trace_id；
+        # 每个任务单独复制一份 Context 对象（同一 Context 不能被并发进入）
         futures: dict[str, Any] = {}
 
         if include_sql:
-            futures["sql"] = executor.submit(_load_sql_tools, list(factories.sql_tools))
-        futures["rag"] = executor.submit(_load_tool_group, *factories.rag)
-        futures["neo4j"] = executor.submit(_load_tool_group, *factories.neo4j)
+            futures["sql"] = executor.submit(
+                contextvars.copy_context().run,
+                _load_sql_tools,
+                list(factories.sql_tools),
+            )
+        futures["rag"] = executor.submit(
+            contextvars.copy_context().run, _load_tool_group, *factories.rag
+        )
+        futures["neo4j"] = executor.submit(
+            contextvars.copy_context().run, _load_tool_group, *factories.neo4j
+        )
         if include_logs:
-            futures["mongodb"] = executor.submit(_load_tool_group, *factories.mongodb)
-        futures["warehouse"] = executor.submit(_load_tool_group, *factories.warehouse)
+            futures["mongodb"] = executor.submit(
+                contextvars.copy_context().run, _load_tool_group, *factories.mongodb
+            )
+        futures["warehouse"] = executor.submit(
+            contextvars.copy_context().run, _load_tool_group, *factories.warehouse
+        )
         for index, (server_name, server_factory) in enumerate(factories.mcp_servers):
             futures[f"mcp_{index}"] = executor.submit(
-                _load_tool_group, server_name, server_factory
+                contextvars.copy_context().run,
+                _load_tool_group,
+                server_name,
+                server_factory,
             )
 
         # 按完成顺序收集结果
