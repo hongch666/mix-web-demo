@@ -124,8 +124,7 @@ public class ArticleSyncAspect extends AbstractSyncAspect<ArticleSync> {
             }
             case FOCUS, UNFOCUS -> {
                 Long targetUserId = resolveFocusTarget(joinPoint, primaryParam);
-                // 关注与文章无关，articleId 传 -1 占位，与 GoZero 搜索日志的约定保持一致
-                // 双方用户 ID 放在 content 内，由数仓从 content 解析目标用户
+                // 关注与文章无关，articleId 传 -1 占位，与 GoZero 搜索日志的约定保持一致，双方用户 ID 放在 content 内，由数仓从 content 解析目标用户
                 builder.articleId(-1L)
                     .content(ArticleLogMessage.Content.builder()
                         .id(targetUserId)

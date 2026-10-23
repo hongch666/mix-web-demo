@@ -389,8 +389,7 @@ public class CommentsServiceImpl implements CommentsService {
         if (articleIds == null || articleIds.isEmpty()) {
             return Mono.just(List.of());
         }
-        // 批量查询评论评分，按角色（ai/user）分组，与 gozero COMMENT_RATING_QUERY 逻辑一致
-        // 优化：一次 in 查询拉取所有文章的相关评论，避免逐篇文章发起查询导致的 N+1 性能问题
+        // 批量查询评论评分，按角色（ai/user）分组，与 gozero COMMENT_RATING_QUERY 逻辑一致，优化：一次 in 查询拉取所有文章的相关评论，避免逐篇文章发起查询导致的 N+1 性能问题
         Criteria criteria = Criteria.where("article_id").in(articleIds).and("star").greaterThan(0);
         Query query = Query.query(criteria);
         return entityTemplate.select(Comments.class).matching(query).all()

@@ -25,8 +25,7 @@ import com.hcsy.spring.infra.client.ServiceWebClient;
     // R2DBC 连接池在启动时实例化，凭据为空会直接失败；占位值即可，不会真实建连
     "spring.r2dbc.username=smoke-test",
     "spring.r2dbc.password=smoke-test",
-    // InternalTokenUtil 初始化校验密钥非空且 HMAC-SHA256 要求至少 256 位（32 字节）；
-    // 两个键都提供，覆盖 application.yaml 里 internal-token.secret=${INTERNAL_TOKEN_SECRET:} 的占位符解析
+    // InternalTokenUtil 初始化校验密钥非空且 HMAC-SHA256 要求至少 256 位（32 字节）；两个键都提供，覆盖 application.yaml 里 internal-token.secret=${INTERNAL_TOKEN_SECRET:} 的占位符解析
     "internal-token.secret=smoke-test-secret-0123456789abcdef",
     "INTERNAL_TOKEN_SECRET=smoke-test-secret-0123456789abcdef",
     // JwtUtil 初始化同样校验密钥非空与长度

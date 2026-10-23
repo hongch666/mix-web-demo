@@ -102,8 +102,7 @@ class OpenApiDocGenerator {
         mapper.setDefaultPrettyPrinter(prettyPrinter);
         JsonNode document = mapper.readTree(new String(body, StandardCharsets.UTF_8));
 
-        // 与 GoZero 的 fix.py 保持一致：落盘前移除 servers
-        // 网关才是真实入口，写死 localhost:8081 会让 Apifox 用错地址，Base URL 统一交给 Apifox 环境面板维护
+        // 与 GoZero 的 fix.py 保持一致：落盘前移除 servers，网关才是真实入口，写死 localhost:8081 会让 Apifox 用错地址，Base URL 统一交给 Apifox 环境面板维护
         if (document instanceof ObjectNode objectNode) {
             objectNode.remove("servers");
             normalizeVoidDataSchema(objectNode);

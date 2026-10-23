@@ -37,8 +37,7 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     @Override
     public Mono<Void> syncArticleAsync(Long userId, String username, boolean syncES, boolean syncVector,
         ChangeEvent event) {
-        // 重试与熔断统一由底层 ServiceWebClient 的 resilience4j 处理，此处不再叠加重试，避免重复重试放大调用次数与耗时
-        // 数仓同步承载浏览、点赞、收藏、关注等统计口径，任一变更都要执行，但只需刷新本次变更涉及的源表
+        // 重试与熔断统一由底层 ServiceWebClient 的 resilience4j 处理，此处不再叠加重试，避免重复重试放大调用次数与耗时，数仓同步承载浏览、点赞、收藏、关注等统计口径，任一变更都要执行，但只需刷新本次变更涉及的源表
         List<Mono<Void>> tasks = new ArrayList<>();
         if (syncES) {
             tasks.add(reactiveCall(() -> goZeroClient.syncES(event), Messages.SYNC_ES_SUCCESS));

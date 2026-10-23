@@ -70,8 +70,7 @@ public class TokenCleanupTask {
             .doFinally(signalType -> span.end());
     }
 
-    // 响应式链路会切换线程，span 无法通过 makeCurrent 自动贯穿整个链条，
-    // 因此在每个日志点把任务 span 显式置为当前，让 SimpleLogger 取到本次执行的 trace_id
+    // 响应式链路会切换线程，span 无法通过 makeCurrent 自动贯穿整个链条，因此在每个日志点把任务 span 显式置为当前，让 SimpleLogger 取到本次执行的 trace_id
     private void logInfo(Span span, String message) {
         try (Scope ignored = span.makeCurrent()) {
             logger.info(message);
