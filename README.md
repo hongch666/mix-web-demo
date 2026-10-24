@@ -72,14 +72,15 @@
 10. 基于 GoZero 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
 11. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
 12. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
-13. 基于 FastAPI、ClickHouse 和 SQLAlchemy ORM（clickhouse-sqlalchemy + asynch 异步驱动）实现系统数据的相关分析
-14. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
-15. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL、MongoDB、Neo4j 及 MCP 外部扩展工具，支持 **GPT/Gemini/GLM/DeepSeek/Claude/Qwen** 进行多模型选择
-16. 基于 FastAPI、Neo4j 和 neomodel（异步 OGM）实现文章、用户、分类、标签、点赞、收藏、评论、关注等实体关系图谱，用于关系查询和图谱推荐
-17. 基于 FastAPI 和 LangSmith 实现 LLM 链路可观测性，对 AI 聊天、RAG 检索、Agent Tools 调用和向量同步任务进行全链路 Trace，支持采样率控制与敏感数据脱敏
-18. 基于 NestJS 和 Spring 实现 **GitHub OAuth 登录/注册**，NestJS 处理 GitHub 授权回调并创建/关联用户，Spring 生成站内登录票据，支持首次 GitHub 登录自动注册，前端通过一次性 ticket 换取 JWT
-19. 基于 OpenTelemetry 实现网关与四个服务的全链路追踪：APISIX、Spring、GoZero、NestJS、FastAPI 统一上报 OTLP，经 OpenTelemetry Collector 脱敏后写入 Grafana Tempo，日志由 Promtail 提取 `trace_id` 写入 Loki，Grafana 中可在日志与 Trace 之间互跳
-20. 基于 Prometheus 采集四个业务的运行指标：Spring 输出 `/actuator/prometheus`，GoZero、NestJS、FastAPI 输出 `/metrics`，由 Prometheus 定期抓取后统一在 Grafana 中查询，并支持从指标 Exemplar 跳转到 Tempo
+13. 基于 NestJS 和 Spring 实现 **GitHub OAuth 登录/注册**，NestJS 处理 GitHub 授权回调并创建/关联用户，Spring 生成站内登录票据，支持首次 GitHub 登录自动注册，前端通过一次性 ticket 换取 JWT
+14. 基于 FastAPI、ClickHouse 和 SQLAlchemy ORM（clickhouse-sqlalchemy + asynch 异步驱动）实现系统数据的相关分析
+15. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
+16. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL、MongoDB、Neo4j 及 MCP 外部扩展工具，支持 **GPT/Gemini/GLM/DeepSeek/Claude/Qwen** 进行多模型选择
+17. 基于 FastAPI、Neo4j 和 neomodel（异步 OGM）实现文章、用户、分类、标签、点赞、收藏、评论、关注等实体关系图谱，用于关系查询和图谱推荐
+18. 基于 FastAPI 和 LangSmith 实现 LLM 链路可观测性，对 AI 聊天、RAG 检索、Agent Tools 调用和向量同步任务进行全链路 Trace，支持采样率控制与敏感数据脱敏
+19. 基于 FastAPI 的上下文预算与用户级记忆摘要实现 Agent 上下文压缩：按模型窗口与提示词推导历史预算，超出预算的更早轮次由模型折叠进 `ai_user_summary` 摘要，通过水位线增量推进，压缩失败时保留原摘要不丢历史
+20. 基于 OpenTelemetry 实现网关与四个服务的全链路追踪：APISIX、Spring、GoZero、NestJS、FastAPI 统一上报 OTLP，经 OpenTelemetry Collector 脱敏后写入 Grafana Tempo，日志由 Promtail 提取 `trace_id` 写入 Loki，Grafana 中可在日志与 Trace 之间互跳
+21. 基于 Prometheus 采集四个业务的运行指标：Spring 输出 `/actuator/prometheus`，GoZero、NestJS、FastAPI 输出 `/metrics`，由 Prometheus 定期抓取后统一在 Grafana 中查询，并支持从指标 Exemplar 跳转到 Tempo
 
 ## 服务说明
 
@@ -131,15 +132,15 @@ NestJS 模块按职责划分为两层：
 
 ### FastAPI 服务（端口 8084）
 
-| 项目     | 说明                                                                                                                                                                                            |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 框架     | FastAPI + SQLAlchemy（MySQL、ClickHouse 异步 ORM）                                                                                                                                              |
-| 数据库   | MySQL（SQLAlchemy，ai_history/ai_user_summary/mcp_server_config 表）、ClickHouse（SQLAlchemy ORM 数仓分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（neomodel 异步 OGM 知识图谱）         |
-| 消息队列 | RabbitMQ                                                                                                                                                                                        |
-| 注册中心 | Nacos                                                                                                                                                                                           |
-| 运行时   | Python 3.12+                                                                                                                                                                                    |
-| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（neomodel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询/MCP 扩展工具）、多模型（GPT/Gemini/GLM/DeepSeek/Claude/Qwen）、LangSmith LLM 链路追踪 |
-| 代码位置 | `fastapi/`                                                                                                                                                                                      |
+| 项目     | 说明                                                                                                                                                                                                                                     |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 框架     | FastAPI + SQLAlchemy（MySQL、ClickHouse 异步 ORM）                                                                                                                                                                                       |
+| 数据库   | MySQL（SQLAlchemy，ai_history/ai_user_summary/mcp_server_config 表）、ClickHouse（SQLAlchemy ORM 数仓分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（neomodel 异步 OGM 知识图谱）                                                  |
+| 消息队列 | RabbitMQ                                                                                                                                                                                                                                 |
+| 注册中心 | Nacos                                                                                                                                                                                                                                    |
+| 运行时   | Python 3.12+                                                                                                                                                                                                                             |
+| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（neomodel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询/MCP 扩展工具）、多模型（GPT/Gemini/GLM/DeepSeek/Claude/Qwen）、LangSmith LLM 链路追踪、Agent 上下文压缩（预算裁剪 + 记忆摘要） |
+| 代码位置 | `fastapi/`                                                                                                                                                                                                                               |
 
 ### Apache APISIX 网关（端口 8080）
 
@@ -509,8 +510,8 @@ Body 参数：
       AI_HISTORY_SUMMARY {
           bigint id PK
           bigint user_id FK
-          text summary_text
-          int last_summarized_history_id
+          text summary
+          bigint last_summarized_history_id
           int summarized_count
           datetime created_at
           datetime updated_at
@@ -589,10 +590,11 @@ Body 参数：
       MCP_SERVER_CONFIG {
           bigint id PK
           varchar server_name
+          varchar transport_type
           varchar command
           json args_json
-          json cwd_json
           json env_json
+          varchar url
           json headers_json
           varchar description
           tinyint enabled
@@ -2692,12 +2694,12 @@ FastAPI 侧不使用 Pyright 作为门禁：仓库既有类型检查基线存在
 
 脚本为 `scripts/compile.sh`，返回码约定与 `lint.sh` / `test.sh` 一致：`0` 通过、`2` 对应工具未安装（自动跳过并提示）、其它为失败。`gateway` 为 APISIX 配置，不参与编译。
 
-| 服务    | 工具                         | 配置文件                                                                | 说明                        |
-| ------- | ---------------------------- | ----------------------------------------------------------------------- | --------------------------- |
-| Spring  | Spotless + Eclipse formatter | `spring/eclipse-formatter.xml`、`spring/pom.xml`、`spring/build.gradle` | Java 格式化与校验           |
+| 服务    | 工具                         | 配置文件                                                                | 说明                                         |
+| ------- | ---------------------------- | ----------------------------------------------------------------------- | -------------------------------------------- |
+| Spring  | Spotless + Eclipse formatter | `spring/eclipse-formatter.xml`、`spring/pom.xml`、`spring/build.gradle` | Java 格式化与校验                            |
 | GoZero  | golangci-lint v2 + goctl     | `gozero/app/.golangci.yml`                                              | Go 静态检查与格式化、`.api` 文件格式化与校验 |
-| NestJS  | ESLint + Prettier            | `nestjs/eslint.config.mjs`、`nestjs/.prettierrc`                        | TypeScript 静态检查与格式化 |
-| FastAPI | Ruff + Pyright               | `fastapi/pyproject.toml`                                                | Python 检查与格式化         |
+| NestJS  | ESLint + Prettier            | `nestjs/eslint.config.mjs`、`nestjs/.prettierrc`                        | TypeScript 静态检查与格式化                  |
+| FastAPI | Ruff + Pyright               | `fastapi/pyproject.toml`                                                | Python 检查与格式化                          |
 
 根目录 `.gitattributes` 统一声明文本文件换行符为 LF，避免不同操作系统下格式化结果不一致。
 
@@ -3050,6 +3052,14 @@ VALUES
      'Google 搜索 MCP 服务', 1, NOW(), NOW());
 ```
 
+实现要点：
+
+1. MCP 工具组与 SQL、RAG、Neo4j、MongoDB、ClickHouse 工具组一起在 `initialize_ai_tools` 中按组并行装配，单个服务连接或工具发现失败只打告警日志并跳过，不影响其余工具组与本轮问答
+2. 服务名先清洗（`[^0-9a-zA-Z_]` 统一替换为 `_`）再拼工具名，避免服务名中的短横线、点号导致工具名非法
+3. 连接粒度为短连接：工具发现与每次工具执行各自建立独立会话（`langchain-mcp-adapters` 0.3 起已移除 async 上下文管理器），避免长连接跨事件循环复用引发的事件循环绑定问题
+4. 远程工具执行异常不向上抛出，而是返回可读错误文案给模型，由模型决定重试或换用其他工具
+5. 相关代码：`app/internal/agents/tools/mcpTools.py`（工具组）、`app/internal/models/mysql/mcpServerConfig.py`（表模型）、`app/internal/crud/mcpServerConfig.py`（配置查询）、`app/dependencies/tools.py`（`provide_mcp_tools` 装配入口）、`db/mysql/fastapi/mcp_server_config.sql`（建表脚本）
+
 ### FastAPI Agent 工具说明
 
 FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通过这些工具进行数据查询和分析。
@@ -3153,6 +3163,84 @@ SQL 工具按服务做了完全隔离：FastAPI Agent 会为每个服务加载�
 
 - **意图路由工具 (intentRouter.py)**: 用于自动识别用户意图并路由到不同的处理模块
 - **用户权限管理 (userPermissionManager.py)**: 管理和校验用户权限，实现细粒度访问控制
+
+### FastAPI Agent 上下文压缩说明
+
+FastAPI 的 AI 聊天不把全部历史原文塞进提示词，而是采用「预算裁剪 + 用户级记忆摘要（compact）」两级压缩：水位线之后的近期轮次按预算注入原文，更早轮次由模型折叠进摘要并落库，下一轮只带摘要与窗口内原文。历史记录表 `ai_history` 保持完整，压缩只影响注入给模型的内容，不删除业务数据。
+
+#### 1.记忆摘要表
+
+摘要按用户维度唯一保存，表结构见 `db/mysql/fastapi/ai_user_summary.sql`：
+
+| 字段                         | 说明                                              |
+| ---------------------------- | ------------------------------------------------- |
+| `summary`                    | 已折叠历史的摘要正文，为空表示尚未压缩过          |
+| `last_summarized_history_id` | 压缩水位线，已折叠进摘要的 `ai_history.id` 最大值 |
+| `summarized_count`           | 累计折叠轮数，仅用于观测                          |
+
+`user_id` 唯一索引保证同一用户只有一行摘要；用户清空历史时，摘要与 `ai_history` 在同一个事务内删除，避免出现「历史已清空、记忆仍存在」的不一致。
+
+#### 2.历史预算推导
+
+历史可用预算不单独配置，由模型窗口扣除提示词与各项预留后推导：
+
+```text
+历史预算 = context_window_tokens
+         - 系统提示词与用户提示词的估算 token
+         - context_output_reserve_tokens
+         - context_tool_reserve_tokens（仅 Agent 路径，直连闲聊路径不扣）
+```
+
+预算被占满（结果 ≤ 0）时，本轮既不注入历史也不触发压缩，优先保证请求可用，并记录一条告警日志。
+
+token 估算不使用各家分词器，按字符类别保守折算（`app/core/constants/defaults.py`）：CJK 字符 1 字符 1 token、其余字符 4 字符 1 token，每条消息另加 4 token 固定开销；比较时再乘 `context_safety_ratio` 安全系数，只用于预算判断，不作为计费依据。
+
+#### 3.裁剪与触发规则
+
+1. 单次最多读取水位线之后的 `context_candidate_rounds` 轮候选历史
+2. 单条提问/回复先按 `context_single_message_chars` 截断（追加 `...` 标记）
+3. 先保留最近 `context_keep_rounds` 轮，再在预算内向前扩展更早轮次
+4. 保留窗口自身超预算时从最旧一轮开始丢弃；仅剩一轮仍超预算时按剩余额度截断，保证最新一轮始终在窗口内
+5. 未进入注入窗口的轮次即为待折叠对象；即使未溢出，只要摘要 + 历史的保守估算超过 `历史预算 × context_compact_trigger_ratio`，也会提前折叠保留窗口之外的轮次
+
+命中候选轮数上限时，水位线与本轮最早记录之间被查询跳过的更早记录会一并补进本次折叠，避免随着水位线推进被永久排除在记忆之外。
+
+#### 4.压缩调用与失败降级
+
+1. 压缩是一次独立的模型调用，`run_name` 为 `chat.memory.compact`，`metadata.memory_compact_rounds` 记录本次折叠轮数，因此能在 LangSmith 中与业务问答区分开
+2. 待折叠内容按单条 `context_single_message_chars`、整批 `context_compact_input_chars` 收敛后与既有摘要一起送进模型；未纳入本批的记录仍在水位线之后，下一轮继续折叠
+3. 摘要超过 `context_summary_max_chars` 时不截断也不落库，保留旧摘要且不推进水位线，下一轮重新合并
+4. 压缩调用失败或返回空内容时只告警：本轮退回「旧摘要 + 窗口内原文」作答，水位线不动，历史不会丢失
+5. 压缩成功后按新摘要长度重新收敛一次注入窗口，保证替换摘要后仍不超预算
+6. 触发压缩时通过 SSE 下发 `thinking` 帧（如「历史记忆整理: 已将较早的 N 轮对话折叠进长期记忆摘要」），前端与历史记录的思考字段可直接展示，非流式接口通过 `notes` 参数回传给调用方落库
+
+另外：只有真实用户的 `user_id > 0` 才读写记忆，系统调用身份（`SYSTEM_USER_ID`）不加载历史，避免所有未登录请求共用同一个记忆桶；直连闲聊路径把摘要并入系统消息，Agent 路径则把「历史对话摘要 + 历史对话」拼进用户输入。
+
+#### 5.配置项
+
+配置位于 `fastapi/application.yaml` 的 `agent.closeai` 段，均可通过环境变量覆盖，缺省值即部署兜底：
+
+| 配置项                          | 环境变量                             | 默认值  | 说明                                 |
+| ------------------------------- | ------------------------------------ | ------- | ------------------------------------ |
+| `context_window_tokens`         | `CHAT_CONTEXT_WINDOW_TOKENS`         | `32768` | 模型上下文窗口，历史预算由它推导     |
+| `context_output_reserve_tokens` | `CHAT_CONTEXT_OUTPUT_RESERVE_TOKENS` | `2048`  | 为模型输出预留的 token               |
+| `context_tool_reserve_tokens`   | `CHAT_CONTEXT_TOOL_RESERVE_TOKENS`   | `4000`  | 工具定义与 Agent 中间步骤预留        |
+| `context_compact_trigger_ratio` | `CHAT_CONTEXT_COMPACT_TRIGGER_RATIO` | `0.8`   | 历史占用达到预算的比例即触发压缩     |
+| `context_keep_rounds`           | `CHAT_CONTEXT_KEEP_ROUNDS`           | `4`     | 始终保留原文的最近轮数，压缩时不折叠 |
+| `context_candidate_rounds`      | `CHAT_CONTEXT_CANDIDATE_ROUNDS`      | `40`    | 单次读取的未压缩候选历史轮数上限     |
+| `context_safety_ratio`          | `CHAT_CONTEXT_SAFETY_RATIO`          | `1.2`   | token 估算安全系数，用于保守裁剪     |
+| `context_single_message_chars`  | `CHAT_CONTEXT_SINGLE_MESSAGE_CHARS`  | `2000`  | 单条历史消息进入上下文的最大字符数   |
+| `context_summary_max_chars`     | `CHAT_CONTEXT_SUMMARY_MAX_CHARS`     | `1200`  | 用户级摘要的最大字符数               |
+| `context_compact_input_chars`   | `CHAT_CONTEXT_COMPACT_INPUT_CHARS`   | `12000` | 单次压缩折叠进提示词的最大字符数     |
+
+`context_candidate_rounds` 小于 `context_keep_rounds` 时会自动抬升到保留轮数，否则保留窗口取不到足够历史。
+
+#### 6.相关代码
+
+- 预算配置、token 估算与裁剪：`fastapi/app/internal/services/llm/contextBudget.py`
+- 记忆加载、压缩与提示词组装：`fastapi/app/internal/services/llm/baseAIService.py`
+- 摘要读写：`fastapi/app/internal/crud/aiUserSummary.py`、模型 `fastapi/app/internal/models/mysql/aiUserSummary.py`
+- 压缩提示词与思考文案：`fastapi/app/core/constants/prompts.py`、`fastapi/app/core/constants/messages.py`
 
 ### Github 登录前置条件
 
