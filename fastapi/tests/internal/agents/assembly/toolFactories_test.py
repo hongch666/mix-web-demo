@@ -6,8 +6,8 @@ from typing import Any
 
 import pytest
 
-from app.internal.agents import toolFactories as tool_factories_module
-from app.internal.agents.toolFactories import (
+import app.internal.agents.assembly.toolFactories as tool_factories_module
+from app.internal.agents.assembly.toolFactories import (
     _default_rag_tools,
     default_agent_tool_factories,
 )

@@ -7,7 +7,10 @@ from pydantic import BaseModel, Field
 
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
-from app.internal.agents.toolScope import enforce_sql_row_scope, log_scope_denial
+from app.internal.agents.permissions.toolScope import (
+    enforce_sql_row_scope,
+    log_scope_denial,
+)
 from app.internal.clients import GozeroClient, get_gozero_client
 
 from .toolArguments import JsonObjectArgument

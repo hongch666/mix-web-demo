@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.internal.agents import (
+from app.internal.agents.model.modelParams import (
     DEFAULT_STRUCTURED_OUTPUT_UNSUPPORTED_PREFIXES,
     DEFAULT_TEMPERATURE_UNSUPPORTED_PREFIXES,
     parse_model_prefixes,

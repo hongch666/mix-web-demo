@@ -18,7 +18,10 @@ from app.core.constants import (
     Prompts,
 )
 
-from .userPermissionManager import UserPermissionManager, get_user_permission_manager
+from ..permissions.userPermissionManager import (
+    UserPermissionManager,
+    get_user_permission_manager,
+)
 
 
 def install_serializer_warning_filter() -> None:

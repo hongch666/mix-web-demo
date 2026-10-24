@@ -10,8 +10,8 @@ from pydantic import BaseModel
 from typing_extensions import TypeVar
 
 from app.core.constants import Messages
-from app.internal.agents import intentRouter as intent_router_module
-from app.internal.agents.intentRouter import (
+import app.internal.agents.routing.intentRouter as intent_router_module
+from app.internal.agents.routing.intentRouter import (
     IntentRouter,
     StructuredIntent,
     format_intent_expression,

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.base import Logger
 from app.core.constants import Messages
-from app.internal.agents.toolScope import clear_tool_scope, set_tool_scope
+from .toolScope import clear_tool_scope, set_tool_scope
 from app.internal.clients import SpringClient, get_spring_client
 
 

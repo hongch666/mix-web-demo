@@ -1,5 +1,5 @@
 from .extractor import ReferenceContentExtractor, get_reference_content_extractor
-from .intentRouter import (
+from .routing.intentRouter import (
     IntentExpression,
     IntentRouter,
     format_intent_expression,
@@ -7,7 +7,7 @@ from .intentRouter import (
     normalize_intents,
     parse_intent_expression,
 )
-from .modelParams import (
+from .model.modelParams import (
     DEFAULT_STRUCTURED_OUTPUT_UNSUPPORTED_PREFIXES,
     DEFAULT_TEMPERATURE_UNSUPPORTED_PREFIXES,
     parse_model_prefixes,
@@ -23,8 +23,8 @@ from .tools.nestjsSqlTool import NestjsSqlTool, get_nestjs_sql_tool
 from .tools.ragTools import RAGTools, get_rag_tools
 from .tools.springSqlTool import SpringSqlTool, get_spring_sql_tool
 from .tools.warehouseTools import ClickHouseWarehouseTools, get_warehouse_tools
-from .toolFactories import AgentToolFactories, default_agent_tool_factories
-from .toolScope import (
+from .assembly.toolFactories import AgentToolFactories, default_agent_tool_factories
+from .permissions.toolScope import (
     ToolScope,
     clear_tool_scope,
     enforce_mongodb_row_scope,
@@ -32,7 +32,10 @@ from .toolScope import (
     get_tool_scope,
     set_tool_scope,
 )
-from .userPermissionManager import UserPermissionManager, get_user_permission_manager
+from .permissions.userPermissionManager import (
+    UserPermissionManager,
+    get_user_permission_manager,
+)
 
 __all__: list[str] = [
     "FastapiSqlTool",

@@ -1,5 +1,5 @@
 from app.core.constants import Messages
-from app.internal.agents import (
+from app.internal.agents.permissions.toolScope import (
     clear_tool_scope,
     enforce_mongodb_row_scope,
     enforce_sql_row_scope,
