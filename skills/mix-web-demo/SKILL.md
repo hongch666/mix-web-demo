@@ -172,7 +172,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 config/           YAML 配置与 index.ts 加载器
 common/constants  常量（Messages、HttpCode、Defaults、ErrorIds）
 common/exceptions 全局异常与错误结构
-common/utils      工具类
+common/utils      工具类（response、swaggerResponse 响应 Schema、snakeCase 命名转换原语）
 framework/        全局横切：decorators、guards、interceptors、filters、middleware
 module/common/    公共服务模块（nacos、logger、oss、redis、mail、github、task、client）
 module/system/    系统业务模块（apiLog、articleLog、sqlTools 等）
@@ -201,6 +201,7 @@ module/system/    系统业务模块（apiLog、articleLog、sqlTools 等）
 - **响应 Schema 必须统一抽离**：业务响应的 `SchemaObject`（包括分页、同步、统计、上传和查询结果）统一定义在 `common/utils/swaggerResponse.ts`，控制器中的 `@ApiResponseModel` 只引用命名常量，禁止在控制器内重复编写内联 `data: { ... }`。除 `data: null` 外，必须为实际字段、数组项和嵌套对象补充 `description`；不能用无字段的 `SwaggerObjectData` 代替已知结构。
 - **路径和查询参数命名必须与实际 URL 一致**：本项目 OpenAPI 会将字段转换为 snake_case。路径参数统一使用 snake_case，并让路由、`@Param`、`@ApiParam` 三处名称完全一致，例如 `:user_id` + `@Param("user_id")`、`:table_key` + `@Param("table_key")`。查询参数也必须统一，例如 `custom_filename` + `@Query("custom_filename")`，禁止同时出现 camelCase 与 snake_case。
 - **Swagger 参数重复检查**：修改接口后重新生成 OpenAPI，检查每个 operation 的 `parameters` 是否存在重复语义或同时存在大小写不同的参数；重点排查 `userId/user_id`、`tableKey/table_key`、`customFilename/custom_filename` 等组合。
+- **对外字段命名转换只在 `common/utils/snakeCase.ts` 一处维护**：请求 DTO 用 `@ExposeName()` 把驼峰属性声明为下划线键名（依赖全局 `ValidationPipe` 的 `transform`），响应由 `framework/interceptors/fieldNaming.interceptor.ts` 全局递归转换，Swagger 文档由 `common/utils/swaggerSnakeCase.ts` 的 `applySwaggerSnakeCase` 转换，三者共用同一个 `toSnakeCase`。新增或调整命名规则一律改该文件，禁止在拦截器、DTO 或 Swagger 后处理里另写正则——三处规则漂移会让文档、请求、响应对不上，且没有任何机制会告警。已知边界：连续大写字母会被逐个拆分（`myAPIKey` → `my_a_p_i_key`）；拦截器对 `content` 键的值不做递归转换（业务数据内部键由写入方决定，避免 MongoDB 驼峰与数仓下划线落成两套键名）
 - 日志：注入 `LoggerService`（`module/common/logger`）
 - **类、接口、函数与方法必须带 JSDoc 注释**（风格参考 `common/utils/batchBuffer.ts` 的三行 `/** 攒批配置选项 */`）：Service/Controller/Module/DTO/接口说明职责，方法说明做什么及关键语义；单句简体中文、结尾不加中文句号；带装饰器的声明注释写在首个装饰器上方；`*.spec.ts` 不要求，已存在的注释不改写。新增声明遗漏注释视同未完成
 

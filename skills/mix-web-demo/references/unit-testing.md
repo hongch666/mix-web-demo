@@ -158,6 +158,7 @@ Redis Pub/Sub 跨实例去重、真实断线重连、浏览器持续打开窗口
 - 单元测试放在 `nestjs/src/**/xxx.spec.ts`
 - 组件/集成测试放在 `nestjs/test/integration/**/*.integration-spec.ts`，端到端测试放在 `nestjs/test/e2e/**/*.e2e-spec.ts`
 - Service、Guard、Filter、Middleware 使用 `TestingModule` 或直接构造；外部 Provider 用 `useValue`、`useFactory` 或 Token 替换
+- **`AppModule` 冒烟测试必须替换全部「在 provider 工厂里建连」的基础设施**：TypeORM `getDataSourceToken()`、Mongoose `getConnectionToken()`、Redis `RedisKeys.REDIS_CLIENT`、RabbitMQ `AmqpConnectionManager` 与 `AmqpConnection`。RabbitMQ 最容易漏且症状不直观：`@golevelup/nestjs-rabbitmq` 把 `new AmqpConnection()` + `connection.init()` 放在 `AmqpConnectionManager` 的 `useFactory` 里，`compile()` 实例化 provider 时就会真实拨号，`connectionInitOptions.timeout` 为 10s、直接超过 jest 默认 5s 超时，同时 amqplib 进入后台重连循环，表现为「测试超时 + ETIMEDOUT + Jest did not exit」。只替换 `AmqpConnection` 不够（建连的工厂仍会执行），必须连同 `AmqpConnectionManager` 一起替换；`AmqpConnection` 也要替换，因为 `ApiLogInterceptor` 注入了它
 - 每个测试恢复 Mock；定时器、批处理和重试使用 Fake Timers
 - 默认测试禁止加载真实应用配置或触发连接外部服务的 `onModuleInit`
 - 仓库基线是 Jest：`./mix test nestjs` 与 `bun run test -- --runInBand` 执行的都是 Jest，不要新增第二套测试入口
