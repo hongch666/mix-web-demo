@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { IsOptional, IsString } from "class-validator";
-import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
+import { ExposeName } from "src/common/utils/snakeCase";
 
 /**
  * 获取 GitHub 授权地址接口的查询参数，包含登录成功后的前端回跳路径

@@ -7,7 +7,7 @@ import {
   IsOptional,
   IsString,
 } from "class-validator";
-import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
+import { ExposeName } from "src/common/utils/snakeCase";
 
 export enum ApiMethod {
   GET = "GET",

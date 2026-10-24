@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
+import { toSnakeCase } from "src/common/utils/snakeCase";
 
 type JsonValue =
   | string
@@ -25,13 +26,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
-}
-
-/**
- * 将驼峰命名的键名转换为下划线命名
- */
-function toSnakeCase(key: string): string {
-  return key.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`);
 }
 
 /**

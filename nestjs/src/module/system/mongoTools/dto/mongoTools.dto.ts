@@ -13,7 +13,7 @@ import {
   Min,
 } from "class-validator";
 import { MongoTools } from "src/common/constants";
-import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
+import { ExposeName } from "src/common/utils/snakeCase";
 
 /**
  * MongoDB 查询 DTO

@@ -8,7 +8,7 @@ import {
   IsString,
   Min,
 } from "class-validator";
-import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
+import { ExposeName } from "src/common/utils/snakeCase";
 
 /**
  * 内部服务发送邮箱验证码的请求体，包含收件邮箱、验证码、场景类型与可选过期分钟数

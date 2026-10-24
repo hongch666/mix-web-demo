@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty, IsString } from "class-validator";
-import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
+import { ExposeName } from "src/common/utils/snakeCase";
 
 /**
  * 文件上传结果结构，包含原始文件名、OSS 文件名与访问链接

@@ -5,6 +5,7 @@ import type {
   ReferenceObject,
   SchemaObject,
 } from "@nestjs/swagger/dist/interfaces/open-api-spec.interface";
+import { toSnakeCase } from "src/common/utils/snakeCase";
 
 /**
  * 判断值是否为 OpenAPI 的 $ref 引用对象
@@ -25,13 +26,6 @@ function isSchemaObject(value: unknown): value is SchemaObject {
   return (
     typeof value === "object" && value !== null && !isReferenceObject(value)
   );
-}
-
-/**
- * 将驼峰命名的键名转换为下划线命名
- */
-function toSnakeCase(key: string): string {
-  return key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
 /**

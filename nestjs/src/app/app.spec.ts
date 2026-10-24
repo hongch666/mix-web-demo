@@ -1,3 +1,7 @@
+import {
+  AmqpConnection,
+  AmqpConnectionManager,
+} from "@golevelup/nestjs-rabbitmq";
 import { getConnectionToken } from "@nestjs/mongoose";
 import { Test } from "@nestjs/testing";
 import { getDataSourceToken } from "@nestjs/typeorm";
@@ -34,6 +38,25 @@ const mongooseConnectionStub = {
 };
 
 /**
+ * RabbitMQ 连接管理器桩：RabbitMQModule 的工厂在编译阶段就会建立真实连接，
+ * 连接超时 10s 且失败后持续重连，替换后不产生 socket、不残留句柄
+ * 只提供 RabbitMQModule 自身用到的成员，不放行任意属性访问
+ */
+const amqpConnectionManagerStub = {
+  getConnections: (): unknown[] => [],
+  close: async (): Promise<void> => undefined,
+  clearConnections: (): void => undefined,
+};
+
+/**
+ * RabbitMQ 连接桩：ApiLogInterceptor 注入它并在请求完成后 publish 接口日志，
+ * 显式提供该成员，冒烟测试不走请求流故不会真正调用
+ */
+const amqpConnectionStub = {
+  publish: async (): Promise<boolean> => true,
+};
+
+/**
  * AppModule 冒烟测试
  *
  * 模块未 import、Provider 未导出等依赖装配错误只有 Nest 解析整个 DI 图时才会暴露，
@@ -50,6 +73,10 @@ describe("AppModule 冒烟测试", () => {
       .useValue(mongooseConnectionStub)
       .overrideProvider(RedisKeys.REDIS_CLIENT)
       .useValue(null)
+      .overrideProvider(AmqpConnectionManager)
+      .useValue(amqpConnectionManagerStub)
+      .overrideProvider(AmqpConnection)
+      .useValue(amqpConnectionStub)
       .compile();
 
     try {
