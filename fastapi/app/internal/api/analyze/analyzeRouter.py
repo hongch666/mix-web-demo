@@ -2,13 +2,12 @@ from typing import Any
 
 from fastapi import APIRouter, Request
 
-from app.core.base import ApiResponse, success
+from app.core.base import ApiResponse, ListResponse, success
 from app.core.decorators import log, requireAdmin
 from app.dependencies import AnalyzeServiceDep, DbSession
 from app.internal.schemas import (
     ArticleStatisticsResponse,
     CategoryArticleCountResponse,
-    ListResponse,
     MonthlyPublishCountResponse,
 )
 

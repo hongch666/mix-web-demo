@@ -1008,6 +1008,7 @@ components:
       - total
       - daily_trends
       title: ActionTrendResponse
+      description: 用户行为趋势响应，含总量与每日趋势明细
     AiHistoryResponse:
       properties:
         id:
@@ -1087,6 +1088,7 @@ components:
       - avg_response_time
       - call_count
       title: ApiLogAverageResponse
+      description: 单个接口平均响应时间与调用次数的响应模型
     ApiLogCalledCountResponse:
       properties:
         api_path:
@@ -1117,6 +1119,7 @@ components:
       - call_count
       - avg_response_time
       title: ApiLogCalledCountResponse
+      description: 单个接口调用次数与平均响应时间的响应模型
     ApiResponse_ActionTrendResponse_:
       properties:
         code:
@@ -1594,6 +1597,7 @@ components:
       - total_collects
       - average_collects
       title: ArticleStatisticsResponse
+      description: 平台文章统计响应，包含阅读、文章、点赞、收藏等汇总指标
     ArticleViewDistributionResponse:
       properties:
         total_views:
@@ -1612,6 +1616,7 @@ components:
       - total_views
       - articles
       title: ArticleViewDistributionResponse
+      description: 用户文章阅读分布响应，含总阅读量与各文章明细
     AuthorFollowStatisticsResponse:
       properties:
         total_authors:
@@ -1629,6 +1634,7 @@ components:
       - total_authors
       - daily_follows
       title: AuthorFollowStatisticsResponse
+      description: 用户关注作者统计响应，含关注总数与每日关注明细
     CategoryArticleCountResponse:
       properties:
         category_id:
@@ -1649,6 +1655,7 @@ components:
       - category_name
       - article_count
       title: CategoryArticleCountResponse
+      description: 单个分类文章数量统计项的响应模型
     ChangeEventDTO:
       properties:
         resource:
@@ -1799,7 +1806,7 @@ components:
           $ref: '#/components/schemas/AIServiceType'
           description: AI服务类型：gpt、gemini、glm、deepseek、claude或qwen
           default: GPT
-        streamFormat:
+        stream_format:
           $ref: '#/components/schemas/StreamFormat'
           description: 流式响应帧格式：native 为项目自定义帧（message/chunk/message_type，前端使用），openai
             为 OpenAI Chat Completions 兼容分片（思考走 delta.reasoning_content，正文走 delta.content，末尾返回
@@ -1828,6 +1835,7 @@ components:
       - message
       - article_id
       title: GenerateCommentTaskResponse
+      description: AI 评论生成任务提交结果的响应模型
     GenerateDTO:
       properties:
         text:
@@ -2039,6 +2047,7 @@ components:
       - year_month
       - count
       title: MonthlyPublishCountResponse
+      description: 单个月份文章发布数量的响应模型
     Neo4jSyncDTO:
       properties:
         events:
@@ -2196,6 +2205,7 @@ components:
       required:
       - script_params
       title: ScriptParamsResponse
+      description: 返回搜索脚本参数映射的响应模型
     SearchScriptResponseData:
       properties:
         es_script:
@@ -2206,6 +2216,7 @@ components:
       required:
       - es_script
       title: SearchScriptResponseData
+      description: 返回 ES 搜索脚本的响应数据模型
     SearchWeightsResponse:
       properties:
         weights:
@@ -2218,6 +2229,7 @@ components:
       required:
       - weights
       title: SearchWeightsResponse
+      description: 搜索权重列表的响应模型
     StreamFormat:
       type: string
       enum:
@@ -2242,6 +2254,7 @@ components:
       - period
       - timeline
       title: UserFollowerResponse
+      description: 按统计周期返回的用户关注时间线响应
     UserProfileResponse:
       properties:
         user_id:
@@ -2308,6 +2321,7 @@ components:
       - total_comments
       - total_focus
       title: UserProfileResponse
+      description: 用户画像统计响应，包含发文、获赞、粉丝等全量指标
     UserTimelineItem:
       properties:
         date:
@@ -2336,6 +2350,7 @@ components:
       required:
       - count
       title: UserTimelineItem
+      description: 用户分析时间线中单个时间点与数量的响应项
     ValidationError:
       properties:
         loc:
