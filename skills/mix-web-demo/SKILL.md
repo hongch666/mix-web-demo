@@ -106,7 +106,7 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
 
 - 新增或修改的代码注释、装饰器说明和文档说明均不得以中文句号 `。` 结尾，统一以无句号文本或其他必要标点结束
 
-14. **日志采集必须排除敏感字段**：请求体进入日志后会被投递到 `api-log-queue`，最终落在 MongoDB `apilogs` 与 ClickHouse `ods_api_log`，因此凡是携带密码、验证码、令牌、授权码的接口都要显式排除。各服务能力：Spring `@ApiLog(excludeFields = {...})`、NestJS `@ApiLog({ excludeFields: [...] })`、FastAPI `@logWithConfig(exclude_fields = [...])`（`@log` 不支持）；**GoZero 的 `ApplyApiLog` 没有任何排除能力**，涉及凭据的接口不要挂它，或先给中间件补过滤参数
+14. **日志采集必须排除敏感字段**：请求体进入日志后会被投递到 `api-log-queue`，最终落在 MongoDB `apilogs` 与 ClickHouse `ods_api_log`，因此凡是携带密码、验证码、令牌、授权码的接口都要显式排除。各服务能力：Spring `@ApiLog(excludeFields = {...})`、NestJS `@ApiLog({ excludeFields: [...] })`、FastAPI `@logWithConfig(exclude_fields = [...])`（`@log` 不支持）；GoZero 通过可变参传入——`ApplyApiLog(rabbitPublisher, logger, handler, "操作描述", "password", "captcha")`，中间件内部用 `sanitizeBody` / `sanitizeQueryParams` 递归把命中字段（字段名大小写不敏感）替换为 `******`
 15. **新增接口必须带参数校验**，任何接收请求参数的接口都要声明校验规则，不得只靠业务层兜底。各服务写法见对应章节；**GoZero 的校验标签写在 `.api` 文件里**（随 goctl 生成进 `types.go`），漏写标签等于该参数没有校验，不会报错也不会告警
 16. **新增、修改或删除对外接口后，必须重新生成静态 OpenAPI 文档并同步 Apifox**：先 `./mix swag <service>`，产物（`openapi.json` + `openapi.yaml`）与服务代码同一次提交；再 `./mix apifox <service>` 同步到 Apifox，未配置令牌时跳过并说明。完整流程见「接口文档收尾流程」章节
 17. **业务配置统一经 YAML 导入环境变量**：服务配置值在对应 `application.yaml` 中声明 `${ENV_NAME:default}`，业务代码通过项目配置加载器或框架配置服务读取；禁止在业务模块直接调用 `os.getenv`、`process.env`、`System.getenv`、`os.LookupEnv` 等绕过 YAML。环境变量直接读取仅保留在配置加载器/启动引导，以及第三方库必须从标准进程环境读取且 YAML 无法替代的场景（如 HTTP 代理变量），新增例外需说明原因。可选变量当前不启用时，在 `.env`、`.env.example`、`.env.docker` 中注释变量行，并注明未配置时的默认行为；不要用空值赋值伪装成已配置
@@ -585,7 +585,7 @@ FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大�
 | spring  | JUnit 5（Jupiter）+ Mockito + AssertJ；响应式链用 `StepVerifier`，Controller 用 `WebTestClient` | `./mix test spring`（`cd spring && mvn test`）                   |
 | nestjs  | Jest + ts-jest（配置在 `nestjs/package.json` 的 `jest` 段）                                     | `./mix test nestjs`（`bun run test -- --runInBand`）             |
 | fastapi | pytest，异步用例用 anyio 插件的 `@pytest.mark.anyio`                                            | `./mix test fastapi`（`cd fastapi && uv run pytest -q`）         |
-| gozero  | Go 标准库 `testing` + `net/http/httptest`（当前未引入 testify / sqlmock）                       | `./mix test gozero`（`cd gozero/app && go test ./... -count=1`） |
+| gozero  | Go 标准库 `testing` + `net/http/httptest`，断言可用 testify `assert`（未引入 mock / suite / sqlmock） | `./mix test gozero`（`cd gozero/app && go test ./... -count=1`） |
 | gateway | 无单元测试（配置驱动，不参与）                                                                  | `./mix test gateway` 直接跳过                                    |
 
 工具未安装时该服务返回码 2 并跳过，「跳过」不能当成「通过」；只要改动了服务代码或测试，`./mix test <service>` 就是交付前必跑项（顺序见下一节）。

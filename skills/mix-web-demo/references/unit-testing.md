@@ -15,7 +15,7 @@
 | `spring/`  | JUnit 5（Jupiter）+ Mockito + AssertJ；响应式链用 `reactor-test` 的 `StepVerifier`，Controller 用 `WebTestClient` | `spring/pom.xml`（`spring-boot-starter-test`、`reactor-test`） | `cd spring && mvn test`                              |
 | `nestjs/`  | Jest + ts-jest                                                                                    | `nestjs/package.json` 的 `jest` 段                            | `cd nestjs && bun run test -- --runInBand`           |
 | `fastapi/` | pytest，异步用例用 anyio 插件的 `@pytest.mark.anyio`                                               | `fastapi/pyproject.toml` 的 `[tool.pytest.ini_options]`       | `cd fastapi && uv run pytest -q`（Windows + WSL 场景改用自带解释器） |
-| `gozero/`  | Go 标准库 `testing` + `net/http/httptest`（当前未引入 testify / sqlmock 等第三方库）                | 测试与被测包同目录，命名 `xxx_test.go`                         | `cd gozero/app && go test ./... -count=1`            |
+| `gozero/`  | Go 标准库 `testing` + `net/http/httptest`，断言可用 `github.com/stretchr/testify/assert`（已引入，仅用 `assert`，未引入 `mock` / `suite` / `sqlmock`） | 测试与被测包同目录，命名 `xxx_test.go`                         | `cd gozero/app && go test ./... -count=1`            |
 | `gateway/` | 无单元测试（配置驱动）                                                                            | -                                                             | `./mix test gateway` 直接跳过                        |
 
 统一入口是 `./mix test <service>`（省略服务名时跑 spring、gozero、nestjs、fastapi，底层 `scripts/test.sh` 的实际命令与上表一致）。对应工具未安装时该服务返回码 2 并跳过，「跳过」不能当成「通过」；每个服务的 test 入口与 format、lint、compile 一样是交付前必跑项
@@ -178,7 +178,8 @@ Redis Pub/Sub 跨实例去重、真实断线重连、浏览器持续打开窗口
 
 ### GoZero
 
-- 测试工具：Go 标准库 `testing` + `net/http/httptest`；当前未引入 testify / sqlmock 等第三方测试库，新增测试依赖前先确认
+- 测试工具：Go 标准库 `testing` + `net/http/httptest`；断言可用已引入的 `github.com/stretchr/testify/assert`，但只允许 `assert` 做断言，未引入也不得引入 `mock`、`suite`、`sqlmock` 等，新增测试依赖前先确认
+- 测试脚手架跨包复用时放在 `app/common/testkit`（普通包，可被引用的非 `_test.go` 文件；`_test.go` 里定义的 helper 无法被其它包导入）
 - 测试与生产包同目录，命名 `xxx_test.go`
 - 边界和错误分类优先表驱动；资源使用 `t.Cleanup` 回收
 - HTTP 使用 `httptest.Server` 或注入 `RoundTripper`
