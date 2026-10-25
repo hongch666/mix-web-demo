@@ -11,7 +11,7 @@ from langchain_openai import ChatOpenAI
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages, Prompts
-from app.internal.agents.langsmith import get_langsmith_context
+from app.internal.agents.langsmith.client import get_langsmith_context
 from app.internal.agents.model.modelParams import supports_temperature
 from app.internal.crud import DocScore, VectorMapper
 

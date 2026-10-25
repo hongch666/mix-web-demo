@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 from app.core.base import Logger, LoggerProtocol
 from app.core.constants import Defaults, Messages
-from app.internal.agents.langsmith import get_langsmith_context
+from app.internal.agents import get_langsmith_context
 from app.internal.crud import VectorMapper, get_vector_store_mapper
 from app.internal.schemas import (
     VectorMatchedChunkDTO,

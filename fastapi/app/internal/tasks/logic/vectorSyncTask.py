@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys
-from app.internal.agents.langsmith import get_langsmith_context
+from app.internal.agents import get_langsmith_context
 from app.internal.cache import get_redis_client
 from app.internal.clients import SpringClient, get_spring_client
 from app.internal.crud import VectorMapper, get_vector_store_mapper

@@ -19,6 +19,7 @@ from .streamFrame import (
     build_openai_finish_frame,
     build_openai_start_frame,
 )
+from .toolArguments import JsonArrayArgument, JsonObjectArgument, parse_json_string
 
 __all__: list[str] = [
     "logger",
@@ -40,4 +41,7 @@ __all__: list[str] = [
     "build_openai_error_frame",
     "build_openai_finish_frame",
     "build_openai_start_frame",
+    "parse_json_string",
+    "JsonObjectArgument",
+    "JsonArrayArgument",
 ]

@@ -7,15 +7,13 @@ from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
-from app.core.base import Logger
+from app.core.base import JsonObjectArgument, Logger
 from app.core.constants import Messages, Prompts
 from app.core.db import get_db
 from app.internal.agents.permissions.toolScope import (
     enforce_sql_row_scope,
     log_scope_denial,
 )
-
-from .toolArguments import JsonObjectArgument
 
 
 class FastapiSqlTool:

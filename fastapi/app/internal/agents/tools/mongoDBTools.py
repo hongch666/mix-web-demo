@@ -5,15 +5,13 @@ from typing import Any, Optional
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
-from app.core.base import Logger
+from app.core.base import JsonArrayArgument, JsonObjectArgument, Logger
 from app.core.constants import Defaults, Messages, Prompts
 from app.internal.agents.permissions.toolScope import (
     enforce_mongodb_row_scope,
     log_scope_denial,
 )
 from app.internal.clients import NestjsClient, get_nestjs_client
-
-from .toolArguments import JsonArrayArgument, JsonObjectArgument
 
 
 class MongoDBTools:

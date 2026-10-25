@@ -1,4 +1,22 @@
-from .extractor import ReferenceContentExtractor, get_reference_content_extractor
+from .extraction.extractor import (
+    ReferenceContentExtractor,
+    get_reference_content_extractor,
+)
+from .langsmith.client import (
+    get_langsmith_client,
+    get_langsmith_context,
+    get_langsmith_context_async,
+    init_langsmith,
+    shutdown_langsmith,
+)
+from .langsmith.config import LangSmithConfig, load_langsmith_config
+from .langsmith.sanitizer import (
+    sanitize_metadata,
+    sanitize_tool_input,
+    sanitize_tool_output,
+    sanitize_user_id,
+)
+from .langsmith.tags import build_chat_metadata, build_chat_tags
 from .routing.intentRouter import (
     IntentExpression,
     IntentRouter,
@@ -79,4 +97,17 @@ __all__: list[str] = [
     "parse_model_prefixes",
     "supports_temperature",
     "supports_structured_output",
+    "LangSmithConfig",
+    "load_langsmith_config",
+    "get_langsmith_client",
+    "get_langsmith_context",
+    "get_langsmith_context_async",
+    "init_langsmith",
+    "shutdown_langsmith",
+    "sanitize_metadata",
+    "sanitize_tool_input",
+    "sanitize_tool_output",
+    "sanitize_user_id",
+    "build_chat_tags",
+    "build_chat_metadata",
 ]

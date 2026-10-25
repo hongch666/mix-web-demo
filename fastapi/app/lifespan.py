@@ -27,7 +27,7 @@ from app.core.db import (
     get_neo4j_client,
     get_rabbitmq_client,
 )
-from app.internal.agents.langsmith import (
+from app.internal.agents import (
     init_langsmith,
     load_langsmith_config,
     shutdown_langsmith,

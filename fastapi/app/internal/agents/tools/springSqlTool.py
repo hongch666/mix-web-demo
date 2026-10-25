@@ -5,15 +5,13 @@ from typing import Any, Optional
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
-from app.core.base import Logger
+from app.core.base import JsonObjectArgument, Logger
 from app.core.constants import Messages, Prompts
 from app.internal.agents.permissions.toolScope import (
     enforce_sql_row_scope,
     log_scope_denial,
 )
 from app.internal.clients import SpringClient, get_spring_client
-
-from .toolArguments import JsonObjectArgument
 
 
 class SpringSqlTool:

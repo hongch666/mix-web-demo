@@ -24,7 +24,7 @@ from app.core.config import load_config
 from app.core.constants import Defaults, Messages
 from app.core.db import get_db
 from app.core.middleware import get_current_user_id
-from app.internal.agents.langsmith import (
+from app.internal.agents import (
     build_chat_metadata,
     build_chat_tags,
     get_langsmith_context,

@@ -10,9 +10,9 @@ from langchain_core.documents import Document
 from app.core.constants import Defaults
 from app.internal.agents import (
     ReferenceContentExtractor,
-    extractor as extractor_module,
     get_reference_content_extractor,
 )
+from app.internal.agents.extraction import extractor as extractor_module
 
 
 class _FakeSplitter:

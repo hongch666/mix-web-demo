@@ -7,12 +7,10 @@ from typing import Any, Optional
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
-from app.core.base import Logger
+from app.core.base import JsonObjectArgument, Logger
 from app.core.constants import Messages, Prompts, Scripts
 from app.core.db import get_neo4j_client
 from app.internal.models import Article, User
-
-from .toolArguments import JsonObjectArgument
 
 
 class Neo4jQueryTools:
