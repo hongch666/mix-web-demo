@@ -8,13 +8,14 @@ import (
 
 	"app/common/constants"
 	"app/common/exceptions"
+	"app/common/testkit"
 )
 
 // 验证该测试场景的预期行为
 
 func TestRecoveryMiddlewarePassesThrough(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := NewRecoveryMiddleware(newMiddlewareTestLogger(t)).Handle(func(w http.ResponseWriter, _ *http.Request) {
+	handler := NewRecoveryMiddleware(testkit.NewTestLogger(t)).Handle(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 	handler(recorder, httptest.NewRequest(http.MethodGet, "/test", nil))
@@ -27,7 +28,7 @@ func TestRecoveryMiddlewarePassesThrough(t *testing.T) {
 
 func TestRecoveryMiddlewareHandlesBusinessPanic(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := NewRecoveryMiddleware(newMiddlewareTestLogger(t)).Handle(func(http.ResponseWriter, *http.Request) {
+	handler := NewRecoveryMiddleware(testkit.NewTestLogger(t)).Handle(func(http.ResponseWriter, *http.Request) {
 		panic(exceptions.NewForbiddenErrorSame("禁止访问"))
 	})
 	handler(recorder, httptest.NewRequest(http.MethodGet, "/test", nil))
@@ -40,7 +41,7 @@ func TestRecoveryMiddlewareHandlesBusinessPanic(t *testing.T) {
 
 func TestRecoveryMiddlewareHandlesUnknownPanic(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := NewRecoveryMiddleware(newMiddlewareTestLogger(t)).Handle(func(http.ResponseWriter, *http.Request) {
+	handler := NewRecoveryMiddleware(testkit.NewTestLogger(t)).Handle(func(http.ResponseWriter, *http.Request) {
 		panic("unexpected")
 	})
 	handler(recorder, httptest.NewRequest(http.MethodGet, "/test", nil))

@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"app/common/testkit"
 	"app/common/utils"
 )
 
@@ -13,7 +14,7 @@ import (
 func TestInternalServiceMiddlewareRejectsMissingToken(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	called := false
-	handler := NewInternalServiceMiddleware(newMiddlewareTestLogger(t)).Handle(func(http.ResponseWriter, *http.Request) {
+	handler := NewInternalServiceMiddleware(testkit.NewTestLogger(t)).Handle(func(http.ResponseWriter, *http.Request) {
 		called = true
 	})
 	handler(recorder, httptest.NewRequest(http.MethodGet, "/internal", nil))
@@ -28,7 +29,7 @@ func TestInternalServiceMiddlewareAcceptsValidToken(t *testing.T) {
 	token := generateInternalToken(t, "gozero")
 	recorder := httptest.NewRecorder()
 	called := false
-	internal := NewInternalServiceMiddleware(newMiddlewareTestLogger(t)).Handle(func(http.ResponseWriter, *http.Request) {
+	internal := NewInternalServiceMiddleware(testkit.NewTestLogger(t)).Handle(func(http.ResponseWriter, *http.Request) {
 		called = true
 	})
 	handler := NewUserContextMiddleware().Handle(internal)
@@ -46,7 +47,7 @@ func TestInternalServiceMiddlewareRejectsServiceMismatch(t *testing.T) {
 	token := generateInternalToken(t, "gozero")
 	recorder := httptest.NewRecorder()
 	called := false
-	internal := NewInternalTokenMiddleware(newMiddlewareTestLogger(t), "spring")(func(http.ResponseWriter, *http.Request) {
+	internal := NewInternalTokenMiddleware(testkit.NewTestLogger(t), "spring")(func(http.ResponseWriter, *http.Request) {
 		called = true
 	})
 	handler := NewUserContextMiddleware().Handle(internal)

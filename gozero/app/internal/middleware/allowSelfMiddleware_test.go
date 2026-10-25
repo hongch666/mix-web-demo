@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"app/common/keys"
+	"app/common/testkit"
 
 	"github.com/zeromicro/go-zero/rest/pathvar"
 )
@@ -81,7 +82,7 @@ func TestAllowSelfMiddleware(t *testing.T) {
 			request = request.WithContext(context.WithValue(request.Context(), keys.UserIDKey, test.currentID))
 			recorder := httptest.NewRecorder()
 			called := false
-			handler := NewAllowSelfMiddleware(test.checker, newMiddlewareTestLogger(t)).Handle(
+			handler := NewAllowSelfMiddleware(test.checker, testkit.NewTestLogger(t)).Handle(
 				func(w http.ResponseWriter, _ *http.Request) {
 					called = true
 					w.WriteHeader(http.StatusNoContent)

@@ -1,4 +1,5 @@
-package middleware
+// Package testkit 提供跨包复用的测试脚手架，仅被各包的 _test.go 引用，不参与生产链路
+package testkit
 
 import (
 	"testing"
@@ -6,7 +7,8 @@ import (
 	"app/common/utils"
 )
 
-func newMiddlewareTestLogger(t *testing.T) *utils.ZeroLogger {
+// NewTestLogger 创建写入临时目录的日志器，并在测试结束时自动关闭
+func NewTestLogger(t *testing.T) *utils.ZeroLogger {
 	t.Helper()
 	logger, err := utils.NewZeroLogger(t.TempDir())
 	if err != nil {
