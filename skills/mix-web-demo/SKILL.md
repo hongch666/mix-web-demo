@@ -241,6 +241,7 @@ app/internal/agents     LangChain Agent 与工具
 - **入参校验用 Pydantic 模型**（放 `internal/schemas/`，文件名 `xxxDTO.py`）：字段用 `Field(...)` 声明，单字段规则用 `@field_validator` + `PydanticCustomError`（中文消息，参考 `createHistoryDTO.py`），请求体禁止用裸 `dict` / `Any` 接收；新增接口必须带校验（通用规则 13）
 - **统一响应模型使用泛型**：`core/base/response.py` 的 `ApiResponse[T]` 负责声明 `code`、`msg` 和 `data`，路由必须通过 `response_model=ApiResponse[具体类型]` 暴露返回结构。已知结构使用领域 DTO、列表或字典泛型；只有运行时结构确实不固定时才使用 `ApiResponse[object]`，禁止退回不带类型参数的 `ApiResponse`
 - **FastAPI 响应结构必须可展开**：已知返回字段必须定义 Pydantic 响应 DTO，并在路由使用 `response_model=ApiResponse[具体 DTO]`；禁止用 `ApiResponse[object]` 隐藏可确定的 `data` 结构。DTO 的每个字段、嵌套对象和列表项都要用 `Field(description=...)` 写明含义。
+- **DTO 字段内部驼峰、对外蛇形，统一用 `app.core.base` 的 `Alias` 声明**（同时写 `validation_alias` 与 `serialization_alias`，配合 `model_config = {"populate_by_name": True}` 让驼峰与蛇形两种写法都能入参；`to_snake` 一并导出供外部复用）；`internal/schemas/` 只放业务 DTO（`xxxDTO.py`），通用的 Pydantic 工具与响应外壳（`ApiResponse`、`ListResponse`、`Alias`、`streamFrame`）统一放 `core/base/`。
 - SQL：ClickHouse 查询用 `%(name)s` 参数化；SQL 模板集中在 `core/constants/scripts.py` 与 `warehouse.py`，业务代码不内联 SQL 字符串
 - 缓存：使用 `internal/cache` 的两级缓存体系（L1 内存 5 分钟 + L2 Redis 1 天 + ClickHouse 版本号失效），新统计接口优先接入而非自造缓存
 - 定时任务：APScheduler 注册在 `internal/tasks/scheduler.py`，任务逻辑放 `tasks/logic/`；多实例互斥用 Redis `try_lock`/`unlock`（key 进 `RedisKeys` 常量）
@@ -406,7 +407,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 | 服务    | 标记方式                                                                                        | 校验实现                                         | 网关侧                  |
 | ------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------ | ----------------------- |
-| Spring  | `@RequireInternalToken`                                                                         | 切面 `RequireInternalTokenAspect`                       | `block-internal` 黑名单 |
+| Spring  | `@RequireInternalToken`                                                                         | 切面 `RequireInternalTokenAspect`                | `block-internal` 黑名单 |
 | NestJS  | `@RequireInternalToken()`                                                                       | `framework/guards/internalToken.guard.ts`        | 同上                    |
 | FastAPI | `@requireInternalToken`（装饰器会给 wrapper 打 `requires_internal_token` 标记，供契约测试自省） | `core/decorators/requireInternalToken.py`        | 同上                    |
 | GoZero  | `.api` 的 `@server middleware:` + `InternalServiceMiddleware`                                   | `common/middleware/internalServiceMiddleware.go` | 同上                    |

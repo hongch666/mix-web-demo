@@ -4,7 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from .alias import Alias
+from app.core.base import Alias
 
 
 class VectorSearchEnhanceReq(BaseModel):

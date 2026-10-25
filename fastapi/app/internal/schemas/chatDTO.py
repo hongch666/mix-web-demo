@@ -4,9 +4,8 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core import PydanticCustomError
 
+from app.core.base import Alias
 from app.core.constants import HttpCode
-
-from .alias import Alias
 
 
 class AIServiceType(StrEnum):
@@ -80,7 +79,8 @@ class ChatStreamRequest(ChatRequest):
     streamFormat 可选，缺省为 native，保持前端既有契约不变
     """
 
-    streamFormat: StreamFormat = Field(
+    streamFormat: StreamFormat = Alias(
+        "streamFormat",
         default=StreamFormat.NATIVE,
         description=(
             "流式响应帧格式：native 为项目自定义帧（message/chunk/message_type，前端使用），"
