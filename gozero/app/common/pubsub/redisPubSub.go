@@ -1,4 +1,3 @@
-// Package pubsub 提供基于 Redis Pub/Sub 的跨实例消息总线，单个 RedisPubSub 实例对应单一频道，频道在构造时确定
 package pubsub
 
 import (

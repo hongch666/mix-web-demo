@@ -1,4 +1,3 @@
-// Package testkit 提供跨包复用的测试脚手架，仅被各包的 _test.go 引用，不参与生产链路
 package testkit
 
 import (
