@@ -1,6 +1,10 @@
 import "reflect-metadata";
 import { ValidationPipe } from "@nestjs/common";
-import { ColumnConfigDto, SaveTableSettingsDto } from "./tableSettings.dto";
+import {
+  ColumnConfigDto,
+  SaveTableSettingsDto,
+  TableSettingsQueryDto,
+} from "./tableSettings.dto";
 
 // 全局 ValidationPipe 的实际配置：开启 transform 与隐式类型转换
 const pipe = new ValidationPipe({
@@ -57,5 +61,37 @@ describe("SaveTableSettingsDto", () => {
     )) as SaveTableSettingsDto;
 
     expect(dto.columns).toEqual([]);
+  });
+});
+
+describe("TableSettingsQueryDto", () => {
+  // 验证查询参数中的 user_id 字符串被转换为数字
+  it("验证查询参数 user_id 转换为数字", async () => {
+    const dto = (await pipe.transform(
+      { user_id: "9" },
+      { type: "query" as const, metatype: TableSettingsQueryDto },
+    )) as TableSettingsQueryDto;
+
+    expect(dto.user_id).toBe(9);
+  });
+
+  // 验证缺省 user_id 时通过校验，由业务回退为当前登录用户
+  it("验证缺省 user_id 时通过校验", async () => {
+    const dto = (await pipe.transform(
+      {},
+      { type: "query" as const, metatype: TableSettingsQueryDto },
+    )) as TableSettingsQueryDto;
+
+    expect(dto.user_id).toBeUndefined();
+  });
+
+  // 验证非正整数的 user_id 被拒绝
+  it("验证 user_id 为 0 时报错", async () => {
+    await expect(
+      pipe.transform(
+        { user_id: "0" },
+        { type: "query" as const, metatype: TableSettingsQueryDto },
+      ),
+    ).rejects.toThrow();
   });
 });

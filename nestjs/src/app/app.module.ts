@@ -13,6 +13,7 @@ import config, { isTaskEnabled } from "src/config";
 import { AllExceptionsFilter } from "src/framework/filters/allException.filter";
 import { InternalTokenGuard } from "src/framework/guards/internalToken.guard";
 import { RequireAdminGuard } from "src/framework/guards/requireAdmin.guard";
+import { RequireSelfGuard } from "src/framework/guards/requireSelf.guard";
 import { ApiLogInterceptor } from "src/framework/interceptors/apiLog.interceptor";
 import { CommonModule } from "src/module/common/common.module";
 import { LoggerService } from "src/module/common/logger/logger.service";
@@ -163,6 +164,10 @@ interface MongoDbConfig {
     {
       provide: APP_GUARD,
       useClass: RequireAdminGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RequireSelfGuard,
     },
   ],
 })

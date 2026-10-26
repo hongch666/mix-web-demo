@@ -2354,9 +2354,20 @@
     },
     "/table-settings": {
       "get": {
-        "description": "返回当前登录用户所有已保存的表格列设置",
+        "description": "返回目标用户所有已保存的表格列设置，缺省为当前登录用户",
         "operationId": "TableSettingsController_getAllSettings",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "user_id",
+            "required": false,
+            "in": "query",
+            "description": "目标用户ID，缺省为当前登录用户，指定他人时需要管理员权限",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "成功",
@@ -2406,7 +2417,7 @@
             }
           }
         },
-        "summary": "获取当前用户所有页面的列配置",
+        "summary": "获取指定用户所有页面的列配置",
         "tags": [
           "表格列设置"
         ]
@@ -2414,7 +2425,7 @@
     },
     "/table-settings/{table_key}": {
       "get": {
-        "description": "获取当前登录用户在指定页面的表格列设置",
+        "description": "获取目标用户在指定页面的表格列设置，缺省为当前登录用户",
         "operationId": "TableSettingsController_getSettings",
         "parameters": [
           {
@@ -2424,6 +2435,16 @@
             "description": "页面标识",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "user_id",
+            "required": false,
+            "in": "query",
+            "description": "目标用户ID，缺省为当前登录用户，指定他人时需要管理员权限",
+            "schema": {
+              "example": 1,
+              "type": "number"
             }
           }
         ],
@@ -2485,7 +2506,7 @@
         ]
       },
       "put": {
-        "description": "保存（新增或更新）当前登录用户在指定页面的表格列设置",
+        "description": "保存（新增或更新）目标用户在指定页面的表格列设置，缺省为当前登录用户",
         "operationId": "TableSettingsController_saveSettings",
         "parameters": [
           {
@@ -2495,6 +2516,16 @@
             "description": "页面标识",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "user_id",
+            "required": false,
+            "in": "query",
+            "description": "目标用户ID，缺省为当前登录用户，指定他人时需要管理员权限",
+            "schema": {
+              "example": 1,
+              "type": "number"
             }
           }
         ],
@@ -2559,7 +2590,7 @@
         ]
       },
       "delete": {
-        "description": "删除当前登录用户在指定页面的表格列设置，恢复为默认配置",
+        "description": "删除目标用户在指定页面的表格列设置并恢复默认，缺省为当前登录用户",
         "operationId": "TableSettingsController_deleteSettings",
         "parameters": [
           {
@@ -2569,6 +2600,16 @@
             "description": "页面标识",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "user_id",
+            "required": false,
+            "in": "query",
+            "description": "目标用户ID，缺省为当前登录用户，指定他人时需要管理员权限",
+            "schema": {
+              "example": 1,
+              "type": "number"
             }
           }
         ],

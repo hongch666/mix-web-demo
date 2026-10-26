@@ -299,6 +299,21 @@ export class Messages {
     tableKey: string,
   ): string => `用户 ${userId} 删除了页面 ${tableKey} 的列设置`;
 
+  static readonly USER_SCOPE_DENIED = (
+    currentUserId: number,
+    targetUserId: number,
+  ): string =>
+    `用户作用域校验未通过: 当前用户 ${currentUserId}, 目标用户 ${targetUserId}`;
+
+  static readonly USER_SCOPE_ADMIN_ACCESS = (
+    currentUserId: number,
+    targetUserId: number,
+  ): string =>
+    `用户 ${currentUserId} 以管理员身份访问用户 ${targetUserId} 的数据`;
+
+  static readonly ADMIN_PERMISSION_CHECK_FAILED = (message: string): string =>
+    `管理员权限校验失败: ${message}`;
+
   // ===== 日志攒批 =====
 
   static readonly API_LOG_BATCH_ENQUEUED = (size: number): string =>
@@ -509,6 +524,13 @@ export class Messages {
   static readonly PARAM_ERROR = "参数解析失败";
 
   static readonly UNAUTHORIZED_USER = "未授权的用户，无法访问";
+
+  static readonly USER_IDENTITY_MISSING = "请求上下文中缺少登录用户标识";
+
+  static readonly SELF_OR_ADMIN_REQUIRED =
+    "仅允许访问本人数据，或需要管理员权限";
+
+  static readonly USER_SCOPE_TARGET_INVALID = "目标用户标识必须为正整数";
 
   static readonly NO_ADMIN_USER = "当前用户没有管理员权限，无法访问此功能";
 

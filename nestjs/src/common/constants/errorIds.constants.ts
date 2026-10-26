@@ -4,6 +4,7 @@
 export class ErrorIds {
   // ===== 400 Bad Request =====
   static readonly PARAM_PARSE_FAILED = "PARAM_PARSE_FAILED";
+  static readonly USER_SCOPE_TARGET_INVALID = "USER_SCOPE_TARGET_INVALID";
 
   // ===== 401 Unauthorized =====
   static readonly INTERNAL_TOKEN_MISSING_ERROR = "INTERNAL_TOKEN_MISSING";
@@ -13,6 +14,7 @@ export class ErrorIds {
   // ===== 403 Forbidden =====
   static readonly UNAUTHORIZED_USER_ERROR = "UNAUTHORIZED_USER";
   static readonly NO_ADMIN_PERMISSION = "NO_ADMIN_PERMISSION";
+  static readonly SELF_OR_ADMIN_REQUIRED = "SELF_OR_ADMIN_REQUIRED";
   static readonly INTERNAL_TOKEN_SERVICE_MISMATCH =
     "INTERNAL_TOKEN_SERVICE_MISMATCH";
 
@@ -22,6 +24,8 @@ export class ErrorIds {
 
   // ===== 500 Internal Server Error =====
   static readonly NESTJS_SERVER_ERROR = "NESTJS_SERVER_ERROR";
+  static readonly ADMIN_PERMISSION_CHECK_FAILED =
+    "ADMIN_PERMISSION_CHECK_FAILED";
   static readonly OSS_UPLOAD_ERROR = "OSS_UPLOAD_ERROR";
   static readonly INTERNAL_TOKEN_SECRET_NOT_NULL =
     "INTERNAL_TOKEN_SECRET_NOT_NULL";
