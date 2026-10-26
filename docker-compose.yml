@@ -321,6 +321,10 @@ services:
       TZ: Asia/Shanghai
       SERVER_IP: 0.0.0.0
       NACOS_IP: nacos
+      # 容器以宿主机 UID 运行，Nacos SDK 的缓存与日志目录必须落在镜像内可写的 /app/tmp 下
+      # 从 .env.example 复制的相对路径（../../static/tmp/...）在容器内会解析到只读的 /static，导致 nacos-sdk.log permission denied
+      NACOS_CACHE_DIR: /app/tmp/nacos/cache
+      NACOS_LOG_DIR: /app/tmp/nacos/log
       DB_MYSQL_HOST: mysql
       DB_ES_HOST: es
       DB_MONGODB_HOST: mongodb

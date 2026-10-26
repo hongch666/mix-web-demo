@@ -201,6 +201,10 @@ run_container() {
         gozero)
             append_env env_args "SERVER_IP" "0.0.0.0"
             append_env env_args "NACOS_IP" "nacos"
+            # 容器以宿主机 UID 运行，Nacos SDK 的缓存与日志目录必须落在镜像内可写的 /app/tmp 下
+            # 从 .env.example 复制的相对路径在容器内会解析到只读的 /static，导致 nacos-sdk.log permission denied
+            append_env env_args "NACOS_CACHE_DIR" "/app/tmp/nacos/cache"
+            append_env env_args "NACOS_LOG_DIR" "/app/tmp/nacos/log"
             append_env env_args "DB_MYSQL_HOST" "mysql"
             append_env env_args "DB_ES_HOST" "es"
             append_env env_args "DB_MONGODB_HOST" "mongodb"
