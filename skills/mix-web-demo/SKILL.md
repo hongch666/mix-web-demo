@@ -296,6 +296,8 @@ app/common/validation    请求参数校验器（httpx.Validator 适配器、自
 app/common/exceptions    业务异常类型（BadRequest / InternalServerError 等）
 app/common/pubsub        Redis Pub/Sub 跨实例广播（redisPubSub.go）
 app/common/utils         ZeroLogger 与工具（response、redisLock、internalToken、safeGo）
+app/common/testkit       只依赖 common 的测试脚手架（日志器、共享用例），不参与生产链路
+app/internal/testkit     依赖 internal 的测试脚手架（ServiceContext/Hub 装配、模型替身），不参与生产链路
 app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文件）
 ```
 

@@ -143,7 +143,7 @@ Redis Pub/Sub 跨实例去重、真实断线重连、浏览器持续打开窗口
 ### Spring WebFlux
 
 - 测试工具：JUnit 5（Jupiter）+ Mockito + AssertJ；响应式链用 `reactor-test` 的 `StepVerifier`，Controller、校验与异常映射用 `WebTestClient`
-- 测试放在 `spring/src/test/java/<生产包路径>/XxxTest.java`
+- 测试放在 `spring/src/test/java/<生产包路径>/XxxTest.java`，**包名与类名都必须与生产类一一对应**（`Xxx.java` ↔ `XxxTest.java`）；不允许存在没有生产对应物的测试类，跨多个生产类的契约/结构测试要按类拆分（如序列化契约测试按 VO/事件类拆成各自的 `XxxTest`）
 - Reactor 链使用 `StepVerifier`，禁止 `.block()`
 - Reactor Context 用 `contextWrite` 显式构造
 - Controller、参数校验和异常映射使用 `WebTestClient`
@@ -155,7 +155,7 @@ Redis Pub/Sub 跨实例去重、真实断线重连、浏览器持续打开窗口
 ### NestJS
 
 - 测试工具：Jest + ts-jest（配置在 `package.json` 的 `jest` 段）
-- 单元测试放在 `nestjs/src/**/xxx.spec.ts`
+- 单元测试放在 `nestjs/src/**/xxx.spec.ts`，**spec 必须与同目录的生产文件一一对应**（`xxx.service.ts` ↔ `xxx.service.spec.ts`）；不允许存在没有生产对应物的 spec（如 `app.spec.ts` 应改名 `app.module.spec.ts` 对齐 `app.module.ts`）
 - 组件/集成测试放在 `nestjs/test/integration/**/*.integration-spec.ts`，端到端测试放在 `nestjs/test/e2e/**/*.e2e-spec.ts`
 - Service、Guard、Filter、Middleware 使用 `TestingModule` 或直接构造；外部 Provider 用 `useValue`、`useFactory` 或 Token 替换
 - **`AppModule` 冒烟测试必须替换全部「在 provider 工厂里建连」的基础设施**：TypeORM `getDataSourceToken()`、Mongoose `getConnectionToken()`、Redis `RedisKeys.REDIS_CLIENT`、RabbitMQ `AmqpConnectionManager` 与 `AmqpConnection`。RabbitMQ 最容易漏且症状不直观：`@golevelup/nestjs-rabbitmq` 把 `new AmqpConnection()` + `connection.init()` 放在 `AmqpConnectionManager` 的 `useFactory` 里，`compile()` 实例化 provider 时就会真实拨号，`connectionInitOptions.timeout` 为 10s、直接超过 jest 默认 5s 超时，同时 amqplib 进入后台重连循环，表现为「测试超时 + ETIMEDOUT + Jest did not exit」。只替换 `AmqpConnection` 不够（建连的工厂仍会执行），必须连同 `AmqpConnectionManager` 一起替换；`AmqpConnection` 也要替换，因为 `ApiLogInterceptor` 注入了它
@@ -168,7 +168,7 @@ Redis Pub/Sub 跨实例去重、真实断线重连、浏览器持续打开窗口
 ### FastAPI
 
 - 测试工具：pytest，异步用例用 anyio 插件的 `@pytest.mark.anyio`（配置在 `pyproject.toml` 的 `[tool.pytest.ini_options]`）
-- 测试沿用 `fastapi/tests/<应用包路径>/xxx_test.py`；引入 integration marker 后再拆分独立集成目录
+- 测试沿用 `fastapi/tests/<应用包路径>/xxx_test.py`，**路径与文件名都镜像 `app/` 下的生产模块**（`app/internal/agents/langsmith/client.py` ↔ `tests/internal/agents/langsmith/client_test.py`）；`pyproject.toml` 已配置 `--import-mode=importlib`，允许不同目录下出现同名测试模块，不要为避开重名而破坏镜像关系
 - 异步测试使用 pytest/AnyIO，异步依赖使用 `AsyncMock`
 - 路由组件测试使用 `dependency_overrides`
 - 每个测试清理 dependency override、contextvars、`lru_cache` 单例和共享熔断器状态
@@ -179,7 +179,7 @@ Redis Pub/Sub 跨实例去重、真实断线重连、浏览器持续打开窗口
 ### GoZero
 
 - 测试工具：Go 标准库 `testing` + `net/http/httptest`；断言可用已引入的 `github.com/stretchr/testify/assert`，但只允许 `assert` 做断言，未引入也不得引入 `mock`、`suite`、`sqlmock` 等，新增测试依赖前先确认
-- 测试脚手架跨包复用时放在 `app/common/testkit`（普通包，可被引用的非 `_test.go` 文件；`_test.go` 里定义的 helper 无法被其它包导入）
+- 测试文件必须与生产文件一一对应（`xxx.go` ↔ `xxx_test.go`），**不允许存在没有生产对应物的 `_test.go` 脚手架文件**（如 `chatTestSupport_test.go`）；跨包复用的测试脚手架一律放进普通包：`_test.go` 里定义的 helper 无法被其它包导入，按依赖选包——只依赖 `common/*` 的放 `app/common/testkit`，依赖 `internal/*`（`svc`、`hub`、`model`）的放 `app/internal/testkit`，不要把依赖 `internal` 的脚手架塞进 `common/testkit`（会形成 `common → internal` 反向依赖）
 - 测试与生产包同目录，命名 `xxx_test.go`
 - 边界和错误分类优先表驱动；资源使用 `t.Cleanup` 回收
 - HTTP 使用 `httptest.Server` 或注入 `RoundTripper`
