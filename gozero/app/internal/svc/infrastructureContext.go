@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"app/common/constants"
 	"app/common/utils"
@@ -26,6 +28,14 @@ import (
 )
 
 var detectLocalIP = getLocalIPv4Address
+
+// sleepBeforeNacosRetry 注册重试前的等待函数，测试可替换为不回真实等待的实现
+var sleepBeforeNacosRetry = time.Sleep
+
+// nacosBackgroundRunner 后台补注册的启动函数，测试可替换为同步执行以避免并发
+var nacosBackgroundRunner = func(logger *utils.ZeroLogger, taskName string, task func()) {
+	utils.SafeGo(logger, taskName, task)
+}
 
 // 初始化基础设施上下文
 func newInfrastructureContext(c config.Config, logger *utils.ZeroLogger) *InfrastructureContext {
@@ -210,23 +220,12 @@ func initRabbitMQ(c config.Config, logger *utils.ZeroLogger) *rabbitmq.Publisher
 	return publisher
 }
 
-// 初始化 Nacos 客户端
+// 初始化 Nacos 客户端并注册当前实例
 func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingClient {
 	nacosConf := c.Nacos
 	if nacosConf.IpAddr == "" || nacosConf.Port == 0 {
 		logger.Warning(constants.NACOS_CONFIG_MISSING_DEGRADE)
 		return nil
-	}
-
-	if nacosConf.CacheDir != "" {
-		if err := os.MkdirAll(nacosConf.CacheDir, 0o755); err != nil {
-			logger.Error(fmt.Sprintf(constants.NACOS_CACHE_DIR_CREATE_FAIL, err, nacosConf.CacheDir))
-		}
-	}
-	if nacosConf.LogDir != "" {
-		if err := os.MkdirAll(nacosConf.LogDir, 0o755); err != nil {
-			logger.Error(fmt.Sprintf(constants.NACOS_LOG_DIR_CREATE_FAIL, err, nacosConf.LogDir))
-		}
 	}
 
 	serverConfigs := []constant.ServerConfig{{
@@ -238,8 +237,8 @@ func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingC
 		TimeoutMs:           constants.NacosClientTimeoutMs,
 		NotLoadCacheAtStart: true,
 		LogLevel:            "error",
-		CacheDir:            nacosConf.CacheDir,
-		LogDir:              nacosConf.LogDir,
+		CacheDir:            resolveNacosWritableDir(constants.NacosCacheDirName, nacosConf.CacheDir, logger),
+		LogDir:              resolveNacosWritableDir(constants.NacosLogDirName, nacosConf.LogDir, logger),
 	}
 
 	namingClient, err := clients.NewNamingClient(vo.NacosClientParam{
@@ -251,30 +250,124 @@ func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingC
 		panic(err)
 	}
 
-	// 网关以容器运行，注册地址必须是容器能回连的地址，固定 127.0.0.1 会让网关连到容器自身，显式配置 SERVER_IP 时以它为准，未指定（空、0.0.0.0）则自动探测本机 IP
-	registerIP := resolveNacosRegisterIP(c.Host)
+	registerNacosInstance(namingClient, c, logger)
+	return namingClient
+}
 
-	if registerIP != "" && c.Port > 0 && nacosConf.ServiceName != "" {
-		_, err = namingClient.RegisterInstance(vo.RegisterInstanceParam{
-			Ip:          registerIP,
-			Port:        uint64(c.Port),
-			ServiceName: nacosConf.ServiceName,
-			GroupName:   nacosConf.GroupName,
-			ClusterName: nacosConf.ClusterName,
-			Weight:      1.0,
-			Enable:      true,
-			Healthy:     true,
-			Ephemeral:   true,
-		})
-		if err != nil {
-			logger.Errorf(constants.NACOS_REGISTER_FAIL,
-				nacosConf.ServiceName, registerIP, c.Port, nacosConf.GroupName, err)
-			panic(err)
-		}
-		logger.Infof(constants.NACOS_REGISTERED_MESSAGE, registerIP, c.Port)
+// nacosInstanceRegistrar 抽象 Nacos 实例注册能力，便于测试注册重试与降级分支
+type nacosInstanceRegistrar interface {
+	RegisterInstance(param vo.RegisterInstanceParam) (bool, error)
+}
+
+// registerNacosInstance 注册当前实例到 Nacos，失败按固定间隔重试，重试耗尽只告警降级，不阻断服务启动
+func registerNacosInstance(client nacosInstanceRegistrar, c config.Config, logger *utils.ZeroLogger) {
+	nacosConf := c.Nacos
+	if client == nil || nacosConf.ServiceName == "" || c.Port <= 0 {
+		return
 	}
 
-	return namingClient
+	// 网关以容器运行，注册地址必须是容器能回连的地址，固定 127.0.0.1 会让网关连到容器自身，显式配置 SERVER_IP 时以它为准，未指定（空、0.0.0.0）则自动探测本机 IP
+	registerIP := resolveNacosRegisterIP(c.Host)
+	if registerIP == "" {
+		logger.Warning(constants.NACOS_REGISTER_IP_MISSING_DEGRADE)
+		return
+	}
+
+	param := vo.RegisterInstanceParam{
+		Ip:          registerIP,
+		Port:        uint64(c.Port),
+		ServiceName: nacosConf.ServiceName,
+		GroupName:   nacosConf.GroupName,
+		ClusterName: nacosConf.ClusterName,
+		Weight:      1.0,
+		Enable:      true,
+		Healthy:     true,
+		Ephemeral:   true,
+	}
+
+	registered, lastErr := tryRegisterNacosInstance(client, param, constants.NacosRegisterRetries, logger)
+	if registered {
+		return
+	}
+
+	logger.Errorf(constants.NACOS_REGISTER_FAIL,
+		nacosConf.ServiceName, registerIP, c.Port, nacosConf.GroupName, lastErr)
+	logger.Warning(constants.NACOS_REGISTER_DEGRADE_WARNING)
+
+	// Nacos 启动慢于本服务时，启动阶段的重试可能全部落空，转入后台继续补注册，避免实例永久不被网关发现
+	nacosBackgroundRunner(logger, constants.NacosRegisterTaskName, func() {
+		if retried, _ := tryRegisterNacosInstance(client, param, constants.NacosRegisterBackgroundRetries, logger); !retried {
+			logger.Errorf(constants.NACOS_REGISTER_BACKGROUND_GIVE_UP_ERROR,
+				nacosConf.ServiceName, registerIP, c.Port)
+		}
+	})
+}
+
+// tryRegisterNacosInstance 按固定间隔尝试注册，成功返回 true，重试耗尽返回 false 与最后一次错误
+func tryRegisterNacosInstance(
+	client nacosInstanceRegistrar,
+	param vo.RegisterInstanceParam,
+	attempts int,
+	logger *utils.ZeroLogger,
+) (bool, error) {
+	var lastErr error
+	for attempt := 1; attempt <= attempts; attempt++ {
+		_, err := client.RegisterInstance(param)
+		if err == nil {
+			logger.Infof(constants.NACOS_REGISTERED_MESSAGE, param.Ip, param.Port)
+			return true, nil
+		}
+		lastErr = err
+		logger.Warningf(constants.NACOS_REGISTER_RETRY_WARNING, attempt, attempts, err)
+		if attempt < attempts {
+			sleepBeforeNacosRetry(constants.NacosRegisterRetryInterval)
+		}
+	}
+
+	return false, lastErr
+}
+
+// resolveNacosWritableDir 返回可写的 Nacos SDK 目录，配置目录不可写时回退系统临时目录，避免容器内非 root 用户写 SDK 日志失败
+func resolveNacosWritableDir(kind string, configuredPath string, logger *utils.ZeroLogger) string {
+	fallbackPath := filepath.Join(os.TempDir(), constants.NacosTempDirName, kind)
+	candidates := []string{fallbackPath}
+	if configuredPath != "" {
+		candidates = []string{configuredPath, fallbackPath}
+	}
+
+	var lastErr error
+	for _, candidate := range candidates {
+		if err := ensureWritableDir(candidate); err != nil {
+			lastErr = err
+			logger.Warningf(constants.NACOS_DIR_UNUSABLE_WARNING, candidate, err)
+			continue
+		}
+		if configuredPath != "" && candidate != configuredPath {
+			logger.Warningf(constants.NACOS_DIR_FALLBACK_WARNING, configuredPath, candidate)
+		}
+		return candidate
+	}
+
+	logger.Errorf(constants.NACOS_DIR_UNAVAILABLE_ERROR, kind, lastErr)
+	return fallbackPath
+}
+
+// ensureWritableDir 创建目录并写入探针文件确认可写，MkdirAll 成功不代表当前用户对目录有写权限
+func ensureWritableDir(dir string) error {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+
+	probe, err := os.CreateTemp(dir, ".write-probe-")
+	if err != nil {
+		return err
+	}
+	probePath := probe.Name()
+	if err := probe.Close(); err != nil {
+		return err
+	}
+
+	return os.Remove(probePath)
 }
 
 // 初始化 Redis 客户端

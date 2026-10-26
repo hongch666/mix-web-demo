@@ -69,6 +69,8 @@ RUN addgroup -g 1001 -S appgroup && \
 
 # 创建日志、静态文件与 Nacos 缓存/日志目录并设置权限
 # Nacos 目录默认在 /app/tmp 下（cacheDir/logDir 相对 ./tmp 解析），非 root 用户需要预建授权
+# 容器实际以宿主机 UID 运行（compose 的 HOST_UID 与脚本的 --user），与镜像内 appuser 的 1001 不一致
+# 因此 /app/tmp 放开写权限，否则 Nacos SDK 写 nacos-sdk.log 会报 permission denied
 RUN mkdir -p /app/logs/gozero && \
     mkdir -p /app/static/pic && \
     mkdir -p /app/static/excel && \
@@ -76,7 +78,9 @@ RUN mkdir -p /app/logs/gozero && \
     mkdir -p /app/tmp/nacos/cache && \
     mkdir -p /app/tmp/nacos/log && \
     chown -R appuser:appgroup /app/logs /app/static /app/tmp && \
-    chmod -R 755 /app
+    chmod -R 755 /app/logs /app/static && \
+    chmod -R 777 /app/tmp && \
+    chmod 755 /app
 
 USER appuser
 

@@ -75,6 +75,20 @@ const (
 const (
 	// Nacos 客户端超时（毫秒）
 	NacosClientTimeoutMs = 5000
+	// Nacos 实例注册最大尝试次数
+	NacosRegisterRetries = 5
+	// Nacos 实例后台补注册最大尝试次数
+	NacosRegisterBackgroundRetries = 15
+	// Nacos 实例注册重试间隔
+	NacosRegisterRetryInterval = 2 * time.Second
+	// Nacos 后台补注册任务名，用于异常日志标识
+	NacosRegisterTaskName = "nacos-register"
+	// Nacos SDK 缓存目录名
+	NacosCacheDirName = "cache"
+	// Nacos SDK 日志目录名
+	NacosLogDirName = "log"
+	// Nacos SDK 目录不可写时的临时目录名
+	NacosTempDirName = "nacos"
 )
 
 // 数据库连接超时

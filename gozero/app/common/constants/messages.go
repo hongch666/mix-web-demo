@@ -27,10 +27,15 @@ const (
 	NACOS_CONFIG_MISSING_DEGRADE     = "Nacos 地址未配置，服务发现、注册与服务间调用将不可用"
 
 	// Nacos
-	NACOS_REGISTERED_MESSAGE    = "注册到 Nacos 成功: %s:%d"
-	NACOS_CACHE_DIR_CREATE_FAIL = "创建Nacos缓存目录失败: %v, 路径: %s"
-	NACOS_LOG_DIR_CREATE_FAIL   = "创建Nacos日志目录失败: %v, 路径: %s"
-	GODOTENV_LOAD_FAIL          = "加载.env文件失败: %v"
+	NACOS_REGISTERED_MESSAGE                = "注册到 Nacos 成功: %s:%d"
+	NACOS_REGISTER_RETRY_WARNING            = "Nacos 注册失败(第 %d/%d 次)，稍后重试: %v"
+	NACOS_REGISTER_DEGRADE_WARNING          = "Nacos 注册重试耗尽，服务继续启动并转入后台补注册，注册成功前网关无法发现该实例"
+	NACOS_REGISTER_BACKGROUND_GIVE_UP_ERROR = "Nacos 后台补注册仍未成功，实例未注册到注册中心: service=%s, address=%s:%d"
+	NACOS_REGISTER_IP_MISSING_DEGRADE       = "未解析到可注册的 IP，已跳过 Nacos 实例注册"
+	NACOS_DIR_UNUSABLE_WARNING              = "Nacos 目录不可用，路径: %s, 原因: %v"
+	NACOS_DIR_FALLBACK_WARNING              = "Nacos 目录 %s 不可写，已回退到 %s"
+	NACOS_DIR_UNAVAILABLE_ERROR             = "Nacos 的 %s 目录均不可写，Nacos SDK 将无法写入本地文件: %v"
+	GODOTENV_LOAD_FAIL                      = "加载.env文件失败: %v"
 
 	// 错误
 	INTERNAL_TOKEN_SECRET_NOT_NULL = "内部服务令牌密钥不能为空"
