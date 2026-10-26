@@ -29,6 +29,17 @@ fi
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
+# 能力开关：提交检查默认关闭，只有显式写入 mix.hooks.commit=true 才执行
+# 与技能同步开关（mix.hooks.skills，默认开启）互不影响
+COMMIT_SWITCH="$(git config --get mix.hooks.commit 2>/dev/null || true)"
+case "$(printf '%s' "$COMMIT_SWITCH" | tr '[:upper:]' '[:lower:]')" in
+    true | 1 | yes | on) ;;
+    *)
+        echo "[pre-commit] 提交检查默认关闭，跳过；如需启用执行: ./mix hooks enable commit"
+        exit 0
+        ;;
+esac
+
 # 统一入口：显式用 bash 调用 mix，避免依赖文件可执行位
 # （Windows Git Bash 与 macOS 自带 bash 3.2 都无法保证 ./mix 的可执行位）
 MIX=(bash "$ROOT/mix")

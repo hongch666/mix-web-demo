@@ -634,17 +634,24 @@ Windows 主机上执行第 3、4 步时，fastapi 必须在 Git Bash / PowerShel
 
 ### Git 提交钩子
 
-仓库内置版本化钩子，启用后 `git commit` 会自动按上面的顺序执行「格式化 → 检查 → 编译校验 → 单元测试」，任一步失败即阻止提交：
+仓库内置版本化钩子，启用后**默认只有 pull 时的技能同步生效，提交检查默认关闭**，需要时单独开启：
 
 ```bash
-./mix hooks              # 启用（git config core.hooksPath .githooks）
-./mix hooks status       # 查看当前配置
-./mix hooks uninstall    # 停用
+./mix hooks                        # 启用（git config core.hooksPath .githooks）
+./mix hooks status                 # 查看 hooksPath 与两项能力的开闭状态
+./mix hooks enable commit          # 开启提交检查：格式化 → 检查 → 编译校验 → 单元测试，失败即阻止提交
+./mix hooks disable commit         # 关闭提交检查（默认状态）
+./mix hooks disable skills         # 关闭 pull 后的技能同步（默认开启）
+./mix hooks uninstall              # 停用全部（清除 core.hooksPath）
 ```
+
+- 两项能力独立开关，都存本仓库 git config：提交检查 `mix.hooks.commit`（**默认关闭**，只有显式 `true`/`1`/`yes`/`on` 才执行）、技能同步 `mix.hooks.skills`（**默认开启**，写 `false`/`0`/`no`/`off` 才关闭）；`enable`/`disable` 支持 `commit`、`skills`、`all`
 
 - 钩子只对暂存区里属于 `spring/`、`gozero/`、`nestjs/`、`fastapi/` 的改动生效；非这四个目录的提交（文档、`scripts/`、`gateway/`）直接放行
 - 格式化跑完后会把结果重新 `git add -u` 进暂存区，保证提交的是格式化后的版本
-- 临时跳过单次提交：`SKIP_HOOKS=1 git commit ...` 或 `git commit --no-verify`
+- 拉取联动：`.githooks/post-merge` 在普通 `git pull`（merge）完成后执行 `./mix skills`；`git pull --rebase` 不触发 `post-merge`，由 `.githooks/post-rewrite` 复用同一段逻辑。同步脚本幂等（内容一致时跳过），失败只提示、不影响 pull 结果
+- **Windows 下必须在 Git Bash 里执行 pull**：WSL 的 bash 里 `HOME` 指向 Linux 侧主目录，`./mix skills` 会同步到 `/home/<user>` 而 IDE 读的是 `C:\Users\<user>`，看起来成功但技能没更新
+- 临时跳过单次提交或拉取：`SKIP_HOOKS=1 git commit ...`、`SKIP_HOOKS=1 git pull ...` 或 `git commit --no-verify`
 - 钩子是 bash 脚本，由 Git 自带的 `sh` 执行：Linux/macOS 直接可用，Windows 走 Git for Windows 自带的 Git Bash（无需 PowerShell 版本）；换行符由 `.gitattributes` 统一为 LF
 - 新克隆的仓库需执行一次 `./mix hooks` 才会启用；生成代码时不要依赖钩子替代手动校验，钩子有跨服务共享脚本的覆盖缺口（改 `scripts/` 下的检查脚本本身不会触发服务检查）
 

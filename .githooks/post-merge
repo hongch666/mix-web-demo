@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+# 拉取后钩子：git pull（merge 方式）完成后自动同步技能包
+#
+# 行为：
+#   执行 ./mix skills，把 skills/mix-web-demo 镜像到 scripts/skills-targets.conf 列出的
+#   本机用户级 Agent 技能目录；同步脚本本身幂等，内容一致时跳过，未改技能也只是多一次比对
+#
+# 安装方式：./mix hooks（等价于 git config core.hooksPath .githooks），新克隆需执行一次
+#
+# 平台说明：
+#   - Windows 走 Git for Windows 自带的 Git Bash，HOME 指向 C:\Users\<user>，
+#     同步目标是 Windows 侧主目录；不要在 WSL 的 bash 里 pull，否则会写到 Linux 侧主目录
+#   - 换行符由 .gitattributes 的 `* text=auto eol=lf` 统一为 LF，避免 CRLF 导致 shebang 失效
+#
+# 临时跳过：SKIP_HOOKS=1 git pull ...
+
+set -euo pipefail
+
+if [ "${SKIP_HOOKS:-0}" = "1" ]; then
+    echo "[post-merge] 检测到 SKIP_HOOKS=1，跳过技能同步"
+    exit 0
+fi
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+# 能力开关：./mix hooks disable skills 写入 mix.hooks.skills=false 后跳过技能同步，
+# 与提交检查开关（mix.hooks.commit）互不影响
+SKILLS_SWITCH="$(git config --get mix.hooks.skills 2>/dev/null || true)"
+case "$(printf '%s' "${SKILLS_SWITCH:-true}" | tr '[:upper:]' '[:lower:]')" in
+    false | 0 | no | off)
+        echo "[post-merge] 技能同步已关闭（mix.hooks.skills=false），跳过"
+        exit 0
+        ;;
+esac
+
+# 统一入口：显式用 bash 调用 mix，避免依赖文件可执行位
+# （Windows Git Bash 与 macOS 自带 bash 3.2 都无法保证 ./mix 的可执行位）
+if ! bash "$ROOT/mix" skills; then
+    # 合并已完成，同步失败不应让 pull 表现为失败，只提示并保留手动入口
+    echo "[post-merge] 技能同步失败，可手动执行: ./mix skills"
+fi
+
+exit 0

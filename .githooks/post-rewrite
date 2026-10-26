@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# 改写后钩子：git pull --rebase 不触发 post-merge，这里复用同一段技能同步逻辑
+# 安装方式、平台说明与临时跳过方式见 .githooks/post-merge
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+# 改写钩子会通过 stdin 传入被改写的提交列表，读掉免得上游写管道时阻塞
+cat >/dev/null || true
+
+exec bash "$ROOT/.githooks/post-merge"
