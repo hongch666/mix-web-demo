@@ -4,13 +4,14 @@ import (
 	"context"
 	"testing"
 
+	"app/common/testkit"
 	"app/internal/hub"
 	"app/internal/svc"
 )
 
 // 验证获取队列状态时返回队列中的全部用户及数量
 func TestChatGetQueueStatusListsQueueUsers(t *testing.T) {
-	logger := newChatTestLogger(t)
+	logger := testkit.NewTestLogger(t)
 	chatHub := hub.NewChatHub(logger)
 	chatHub.JoinQueue(900003, &hub.Client{UserID: 900003, Send: make(chan []byte, 1)})
 	chatHub.JoinQueue(900004, &hub.Client{UserID: 900004, Send: make(chan []byte, 1)})
@@ -33,7 +34,7 @@ func TestChatGetQueueStatusListsQueueUsers(t *testing.T) {
 
 // 验证队列为空时返回零计数
 func TestChatGetQueueStatusReportsEmptyQueue(t *testing.T) {
-	logger := newChatTestLogger(t)
+	logger := testkit.NewTestLogger(t)
 	chatHub := hub.NewChatHub(logger)
 	logic := NewChatGetQueueStatusLogic(context.Background(), &svc.ServiceContext{HubContext: &svc.HubContext{ChatHub: chatHub}, LoggerContext: &svc.LoggerContext{Logger: logger}})
 	t.Cleanup(func() { _ = logic.ZeroLogger.Close() })

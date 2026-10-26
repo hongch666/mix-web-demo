@@ -5,13 +5,14 @@ import (
 	"errors"
 	"testing"
 
+	"app/internal/testkit"
 	"app/internal/types"
 )
 
 // 验证获取所有未读数时透传模型查询结果
 func TestChatGetAllUnreadCountsReturnsModelData(t *testing.T) {
-	model := &chatMessageModelFake{unread: map[int64]int64{1: 3, 5: 2}}
-	ctx, _ := newChatMessageTestContext(t, model, false)
+	model := &testkit.ChatMessageModelFake{Unread: map[int64]int64{1: 3, 5: 2}}
+	ctx, _ := testkit.NewChatMessageTestContext(t, model, false)
 	logic := NewChatGetAllUnreadCountsLogic(context.Background(), ctx)
 	t.Cleanup(func() { _ = logic.ZeroLogger.Close() })
 
@@ -23,8 +24,8 @@ func TestChatGetAllUnreadCountsReturnsModelData(t *testing.T) {
 
 // 验证获取所有未读数查询失败时返回错误
 func TestChatGetAllUnreadCountsReportsQueryFailure(t *testing.T) {
-	model := &chatMessageModelFake{unreadErr: errors.New("read failed")}
-	ctx, _ := newChatMessageTestContext(t, model, false)
+	model := &testkit.ChatMessageModelFake{UnreadErr: errors.New("read failed")}
+	ctx, _ := testkit.NewChatMessageTestContext(t, model, false)
 	logic := NewChatGetAllUnreadCountsLogic(context.Background(), ctx)
 	t.Cleanup(func() { _ = logic.ZeroLogger.Close() })
 

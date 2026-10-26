@@ -6,17 +6,18 @@ import (
 	"testing"
 	"time"
 
+	"app/internal/testkit"
 	"app/internal/types"
 	"app/model/chatMessages"
 )
 
 // 验证获取历史记录时归一化分页参数、映射消息并标记已读
 func TestChatGetHistoryNormalizesPageAndMapsMessages(t *testing.T) {
-	model := &chatMessageModelFake{
-		messages: []*chatMessages.ChatMessages{{Id: 7, SenderId: 1, ReceiverId: 2, Content: "你好", CreatedAt: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)}},
-		total:    1,
+	model := &testkit.ChatMessageModelFake{
+		Messages: []*chatMessages.ChatMessages{{Id: 7, SenderId: 1, ReceiverId: 2, Content: "你好", CreatedAt: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)}},
+		Total:    1,
 	}
-	ctx, _ := newChatMessageTestContext(t, model, false)
+	ctx, _ := testkit.NewChatMessageTestContext(t, model, false)
 	logic := NewChatGetHistoryLogic(context.Background(), ctx)
 	t.Cleanup(func() { _ = logic.ZeroLogger.Close() })
 
@@ -24,8 +25,8 @@ func TestChatGetHistoryNormalizesPageAndMapsMessages(t *testing.T) {
 	if err != nil || response == nil || response.Total != 1 || len(response.Messages) != 1 {
 		t.Fatalf("历史记录映射不正确: %+v, %v", response, err)
 	}
-	if model.historyOffset != 0 || model.historyLimit != 20 || !model.markCalled || response.Messages[0].IsRead != 1 || response.Messages[0].Id != 7 {
-		t.Fatalf("分页或已读状态不正确: offset=%d limit=%d mark=%v messages=%+v", model.historyOffset, model.historyLimit, model.markCalled, response.Messages)
+	if model.HistoryOffset != 0 || model.HistoryLimit != 20 || !model.MarkCalled || response.Messages[0].IsRead != 1 || response.Messages[0].Id != 7 {
+		t.Fatalf("分页或已读状态不正确: offset=%d limit=%d mark=%v messages=%+v", model.HistoryOffset, model.HistoryLimit, model.MarkCalled, response.Messages)
 	}
 }
 
@@ -41,14 +42,14 @@ func TestChatGetHistoryReportsQueryFailureAndToleratesMarkFailure(t *testing.T) 
 		{name: "标记已读失败", markErr: errors.New("mark failed")},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			model := &chatMessageModelFake{historyErr: testCase.historyErr, markErr: testCase.markErr}
-			ctx, _ := newChatMessageTestContext(t, model, false)
+			model := &testkit.ChatMessageModelFake{HistoryErr: testCase.historyErr, MarkErr: testCase.markErr}
+			ctx, _ := testkit.NewChatMessageTestContext(t, model, false)
 			logic := NewChatGetHistoryLogic(context.Background(), ctx)
 			t.Cleanup(func() { _ = logic.ZeroLogger.Close() })
 
 			response, err := logic.ChatGetHistory(&types.ChatGetHistoryReq{UserId: 2, OtherId: 1, Page: 3, Size: 5})
-			if (err != nil) != testCase.wantError || model.historyOffset != 10 || model.historyLimit != 5 || !model.markCalled {
-				t.Fatalf("历史查询结果不正确: response=%+v err=%v offset=%d limit=%d mark=%v", response, err, model.historyOffset, model.historyLimit, model.markCalled)
+			if (err != nil) != testCase.wantError || model.HistoryOffset != 10 || model.HistoryLimit != 5 || !model.MarkCalled {
+				t.Fatalf("历史查询结果不正确: response=%+v err=%v offset=%d limit=%d mark=%v", response, err, model.HistoryOffset, model.HistoryLimit, model.MarkCalled)
 			}
 		})
 	}

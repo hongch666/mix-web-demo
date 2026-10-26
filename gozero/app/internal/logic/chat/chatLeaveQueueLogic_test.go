@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"app/common/testkit"
 	"app/internal/hub"
 	"app/internal/svc"
 	"app/internal/types"
@@ -11,7 +12,7 @@ import (
 
 // 验证聊天用户离开队列后返回离开状态
 func TestChatLeaveQueueRemovesUser(t *testing.T) {
-	logger := newChatTestLogger(t)
+	logger := testkit.NewTestLogger(t)
 	chatHub := &hub.ChatHub{ZeroLogger: logger}
 	chatHub.JoinQueue(900002, &hub.Client{UserID: 900002, Send: make(chan []byte, 1)})
 	logic := NewChatLeaveQueueLogic(context.Background(), &svc.ServiceContext{HubContext: &svc.HubContext{ChatHub: chatHub}, LoggerContext: &svc.LoggerContext{Logger: logger}})
