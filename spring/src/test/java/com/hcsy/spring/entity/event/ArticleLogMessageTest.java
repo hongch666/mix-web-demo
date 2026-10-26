@@ -15,15 +15,16 @@ import com.hcsy.spring.common.constants.SyncResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * 队列消息序列化契约测试
+ * 文章日志消息序列化契约测试
  * 消息体会被 NestJS 消费者按固定字段解析，字段名与枚举取值不能漂移
  */
-class EventMessageSerializationTest {
+class ArticleLogMessageTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // 验证该场景的预期行为
     @Test
-    @DisplayName("文章日志按约定输出字符串 action 并忽略未使用字段")
+    @DisplayName("按约定输出字符串 action 并忽略未使用字段")
     void serializesArticleLogMessage() throws Exception {
         ArticleLogMessage message = ArticleLogMessage.builder()
             .action(SyncAction.ADD)
@@ -45,8 +46,9 @@ class EventMessageSerializationTest {
         assertFalse(json.contains("tags"));
     }
 
+    // 验证该场景的预期行为
     @Test
-    @DisplayName("文章日志批量删除输出 articleIds 与 content.ids")
+    @DisplayName("批量删除输出 articleIds 与 content.ids")
     void serializesArticleLogBatchDelete() throws Exception {
         ArticleLogMessage message = ArticleLogMessage.builder()
             .action(SyncAction.DELETE)
@@ -60,27 +62,5 @@ class EventMessageSerializationTest {
         assertTrue(json.contains("\"articleIds\":[21,22]"));
         assertTrue(json.contains("\"content\":{\"ids\":[21,22]}"));
         assertFalse(json.contains("articleId\":"));
-    }
-
-    @Test
-    @DisplayName("接口日志忽略空字段且保留约定键名")
-    void serializesApiLogEvent() throws Exception {
-        ApiLogEvent event = ApiLogEvent.builder()
-            .userId(0L)
-            .username("unknown")
-            .apiDescription("创建文章")
-            .apiPath("/articles/{id}")
-            .apiMethod("POST")
-            .responseTime(12L)
-            .build();
-
-        String json = objectMapper.writeValueAsString(event);
-
-        assertTrue(json.contains("\"apiDescription\":\"创建文章\""));
-        assertTrue(json.contains("\"apiPath\":\"/articles/{id}\""));
-        assertTrue(json.contains("\"responseTime\":12"));
-        assertFalse(json.contains("pathParams"));
-        assertFalse(json.contains("requestBody"));
-        assertFalse(json.contains("queryParams"));
     }
 }

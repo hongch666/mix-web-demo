@@ -32,7 +32,7 @@ import com.hcsy.spring.infra.client.ServiceWebClient;
     "jwt.secret=smoke-test-secret-0123456789abcdef",
     "JWT_SECRET=smoke-test-secret-0123456789abcdef",
 })
-class ApplicationTest {
+class MainTest {
 
     @Test
     void contextLoads(@Autowired ApplicationContext context) {
