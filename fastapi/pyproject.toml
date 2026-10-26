@@ -92,6 +92,8 @@ line-ending = "auto"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+# 测试文件名与生产文件同名且路径镜像，不同目录下会出现同名测试模块，importlib 模式按完整路径推导模块名，避免 prepend 模式的 import file mismatch
+addopts = "--import-mode=importlib"
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
