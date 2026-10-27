@@ -39,6 +39,13 @@ RETRY_TIMES=3
 RETRY_INTERVAL_SECONDS=3
 REQUEST_TIMEOUT_SECONDS=180
 
+# 数据模型指纹状态目录（相对仓库根，随仓库提交）：
+# 记录每个服务上一次成功同步到共享 Apifox 项目时的 components.schemas 指纹，
+# 用于判断模型是否发生变更。它描述的是远端项目的同步基线而不是本机状态，
+# 必须提交：否则 A 机器同步后 B 机器没有基线，会把「无历史」误判成「模型有变」，
+# 从而用覆盖模式冲掉 A 侧保留的手工 Mock 与示例
+SCHEMA_STATE_DIR="$WORKDIR/.apifox-state"
+
 TMP_DIR=""
 
 # 颜色输出
@@ -154,6 +161,46 @@ spec_path_for() {
         nestjs) printf '%s' "$WORKDIR/nestjs/docs/openapi.json" ;;
         fastapi) printf '%s' "$WORKDIR/fastapi/docs/openapi.json" ;;
     esac
+}
+
+# ==================== 数据模型变更检测 ====================
+
+schema_state_file() {
+    printf '%s/%s.schemas.sha256' "$SCHEMA_STATE_DIR" "$1"
+}
+
+read_schema_state() {
+    local state_file
+    state_file=$(schema_state_file "$1")
+    if [ -f "$state_file" ]; then
+        tr -d ' \r\n' <"$state_file"
+    fi
+}
+
+write_schema_state() {
+    local service="$1"
+    local digest="$2"
+    mkdir -p "$SCHEMA_STATE_DIR" 2>/dev/null || return 1
+    printf '%s\n' "$digest" >"$(schema_state_file "$service")"
+}
+
+# 对 components.schemas 做规范化序列化后取 sha256：
+# 只关心模型本身是否增删改，与产物排版、字段书写顺序、paths 调整无关
+schemas_digest() {
+    local python_bin="$1"
+    local spec_file="$2"
+    "$python_bin" -c '
+import hashlib
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    document = json.load(handle)
+
+schemas = (document.get("components") or {}).get("schemas") or {}
+payload = json.dumps(schemas, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+print(hashlib.sha256(payload.encode("utf-8")).hexdigest())
+' "$spec_file"
 }
 
 load_env() {
@@ -763,6 +810,18 @@ main() {
         return 1
     fi
 
+    # 显式配置的覆盖策略优先：用户一旦直接指定，本轮就不再按数据模型指纹自动切换
+    local endpoint_behavior_explicit="false"
+    local schema_behavior_explicit="false"
+    if [ -n "$(env_value APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR "")" ]; then
+        endpoint_behavior_explicit="true"
+    fi
+    if [ -n "$(env_value APIFOX_SCHEMA_OVERWRITE_BEHAVIOR "")" ]; then
+        schema_behavior_explicit="true"
+    fi
+    local resolved_endpoint_behavior="$endpoint_behavior"
+    local resolved_schema_behavior="$schema_behavior"
+
     delete_unmatched=$(env_flag APIFOX_DELETE_UNMATCHED_RESOURCES "$DEFAULT_DELETE_UNMATCHED_RESOURCES")
     update_folder_of_changed=$(env_flag APIFOX_UPDATE_FOLDER_OF_CHANGED_ENDPOINT "true")
 
@@ -824,6 +883,7 @@ main() {
 
     local services="${service_args:-$ALL_SERVICES}"
     local failed_services=""
+    local schema_state_updated="false"
     local spec_file options_json payload_file response_file curl_err_file response
     local url created updated ignored failed errors
 
@@ -834,6 +894,39 @@ main() {
             print_error "[$service] 未找到静态文档 $spec_file，请先执行 ./mix swag $service"
             failed_services="$failed_services $service"
             continue
+        fi
+
+        # 数据模型变更检测：AUTO_MERGE 不重写已存在接口的响应绑定，而全量对齐会清理文档里
+        # 已不存在的模型；模型一旦重建或删除，接口上残留的 $ref 就指向不存在的 Apifox 内部
+        # 模型 ID，表现为「校验响应」报 can't resolve reference。因此指纹变化时本轮改用
+        # OVERWRITE_EXISTING 把绑定整体重写一次，指纹未变则继续走默认的 AUTO_MERGE
+        local current_digest=""
+        local previous_digest=""
+        local models_changed="false"
+        if [ -n "$python_bin" ]; then
+            current_digest=$(schemas_digest "$python_bin" "$spec_file" 2>/dev/null || true)
+        fi
+        if [ -n "$current_digest" ]; then
+            previous_digest=$(read_schema_state "$service")
+            if [ "$current_digest" != "$previous_digest" ]; then
+                models_changed="true"
+            fi
+        fi
+
+        endpoint_behavior="$resolved_endpoint_behavior"
+        schema_behavior="$resolved_schema_behavior"
+        if [ "$models_changed" = "true" ]; then
+            if [ "$endpoint_behavior_explicit" = "false" ]; then
+                endpoint_behavior="OVERWRITE_EXISTING"
+            fi
+            if [ "$schema_behavior_explicit" = "false" ]; then
+                schema_behavior="OVERWRITE_EXISTING"
+            fi
+            if [ -z "$previous_digest" ]; then
+                print_info "[$service] 数据模型无历史指纹，本轮按覆盖模式同步以避免残留引用断链"
+            else
+                print_info "[$service] 检测到数据模型变更，本轮按覆盖模式同步以避免残留引用断链"
+            fi
         fi
 
         options_json=$(build_options_json "$service")
@@ -929,7 +1022,23 @@ main() {
                 print_warn "[$service] 扩展残留清理失败，接口文档可能多出一行 x-apifox-maintainer"
             fi
         fi
+
+        # 只有导入成功才记录指纹：失败时保留旧指纹，下次同步仍会按覆盖模式重试
+        if [ -n "$current_digest" ]; then
+            if write_schema_state "$service" "$current_digest"; then
+                schema_state_updated="true"
+            else
+                print_warn "[$service] 数据模型指纹写入失败，下次同步会再次按覆盖模式执行"
+            fi
+        fi
     done
+
+    # 基线是共享的：只有提交之后其他机器才能据此判断「模型没变、无需覆盖」
+    if [ "$schema_state_updated" = "true" ]; then
+        echo ""
+        print_info "数据模型同步基线已更新，请与 docs/ 产物一起提交 .apifox-state/"
+        print_info "（其他机器靠它判断模型是否变更，漏提交会让它们误判为模型有变并触发覆盖同步）"
+    fi
 
     if [ "$readme_enabled" = "true" ]; then
         echo ""
