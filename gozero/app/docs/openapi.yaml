@@ -99,211 +99,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    type: object
-                    properties:
-                      list:
-                        description: 当前页文章
-                        type: array
-                        items:
-                          type: object
-                          required:
-                          - id
-                          - title
-                          - content
-                          - user_id
-                          - username
-                          - tags
-                          - status
-                          - views
-                          - like_count
-                          - collect_count
-                          - author_follow_count
-                          - category_name
-                          - sub_category_name
-                          - create_at
-                          - update_at
-                          - ai_score
-                          - user_score
-                          - ai_comment_count
-                          - user_comment_count
-                          - es_score
-                          - vector_score
-                          - graph_score
-                          - final_score
-                          - reason
-                          - semantic_reason
-                          - relations
-                          - matched_chunks
-                          - score_details
-                          properties:
-                            ai_comment_count:
-                              description: AI 评论数
-                              type: integer
-                            ai_score:
-                              description: AI 评分
-                              type: number
-                            author_follow_count:
-                              description: 作者被关注数
-                              type: integer
-                            category_name:
-                              description: 一级分类名
-                              type: string
-                            collect_count:
-                              description: 收藏数
-                              type: integer
-                            content:
-                              description: 正文
-                              type: string
-                            create_at:
-                              description: 创建时间
-                              type: string
-                            es_score:
-                              description: 关键词检索得分
-                              type: number
-                            final_score:
-                              description: 综合得分
-                              type: number
-                            graph_score:
-                              description: 图谱检索得分
-                              type: number
-                            id:
-                              description: 文章 ID
-                              type: integer
-                            like_count:
-                              description: 点赞数
-                              type: integer
-                            matched_chunks:
-                              description: 命中的向量分片
-                              type: array
-                              items:
-                                type: object
-                                required:
-                                - article_id
-                                - title
-                                - chunk_index
-                                - score
-                                - content
-                                properties:
-                                  article_id:
-                                    description: 文章 ID
-                                    type: integer
-                                  chunk_index:
-                                    description: 分片序号
-                                    type: integer
-                                  content:
-                                    description: 分片文本
-                                    type: string
-                                  score:
-                                    description: 该分片相似度
-                                    type: number
-                                  title:
-                                    description: 文章标题
-                                    type: string
-                            reason:
-                              description: 排序说明
-                              type: string
-                            relations:
-                              description: 命中的图谱关系
-                              type: array
-                              items:
-                                type: object
-                                required:
-                                - type
-                                - name
-                                - score
-                                - reason
-                                properties:
-                                  name:
-                                    description: 关联节点名称
-                                    type: string
-                                  reason:
-                                    description: 命中原因
-                                    type: string
-                                  score:
-                                    description: 关系得分
-                                    type: number
-                                  type:
-                                    description: 关系类型
-                                    type: string
-                            score_details:
-                              description: 分项得分
-                              type: object
-                              required:
-                              - es_score
-                              - vector_score
-                              - graph_score
-                              - business_score
-                              - recency_score
-                              properties:
-                                business_score:
-                                  description: 业务特征分项
-                                  type: number
-                                es_score:
-                                  description: 关键词检索分项
-                                  type: number
-                                graph_score:
-                                  description: 图谱检索分项
-                                  type: number
-                                recency_score:
-                                  description: 时效分项
-                                  type: number
-                                vector_score:
-                                  description: 向量检索分项
-                                  type: number
-                            semantic_reason:
-                              description: 语义命中说明
-                              type: string
-                            status:
-                              description: 文章状态，0 草稿，1 已发布
-                              type: integer
-                            sub_category_name:
-                              description: 二级分类名
-                              type: string
-                            tags:
-                              description: 标签
-                              type: string
-                            title:
-                              description: 标题
-                              type: string
-                            update_at:
-                              description: 更新时间
-                              type: string
-                            user_comment_count:
-                              description: 用户评论数
-                              type: integer
-                            user_id:
-                              description: 作者用户 ID
-                              type: integer
-                            user_score:
-                              description: 用户评分
-                              type: number
-                            username:
-                              description: 作者用户名
-                              type: string
-                            vector_score:
-                              description: 向量检索得分
-                              type: number
-                            views:
-                              description: 浏览量
-                              type: integer
-                      total:
-                        description: 命中总数
-                        type: integer
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroSearchGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -330,28 +126,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    type: object
-                    properties:
-                      keywords:
-                        description: 最近搜索关键词，最多 10 条
-                        type: array
-                        items:
-                          type: string
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroSearchHistoryByUserIdGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -369,18 +144,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - query
-              properties:
-                params:
-                  description: 占位符参数，key 为参数名
-                  type: object
-                  additionalProperties:
-                    type: string
-                query:
-                  description: 只读 SQL，须使用参数占位符
-                  type: string
+              $ref: '#/components/schemas/GozeroSqlToolsQueryPostRequest'
         required: true
       responses:
         '200':
@@ -388,43 +152,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    description: 查询结果
-                    type: object
-                    required:
-                    - columns
-                    - rows
-                    - rowCount
-                    properties:
-                      columns:
-                        description: 结果列名
-                        type: array
-                        items:
-                          type: string
-                      rowCount:
-                        description: 返回行数
-                        type: integer
-                      rows:
-                        description: 结果行，每行按列顺序排列
-                        type: array
-                        items:
-                          type: array
-                          items:
-                            type: string
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroSqlToolsQueryPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -442,11 +170,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                table:
-                  description: 表名，可选；不传则返回白名单内全部表
-                  type: string
+              $ref: '#/components/schemas/GozeroSqlToolsTablesGetRequest'
         required: true
       responses:
         '200':
@@ -454,54 +178,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    description: 表结构列表
-                    type: array
-                    items:
-                      type: object
-                      required:
-                      - table
-                      properties:
-                        columns:
-                          description: 列信息
-                          type: array
-                          items:
-                            type: object
-                            required:
-                            - name
-                            - type
-                            - key
-                            - comment
-                            properties:
-                              comment:
-                                description: 列注释
-                                type: string
-                              key:
-                                description: 键类型，如 PRI
-                                type: string
-                              name:
-                                description: 列名
-                                type: string
-                              type:
-                                description: 列类型
-                                type: string
-                        table:
-                          description: 表名
-                          type: string
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroSqlToolsTablesGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -621,23 +298,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 响应数据
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroSseChatGet400Response'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -655,19 +316,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                change_type:
-                  description: 变更类型：insert、update、delete
-                  type: string
-                ids:
-                  description: 受影响文章 ID，为空时退化为全量同步
-                  type: array
-                  items:
-                    type: integer
-                resource:
-                  description: 资源名，固定 articles
-                  type: string
+              $ref: '#/components/schemas/GozeroTaskSyncerPostRequest'
         required: true
       responses:
         '200':
@@ -675,23 +324,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 响应数据
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroTaskSyncerPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -711,23 +344,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    description: 服务存活提示
-                    type: string
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroTestGozeroGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -745,13 +362,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - user_id
-              properties:
-                user_id:
-                  description: 当前用户 ID，须为正整数
-                  type: integer
+              $ref: '#/components/schemas/GozeroUserChatAllUnreadCountsPostRequest'
         required: true
       responses:
         '200':
@@ -759,25 +370,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    description: 各对端未读数，key 为对端用户 ID
-                    type: object
-                    additionalProperties:
-                      type: integer
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroUserChatAllUnreadCountsPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -795,23 +388,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - user_id
-              - other_id
-              properties:
-                other_id:
-                  description: 对端用户 ID，须为正整数
-                  type: integer
-                page:
-                  description: 页码，可选，传入时须为正整数
-                  type: integer
-                size:
-                  description: 每页条数，可选，传入时须为正整数
-                  type: integer
-                user_id:
-                  description: 当前用户 ID，须为正整数
-                  type: integer
+              $ref: '#/components/schemas/GozeroUserChatHistoryPostRequest'
         required: true
       responses:
         '200':
@@ -819,57 +396,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    type: object
-                    properties:
-                      messages:
-                        description: 当前页聊天记录
-                        type: array
-                        items:
-                          type: object
-                          required:
-                          - id
-                          - sender_id
-                          - receiver_id
-                          - content
-                          - is_read
-                          - created_at
-                          properties:
-                            content:
-                              description: 消息内容
-                              type: string
-                            created_at:
-                              description: 发送时间
-                              type: string
-                            id:
-                              description: 消息 ID
-                              type: integer
-                            is_read:
-                              description: 是否已读，0 未读，1 已读
-                              type: integer
-                            receiver_id:
-                              description: 接收方用户 ID
-                              type: integer
-                            sender_id:
-                              description: 发送方用户 ID
-                              type: integer
-                      total:
-                        description: 两人之间的消息总数
-                        type: integer
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroUserChatHistoryPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -887,13 +414,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - user_id
-              properties:
-                user_id:
-                  description: 要加入队列的用户 ID，须为正整数
-                  type: integer
+              $ref: '#/components/schemas/GozeroUserChatJoinPostRequest'
         required: true
       responses:
         '200':
@@ -901,29 +422,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    type: object
-                    properties:
-                      status:
-                        description: 加入结果，已在队列中或刚加入
-                        type: string
-                      user_id:
-                        description: 用户 ID
-                        type: integer
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroUserChatJoinPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -941,13 +440,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - user_id
-              properties:
-                user_id:
-                  description: 要离开队列的用户 ID，须为正整数
-                  type: integer
+              $ref: '#/components/schemas/GozeroUserChatLeavePostRequest'
         required: true
       responses:
         '200':
@@ -955,29 +448,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    type: object
-                    properties:
-                      status:
-                        description: 离开结果
-                        type: string
-                      user_id:
-                        description: 用户 ID
-                        type: integer
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroUserChatLeavePostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -997,31 +468,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    type: object
-                    properties:
-                      count:
-                        description: 在线用户数
-                        type: integer
-                      online_users:
-                        description: 当前在聊天队列中的用户 ID
-                        type: array
-                        items:
-                          type: integer
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroUserChatQueueGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1039,21 +486,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - sender_id
-              - receiver_id
-              - content
-              properties:
-                content:
-                  description: 消息内容，不能为空白
-                  type: string
-                receiver_id:
-                  description: 接收方用户 ID，须为正整数
-                  type: integer
-                sender_id:
-                  description: 发送方用户 ID，须为正整数
-                  type: integer
+              $ref: '#/components/schemas/GozeroUserChatSendPostRequest'
         required: true
       responses:
         '200':
@@ -1061,26 +494,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    type: object
-                    properties:
-                      message_id:
-                        description: 已保存的消息 ID
-                        type: integer
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroUserChatSendPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1098,17 +512,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - user_id
-              - other_id
-              properties:
-                other_id:
-                  description: 发送方用户 ID，须为正整数
-                  type: integer
-                user_id:
-                  description: 接收方用户 ID，须为正整数
-                  type: integer
+              $ref: '#/components/schemas/GozeroUserChatUnreadCountPostRequest'
         required: true
       responses:
         '200':
@@ -1116,26 +520,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: GoZero 统一响应
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    description: 响应消息
-                  data:
-                    type: object
-                    properties:
-                      unread_count:
-                        description: 该对端发给当前用户的未读数
-                        type: integer
-                required:
-                - code
-                - msg
-                - data
+                $ref: '#/components/schemas/GozeroUserChatUnreadCountPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1178,6 +563,667 @@ components:
         data:
           type: 'null'
           description: 响应数据
+      required:
+      - code
+      - msg
+      - data
+    GozeroSearchGetResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: object
+          properties:
+            list:
+              description: 当前页文章
+              type: array
+              items:
+                type: object
+                required:
+                - id
+                - title
+                - content
+                - user_id
+                - username
+                - tags
+                - status
+                - views
+                - like_count
+                - collect_count
+                - author_follow_count
+                - category_name
+                - sub_category_name
+                - create_at
+                - update_at
+                - ai_score
+                - user_score
+                - ai_comment_count
+                - user_comment_count
+                - es_score
+                - vector_score
+                - graph_score
+                - final_score
+                - reason
+                - semantic_reason
+                - relations
+                - matched_chunks
+                - score_details
+                properties:
+                  ai_comment_count:
+                    description: AI 评论数
+                    type: integer
+                  ai_score:
+                    description: AI 评分
+                    type: number
+                  author_follow_count:
+                    description: 作者被关注数
+                    type: integer
+                  category_name:
+                    description: 一级分类名
+                    type: string
+                  collect_count:
+                    description: 收藏数
+                    type: integer
+                  content:
+                    description: 正文
+                    type: string
+                  create_at:
+                    description: 创建时间
+                    type: string
+                  es_score:
+                    description: 关键词检索得分
+                    type: number
+                  final_score:
+                    description: 综合得分
+                    type: number
+                  graph_score:
+                    description: 图谱检索得分
+                    type: number
+                  id:
+                    description: 文章 ID
+                    type: integer
+                  like_count:
+                    description: 点赞数
+                    type: integer
+                  matched_chunks:
+                    description: 命中的向量分片
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - article_id
+                      - title
+                      - chunk_index
+                      - score
+                      - content
+                      properties:
+                        article_id:
+                          description: 文章 ID
+                          type: integer
+                        chunk_index:
+                          description: 分片序号
+                          type: integer
+                        content:
+                          description: 分片文本
+                          type: string
+                        score:
+                          description: 该分片相似度
+                          type: number
+                        title:
+                          description: 文章标题
+                          type: string
+                  reason:
+                    description: 排序说明
+                    type: string
+                  relations:
+                    description: 命中的图谱关系
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - type
+                      - name
+                      - score
+                      - reason
+                      properties:
+                        name:
+                          description: 关联节点名称
+                          type: string
+                        reason:
+                          description: 命中原因
+                          type: string
+                        score:
+                          description: 关系得分
+                          type: number
+                        type:
+                          description: 关系类型
+                          type: string
+                  score_details:
+                    description: 分项得分
+                    type: object
+                    required:
+                    - es_score
+                    - vector_score
+                    - graph_score
+                    - business_score
+                    - recency_score
+                    properties:
+                      business_score:
+                        description: 业务特征分项
+                        type: number
+                      es_score:
+                        description: 关键词检索分项
+                        type: number
+                      graph_score:
+                        description: 图谱检索分项
+                        type: number
+                      recency_score:
+                        description: 时效分项
+                        type: number
+                      vector_score:
+                        description: 向量检索分项
+                        type: number
+                  semantic_reason:
+                    description: 语义命中说明
+                    type: string
+                  status:
+                    description: 文章状态，0 草稿，1 已发布
+                    type: integer
+                  sub_category_name:
+                    description: 二级分类名
+                    type: string
+                  tags:
+                    description: 标签
+                    type: string
+                  title:
+                    description: 标题
+                    type: string
+                  update_at:
+                    description: 更新时间
+                    type: string
+                  user_comment_count:
+                    description: 用户评论数
+                    type: integer
+                  user_id:
+                    description: 作者用户 ID
+                    type: integer
+                  user_score:
+                    description: 用户评分
+                    type: number
+                  username:
+                    description: 作者用户名
+                    type: string
+                  vector_score:
+                    description: 向量检索得分
+                    type: number
+                  views:
+                    description: 浏览量
+                    type: integer
+            total:
+              description: 命中总数
+              type: integer
+      required:
+      - code
+      - msg
+      - data
+    GozeroSearchHistoryByUserIdGetResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: object
+          properties:
+            keywords:
+              description: 最近搜索关键词，最多 10 条
+              type: array
+              items:
+                type: string
+      required:
+      - code
+      - msg
+      - data
+    GozeroSqlToolsQueryPostRequest:
+      type: object
+      required:
+      - query
+      properties:
+        params:
+          description: 占位符参数，key 为参数名
+          type: object
+          additionalProperties:
+            type: string
+        query:
+          description: 只读 SQL，须使用参数占位符
+          type: string
+    GozeroSqlToolsQueryPostResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          description: 查询结果
+          type: object
+          required:
+          - columns
+          - rows
+          - rowCount
+          properties:
+            columns:
+              description: 结果列名
+              type: array
+              items:
+                type: string
+            rowCount:
+              description: 返回行数
+              type: integer
+            rows:
+              description: 结果行，每行按列顺序排列
+              type: array
+              items:
+                type: array
+                items:
+                  type: string
+      required:
+      - code
+      - msg
+      - data
+    GozeroSqlToolsTablesGetRequest:
+      type: object
+      properties:
+        table:
+          description: 表名，可选；不传则返回白名单内全部表
+          type: string
+    GozeroSqlToolsTablesGetResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          description: 表结构列表
+          type: array
+          items:
+            type: object
+            required:
+            - table
+            properties:
+              columns:
+                description: 列信息
+                type: array
+                items:
+                  type: object
+                  required:
+                  - name
+                  - type
+                  - key
+                  - comment
+                  properties:
+                    comment:
+                      description: 列注释
+                      type: string
+                    key:
+                      description: 键类型，如 PRI
+                      type: string
+                    name:
+                      description: 列名
+                      type: string
+                    type:
+                      description: 列类型
+                      type: string
+              table:
+                description: 表名
+                type: string
+      required:
+      - code
+      - msg
+      - data
+    GozeroSseChatGet400Response:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 响应数据
+      required:
+      - code
+      - msg
+      - data
+    GozeroTaskSyncerPostRequest:
+      type: object
+      properties:
+        change_type:
+          description: 变更类型：insert、update、delete
+          type: string
+        ids:
+          description: 受影响文章 ID，为空时退化为全量同步
+          type: array
+          items:
+            type: integer
+        resource:
+          description: 资源名，固定 articles
+          type: string
+    GozeroTaskSyncerPostResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 响应数据
+      required:
+      - code
+      - msg
+      - data
+    GozeroTestGozeroGetResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          description: 服务存活提示
+          type: string
+      required:
+      - code
+      - msg
+      - data
+    GozeroUserChatAllUnreadCountsPostRequest:
+      type: object
+      required:
+      - user_id
+      properties:
+        user_id:
+          description: 当前用户 ID，须为正整数
+          type: integer
+    GozeroUserChatAllUnreadCountsPostResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          description: 各对端未读数，key 为对端用户 ID
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - code
+      - msg
+      - data
+    GozeroUserChatHistoryPostRequest:
+      type: object
+      required:
+      - user_id
+      - other_id
+      properties:
+        other_id:
+          description: 对端用户 ID，须为正整数
+          type: integer
+        page:
+          description: 页码，可选，传入时须为正整数
+          type: integer
+        size:
+          description: 每页条数，可选，传入时须为正整数
+          type: integer
+        user_id:
+          description: 当前用户 ID，须为正整数
+          type: integer
+    GozeroUserChatHistoryPostResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: object
+          properties:
+            messages:
+              description: 当前页聊天记录
+              type: array
+              items:
+                type: object
+                required:
+                - id
+                - sender_id
+                - receiver_id
+                - content
+                - is_read
+                - created_at
+                properties:
+                  content:
+                    description: 消息内容
+                    type: string
+                  created_at:
+                    description: 发送时间
+                    type: string
+                  id:
+                    description: 消息 ID
+                    type: integer
+                  is_read:
+                    description: 是否已读，0 未读，1 已读
+                    type: integer
+                  receiver_id:
+                    description: 接收方用户 ID
+                    type: integer
+                  sender_id:
+                    description: 发送方用户 ID
+                    type: integer
+            total:
+              description: 两人之间的消息总数
+              type: integer
+      required:
+      - code
+      - msg
+      - data
+    GozeroUserChatJoinPostRequest:
+      type: object
+      required:
+      - user_id
+      properties:
+        user_id:
+          description: 要加入队列的用户 ID，须为正整数
+          type: integer
+    GozeroUserChatJoinPostResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: object
+          properties:
+            status:
+              description: 加入结果，已在队列中或刚加入
+              type: string
+            user_id:
+              description: 用户 ID
+              type: integer
+      required:
+      - code
+      - msg
+      - data
+    GozeroUserChatLeavePostRequest:
+      type: object
+      required:
+      - user_id
+      properties:
+        user_id:
+          description: 要离开队列的用户 ID，须为正整数
+          type: integer
+    GozeroUserChatLeavePostResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: object
+          properties:
+            status:
+              description: 离开结果
+              type: string
+            user_id:
+              description: 用户 ID
+              type: integer
+      required:
+      - code
+      - msg
+      - data
+    GozeroUserChatQueueGetResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: object
+          properties:
+            count:
+              description: 在线用户数
+              type: integer
+            online_users:
+              description: 当前在聊天队列中的用户 ID
+              type: array
+              items:
+                type: integer
+      required:
+      - code
+      - msg
+      - data
+    GozeroUserChatSendPostRequest:
+      type: object
+      required:
+      - sender_id
+      - receiver_id
+      - content
+      properties:
+        content:
+          description: 消息内容，不能为空白
+          type: string
+        receiver_id:
+          description: 接收方用户 ID，须为正整数
+          type: integer
+        sender_id:
+          description: 发送方用户 ID，须为正整数
+          type: integer
+    GozeroUserChatSendPostResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: object
+          properties:
+            message_id:
+              description: 已保存的消息 ID
+              type: integer
+      required:
+      - code
+      - msg
+      - data
+    GozeroUserChatUnreadCountPostRequest:
+      type: object
+      required:
+      - user_id
+      - other_id
+      properties:
+        other_id:
+          description: 发送方用户 ID，须为正整数
+          type: integer
+        user_id:
+          description: 接收方用户 ID，须为正整数
+          type: integer
+    GozeroUserChatUnreadCountPostResponse:
+      type: object
+      description: GoZero 统一响应
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          description: 响应消息
+        data:
+          type: object
+          properties:
+            unread_count:
+              description: 该对端发给当前用户的未读数
+              type: integer
       required:
       - code
       - msg

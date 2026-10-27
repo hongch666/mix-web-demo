@@ -7,6 +7,7 @@ goctl 产物后处理：补中文标签、剔除易变字段与 WebSocket 路径
 import copy
 import json
 import os
+import re
 import sys
 
 try:
@@ -40,6 +41,17 @@ UNAUTHORIZED_DESCRIPTION = "用户未登录或登录已失效"
 
 # 401 统一错误响应的 schema 名
 UNAUTHORIZED_SCHEMA_NAME = "UnauthorizedResponse"
+
+# 提升为具名响应模型时加的服务前缀
+# Apifox 的 targetSchemaFolderId 是四个服务共用的同一个模型目录，而 GoZero 与 NestJS
+# 存在同名路径（/sql-tools/query、/task/syncer），不加前缀会在同一目录里互相覆盖
+SERVICE_MODEL_PREFIX = "Gozero"
+
+# 只有带结构信息的内联 schema 才提升为具名模型，裸 object 与标量提升后只是噪音
+STRUCTURAL_SCHEMA_KEYS = ("properties", "items", "allOf", "anyOf", "oneOf", "enum")
+
+# SSE 帧必须保持内联：Apifox 依赖内联的帧 schema 渲染 text/event-stream 响应
+NON_HOISTED_MEDIA_TYPES = ("text/event-stream",)
 
 # 产物的规范版本：留 3.1 是为了表达 type: "null"（空数据响应，Apifox 靠它展示空值）
 # 该写法只有 3.1 合法，3.0 的 type 只接受 array/boolean/integer/number/object/string
@@ -157,6 +169,11 @@ def add_chinese_tags_to_dict(swagger_data):
 
     # 剔除 WebSocket 路径（OpenAPI 无法表达这类资源，留在产物里只会多出无法握手的一条 GET）
     drop_websocket_paths(swagger_data)
+
+    # 把内联请求体与响应结构提升为 components.schemas 具名模型，供 Apifox 复用与变更比对
+    # 必须排在 wrap_unified_responses 之后：提升的是补好统一外壳的完整响应；
+    # 必须排在 drop_websocket_paths 之后：否则被剔除的 WS 响应会留下无人引用的孤儿模型
+    hoist_inline_models(swagger_data)
 
     return swagger_data, websocket_endpoints
 
@@ -285,6 +302,118 @@ def add_common_unauthorized_response(swagger_data):
                 "description": UNAUTHORIZED_DESCRIPTION,
                 "content": {"application/json": {"schema": {"$ref": ref}}},
             }
+
+
+def to_pascal_name(raw):
+    """把路径片段或方法名转成 PascalCase 标识符片段"""
+    parts = [part for part in re.split(r"[^0-9A-Za-z]+", str(raw)) if part]
+    return "".join(part[:1].upper() + part[1:] for part in parts)
+
+
+def build_model_name(path, method, suffix, status=None):
+    """按「服务前缀 + 路径 + 方法 + 状态码」生成模型名
+
+    用路径而不是 operationId 命名：路径是对外契约，Apifox 也按 method+path 识别接口，
+    重命名 handler 不会牵动模型名。路径参数保留为 ByXxx 片段，避免 /articles 与
+    /articles/{id} 生成同一个名字
+    """
+    segments = []
+    for segment in str(path).split("/"):
+        if not segment:
+            continue
+        if segment.startswith("{") and segment.endswith("}"):
+            segments.append("By" + to_pascal_name(segment[1:-1]))
+        elif segment.startswith(":"):
+            segments.append("By" + to_pascal_name(segment[1:]))
+        else:
+            segments.append(to_pascal_name(segment))
+
+    name = SERVICE_MODEL_PREFIX + "".join(segments) + to_pascal_name(method)
+    if status is not None and str(status) != "200":
+        name += to_pascal_name(status)
+    return name + suffix
+
+
+def reserve_model_name(schemas, path, method, suffix, schema, status=None):
+    """为内联结构分配模型名：同名且内容一致时直接复用，内容不同则追加序号"""
+    base = build_model_name(path, method, suffix, status)
+    name = base
+    index = 2
+    while name in schemas and schemas[name] != schema:
+        name = f"{base}_{index}"
+        index += 1
+    return name
+
+
+def hoist_media_schema(schemas, path, method, suffix, content, status=None):
+    """把一组 media type 下的内联 schema 提升为具名模型，原位置改为 $ref 引用"""
+    for media_type, media in content.items():
+        if media_type in NON_HOISTED_MEDIA_TYPES:
+            continue
+        if not isinstance(media, dict):
+            continue
+        schema = media.get("schema")
+        if not isinstance(schema, dict) or "$ref" in schema:
+            continue
+        if not any(key in schema for key in STRUCTURAL_SCHEMA_KEYS):
+            continue
+        name = reserve_model_name(schemas, path, method, suffix, schema, status)
+        schemas[name] = schema
+        media["schema"] = {"$ref": f"#/components/schemas/{name}"}
+
+
+def hoist_inline_models(swagger_data):
+    """把各接口的内联请求体与响应结构提升为 components.schemas 具名模型
+
+    goctl 按 .api 类型生成的是内联 schema，同一份结构在每个接口各存一份，Apifox 里既
+    无法复用，也无法按模型维度比对变更。这里统一提升为具名模型：
+    - 名称由「服务前缀 + 路径 + 方法 + 状态码」推导，服务前缀避免与 NestJS 同名路径互相覆盖
+    - 事件流响应整体保持内联：Apifox 靠内联帧 schema 的 title 渲染流式响应
+    - multipart 请求体保持内联：文件字段的 binary 表达交给 Apifox 按原生方式处理
+    - 已是 $ref 的位置跳过，函数可重复执行
+    """
+    paths = swagger_data.get("paths")
+    if not isinstance(paths, dict):
+        return
+    components = swagger_data.setdefault("components", {})
+    if not isinstance(components, dict):
+        return
+    schemas = components.setdefault("schemas", {})
+    if not isinstance(schemas, dict):
+        return
+
+    for path, path_item in paths.items():
+        if not isinstance(path_item, dict):
+            continue
+        for method, operation in path_item.items():
+            if not isinstance(operation, dict):
+                continue
+
+            request_body = operation.get("requestBody")
+            if isinstance(request_body, dict):
+                request_content = request_body.get("content")
+                if isinstance(request_content, dict) and "multipart/form-data" not in (
+                    request_content
+                ):
+                    hoist_media_schema(
+                        schemas, path, method, "Request", request_content
+                    )
+
+            responses = operation.get("responses")
+            if not isinstance(responses, dict):
+                continue
+            for status, response in responses.items():
+                if not isinstance(response, dict):
+                    continue
+                content = response.get("content")
+                if not isinstance(content, dict):
+                    continue
+                # 事件流响应整体保持内联，换成 $ref 会丢掉帧节点名
+                if "text/event-stream" in content:
+                    continue
+                hoist_media_schema(
+                    schemas, path, method, "Response", content, status
+                )
 
 
 def is_empty_object_schema(schema):
@@ -426,7 +555,7 @@ def write_websocket_spec(swagger_file, endpoints):
         with open(websocket_file, "w", encoding="utf-8", newline="\n") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
             f.write("\n")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"错误: 写入 WebSocket 描述失败 - {e}")
         return False
 
@@ -476,7 +605,7 @@ def add_chinese_tags_json(swagger_file):
     except json.JSONDecodeError as e:
         print(f"错误: JSON解析失败 - {e}")
         return False
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"错误: {e}")
         return False
 
@@ -506,7 +635,7 @@ def write_yaml(swagger_file, swagger_data):
         print(f"已由 JSON 派生 YAML 产物: {swagger_file}")
         return True
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"错误: 写入YAML失败 - {e}")
         return False
 
