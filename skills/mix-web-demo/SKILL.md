@@ -198,6 +198,7 @@ module/system/    系统业务模块（apiLog、articleLog、sqlTools 等）
 - 遵循项目 `eslint.config.mjs`，提交前通过 lint
 - Swagger 用 `@nestjs/swagger`：`@ApiOperation({ summary, description })`、`@ApiTags`，注解参数直接写字面量，不抽常量
 - **响应模型必须显式声明**：TypeScript 泛型会在运行时擦除，不能只依赖 `Promise<ApiResponse<T>>` 生成 Swagger schema。对统一响应使用 `common/utils/swaggerResponse.ts` 的 `ApiResponseModel`，为 `data` 传入具体的 `SchemaObject`；空响应使用 `SwaggerNullData`，字符串、数组和对象响应分别声明对应结构。OAuth 重定向等非 JSON 响应使用 `ApiRedirectResponse`，不要套统一响应包装体
+- **内联响应会在文档构建阶段提升为具名模型**：`app/swagger.ts` 的 `hoistInlineSchemas` 把每个接口的内联请求体与响应搬进 `components.schemas`，命名 `<Nestjs><路径><方法>[状态码]Response/Request`，因此 Apifox 里每个接口都有独立可复用的数据模型；`text/event-stream` 事件流响应与 `multipart/form-data` 请求体保持内联（Apifox 靠内联帧的 `title` 渲染流式响应、按原生方式处理文件字段）
 - **响应 Schema 必须统一抽离**：业务响应的 `SchemaObject`（包括分页、同步、统计、上传和查询结果）统一定义在 `common/utils/swaggerResponse.ts`，控制器中的 `@ApiResponseModel` 只引用命名常量，禁止在控制器内重复编写内联 `data: { ... }`。除 `data: null` 外，必须为实际字段、数组项和嵌套对象补充 `description`；不能用无字段的 `SwaggerObjectData` 代替已知结构。
 - **路径和查询参数命名必须与实际 URL 一致**：本项目 OpenAPI 会将字段转换为 snake_case。路径参数统一使用 snake_case，并让路由、`@Param`、`@ApiParam` 三处名称完全一致，例如 `:user_id` + `@Param("user_id")`、`:table_key` + `@Param("table_key")`。查询参数也必须统一，例如 `custom_filename` + `@Query("custom_filename")`，禁止同时出现 camelCase 与 snake_case。
 - **Swagger 参数重复检查**：修改接口后重新生成 OpenAPI，检查每个 operation 的 `parameters` 是否存在重复语义或同时存在大小写不同的参数；重点排查 `userId/user_id`、`tableKey/table_key`、`customFilename/custom_filename` 等组合。
@@ -319,7 +320,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 ### 请求参数校验
 
 - **机制：go-playground/validator 标签式校验**。标签写在 `.api` 字段上，随 goctl 生成进 `internal/types/types.go`；**不再有手写的 `<domain>Validate.go`**，新增请求类型不需要补任何 Go 代码
-- 生效链路：`boot.CreateServer` 调 `validation.InitValidator()` → `httpx.SetValidator` 注册 → `httpx.Parse` 在解析完 path/form/header/json 后触发校验。**请求类型绝不能实现 `Validate() error`**：`httpx.Parse` 是 `if 实现接口 { ... } else if 注册的校验器 != nil { ... }`，一旦实现了方法就会走前一个分支，让 `SetValidator` 静默失效（本项目早期踩过这个坑并回退过一次）
+- 生效链路：`boot.CreateServer` 调 `validation.InitValidator()` → `httpx.SetValidator` 注册 → `httpx.Parse` 在解析完 path/form/header/json 后触发校验。**请求类型绝不能实现 `Validate() error`**：`httpx.Parse` 是 `if 实现接口 { ... } else if 注册的校验器 != nil { ... }`，一旦实现了方法就会走前一个分支，让 `SetValidator` 静默失效（本项目踩过这个坑）
 - | 自定义标签（实现在`common/validation/validator.go`）： | 标签                                                                                                                                              | 语义 |
   | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
   | `gt=0` / `required` 等                                 | validator 内置规则，直接用                                                                                                                        |      |
@@ -346,8 +347,8 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - `httpc` **不把 5xx 当错误**（只给 `resp.StatusCode`），状态码判定与 `httpStatusError` 必须保留；响应解析继续用 `json.Unmarshal`，**不要换成 `httpc.Parse`**（它不支持 `any` / `json.RawMessage` 字段，`map[string]any` 还会把数字弱化成字符串）
 - 上下文头与内部令牌在 httpc 的 `Option`（`injectContextHeaders`）里注入，从 `r.Context()` 读用户身份；请求头常量统一放 `common/constants/remoteCall.go`
 - 熔断打开时 httpc 抢先返回 `breaker.ErrServiceUnavailable`：`CallService` 负责转成降级文案，`shouldRetry` 对该错误返回 false（重试无意义且会持续冲击熔断器）
-- 熔断判定比早期更准：只有 **5xx / 超时 / 网络错误**计失败，4xx 与业务错误码不计
-- **释放链路（2026-09-19 补齐）**：`httpc.Service` 不暴露底层 `http.Client`，所以在 `ServiceDiscovery` 上加了 `Close()`（内部 `httpClient.CloseIdleConnections()`）；三个业务 Client 各转发一个 `Close()`，由 `ClientContext.Close()` 汇总，最终挂在 `ServiceContext.Close()` 里。注意 `ClientContext` 的 FastapiClient / NestjsClient / SpringClient 三个字段统一为业务契约接口（`fastapiClient.Client` / `nestjsClient.Client` / `springClient.Client`，测试用 mock 实现），生命周期方法**不并入**接口，用包内 `resourceCloser` 断言处理，新增客户端时保持这条链路
+- 熔断判定只统计 **5xx / 超时 / 网络错误**，4xx 与业务错误码不计
+- **释放链路**：`httpc.Service` 不暴露底层 `http.Client`，因此由 `ServiceDiscovery` 提供 `Close()`（内部 `httpClient.CloseIdleConnections()`）；三个业务 Client 各转发一个 `Close()`，由 `ClientContext.Close()` 汇总，最终挂在 `ServiceContext.Close()` 里。注意 `ClientContext` 的 FastapiClient / NestjsClient / SpringClient 三个字段统一为业务契约接口（`fastapiClient.Client` / `nestjsClient.Client` / `springClient.Client`，测试用 mock 实现），生命周期方法**不并入**接口，用包内 `resourceCloser` 断言处理，新增客户端时保持这条链路
 - 链路追踪：`core/trace` 在包 `init()` 里已设置 `TraceContext` propagator，`rest.MustNewServer` → `ServiceConf.SetUp()` 也会调 `trace.StartAgent`，所以**不配 `Telemetry` 也会注入 traceparent**，只是 span 不上报；接入采集端只需在 `etc/application.yaml` 加 `Telemetry: {Endpoint, Batcher}`
 - 客户端可观测性：httpc 每次调用都会打一条 logx 日志（4xx/5xx 为 error 级），日志量会上升，这是换取链路可视化的代价
 
@@ -398,9 +399,9 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
   - 修正 `/sse/chat` 的 200 响应（`fix_streaming_endpoints`）：帧 schema 复用 goctl 按 `returns` 生成的 inline 结构，**同时挂到 `text/event-stream` 与 `application/json` 两个媒体类型下**，JSON 视图额外加 `SSE_FRAME_SCHEMA_TITLE` 标题（Apifox 取 schema 的 `title` 作为「返回响应」下的节点名），再补 `400` 统一错误体。**Apifox 不会渲染只声明 `text/event-stream` 的响应**（「返回响应」里只显示空的 SSE 封装结构、No schema defined）；FastAPI 侧的流式聊天同样是靠帧 schema 的 JSON 视图才画出帧字段，两边必须保持一致
   - 剔除 WebSocket 路径 `/ws/chat`（`WEBSOCKET_PATHS`）：OpenAPI 无法表达 WebSocket，留在产物里导入只会按 URL + method 多出一条无法发起握手的 GET 接口。剔除前由 `collect_websocket_endpoints` 摘出 `description` 与 `tags`，写成同级产物 `docs/websocket.json`，改由 `apifox-sync.sh` 经 Apifox CLI 的 `websocket` 命令同步（见「接口文档收尾流程」）
 - **`fix.py` 内的执行顺序有硬约束**：`fix_streaming_endpoints` 必须排在 `wrap_unified_responses` 之前 —— 前者从 200 响应的原始 `content` 里取第一个带 schema 的媒体类型当作帧结构，若后者先执行，取到的会是已被包装成 `{code,msg,data}` 的 schema，帧字段全部丢失。`drop_websocket_paths` 放最后
-- GoZero 的 handler 模板会在运行时通过 `utils.Success/Error` 输出统一外壳 `{code,msg,data}`，而 `goctl api swagger` 只生成 `returns` 对应的 `data` schema；因此 `fix.py` 必须对 `application/json` 响应补齐该外壳，并保持重复执行幂等。**跳过规则必须按内容类型显式判断：响应 `content` 里含 `text/event-stream` 就整条跳过**，不能依赖「没有 `application/json` 就自然跳过」——`/sse/chat` 的 200 现在同时声明两种媒体类型，沿用旧的隐式判断会把帧 schema 包进统一外壳。修改 `.api` 或响应模型后必须重新生成 JSON/YAML，检查响应 schema 的 `data` 是否仍为原始业务结构，以及 `/sse/chat` 的帧字段是否仍在
+- GoZero 的 handler 模板会在运行时通过 `utils.Success/Error` 输出统一外壳 `{code,msg,data}`，而 `goctl api swagger` 只生成 `returns` 对应的 `data` schema；因此 `fix.py` 必须对 `application/json` 响应补齐该外壳，并保持重复执行幂等。**跳过规则必须按内容类型显式判断：响应 `content` 里含 `text/event-stream` 就整条跳过**，不能依赖「没有 `application/json` 就自然跳过」——`/sse/chat` 的 200 同时声明两种媒体类型，沿用旧的隐式判断会把帧 schema 包进统一外壳。修改 `.api` 或响应模型后必须重新生成 JSON/YAML，检查响应 schema 的 `data` 是否仍为原始业务结构，以及 `/sse/chat` 的帧字段是否仍在
 - GoZero 的 `xxxResp` 按前端兼容规范保留业务 `Data` 字段并声明 `json:"data"`；handler 必须使用 `utils.Success(w, resp)`，由 `utils.Success` 识别并展开响应对象的 `Data` 字段，最终统一输出单层 `{code, msg, data}`，禁止产生 `data.data`。Swagger 后处理也必须同步展开该字段，保证文档与运行时响应一致。
-- **该文档的 schema 全部是 inline（`components` 下没有 `schemas`），不要改成 `$ref`**
+- **`fix.py` 的 `hoist_inline_models` 会把内联请求体与响应提升为 `components.schemas` 具名模型**，响应位置改为 `$ref` 引用。命名规则：`<服务前缀><路径><方法><状态码>Response/Request`，例如 `GozeroSqlToolsQueryPostRequest`、`GozeroSearchGetResponse`；路径参数保留为 `ByXxx` 片段（`/search/history/{user_id}` → `GozeroSearchHistoryByUserIdGetResponse`），状态码非 200 时才追加。两条例外必须保持内联：`text/event-stream` 的事件流响应（Apifox 靠内联帧 schema 的 `title` 渲染流式响应）、`multipart/form-data` 请求体。<br>**提升步骤必须排在 `drop_websocket_paths` 之后**，否则被剔除的 WS 响应会在 `schemas` 里留下无人引用的孤儿模型
 - 改完 `.api` 后按「接口文档收尾流程」重新生成并提交产物
 
 ## 服务间内部接口与无效接口清理
@@ -423,7 +424,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
    - 本该服务外部（前端语言契约、APISIX 可达）→ **去掉内部令牌对外化**（例：`/chat/send` 普通聊天），并确认网关黑名单不再拦它
    - 确实只服务服务间调用且无消费者 → 删除
 5. **连带清理只服务它的实现**：Service 方法 → Mapper/Repository 查询方法 → 请求/响应 DTO → 测试用例；删除过程中每一层都要重新确认「是否还有其它调用方」
-6. **任务类的手动触发接口一律保留，不纳入清理范围**：`/task/*` 这类手动触发入口（Spring `TaskController`、NestJS `TaskController`、FastAPI `taskRouter`）是运维兜底能力——手工补跑、修数据、紧急刷缓存都靠它。**即使当前没有任何服务调用、也即使 `@Scheduled`（Spring）/ `@Cron`（NestJS）/ scheduler（FastAPI）已在自动调度，都必须保留**：自动调度是常态通道，HTTP 入口是运维通道，两者互补（曾误删 `POST /task/clean`、`/task/apilog`、`/task/articlelog`、`/task/update-analyze-caches`、`/task/init-hash-cache`、`/task/clear-analyze-caches`，已全部恢复）
+6. **任务类的手动触发接口一律保留，不纳入清理范围**：`/task/*` 这类手动触发入口（Spring `TaskController`、NestJS `TaskController`、FastAPI `taskRouter`）是运维兜底能力——手工补跑、修数据、紧急刷缓存都靠它。**即使当前没有任何服务调用、也即使 `@Scheduled`（Spring）/ `@Cron`（NestJS）/ scheduler（FastAPI）已在自动调度，都必须保留**：自动调度是常态通道，HTTP 入口是运维通道，两者互补（曾误删 `POST /task/clean`、`/task/apilog`、`/task/articlelog`、`/task/update-analyze-caches`、`/task/init-hash-cache`、`/task/clear-analyze-caches`）
 7. **重新生成产物并同步文档**：`./scripts/swag-init.sh <service>`（可选 service 名），需要时 `./mix apifox`。**Spring 删过控制器源文件后必须先清掉 `target/classes` 下的残留 `.class`**——Maven 增量编译不删除已移除源文件的产物，文档生成器扫描 classpath，否则已删接口会继续出现在产物里
 
 ### 已清理的无效内部接口（勿重复排查）
@@ -447,7 +448,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 | NestJS  | `POST /task/apilog`、`POST /task/articlelog`                                                        | 手动清理超期 API 日志 / 文章日志；`TaskService` 的 `@Cron` 是常态通道                                        |
 | GoZero  | `POST /task/syncer`                                                                                 | 按 ids 精确同步 ES（Spring 同步切面在用），同时是手动全量重刷入口                                            |
 
-**删除时容易误伤的保留项**（都已确认仍在使用，勿再删）：FastAPI 的 `create_ai_history`（流式聊天保存历史）、`update_analyze_caches_async` 与 `initialize_article_content_hash_cache_async`（scheduler / vectorSyncTask，以及恢复后的 `/task/update-analyze-caches`、`/task/init-hash-cache`）、`ChatRequest`（被 `ChatStreamRequest` 继承）、`ChatResponseData`（被 `ChatResponse` 引用）；NestJS 的 `CreateArticleLogDto` / `CreateApiLogDto`（RabbitMQ 消费者攒批 `insertMany` 在用）；各 Cache 的 `clear_all()`（被恢复的 `/task/clear-analyze-caches` 调用）。
+**删除时容易误伤的保留项**（都已确认仍在使用，勿再删）：FastAPI 的 `create_ai_history`（流式聊天保存历史）、`update_analyze_caches_async` 与 `initialize_article_content_hash_cache_async`（scheduler / vectorSyncTask，以及 `/task/update-analyze-caches`、`/task/init-hash-cache`）、`ChatRequest`（被 `ChatStreamRequest` 继承）、`ChatResponseData`（被 `ChatResponse` 引用）；NestJS 的 `CreateArticleLogDto` / `CreateApiLogDto`（RabbitMQ 消费者攒批 `insertMany` 在用）；各 Cache 的 `clear_all()`（被 `/task/clear-analyze-caches` 调用）。
 
 ## 网关（gateway/，Apache APISIX）
 
@@ -472,7 +473,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 格式化统一走各服务的工具（`./mix format`）：Spring Spotless、GoZero golangci-lint + goctl api format、NestJS Prettier、FastAPI Ruff；不要再手工执行 `gofmt -w` 或 `prettier --write` 做全量重排
 - Go 的格式问题用 `./mix lint gozero` 判断（golangci-lint 的 gofmt formatter），不要用裸 `gofmt -l`：它对行尾差异会报大量假阳性
 - `goctl`（`api format` / `api go`）生成后由 `genApi.sh` / `genOrm.sh` 自动调用 `./mix format gozero` 收敛格式；手工执行 goctl 时兜底跑一次即可，不需要手工处理行尾
-- **goctl 版本不再进产物**：`gozero/template/**` 与仓库已生成文件都不再包含版本注释（`// goctl {{.version}}`、`//  goctl version: x.y.z` 已移除），同一份 `.api` 在不同 goctl 版本下生成结果一致，不会产生无意义的版本 diff；产物是否被人工改动由 `./mix lint gozero` 校验
+- **goctl 版本不进产物**：`gozero/template/**` 与仓库已生成文件都不包含版本注释（`// goctl {{.version}}`、`//  goctl version: x.y.z`），同一份 `.api` 在不同 goctl 版本下生成结果一致，不会产生无意义的版本 diff；产物是否被人工改动由 `./mix lint gozero` 校验
 - **不要在仓库根目录直接执行 goctl**：goctl 在 Windows 下判定模块有缺陷（`go env GOMOD` 返回 `NUL` 而非 `/dev/null`），会以调用者的当前目录为基准回退执行 `go mod init`、`go work use`，在仓库根目录执行会生成多余的 `go.mod` 并把 `go.work` 改成 `use (. / ./gozero/app)`；`./mix goctl-orm`、`./mix goctl-api` 目前仍会触发，执行后确认 `git status` 并清理、还原这两个文件。手工执行 goctl 时先 `cd` 到模块内（如 `gozero/app`）；`checkGenerated.sh` 的生成阶段已切到临时目录执行，不受影响
 - git 用于精确核对与回退：`git status --porcelain`、`git diff --ignore-cr-at-eol`（判断是否仅行尾差异）、`git checkout -- <文件>`
 - 本机环境参考：Go / gofmt 在 `C:\Program Files\Go\bin\`，goctl 在 `C:\Users\30708\go\bin\goctl.EXE`，git 在 `C:\Program Files\Git\cmd\git.EXE`（`usr\bin\` 下有 grep / tr / sed / basename 等，用完整路径调用），maven 在 `C:\apache-maven-3.9.11\bin\mvn.CMD`，javap 在 `C:\Program Files\Java\jdk-17\bin\javap.exe`
@@ -517,11 +518,12 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 四个服务都是**离线生成**：不启动 HTTP 服务，不连 Nacos / MySQL / Redis / RabbitMQ，也不需要各服务的 `.env`（Spring 的 Nacos 配置拉取由 `spring/src/test/resources/bootstrap.yaml` 覆盖关闭）。对应工具未安装时该服务跳过并提示，其余服务继续生成；`gateway` 为配置驱动，无 OpenAPI 产物。
 
-生成后核对三件事：
+生成后核对四件事：
 
 1. 新接口出现在产物里，路径、方法、参数与响应结构和实现一致
 2. `openapi.json` 与 `openapi.yaml` 成对更新，不要只提交其中一份
-3. GoZero 若改了 `.api`，确认产物里没有 `x-date` / `x-goctl-version`（出现即说明 `fix.py` 后处理没跑到）；同时确认 `gozero/app/docs/websocket.json` 里的描述与 `.api` 的 `@doc` 一致，该文件与 `openapi.json` 一样属于要提交的产物
+3. 新增接口在 `components.schemas` 里有对应的具名模型（GoZero 看 `Gozero*`、NestJS 看 `Nestjs*` 前缀），且 `schemas` 里没有无人引用的孤儿模型；只有事件流响应与 multipart 请求体允许保持内联
+4. GoZero 若改了 `.api`，确认产物里没有 `x-date` / `x-goctl-version`（出现即说明 `fix.py` 后处理没跑到）；同时确认 `gozero/app/docs/websocket.json` 里的描述与 `.api` 的 `@doc` 一致，该文件与 `openapi.json` 一样属于要提交的产物
 
 ### 第二步：同步到 Apifox（配置了令牌时执行）
 
@@ -542,7 +544,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 覆盖策略默认 `AUTO_MERGE`，保留 Apifox 侧手工维护的中文名、mock 与返回示例，只按文档更新结构化内容
 - **同步默认以文档为准做全量对齐**：`APIFOX_DELETE_UNMATCHED_RESOURCES` 默认 `true`，对应开放 API 的 `options.deleteUnmatchedResources`，会删除**该服务导入目录内**（`APIFOX_FOLDER_*`）文档里没有的接口与数据模型（本地实测：只同步 fastapi 时项目接口总数 217 → 210，正好清掉 fastapi 目录内的 7 个残留，其它服务目录未受影响；Apifox 的 WebSocket 接口是独立资源类型，删除后仍完好）。所以删掉代码里的接口后，重新生成产物再同步即可自动清理，**不需要手工删 Apifox 接口**
 - 对齐是全量覆盖语义：Apifox 侧手工新增的 HTTP 接口与数据模型会在下次同步时被清掉（`WebSocket` 与 Markdown 文档不受影响）。排查期可临时关闭：`APIFOX_DELETE_UNMATCHED_RESOURCES=false ./mix apifox <service>`；删除是真实删除，可先 `apifox export --project <id> --format apifox --scope all --output <file>` 整项目备份，误删内容可从 Apifox 回收站找回
-- **警惕「AUTO_MERGE + 全量对齐」组合造成接口响应结构引用断链**：`AUTO_MERGE` 不整体重写已存在接口的响应结构绑定，而 `APIFOX_DELETE_UNMATCHED_RESOURCES=true` 会删除文档里已不存在的数据模型。当模型命名变化（例：Spring 补 Swagger 注解后 springdoc 改变 `Result«XxxVO»` 的生成名）时，接口上残留的 `$ref` 仍指向被清理的旧模型，Apifox「校验响应」报 `can't resolve reference #/definitions/<数字ID> from id http://json-schema.org/draft-04/schema#`（数字 ID 是 Apifox 数据模型的内部 ID，产物本身引用链完好）。**修复：对该服务强制覆盖同步一次**——`APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR=OVERWRITE_EXISTING APIFOX_SCHEMA_OVERWRITE_BEHAVIOR=OVERWRITE_EXISTING ./mix apifox <service>`，跑完恢复默认 AUTO_MERGE；代价是该服务接口上手工维护的参数说明、Mock 与示例会被产物覆盖。应急也可在 Apifox 接口「返回响应 → 数据结构」里手工重新绑定现行数据模型。预防：凡是重命名/调整 VO 或响应包装导致 springdoc/文档生成器模型名变化，同步前先跑一次 OVERWRITE_EXISTING 再回到 AUTO_MERGE
+- **警惕「AUTO_MERGE + 全量对齐」组合造成接口响应结构引用断链**：`AUTO_MERGE` 不整体重写已存在接口的响应结构绑定，而 `APIFOX_DELETE_UNMATCHED_RESOURCES=true` 会删除文档里已不存在的数据模型。当模型命名变化（例：Spring 补 Swagger 注解后 springdoc 改变 `Result«XxxVO»` 的生成名）时，接口上残留的 `$ref` 仍指向被清理的旧模型，Apifox「校验响应」报 `can't resolve reference #/definitions/<数字ID> from id http://json-schema.org/draft-04/schema#`（数字 ID 是 Apifox 数据模型的内部 ID，产物本身引用链完好）。**已由脚本自动切换**：`apifox-sync.sh` 为每个服务计算 `components.schemas` 的规范化 sha256（只关心模型本身，与排版、字段顺序、paths 调整无关），与 `.apifox-state/<service>.schemas.sha256` 里上次成功同步的指纹比对——指纹变化或首次无记录时，该服务本轮自动切到 `OVERWRITE_EXISTING` 并打印原因；指纹未变则保持默认 `AUTO_MERGE`。显式设置了 `APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR` / `APIFOX_SCHEMA_OVERWRITE_BEHAVIOR` 时以显式值为准、不做自动切换；只有导入成功才写回指纹，失败保留旧值以便下次重试。**`.apifox-state/` 必须随仓库提交**：它记录的是「共享 Apifox 项目当前已同步到哪个模型版本」这一远端基线，不是本机状态。漏提交会让其他机器的指纹停留在旧值、误判为「模型有变」而触发覆盖同步，把已保留的手工 Mock 与示例冲掉；同理，同步成功后要与 `docs/` 产物一起提交它。**手工修复**（自动机制被显式配置绕过时）——`APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR=OVERWRITE_EXISTING APIFOX_SCHEMA_OVERWRITE_BEHAVIOR=OVERWRITE_EXISTING ./mix apifox <service>`，跑完恢复默认 AUTO_MERGE；代价是该服务接口上手工维护的参数说明、Mock 与示例会被产物覆盖。应急也可在 Apifox 接口「返回响应 → 数据结构」里手工重新绑定现行数据模型。预防：凡是重命名/调整 VO 或响应包装导致 springdoc/文档生成器模型名变化，同步前先跑一次 OVERWRITE_EXISTING 再回到 AUTO_MERGE
 - 导入前会为**本轮文档新增**的接口补写 Apifox 责任人扩展 `x-apifox-maintainer`（值取团队内昵称或用户账户名），默认取 `APIFOX_ACCESS_TOKEN` 对应账号的用户名；可用 `APIFOX_MAINTAINER` 显式指定，或用 `--no-maintainer` 关闭填充
 - **责任人只补新增接口**：脚本先用一次 `apifox endpoint list` 取现有接口清单（`method path`），与产物求差集后只给新增接口注入扩展。原因是 Apifox 对「无差异导入」按不变处理（本地实测 `新增 0 / 更新 0 / 忽略 0 / 失败 0`），而每轮给全部接口重写扩展会让所有接口都被判定为已修改（修改时间与变更历史被刷新）；稳态下导入的就是原文档，计数全 0。要整体重写责任人时置 `APIFOX_MAINTAINER_FORCE=true`（此时退回逐接口全量注入）
 - 该扩展会被 Apifox 保留在接口 `oasExtensions` 里并在文档页多渲染一行 `x-apifox-maintainer`，**只有真的注入过**才会再导入一次不带扩展的原文档把它清掉（`APIFOX_MAINTAINER_CLEAN_EXTENSION=false` 可保留，此时按全量注入以保证每轮导入内容与 Apifox 现存一致），责任人字段不受影响
