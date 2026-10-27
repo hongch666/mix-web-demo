@@ -18,32 +18,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: GitHub OAuth 授权信息
-                    properties:
-                      authorize_url:
-                        type: string
-                        description: GitHub OAuth 授权地址
-                      state:
-                        type: string
-                        description: OAuth 防跨站请求伪造状态值
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsGithubAuthorizeGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -120,25 +95,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsEmailSendCodePostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -159,25 +116,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsTaskApilogPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -262,72 +201,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: API 日志分页结果
-                    properties:
-                      total:
-                        type: number
-                        description: 日志总数
-                      list:
-                        type: array
-                        description: 日志列表
-                        items:
-                          type: object
-                          description: API 日志记录
-                          properties:
-                            _id:
-                              type: string
-                              description: 日志 ID
-                            user_id:
-                              type: number
-                              description: 用户 ID
-                            username:
-                              type: string
-                              description: 用户名
-                            api_description:
-                              type: string
-                              description: 接口描述
-                            api_path:
-                              type: string
-                              description: 接口路径
-                            api_method:
-                              type: string
-                              description: 请求方法
-                            query_params:
-                              type: object
-                              description: 查询参数
-                            path_params:
-                              type: object
-                              description: 路径参数
-                            request_body:
-                              type: object
-                              description: 请求体
-                            response_time:
-                              type: number
-                              description: 响应耗时（毫秒）
-                            created_at:
-                              type: string
-                              description: 创建时间
-                            updated_at:
-                              type: string
-                              description: 更新时间
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsApiLogsListGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -353,25 +227,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsApiLogsByIdDeleteResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -397,25 +253,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsApiLogsBatchByIdsDeleteResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -446,72 +284,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: API 日志增量同步结果
-                    properties:
-                      list:
-                        type: array
-                        description: 日志列表
-                        items:
-                          type: object
-                          description: API 日志记录
-                          properties:
-                            _id:
-                              type: string
-                              description: 日志 ID
-                            user_id:
-                              type: number
-                              description: 用户 ID
-                            username:
-                              type: string
-                              description: 用户名
-                            api_description:
-                              type: string
-                              description: 接口描述
-                            api_path:
-                              type: string
-                              description: 接口路径
-                            api_method:
-                              type: string
-                              description: 请求方法
-                            query_params:
-                              type: object
-                              description: 查询参数
-                            path_params:
-                              type: object
-                              description: 路径参数
-                            request_body:
-                              type: object
-                              description: 请求体
-                            response_time:
-                              type: number
-                              description: 响应耗时（毫秒）
-                            created_at:
-                              type: string
-                              description: 创建时间
-                            updated_at:
-                              type: string
-                              description: 更新时间
-                      next_cursor:
-                        type: string
-                        description: 下一页游标
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsApiLogsSyncGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -532,44 +305,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: array
-                    description: 接口平均响应时间统计
-                    items:
-                      type: object
-                      properties:
-                        api_path:
-                          type: string
-                          description: 接口路径
-                        api_method:
-                          type: string
-                          description: 请求方法
-                        api_description:
-                          type: string
-                          description: 接口描述
-                        avg_response_time:
-                          type: number
-                          description: 平均响应时间（毫秒）
-                        count:
-                          type: number
-                          description: 调用次数
-                      description: 列表项
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsApiLogsAverageSpeedGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -590,44 +326,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: array
-                    description: 接口调用次数统计
-                    items:
-                      type: object
-                      properties:
-                        api_path:
-                          type: string
-                          description: 接口路径
-                        api_method:
-                          type: string
-                          description: 请求方法
-                        api_description:
-                          type: string
-                          description: 接口描述
-                        call_count:
-                          type: number
-                          description: 调用次数
-                        avg_response_time:
-                          type: number
-                          description: 平均响应时间（毫秒）
-                      description: 列表项
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsApiLogsCalledCountGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -648,25 +347,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: string
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsTestNestjsGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -756,66 +437,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: 文章日志分页结果
-                    properties:
-                      total:
-                        type: number
-                        description: 日志总数
-                      list:
-                        type: array
-                        description: 日志列表
-                        items:
-                          type: object
-                          description: 文章日志记录
-                          properties:
-                            _id:
-                              type: string
-                              description: 日志 ID
-                            user_id:
-                              type: number
-                              description: 用户 ID
-                            username:
-                              type: string
-                              description: 用户名
-                            article_id:
-                              type: number
-                              description: 文章 ID
-                            article_title:
-                              type: string
-                              description: 文章标题
-                            action:
-                              type: string
-                              description: 操作类型
-                            content:
-                              type: object
-                              description: 操作内容
-                            msg:
-                              type: string
-                              description: 操作说明
-                            created_at:
-                              type: string
-                              description: 创建时间
-                            updated_at:
-                              type: string
-                              description: 更新时间
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsArticleLogsListGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -846,66 +468,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: 文章日志增量同步结果
-                    properties:
-                      list:
-                        type: array
-                        description: 日志列表
-                        items:
-                          type: object
-                          description: 文章日志记录
-                          properties:
-                            _id:
-                              type: string
-                              description: 日志 ID
-                            user_id:
-                              type: number
-                              description: 用户 ID
-                            username:
-                              type: string
-                              description: 用户名
-                            article_id:
-                              type: number
-                              description: 文章 ID
-                            article_title:
-                              type: string
-                              description: 文章标题
-                            action:
-                              type: string
-                              description: 操作类型
-                            content:
-                              type: object
-                              description: 操作内容
-                            msg:
-                              type: string
-                              description: 操作说明
-                            created_at:
-                              type: string
-                              description: 创建时间
-                            updated_at:
-                              type: string
-                              description: 更新时间
-                      next_cursor:
-                        type: string
-                        description: 下一页游标
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsArticleLogsSyncGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -931,25 +494,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsArticleLogsByIdDeleteResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -975,25 +520,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsArticleLogsBatchByIdsDeleteResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1019,32 +546,8 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: 用户最近搜索关键词
-                    properties:
-                      keywords:
-                        type: array
-                        description: 去重后的搜索关键词列表
-                        items:
-                          type: string
-                          description: 搜索关键词
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: >-
+                  #/components/schemas/NestjsArticleLogsSearchHistoryByUserIdGetResponse
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1070,45 +573,8 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: 文章浏览次数分布
-                    properties:
-                      total_views:
-                        type: number
-                        description: 总浏览次数
-                      articles:
-                        type: array
-                        description: 文章浏览统计列表
-                        items:
-                          type: object
-                          properties:
-                            article_id:
-                              type: number
-                              description: 文章 ID
-                            title:
-                              type: string
-                              description: 文章标题
-                            views:
-                              type: number
-                              description: 浏览次数
-                          description: 列表项
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: >-
+                  #/components/schemas/NestjsArticleLogsViewDistributionByUserIdGetResponse
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1129,28 +595,8 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: array
-                    description: 所有去重后的搜索关键词
-                    items:
-                      type: string
-                      description: 搜索关键词
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: >-
+                  #/components/schemas/NestjsArticleLogsSearchKeywordsGetResponse
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1177,25 +623,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: string
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsDownloadWordByIdGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1222,25 +650,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: string
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsDownloadMarkdownByIdGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1267,25 +677,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: string
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsDownloadPdfByIdGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1306,41 +698,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: array
-                    description: MongoDB 集合信息列表
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                          description: 集合名称
-                        document_count:
-                          type: number
-                          description: 文档数量
-                        sample_fields:
-                          type: array
-                          description: 示例字段名
-                          items:
-                            type: string
-                            description: 字段名
-                      description: 列表项
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsMongoToolsCollectionsGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1367,28 +725,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: array
-                    description: MongoDB 查询结果
-                    items:
-                      type: object
-                      description: MongoDB 文档
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsMongoToolsQueryPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1415,28 +752,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: array
-                    description: MongoDB 聚合结果，元素结构由聚合管道的 $project/$group 决定
-                    items:
-                      type: object
-                      description: 聚合结果文档
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsMongoToolsAggregatePostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1463,25 +779,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: string
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsUploadPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1514,39 +812,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: 上传文件结果
-                    properties:
-                      original_filename:
-                        type: string
-                        description: 原始文件名
-                      oss_filename:
-                        type: string
-                        description: OSS 文件名
-                      oss_url:
-                        type: string
-                        description: OSS 文件访问地址
-                    required:
-                      - original_filename
-                      - oss_filename
-                      - oss_url
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsUploadImagePostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1585,39 +851,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: 上传文件结果
-                    properties:
-                      original_filename:
-                        type: string
-                        description: 原始文件名
-                      oss_filename:
-                        type: string
-                        description: OSS 文件名
-                      oss_url:
-                        type: string
-                        description: OSS 文件访问地址
-                    required:
-                      - original_filename
-                      - oss_filename
-                      - oss_url
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsUploadPdfPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1645,28 +879,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: array
-                    description: 当前用户保存的表格列配置列表
-                    items:
-                      $ref: '#/components/schemas/TableSettings'
-                      description: 单条表格列配置
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsTableSettingsGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1700,27 +913,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    description: 当前用户在指定页面保存的列配置
-                    oneOf:
-                      - $ref: '#/components/schemas/TableSettings'
-                      - type: 'null'
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsTableSettingsByTableKeyGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1759,25 +952,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsTableSettingsByTableKeyPutResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1810,25 +985,8 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: 'null'
-                    description: 返回数据
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: >-
+                  #/components/schemas/NestjsTableSettingsByTableKeyDeleteResponse
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1855,41 +1013,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: array
-                    description: 数据表结构列表
-                    items:
-                      type: object
-                      properties:
-                        table:
-                          type: string
-                          description: 表名
-                        row_count:
-                          type: number
-                          description: 数据行数
-                        columns:
-                          type: array
-                          description: 列定义
-                          items:
-                            type: object
-                            description: 列表项
-                      description: 列表项
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsSqlToolsTablesGetResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -1916,41 +1040,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: 统一接口响应体
-                properties:
-                  code:
-                    type: integer
-                    format: int32
-                    example: 200
-                    description: 响应码，与 HTTP 状态码一致
-                  msg:
-                    type: string
-                    example: success
-                    description: 响应消息
-                  data:
-                    type: object
-                    description: SQL 查询结果
-                    properties:
-                      columns:
-                        type: array
-                        description: 列名
-                        items:
-                          type: string
-                          description: 列名
-                      rows:
-                        type: array
-                        description: 行数据
-                        items:
-                          type: array
-                          description: 列表项
-                      row_count:
-                        type: number
-                        description: 行数
-                required:
-                  - code
-                  - msg
-                  - data
+                $ref: '#/components/schemas/NestjsSqlToolsQueryPostResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
@@ -2161,6 +1251,984 @@ components:
         data:
           type: 'null'
           description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsGithubAuthorizeGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: object
+          description: GitHub OAuth 授权信息
+          properties:
+            authorize_url:
+              type: string
+              description: GitHub OAuth 授权地址
+            state:
+              type: string
+              description: OAuth 防跨站请求伪造状态值
+      required:
+        - code
+        - msg
+        - data
+    NestjsEmailSendCodePostResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsTaskApilogPostResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsApiLogsListGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: object
+          description: API 日志分页结果
+          properties:
+            total:
+              type: number
+              description: 日志总数
+            list:
+              type: array
+              description: 日志列表
+              items:
+                type: object
+                description: API 日志记录
+                properties:
+                  _id:
+                    type: string
+                    description: 日志 ID
+                  user_id:
+                    type: number
+                    description: 用户 ID
+                  username:
+                    type: string
+                    description: 用户名
+                  api_description:
+                    type: string
+                    description: 接口描述
+                  api_path:
+                    type: string
+                    description: 接口路径
+                  api_method:
+                    type: string
+                    description: 请求方法
+                  query_params:
+                    type: object
+                    description: 查询参数
+                  path_params:
+                    type: object
+                    description: 路径参数
+                  request_body:
+                    type: object
+                    description: 请求体
+                  response_time:
+                    type: number
+                    description: 响应耗时（毫秒）
+                  created_at:
+                    type: string
+                    description: 创建时间
+                  updated_at:
+                    type: string
+                    description: 更新时间
+      required:
+        - code
+        - msg
+        - data
+    NestjsApiLogsByIdDeleteResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsApiLogsBatchByIdsDeleteResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsApiLogsSyncGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: object
+          description: API 日志增量同步结果
+          properties:
+            list:
+              type: array
+              description: 日志列表
+              items:
+                type: object
+                description: API 日志记录
+                properties:
+                  _id:
+                    type: string
+                    description: 日志 ID
+                  user_id:
+                    type: number
+                    description: 用户 ID
+                  username:
+                    type: string
+                    description: 用户名
+                  api_description:
+                    type: string
+                    description: 接口描述
+                  api_path:
+                    type: string
+                    description: 接口路径
+                  api_method:
+                    type: string
+                    description: 请求方法
+                  query_params:
+                    type: object
+                    description: 查询参数
+                  path_params:
+                    type: object
+                    description: 路径参数
+                  request_body:
+                    type: object
+                    description: 请求体
+                  response_time:
+                    type: number
+                    description: 响应耗时（毫秒）
+                  created_at:
+                    type: string
+                    description: 创建时间
+                  updated_at:
+                    type: string
+                    description: 更新时间
+            next_cursor:
+              type: string
+              description: 下一页游标
+      required:
+        - code
+        - msg
+        - data
+    NestjsApiLogsAverageSpeedGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: array
+          description: 接口平均响应时间统计
+          items:
+            type: object
+            properties:
+              api_path:
+                type: string
+                description: 接口路径
+              api_method:
+                type: string
+                description: 请求方法
+              api_description:
+                type: string
+                description: 接口描述
+              avg_response_time:
+                type: number
+                description: 平均响应时间（毫秒）
+              count:
+                type: number
+                description: 调用次数
+            description: 列表项
+      required:
+        - code
+        - msg
+        - data
+    NestjsApiLogsCalledCountGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: array
+          description: 接口调用次数统计
+          items:
+            type: object
+            properties:
+              api_path:
+                type: string
+                description: 接口路径
+              api_method:
+                type: string
+                description: 请求方法
+              api_description:
+                type: string
+                description: 接口描述
+              call_count:
+                type: number
+                description: 调用次数
+              avg_response_time:
+                type: number
+                description: 平均响应时间（毫秒）
+            description: 列表项
+      required:
+        - code
+        - msg
+        - data
+    NestjsTestNestjsGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: string
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsArticleLogsListGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: object
+          description: 文章日志分页结果
+          properties:
+            total:
+              type: number
+              description: 日志总数
+            list:
+              type: array
+              description: 日志列表
+              items:
+                type: object
+                description: 文章日志记录
+                properties:
+                  _id:
+                    type: string
+                    description: 日志 ID
+                  user_id:
+                    type: number
+                    description: 用户 ID
+                  username:
+                    type: string
+                    description: 用户名
+                  article_id:
+                    type: number
+                    description: 文章 ID
+                  article_title:
+                    type: string
+                    description: 文章标题
+                  action:
+                    type: string
+                    description: 操作类型
+                  content:
+                    type: object
+                    description: 操作内容
+                  msg:
+                    type: string
+                    description: 操作说明
+                  created_at:
+                    type: string
+                    description: 创建时间
+                  updated_at:
+                    type: string
+                    description: 更新时间
+      required:
+        - code
+        - msg
+        - data
+    NestjsArticleLogsSyncGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: object
+          description: 文章日志增量同步结果
+          properties:
+            list:
+              type: array
+              description: 日志列表
+              items:
+                type: object
+                description: 文章日志记录
+                properties:
+                  _id:
+                    type: string
+                    description: 日志 ID
+                  user_id:
+                    type: number
+                    description: 用户 ID
+                  username:
+                    type: string
+                    description: 用户名
+                  article_id:
+                    type: number
+                    description: 文章 ID
+                  article_title:
+                    type: string
+                    description: 文章标题
+                  action:
+                    type: string
+                    description: 操作类型
+                  content:
+                    type: object
+                    description: 操作内容
+                  msg:
+                    type: string
+                    description: 操作说明
+                  created_at:
+                    type: string
+                    description: 创建时间
+                  updated_at:
+                    type: string
+                    description: 更新时间
+            next_cursor:
+              type: string
+              description: 下一页游标
+      required:
+        - code
+        - msg
+        - data
+    NestjsArticleLogsByIdDeleteResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsArticleLogsBatchByIdsDeleteResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsArticleLogsSearchHistoryByUserIdGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: object
+          description: 用户最近搜索关键词
+          properties:
+            keywords:
+              type: array
+              description: 去重后的搜索关键词列表
+              items:
+                type: string
+                description: 搜索关键词
+      required:
+        - code
+        - msg
+        - data
+    NestjsArticleLogsViewDistributionByUserIdGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: object
+          description: 文章浏览次数分布
+          properties:
+            total_views:
+              type: number
+              description: 总浏览次数
+            articles:
+              type: array
+              description: 文章浏览统计列表
+              items:
+                type: object
+                properties:
+                  article_id:
+                    type: number
+                    description: 文章 ID
+                  title:
+                    type: string
+                    description: 文章标题
+                  views:
+                    type: number
+                    description: 浏览次数
+                description: 列表项
+      required:
+        - code
+        - msg
+        - data
+    NestjsArticleLogsSearchKeywordsGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: array
+          description: 所有去重后的搜索关键词
+          items:
+            type: string
+            description: 搜索关键词
+      required:
+        - code
+        - msg
+        - data
+    NestjsDownloadWordByIdGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: string
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsDownloadMarkdownByIdGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: string
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsDownloadPdfByIdGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: string
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsMongoToolsCollectionsGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: array
+          description: MongoDB 集合信息列表
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: 集合名称
+              document_count:
+                type: number
+                description: 文档数量
+              sample_fields:
+                type: array
+                description: 示例字段名
+                items:
+                  type: string
+                  description: 字段名
+            description: 列表项
+      required:
+        - code
+        - msg
+        - data
+    NestjsMongoToolsQueryPostResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: array
+          description: MongoDB 查询结果
+          items:
+            type: object
+            description: MongoDB 文档
+      required:
+        - code
+        - msg
+        - data
+    NestjsMongoToolsAggregatePostResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: array
+          description: MongoDB 聚合结果，元素结构由聚合管道的 $project/$group 决定
+          items:
+            type: object
+            description: 聚合结果文档
+      required:
+        - code
+        - msg
+        - data
+    NestjsUploadPostResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: string
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsUploadImagePostResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: object
+          description: 上传文件结果
+          properties:
+            original_filename:
+              type: string
+              description: 原始文件名
+            oss_filename:
+              type: string
+              description: OSS 文件名
+            oss_url:
+              type: string
+              description: OSS 文件访问地址
+          required:
+            - original_filename
+            - oss_filename
+            - oss_url
+      required:
+        - code
+        - msg
+        - data
+    NestjsUploadPdfPostResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: object
+          description: 上传文件结果
+          properties:
+            original_filename:
+              type: string
+              description: 原始文件名
+            oss_filename:
+              type: string
+              description: OSS 文件名
+            oss_url:
+              type: string
+              description: OSS 文件访问地址
+          required:
+            - original_filename
+            - oss_filename
+            - oss_url
+      required:
+        - code
+        - msg
+        - data
+    NestjsTableSettingsGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: array
+          description: 当前用户保存的表格列配置列表
+          items:
+            $ref: '#/components/schemas/TableSettings'
+            description: 单条表格列配置
+      required:
+        - code
+        - msg
+        - data
+    NestjsTableSettingsByTableKeyGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          description: 当前用户在指定页面保存的列配置
+          oneOf:
+            - $ref: '#/components/schemas/TableSettings'
+            - type: 'null'
+      required:
+        - code
+        - msg
+        - data
+    NestjsTableSettingsByTableKeyPutResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsTableSettingsByTableKeyDeleteResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsSqlToolsTablesGetResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: array
+          description: 数据表结构列表
+          items:
+            type: object
+            properties:
+              table:
+                type: string
+                description: 表名
+              row_count:
+                type: number
+                description: 数据行数
+              columns:
+                type: array
+                description: 列定义
+                items:
+                  type: object
+                  description: 列表项
+            description: 列表项
+      required:
+        - code
+        - msg
+        - data
+    NestjsSqlToolsQueryPostResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: object
+          description: SQL 查询结果
+          properties:
+            columns:
+              type: array
+              description: 列名
+              items:
+                type: string
+                description: 列名
+            rows:
+              type: array
+              description: 行数据
+              items:
+                type: array
+                description: 列表项
+            row_count:
+              type: number
+              description: 行数
       required:
         - code
         - msg
