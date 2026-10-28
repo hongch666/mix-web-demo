@@ -260,7 +260,7 @@ show_status() {
         log_info "dev/dist OpenTelemetry: 未启用（执行 ./mix loki start 后启用）"
     fi
 
-    log_info "访问地址: Loki http://localhost:3100，Prometheus 容器端口 9090，OTLP http://localhost:4318，Grafana http://localhost:3000（匿名 Admin，数据源已预置）"
+    log_info "访问地址: Loki http://localhost:3100，Prometheus http://localhost:9090，OTLP http://localhost:4318，Grafana http://localhost:3000（匿名 Admin，数据源已预置）"
     echo ""
 }
 
