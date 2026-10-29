@@ -1,41 +1,18 @@
-from collections.abc import Awaitable, Callable, Coroutine
+from collections.abc import Callable, Coroutine
 from functools import wraps
 from inspect import iscoroutinefunction
 from typing import Any, Optional, ParamSpec, TypeVar
 
+from app.core.auth import AdminChecker, build_admin_checker
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 from app.core.middleware import get_current_user_id
-from app.internal.clients import SpringClient, get_spring_client
+from app.internal.clients import get_spring_client
 
 P = ParamSpec("P")
 R = TypeVar("R")
 AsyncFunc = Callable[P, Coroutine[Any, Any, R]]
-
-AdminChecker = Callable[[int], Awaitable[bool]]
-
-
-def build_admin_checker(spring_client: SpringClient) -> AdminChecker:
-    """基于已注入的 Spring 客户端创建管理员检查器"""
-
-    async def checker(user_id: int) -> bool:
-        """调用 Spring 接口查询用户角色判断是否管理员，查询失败按非管理员处理"""
-        try:
-            users: list[dict[str, Any]] = await spring_client.get_users_by_ids(
-                [int(user_id)]
-            )
-            role: str = (
-                users[0].get("role") or Messages.ROLE_USER
-                if users
-                else Messages.ROLE_USER
-            )
-            return role == Messages.ROLE_ADMIN
-        except Exception as error:
-            Logger.error(Messages.ADMIN_PERMISSION_CHECK_FAILED(error))
-            return False
-
-    return checker
 
 
 def requireSelf[**P, R](
