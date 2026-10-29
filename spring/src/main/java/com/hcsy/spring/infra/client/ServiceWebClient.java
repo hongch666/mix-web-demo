@@ -27,14 +27,12 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
 import io.github.resilience4j.reactor.retry.RetryOperator;
 import io.github.resilience4j.retry.RetryRegistry;
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 /**
  * 封装微服务间 HTTP 请求，统一附加内部令牌与用户上下文并应用超时、重试、熔断与调用指标记录
  */
 @Component
-@RequiredArgsConstructor
 public class ServiceWebClient {
 
     private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
@@ -46,13 +44,31 @@ public class ServiceWebClient {
     private static final ParameterizedTypeReference<Result<Object>> RESULT_TYPE = new ParameterizedTypeReference<>() {
     };
 
-    private final WebClient.Builder webClientBuilder;
+    private final WebClient webClient;
     private final InternalTokenUtil internalTokenUtil;
     private final SimpleLogger logger;
     private final CircuitBreakerRegistry circuitBreakerRegistry;
     private final RetryRegistry retryRegistry;
     private final ServiceClientProperties serviceClientProperties;
     private final MetricsRecorder metricsRecorder;
+
+    public ServiceWebClient(
+        WebClient.Builder webClientBuilder,
+        InternalTokenUtil internalTokenUtil,
+        SimpleLogger logger,
+        CircuitBreakerRegistry circuitBreakerRegistry,
+        RetryRegistry retryRegistry,
+        ServiceClientProperties serviceClientProperties,
+        MetricsRecorder metricsRecorder) {
+        // WebClient 不可变且线程安全，构建一次后缓存复用，避免每次请求重建
+        this.webClient = webClientBuilder.build();
+        this.internalTokenUtil = internalTokenUtil;
+        this.logger = logger;
+        this.circuitBreakerRegistry = circuitBreakerRegistry;
+        this.retryRegistry = retryRegistry;
+        this.serviceClientProperties = serviceClientProperties;
+        this.metricsRecorder = metricsRecorder;
+    }
 
     /**
      * 使用配置中的统一超时时间发起请求
@@ -91,7 +107,7 @@ public class ServiceWebClient {
             String accessToken = UserContext.getToken(context);
             String token = internalTokenUtil.generateInternalToken(userId == null ? -1L : userId, SERVICE_NAME);
 
-            WebClient.RequestBodySpec request = webClientBuilder.build()
+            WebClient.RequestBodySpec request = webClient
                 .method(method)
                 .uri(uriBuilder -> buildUri(
                     uriBuilder, serviceName, path, requestOptions.getQueryParameters(),
