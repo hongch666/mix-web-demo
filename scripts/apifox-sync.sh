@@ -1155,7 +1155,8 @@ count_dangling_refs() {
 
     local output
     output=$("$python_bin" "$checker" --check "$snapshot" --models "$models" --examples 3 2>/dev/null || true)
-    printf '%s\n' "$output" | sed -n '3,$p' | while IFS= read -r line; do
+    # 前 3 行是 DANGLING / ENDPOINTS / MODELS 统计，之后才是断链示例
+    printf '%s\n' "$output" | sed -n '4,$p' | while IFS= read -r line; do
         if [ -n "$line" ]; then
             print_warn "  断链: $line"
         fi
