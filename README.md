@@ -1723,6 +1723,8 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `setup.sh`                  | scripts/             | 环境初始化和依赖安装                                                                           | Linux/macOS         |
 | `swag-init.sh`              | scripts/             | 离线生成四个服务的静态 OpenAPI 文档（不启动服务、不依赖中间件）                                | Linux/macOS         |
 | `apifox-sync.sh`            | scripts/             | 将各服务 docs/ 下的静态 OpenAPI 文档同步到 Apifox（读取根目录 `.env` 中的令牌）                | Linux/macOS         |
+| `apifox-check.sh`           | scripts/             | 只读检查 Apifox 项目里接口与数据模型的引用完整性（导出项目快照后与现存模型比对）                | Linux/macOS         |
+| `apifox-schema-refs.py`     | scripts/             | `apifox-check.sh` 与 `apifox-sync.sh` 自检共用的比对实现，可单独 `--check <快照> --models <清单>` | 有 Python 的环境    |
 | `apifox-readme-sync.sh`     | scripts/             | 将根目录 README.md 同步到 Apifox 指定 Markdown 文档（走 Apifox CLI 的 doc create/update）      | Linux/macOS         |
 | `goctl-api-init.sh`         | scripts/             | 生成 GoZero API 代码，参数透传给`genApi.sh`                                                    | Linux/macOS         |
 | `goctl-orm-init.sh`         | scripts/             | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                                    | Linux/macOS         |
@@ -2211,6 +2213,7 @@ Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关
 4. GoZero 产物已剔除 `x-date`、`x-goctl-version` 等易变字段，同一份 `.api` 在不同机器、不同 goctl 版本下生成结果一致
 5. 各服务产物都不带 `servers`（Spring 生成器与 GoZero 的 `fix.py` 都会移除），Base URL 统一交由 Apifox 环境面板维护
 6. 对应工具未安装时该服务会跳过并提示，其余服务继续生成；`gateway` 为 APISIX 配置，无 OpenAPI 产物，会被忽略
+7. 允许为 null 的字段必须写成 OpenAPI 3.1 的类型数组（`type: ["integer","null"]`），`nullable: true` 是 3.0 写法、3.1 下会被忽略。Spring 由 `SwaggerConfig#markNullableProperties` 统一补（未列入 `required` 的属性），非空字段用 `@NotNull` / `@Schema(requiredMode = REQUIRED)` 声明；NestJS 由 `app/swagger.ts#markNullableProperties` 按 `@ApiProperty({ required: false })` 补；GoZero 由 `script/swagger/fix.py#mark_nullable_properties` 按 `.api` 的 `json:",optional"` 与切片字段补。不补的表现是 Apifox「校验响应」报 `$.data.xxx 不允许为 null`
 
 ### Spring 部分
 
@@ -2310,11 +2313,13 @@ APIFOX_PROJECT_ID=你的项目ID
 | `APIFOX_API_VERSION`                                                                                     | 否   | `2024-03-28`                      | 请求头 `X-Apifox-Api-Version` 的取值                                                                                                |
 | `APIFOX_LOCALE`                                                                                          | 否   | `zh-CN`                           | 请求参数 `locale`                                                                                                                   |
 | `APIFOX_FOLDER_SPRING`<br/>`APIFOX_FOLDER_GOZERO`<br/>`APIFOX_FOLDER_NESTJS`<br/>`APIFOX_FOLDER_FASTAPI` | 否   | 空                                | 各服务的目标接口目录 ID（数字），留空则导入到项目根目录                                                                             |
-| `APIFOX_SCHEMA_FOLDER_ID`                                                                                | 否   | 空                                | 数据模型的目标目录 ID                                                                                                               |
+| `APIFOX_SCHEMA_FOLDER_SPRING`<br/>`APIFOX_SCHEMA_FOLDER_GOZERO`<br/>`APIFOX_SCHEMA_FOLDER_NESTJS`<br/>`APIFOX_SCHEMA_FOLDER_FASTAPI` | 全量对齐时必填 | 空 | 各服务的数据模型目录 ID（数字）。**必须按服务分开**：模型都落到同一个目录时，每个服务的全量对齐都会删掉其它服务刚同步的模型，接口上的模型引用随即断链，Apifox「校验响应」报 `can't resolve reference` |
+| `APIFOX_SCHEMA_FOLDER_ID`                                                                                | 否   | 空                                | 数据模型目录的兜底值（各服务未单独配置时生效）                                                                                       |
+| `APIFOX_VERIFY_SCHEMA_REFS`                                                                              | 否   | `true`                            | 同步后导出项目快照，自检接口与数据模型的引用完整性；发现断链时对本轮服务按覆盖模式重导修复                                          |
 | `APIFOX_BRANCH_ID` / `APIFOX_MODULE_ID`                                                                  | 否   | 空                                | 目标分支 ID / 目标模块 ID                                                                                                           |
 | `APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR`                                                                     | 否   | `AUTO_MERGE`                      | 接口的覆盖策略，取值见下表                                                                                                          |
 | `APIFOX_SCHEMA_OVERWRITE_BEHAVIOR`                                                                       | 否   | `AUTO_MERGE`                      | 数据模型的覆盖策略，取值同上                                                                                                        |
-| `APIFOX_DELETE_UNMATCHED_RESOURCES`                                                                      | 否   | `true`                            | 是否以文档为准删除 Apifox 中多出的接口与数据模型（范围限于该服务的导入目录，WebSocket 接口不受影响；置 `false` 回到只增量、不清理） |
+| `APIFOX_DELETE_UNMATCHED_RESOURCES`                                                                      | 否   | `true`                            | 是否以文档为准删除 Apifox 中多出的接口与数据模型（范围限于该服务的接口目录与数据模型目录，WebSocket 接口不受影响；置 `false` 回到只增量、不清理） |
 | `APIFOX_UPDATE_FOLDER_OF_CHANGED_ENDPOINT`                                                               | 否   | `true`                            | 是否用文档中的目录信息更新已有接口的所属目录                                                                                        |
 | `APIFOX_README_DOC_ID`                                                                                   | 否   | 空                                | `./mix apifox-readme` 的目标 Markdown 文档 ID，配置后为原地更新                                                                     |
 | `APIFOX_README_DOC_NAME`                                                                                 | 否   | README 一级标题                   | 创建文档时的名称；更新时只有显式配置才会改名                                                                                        |
@@ -2361,6 +2366,9 @@ APIFOX_PROJECT_ID=你的项目ID
 # dry-run：只校验产物与配置，不发起导入请求
 ./mix apifox --dry-run
 
+# 只读检查：Apifox 侧接口与数据模型的引用是否完整（断链会报 can't resolve reference）
+./mix apifox-check
+
 # 直接调用脚本
 ./scripts/apifox-sync.sh spring --dry-run
 ```
@@ -2378,6 +2386,30 @@ APIFOX_PROJECT_ID=你的项目ID
 7. 若报 `403075 Automation caller branch required`：这是 Apifox 对自动化调用者的写保护（接口导入走开放 API 不受影响，只有 README 这一步会撞上）。两种放行方式：
    - 直接编辑：Apifox 客户端 2.8.31+ 打开「项目设置 → 功能设置 → AI 功能设置 → 外部 AI 编辑权限」，开启「主分支直接编辑权限」后重试
    - AI 分支：`apifox branch create --project <项目ID> --type ai --name "ai/年月日-from-main-readme" --from main`（命名需符合 `ai/年月日-from-来源分支-模块名`），再 `apifox branch pick-to --project <项目ID> --type ai --from main --to <AI分支名> --doc-ids <文档ID>` 把已有文档带进去（AI 分支初始为空），然后 `APIFOX_README_BRANCH=<AI分支名> ./mix apifox` 写入，确认无误后再 `apifox branch merge` 合并
+
+### 引用完整性检查（./mix apifox-check）
+
+接口的请求体/响应体在 Apifox 里以 JSON Schema 存储，模型通过 `$ref: #/definitions/<模型ID>` 引用。模型被删除或重建后引用不会自动回滚，Apifox「校验响应」会报 `can't resolve reference #/definitions/<数字ID> from id http://json-schema.org/draft-04/schema#`——此时仓库里的 `openapi.json` 本身引用链完好，问题只存在于 Apifox 侧，本地任何产物检查都发现不了。
+
+```bash
+# 只读检查：导出项目快照，比对接口引用与现存数据模型，不写入任何内容
+./mix apifox-check
+
+# 保留快照与模型清单，便于人工排查
+./mix apifox-check --keep /tmp/apifox-check
+
+# 调整断链示例条数 / 关闭彩色输出
+./mix apifox-check --examples 10 --no-color
+
+# 直接调用脚本
+./scripts/apifox-check.sh --keep /tmp/apifox-check
+```
+
+- 输出形如 `接口 207 个，数据模型 259 个`；有断链时逐条打印「目录 | 方法 路径 | 字段 -> 悬空引用」，退出码 1
+- 返回码：`0` 引用完整、`1` 存在断链、`2` 缺少 `.env` 配置 / Apifox CLI / python
+- 需要联网并读 `.env` 的 `APIFOX_ACCESS_TOKEN`、`APIFOX_PROJECT_ID`，因此**不并入离线的 `./mix lint`**
+- `./mix apifox` 结束时会自动跑同一项检查（底层为 `scripts/apifox-schema-refs.py`），命中断链即按覆盖模式重导修复；单独执行本命令适合「不改代码、只确认远端状态」或排障前后对比
+- 断链的根治手段是按服务隔离数据模型目录（`APIFOX_SCHEMA_FOLDER_*`），否则任一服务的全量对齐都会删掉其它服务刚同步的模型
 
 ### README 同步到指定文档
 
