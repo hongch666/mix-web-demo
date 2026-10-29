@@ -152,7 +152,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 - 全局异常：`@RestControllerAdvice` + `@ExceptionHandler` 返回 `Mono<ResponseEntity<Result<?>>>`，通过 ResponseEntity 设置 HTTP 状态码；`ResponseBodyAdvice` 在 WebFlux 不可用
 - **WebFlux 的请求体校验失败抛的是 `WebExchangeBindException`（继承 `ServerWebInputException`），不是 MVC 的 `MethodArgumentNotValidException` / `org.springframework.validation.BindException`**。`@ExceptionHandler` 未声明它就会被 `@ExceptionHandler(Exception.class)` 兜底吞成 500，必须显式声明；畸形 JSON 与参数类型不匹配抛 `ServerWebInputException`，一并声明。字段消息取 `getBindingResult().getFieldError().getDefaultMessage()`
 - **请求 DTO 用 jakarta 注解声明约束（放 `entity/dto/`），控制器参数用 `@Valid` 触发**；新增接口必须带校验（通用规则 13），只有 `@RequestParam` / `@PathVariable` 这类无 DTO 的入参属于例外，那种情况控制器**没有**类级 `@Validated`，需要在 service 层手工校验
-- 微服务调用用 `ServiceWebClient`（WebClient + `@LoadBalanced` 服务名寻址 + Resilience4j 熔断/重试），新增远程接口在该类中加方法，通过 `deferContextual` 注入上下文头；禁止 OpenFeign。**当前实现在每次请求里 `webClientBuilder.build()` 重建 WebClient**：连接池是 reactor-netty 全局的所以不会泄漏，但每次构建有额外开销，改造时应在 `@PostConstruct` 缓存一个实例（`WebClient` 不可变且线程安全）
+- 微服务调用用 `ServiceWebClient`（WebClient + `@LoadBalanced` 服务名寻址 + Resilience4j 熔断/重试），新增远程接口在该类中加方法，通过 `deferContextual` 注入上下文头；禁止 OpenFeign。**WebClient 在构造时构建一次并缓存为 final 字段复用**（WebClient 不可变且线程安全），不要在请求路径上反复 `build()`
 - Redis 用 `ReactiveStringRedisTemplate`，封装在 `common/utils/RedisUtil`；缓存读写走 Mono 链式 `switchIfEmpty(Mono.defer(...))` 模式，禁止 `@Cacheable`
 - AOP 切面中 `pjp.proceed()` 返回 `Mono<?>` 时必须在 Mono 链内操作（`.flatMap()` / `.doOnSuccess()`），上下文用 `.deferContextual()` 获取
 - 横切能力由 AOP 实现：`ApiLogAspect`（接口日志）、`RequirePermissionAspect`（`@RequirePermission` 声明式权限）、`RequireInternalTokenAspect`（`@RequireInternalToken` 内部令牌）、`ArticleSyncAspect`（文章变更同步 MQ / ES / 向量）、`DataSyncAspect`（图谱与数仓同步）。切面类与注解同名（注解去 `@` 加 `Aspect` 后缀），新增切面沿用该命名。新增写接口时确认是否需要权限注解与同步触发，同步失败只记日志、没有补偿机制
@@ -174,8 +174,8 @@ common/constants  常量（Messages、HttpCode、Defaults、ErrorIds）
 common/exceptions 全局异常与错误结构
 common/utils      工具类（response、swaggerResponse 响应 Schema、snakeCase 命名转换原语）
 framework/        全局横切：decorators、guards、interceptors、filters、middleware
-module/common/    公共服务模块（nacos、logger、oss、redis、mail、github、task、client）
-module/system/    系统业务模块（apiLog、articleLog、sqlTools 等）
+module/common/    公共服务模块（nacos、logger、oss、redis、mail、github、client）
+module/system/    系统业务模块（apiLog、articleLog、sqlTools、task 等）
 ```
 
 ### 模块内组织与约定
@@ -185,7 +185,7 @@ module/system/    系统业务模块（apiLog、articleLog、sqlTools 等）
 - **入参校验走全局 `ValidationPipe`（`app/index.ts` 注册，`transform` + `enableImplicitConversion`），DTO 用 class-validator 注解**；新增接口必须带校验（通用规则 13），每个 `@Body()` / `@Query()` / `@Param()` 都要有对应 DTO 与约束注解，直接用裸参数接请求等于没有校验。自定义 `exceptionFactory` 把错误包成 `BusinessException(400, PARAM_PARSE_FAILED)`，最终由 `AllExceptionsFilter` 输出统一结构。**当前未开 `whitelist` / `forbidNonWhitelisted`**，未声明字段既不剥离也不报错，不要依赖"多余字段会被拒"
 - 请求上下文用 nestjs-cls：`ClsMiddleware` 写入（userId/username/sessionId/token/internalToken），业务注入 `ClsService` 读取；gRPC 或脱离 HTTP 异步链的场景必须用 `ClsService.run` 手动开启上下文
   - **未登录语义注意**：`parseUserId` 要求 `Number.isInteger(userId) && userId > 0`，所以 ≤0 的值（含约定的系统调用 `-1`）在 CLS 里是 `undefined`；出站头由 `NacosService.call` 生成（`X-User-Id: String(userId || 0)`，内部令牌按 `userId > 0 ? userId : -1`）。需要区分"未登录 / 系统调用"时不要直接依赖 CLS 的值
-- 公共层入口是 `module/common/common.module.ts`：`imports` 只保留需要根级加载的子模块（Logger、Client、Github、Mail、Task），`exports` **只导出 ClientModule**（根模块的 `RequireAdminGuard` 需要它）。业务模块用到的其他公共能力（oss、word、nacos、redis）由消费方**自行 import 对应模块**，禁止把 CommonModule 做成"全量中转池"（那会让模块边界形同虚设）
+- 公共层入口是 `module/common/common.module.ts`：`imports` 只保留需要根级加载的子模块（Logger、Client、Github、Mail），`exports` **只导出 ClientModule**（根模块的 `RequireAdminGuard` 需要它）。业务模块用到的其他公共能力（oss、word、nacos、redis）由消费方**自行 import 对应模块**，禁止把 CommonModule 做成"全量中转池"（那会让模块边界形同虚设）；定时任务（TaskModule）属系统业务，放 `module/system/task`，不进 CommonModule，避免 common 层反向依赖 system 层
 - 外部客户端必须通过模块 Provider 注入：Mail 的 Nodemailer Transporter 使用 `MAIL_TRANSPORTER` Provider，OSS 的 ali-oss 客户端使用 `OSS_CLIENT` Provider；Service 构造函数只接收抽象依赖，禁止直接调用 `nodemailer.createTransport()` 或 `new ali-oss(...)`
 - `LoggerModule` 是 `@Global`，日志能力全模块可直接注入，无需 import
 - 用户可控字符串在拼接存储 key 前必须清洗（长度 + 字符白名单）：`upload` 模块的 `customFilename` 走 `@Query` 原样拼 OSS key，属需要加固的写法
