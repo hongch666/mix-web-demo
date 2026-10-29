@@ -25,17 +25,17 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 常量类成员顺序检查（nestjs 与 fastapi 共用），python 缺失时跳过
-lint_constants_order() {
+# 常量文件规范检查（四个服务共用：成员注释、分类注释、函数成员在前），python 缺失时跳过
+lint_constants() {
     if command -v python >/dev/null 2>&1; then
-        python "$WORKDIR/scripts/constants-order.py" --check "$1"
+        python "$WORKDIR/scripts/constants.py" --check "$1"
         return
     fi
     if command -v python3 >/dev/null 2>&1; then
-        python3 "$WORKDIR/scripts/constants-order.py" --check "$1"
+        python3 "$WORKDIR/scripts/constants.py" --check "$1"
         return
     fi
-    print_warn "未检测到 python，跳过常量类成员顺序检查"
+    print_warn "未检测到 python，跳过常量文件规范检查"
     return 0
 }
 
@@ -122,12 +122,16 @@ fi
 lint_spring() {
     print_info "检查 Spring 控制器返回类型（禁止匿名 Map）..."
     lint_controller_vo "$WORKDIR/spring/src/main/java/com/hcsy/spring/web/controller" || return 1
+    print_info "检查 Spring 常量文件规范（成员注释与分类注释）..."
+    lint_constants "$WORKDIR/spring/src/main/java/com/hcsy/spring/common/constants" || return 1
     command -v mvn >/dev/null 2>&1 || return 2
     print_info "检查 Spring 代码格式（Spotless）..."
     (cd "$WORKDIR/spring" && mvn -q spotless:check)
 }
 
 lint_gozero() {
+    print_info "检查 GoZero 常量文件规范（成员注释与分类注释）..."
+    lint_constants "$WORKDIR/gozero/app/common/constants" || return 1
     command -v golangci-lint >/dev/null 2>&1 || return 2
     print_info "检查 GoZero 代码（golangci-lint）..."
     (cd "$WORKDIR/gozero/app" && golangci-lint run) || return 1
@@ -150,8 +154,8 @@ lint_nestjs() {
     print_info "检查 NestJS 类型（tsc --noEmit）..."
     (cd "$WORKDIR/nestjs" && ./node_modules/.bin/tsc --noEmit -p tsconfig.build.json) || return 1
 
-    print_info "检查 NestJS 常量类成员顺序..."
-    lint_constants_order "$WORKDIR/nestjs/src/common/constants"
+    print_info "检查 NestJS 常量文件规范（成员注释、分类注释、函数成员在前）..."
+    lint_constants "$WORKDIR/nestjs/src/common/constants"
 }
 
 lint_fastapi() {
@@ -170,8 +174,8 @@ lint_fastapi() {
         print_warn "pyright 未安装，跳过类型检查"
     fi
 
-    print_info "检查 FastAPI 常量类成员顺序..."
-    lint_constants_order "$WORKDIR/fastapi/app/core/constants" || return 1
+    print_info "检查 FastAPI 常量文件规范（成员注释、分类注释、函数成员在前）..."
+    lint_constants "$WORKDIR/fastapi/app/core/constants" || return 1
     print_info "检查 FastAPI 包导入规范..."
     lint_package_imports "$WORKDIR/fastapi"
 }

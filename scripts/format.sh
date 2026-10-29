@@ -25,20 +25,6 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 常量类成员顺序整理（nestjs 与 fastapi 共用），python 缺失时跳过
-format_constants_order() {
-    if command -v python >/dev/null 2>&1; then
-        python "$WORKDIR/scripts/constants-order.py" --fix "$1"
-        return
-    fi
-    if command -v python3 >/dev/null 2>&1; then
-        python3 "$WORKDIR/scripts/constants-order.py" --fix "$1"
-        return
-    fi
-    print_warn "未检测到 python，跳过常量类成员顺序整理"
-    return 0
-}
-
 # 包导入整理（fastapi）：合并同目标的重复导入、按字典序排列，python 缺失时跳过
 format_package_imports() {
     if command -v python >/dev/null 2>&1; then
@@ -76,7 +62,7 @@ fi
 format_spring() {
     command -v mvn >/dev/null 2>&1 || return 2
     print_info "格式化 Spring 代码（Spotless）..."
-    (cd "$WORKDIR/spring" && mvn -q spotless:apply)
+    (cd "$WORKDIR/spring" && mvn -q spotless:apply) || return 1
 }
 
 format_gozero() {
@@ -92,8 +78,6 @@ format_nestjs() {
     print_info "格式化 NestJS 代码（Prettier + ESLint --fix）..."
     # 先由 Prettier 统一排版，再用 ESLint --fix 修复可自动处理的问题
     (cd "$WORKDIR/nestjs" && npm run format && npm run lint:fix) || return 1
-    print_info "整理 NestJS 常量类成员顺序..."
-    format_constants_order "$WORKDIR/nestjs/src/common/constants"
 }
 
 format_fastapi() {
@@ -103,8 +87,6 @@ format_fastapi() {
     (cd "$WORKDIR/fastapi" && ruff format . && ruff check --fix .) || return 1
     print_info "整理 FastAPI 包导入（合并重复导入、按字典序排列）..."
     format_package_imports "$WORKDIR/fastapi" || return 1
-    print_info "整理 FastAPI 常量类成员顺序..."
-    format_constants_order "$WORKDIR/fastapi/app/core/constants"
 }
 
 # ==================== 执行格式化 ====================
