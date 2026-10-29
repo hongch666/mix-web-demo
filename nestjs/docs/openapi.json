@@ -190,7 +190,7 @@
             }
           }
         },
-        "summary": "NestJS自己的测试",
+        "summary": "测试NestJS服务",
         "tags": [
           "测试模块"
         ]
