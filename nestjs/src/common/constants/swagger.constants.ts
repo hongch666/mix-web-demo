@@ -2,11 +2,19 @@
  * Swagger/OpenAPI 配置常量
  */
 export class SwaggerConfig {
+  // ===== 文档基础信息 =====
+
+  /** 文档标题 */
   static readonly SWAGGER_TITLE = "NestJS部分的Swagger文档";
+  /** 文档描述 */
   static readonly SWAGGER_DESCRIPTION = "这是项目的NestJS部分的Swagger文档";
+  /** 接口版本号 */
   static readonly SWAGGER_VERSION = "1.0.0";
+  /** 产物的 OpenAPI 规范版本，3.1 才能表达空值响应 */
   static readonly OPENAPI_VERSION = "3.1.0";
+  /** Swagger UI 的挂载路径 */
   static readonly SWAGGER_PATH = "api-docs";
+  /** 接口分组标签清单，每项为英文标识与中文名称 */
   static readonly SWAGGER_TAGS: [string, string][] = [
     ["API日志模块", "API日志相关API，包括日志查询、统计等功能"],
     ["文章日志模块", "文章操作日志相关API，包括日志记录、查询、清理等"],

@@ -6,6 +6,8 @@
  * - Markdown 对换行与缩进敏感，模板体顶格书写
  */
 export class ExportTemplate {
+  // ===== PDF 模板 =====
+
   /**
    * 渲染文章 PDF 的完整 HTML
    * @param title 文章标题
@@ -210,6 +212,8 @@ export class ExportTemplate {
       </html>
     `;
 
+  // ===== Markdown 模板 =====
+
   /**
    * 渲染文章导出的完整 Markdown 内容
    * @param title 文章标题
@@ -238,6 +242,9 @@ export class ExportTemplate {
     `;
 
   // ===== 页面设置 =====
+
+  /** 导出 PDF 使用的纸张规格 */
   static readonly PAGE_SIZE = "A4";
+  /** 导出 PDF 使用的页边距 */
   static readonly PAGE_MARGIN = "15mm";
 }
