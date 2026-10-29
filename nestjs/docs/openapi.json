@@ -163,365 +163,6 @@
         ]
       }
     },
-    "/task/apilog": {
-      "post": {
-        "description": "手动触发清理超过3个月的API日志任务",
-        "operationId": "TaskController_executeCleanupOldApiLogsTask",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NestjsTaskApilogPostResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "用户未登录或登录已失效",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary": "手动执行清理API日志任务",
-        "tags": [
-          "定时任务模块"
-        ]
-      }
-    },
-    "/api-logs/list": {
-      "get": {
-        "description": "可根据用户ID、用户名、API路径等条件查询，支持分页",
-        "operationId": "ApiLogController_findByFilter",
-        "parameters": [
-          {
-            "name": "user_id",
-            "required": false,
-            "in": "query",
-            "description": "用户ID",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "username",
-            "required": false,
-            "in": "query",
-            "description": "用户名（模糊搜索）",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "api_description",
-            "required": false,
-            "in": "query",
-            "description": "API描述（模糊搜索）",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "api_path",
-            "required": false,
-            "in": "query",
-            "description": "API路径（模糊搜索）",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "api_method",
-            "required": false,
-            "in": "query",
-            "description": "API方法",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "PATCH",
-                "OPTIONS",
-                "HEAD"
-              ]
-            }
-          },
-          {
-            "name": "start_time",
-            "required": false,
-            "in": "query",
-            "description": "开始时间（格式：yyyy-MM-dd HH:mm:ss）",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "end_time",
-            "required": false,
-            "in": "query",
-            "description": "结束时间（格式：yyyy-MM-dd HH:mm:ss）",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "页码",
-            "schema": {
-              "example": "1",
-              "type": "string"
-            }
-          },
-          {
-            "name": "size",
-            "required": false,
-            "in": "query",
-            "description": "每页条数",
-            "schema": {
-              "example": "10",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NestjsApiLogsListGetResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "用户未登录或登录已失效",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary": "查询API日志",
-        "tags": [
-          "API日志模块"
-        ]
-      }
-    },
-    "/api-logs/{id}": {
-      "delete": {
-        "description": "通过日志ID删除单条日志",
-        "operationId": "ApiLogController_remove",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NestjsApiLogsByIdDeleteResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "用户未登录或登录已失效",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary": "删除API日志",
-        "tags": [
-          "API日志模块"
-        ]
-      }
-    },
-    "/api-logs/batch/{ids}": {
-      "delete": {
-        "description": "通过日志ID路径参数批量删除，多个ID用英文逗号分隔",
-        "operationId": "ApiLogController_removeByIds",
-        "parameters": [
-          {
-            "name": "ids",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NestjsApiLogsBatchByIdsDeleteResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "用户未登录或登录已失效",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary": "批量删除API日志",
-        "tags": [
-          "API日志模块"
-        ]
-      }
-    },
-    "/api-logs/sync": {
-      "get": {
-        "description": "供 FastAPI 数仓按 MongoDB ID 游标增量同步API日志",
-        "operationId": "ApiLogController_sync",
-        "parameters": [
-          {
-            "name": "cursor",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NestjsApiLogsSyncGetResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "用户未登录或登录已失效",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary": "游标同步API日志",
-        "tags": [
-          "API日志模块"
-        ]
-      }
-    },
-    "/api-logs/average-speed": {
-      "get": {
-        "description": "获取所有接口的平均响应速度，供 FastAPI 内部远程调用",
-        "operationId": "ApiLogController_getApiAverageSpeed",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NestjsApiLogsAverageSpeedGetResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "用户未登录或登录已失效",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary": "获取所有接口的平均响应速度",
-        "tags": [
-          "API日志模块"
-        ]
-      }
-    },
-    "/api-logs/called-count": {
-      "get": {
-        "description": "获取接口调用次数，供 FastAPI 内部远程调用",
-        "operationId": "ApiLogController_getCalledCount",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NestjsApiLogsCalledCountGetResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "用户未登录或登录已失效",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
-                }
-              }
-            }
-          }
-        },
-        "summary": "获取接口调用次数",
-        "tags": [
-          "API日志模块"
-        ]
-      }
-    },
     "/test/nestjs": {
       "get": {
         "description": "输出欢迎信息",
@@ -934,6 +575,332 @@
         "summary": "获取搜索关键词",
         "tags": [
           "文章日志模块"
+        ]
+      }
+    },
+    "/api-logs/list": {
+      "get": {
+        "description": "可根据用户ID、用户名、API路径等条件查询，支持分页",
+        "operationId": "ApiLogController_findByFilter",
+        "parameters": [
+          {
+            "name": "user_id",
+            "required": false,
+            "in": "query",
+            "description": "用户ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "username",
+            "required": false,
+            "in": "query",
+            "description": "用户名（模糊搜索）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "api_description",
+            "required": false,
+            "in": "query",
+            "description": "API描述（模糊搜索）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "api_path",
+            "required": false,
+            "in": "query",
+            "description": "API路径（模糊搜索）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "api_method",
+            "required": false,
+            "in": "query",
+            "description": "API方法",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "PATCH",
+                "OPTIONS",
+                "HEAD"
+              ]
+            }
+          },
+          {
+            "name": "start_time",
+            "required": false,
+            "in": "query",
+            "description": "开始时间（格式：yyyy-MM-dd HH:mm:ss）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_time",
+            "required": false,
+            "in": "query",
+            "description": "结束时间（格式：yyyy-MM-dd HH:mm:ss）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "页码",
+            "schema": {
+              "example": "1",
+              "type": "string"
+            }
+          },
+          {
+            "name": "size",
+            "required": false,
+            "in": "query",
+            "description": "每页条数",
+            "schema": {
+              "example": "10",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NestjsApiLogsListGetResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "查询API日志",
+        "tags": [
+          "API日志模块"
+        ]
+      }
+    },
+    "/api-logs/{id}": {
+      "delete": {
+        "description": "通过日志ID删除单条日志",
+        "operationId": "ApiLogController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NestjsApiLogsByIdDeleteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "删除API日志",
+        "tags": [
+          "API日志模块"
+        ]
+      }
+    },
+    "/api-logs/batch/{ids}": {
+      "delete": {
+        "description": "通过日志ID路径参数批量删除，多个ID用英文逗号分隔",
+        "operationId": "ApiLogController_removeByIds",
+        "parameters": [
+          {
+            "name": "ids",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NestjsApiLogsBatchByIdsDeleteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "批量删除API日志",
+        "tags": [
+          "API日志模块"
+        ]
+      }
+    },
+    "/api-logs/sync": {
+      "get": {
+        "description": "供 FastAPI 数仓按 MongoDB ID 游标增量同步API日志",
+        "operationId": "ApiLogController_sync",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NestjsApiLogsSyncGetResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "游标同步API日志",
+        "tags": [
+          "API日志模块"
+        ]
+      }
+    },
+    "/api-logs/average-speed": {
+      "get": {
+        "description": "获取所有接口的平均响应速度，供 FastAPI 内部远程调用",
+        "operationId": "ApiLogController_getApiAverageSpeed",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NestjsApiLogsAverageSpeedGetResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "获取所有接口的平均响应速度",
+        "tags": [
+          "API日志模块"
+        ]
+      }
+    },
+    "/api-logs/called-count": {
+      "get": {
+        "description": "获取接口调用次数，供 FastAPI 内部远程调用",
+        "operationId": "ApiLogController_getCalledCount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NestjsApiLogsCalledCountGetResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "获取接口调用次数",
+        "tags": [
+          "API日志模块"
         ]
       }
     },
@@ -1636,6 +1603,39 @@
           "SQL工具"
         ]
       }
+    },
+    "/task/apilog": {
+      "post": {
+        "description": "手动触发清理超过3个月的API日志任务",
+        "operationId": "TaskController_executeCleanupOldApiLogsTask",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NestjsTaskApilogPostResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "手动执行清理API日志任务",
+        "tags": [
+          "定时任务模块"
+        ]
+      }
     }
   },
   "info": {
@@ -1717,7 +1717,10 @@
             ]
           },
           "expire_minutes": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "过期时间（分钟）",
             "example": 10
           }
@@ -1737,14 +1740,20 @@
             "example": "articlelogs"
           },
           "filter": {
-            "type": "object",
+            "type": [
+              "object",
+              "null"
+            ],
             "description": "查询过滤条件（MongoDB 查询对象）",
             "example": {
               "action": "view"
             }
           },
           "limit": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "返回条数上限",
             "example": 10,
             "default": 10
@@ -1792,7 +1801,10 @@
             }
           },
           "limit": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "聚合结果返回条数上限",
             "example": 20,
             "default": 20
@@ -1841,7 +1853,10 @@
             "example": 0
           },
           "width": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "description": "列宽度（像素）",
             "example": 200
           }
@@ -1896,7 +1911,10 @@
             "example": "SELECT * FROM user_table_settings WHERE user_id = :userId LIMIT :limit"
           },
           "params": {
-            "type": "object",
+            "type": [
+              "object",
+              "null"
+            ],
             "description": "参数键值对",
             "example": {
               "user_id": 1,
@@ -1987,368 +2005,6 @@
           "data": {
             "type": "null",
             "description": "返回数据"
-          }
-        },
-        "required": [
-          "code",
-          "msg",
-          "data"
-        ]
-      },
-      "NestjsTaskApilogPostResponse": {
-        "type": "object",
-        "description": "统一接口响应体",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 200,
-            "description": "响应码，与 HTTP 状态码一致"
-          },
-          "msg": {
-            "type": "string",
-            "example": "success",
-            "description": "响应消息"
-          },
-          "data": {
-            "type": "null",
-            "description": "返回数据"
-          }
-        },
-        "required": [
-          "code",
-          "msg",
-          "data"
-        ]
-      },
-      "NestjsApiLogsListGetResponse": {
-        "type": "object",
-        "description": "统一接口响应体",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 200,
-            "description": "响应码，与 HTTP 状态码一致"
-          },
-          "msg": {
-            "type": "string",
-            "example": "success",
-            "description": "响应消息"
-          },
-          "data": {
-            "type": "object",
-            "description": "API 日志分页结果",
-            "properties": {
-              "total": {
-                "type": "number",
-                "description": "日志总数"
-              },
-              "list": {
-                "type": "array",
-                "description": "日志列表",
-                "items": {
-                  "type": "object",
-                  "description": "API 日志记录",
-                  "properties": {
-                    "_id": {
-                      "type": "string",
-                      "description": "日志 ID"
-                    },
-                    "user_id": {
-                      "type": "number",
-                      "description": "用户 ID"
-                    },
-                    "username": {
-                      "type": "string",
-                      "description": "用户名"
-                    },
-                    "api_description": {
-                      "type": "string",
-                      "description": "接口描述"
-                    },
-                    "api_path": {
-                      "type": "string",
-                      "description": "接口路径"
-                    },
-                    "api_method": {
-                      "type": "string",
-                      "description": "请求方法"
-                    },
-                    "query_params": {
-                      "type": "object",
-                      "description": "查询参数"
-                    },
-                    "path_params": {
-                      "type": "object",
-                      "description": "路径参数"
-                    },
-                    "request_body": {
-                      "type": "object",
-                      "description": "请求体"
-                    },
-                    "response_time": {
-                      "type": "number",
-                      "description": "响应耗时（毫秒）"
-                    },
-                    "created_at": {
-                      "type": "string",
-                      "description": "创建时间"
-                    },
-                    "updated_at": {
-                      "type": "string",
-                      "description": "更新时间"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "required": [
-          "code",
-          "msg",
-          "data"
-        ]
-      },
-      "NestjsApiLogsByIdDeleteResponse": {
-        "type": "object",
-        "description": "统一接口响应体",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 200,
-            "description": "响应码，与 HTTP 状态码一致"
-          },
-          "msg": {
-            "type": "string",
-            "example": "success",
-            "description": "响应消息"
-          },
-          "data": {
-            "type": "null",
-            "description": "返回数据"
-          }
-        },
-        "required": [
-          "code",
-          "msg",
-          "data"
-        ]
-      },
-      "NestjsApiLogsBatchByIdsDeleteResponse": {
-        "type": "object",
-        "description": "统一接口响应体",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 200,
-            "description": "响应码，与 HTTP 状态码一致"
-          },
-          "msg": {
-            "type": "string",
-            "example": "success",
-            "description": "响应消息"
-          },
-          "data": {
-            "type": "null",
-            "description": "返回数据"
-          }
-        },
-        "required": [
-          "code",
-          "msg",
-          "data"
-        ]
-      },
-      "NestjsApiLogsSyncGetResponse": {
-        "type": "object",
-        "description": "统一接口响应体",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 200,
-            "description": "响应码，与 HTTP 状态码一致"
-          },
-          "msg": {
-            "type": "string",
-            "example": "success",
-            "description": "响应消息"
-          },
-          "data": {
-            "type": "object",
-            "description": "API 日志增量同步结果",
-            "properties": {
-              "list": {
-                "type": "array",
-                "description": "日志列表",
-                "items": {
-                  "type": "object",
-                  "description": "API 日志记录",
-                  "properties": {
-                    "_id": {
-                      "type": "string",
-                      "description": "日志 ID"
-                    },
-                    "user_id": {
-                      "type": "number",
-                      "description": "用户 ID"
-                    },
-                    "username": {
-                      "type": "string",
-                      "description": "用户名"
-                    },
-                    "api_description": {
-                      "type": "string",
-                      "description": "接口描述"
-                    },
-                    "api_path": {
-                      "type": "string",
-                      "description": "接口路径"
-                    },
-                    "api_method": {
-                      "type": "string",
-                      "description": "请求方法"
-                    },
-                    "query_params": {
-                      "type": "object",
-                      "description": "查询参数"
-                    },
-                    "path_params": {
-                      "type": "object",
-                      "description": "路径参数"
-                    },
-                    "request_body": {
-                      "type": "object",
-                      "description": "请求体"
-                    },
-                    "response_time": {
-                      "type": "number",
-                      "description": "响应耗时（毫秒）"
-                    },
-                    "created_at": {
-                      "type": "string",
-                      "description": "创建时间"
-                    },
-                    "updated_at": {
-                      "type": "string",
-                      "description": "更新时间"
-                    }
-                  }
-                }
-              },
-              "next_cursor": {
-                "type": "string",
-                "description": "下一页游标"
-              }
-            }
-          }
-        },
-        "required": [
-          "code",
-          "msg",
-          "data"
-        ]
-      },
-      "NestjsApiLogsAverageSpeedGetResponse": {
-        "type": "object",
-        "description": "统一接口响应体",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 200,
-            "description": "响应码，与 HTTP 状态码一致"
-          },
-          "msg": {
-            "type": "string",
-            "example": "success",
-            "description": "响应消息"
-          },
-          "data": {
-            "type": "array",
-            "description": "接口平均响应时间统计",
-            "items": {
-              "type": "object",
-              "properties": {
-                "api_path": {
-                  "type": "string",
-                  "description": "接口路径"
-                },
-                "api_method": {
-                  "type": "string",
-                  "description": "请求方法"
-                },
-                "api_description": {
-                  "type": "string",
-                  "description": "接口描述"
-                },
-                "avg_response_time": {
-                  "type": "number",
-                  "description": "平均响应时间（毫秒）"
-                },
-                "count": {
-                  "type": "number",
-                  "description": "调用次数"
-                }
-              },
-              "description": "列表项"
-            }
-          }
-        },
-        "required": [
-          "code",
-          "msg",
-          "data"
-        ]
-      },
-      "NestjsApiLogsCalledCountGetResponse": {
-        "type": "object",
-        "description": "统一接口响应体",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 200,
-            "description": "响应码，与 HTTP 状态码一致"
-          },
-          "msg": {
-            "type": "string",
-            "example": "success",
-            "description": "响应消息"
-          },
-          "data": {
-            "type": "array",
-            "description": "接口调用次数统计",
-            "items": {
-              "type": "object",
-              "properties": {
-                "api_path": {
-                  "type": "string",
-                  "description": "接口路径"
-                },
-                "api_method": {
-                  "type": "string",
-                  "description": "请求方法"
-                },
-                "api_description": {
-                  "type": "string",
-                  "description": "接口描述"
-                },
-                "call_count": {
-                  "type": "number",
-                  "description": "调用次数"
-                },
-                "avg_response_time": {
-                  "type": "number",
-                  "description": "平均响应时间（毫秒）"
-                }
-              },
-              "description": "列表项"
-            }
           }
         },
         "required": [
@@ -2710,6 +2366,342 @@
             "items": {
               "type": "string",
               "description": "搜索关键词"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "msg",
+          "data"
+        ]
+      },
+      "NestjsApiLogsListGetResponse": {
+        "type": "object",
+        "description": "统一接口响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 200,
+            "description": "响应码，与 HTTP 状态码一致"
+          },
+          "msg": {
+            "type": "string",
+            "example": "success",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "object",
+            "description": "API 日志分页结果",
+            "properties": {
+              "total": {
+                "type": "number",
+                "description": "日志总数"
+              },
+              "list": {
+                "type": "array",
+                "description": "日志列表",
+                "items": {
+                  "type": "object",
+                  "description": "API 日志记录",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "description": "日志 ID"
+                    },
+                    "user_id": {
+                      "type": "number",
+                      "description": "用户 ID"
+                    },
+                    "username": {
+                      "type": "string",
+                      "description": "用户名"
+                    },
+                    "api_description": {
+                      "type": "string",
+                      "description": "接口描述"
+                    },
+                    "api_path": {
+                      "type": "string",
+                      "description": "接口路径"
+                    },
+                    "api_method": {
+                      "type": "string",
+                      "description": "请求方法"
+                    },
+                    "query_params": {
+                      "type": "object",
+                      "description": "查询参数"
+                    },
+                    "path_params": {
+                      "type": "object",
+                      "description": "路径参数"
+                    },
+                    "request_body": {
+                      "type": "object",
+                      "description": "请求体"
+                    },
+                    "response_time": {
+                      "type": "number",
+                      "description": "响应耗时（毫秒）"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "description": "创建时间"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "description": "更新时间"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "code",
+          "msg",
+          "data"
+        ]
+      },
+      "NestjsApiLogsByIdDeleteResponse": {
+        "type": "object",
+        "description": "统一接口响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 200,
+            "description": "响应码，与 HTTP 状态码一致"
+          },
+          "msg": {
+            "type": "string",
+            "example": "success",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "null",
+            "description": "返回数据"
+          }
+        },
+        "required": [
+          "code",
+          "msg",
+          "data"
+        ]
+      },
+      "NestjsApiLogsBatchByIdsDeleteResponse": {
+        "type": "object",
+        "description": "统一接口响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 200,
+            "description": "响应码，与 HTTP 状态码一致"
+          },
+          "msg": {
+            "type": "string",
+            "example": "success",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "null",
+            "description": "返回数据"
+          }
+        },
+        "required": [
+          "code",
+          "msg",
+          "data"
+        ]
+      },
+      "NestjsApiLogsSyncGetResponse": {
+        "type": "object",
+        "description": "统一接口响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 200,
+            "description": "响应码，与 HTTP 状态码一致"
+          },
+          "msg": {
+            "type": "string",
+            "example": "success",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "object",
+            "description": "API 日志增量同步结果",
+            "properties": {
+              "list": {
+                "type": "array",
+                "description": "日志列表",
+                "items": {
+                  "type": "object",
+                  "description": "API 日志记录",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "description": "日志 ID"
+                    },
+                    "user_id": {
+                      "type": "number",
+                      "description": "用户 ID"
+                    },
+                    "username": {
+                      "type": "string",
+                      "description": "用户名"
+                    },
+                    "api_description": {
+                      "type": "string",
+                      "description": "接口描述"
+                    },
+                    "api_path": {
+                      "type": "string",
+                      "description": "接口路径"
+                    },
+                    "api_method": {
+                      "type": "string",
+                      "description": "请求方法"
+                    },
+                    "query_params": {
+                      "type": "object",
+                      "description": "查询参数"
+                    },
+                    "path_params": {
+                      "type": "object",
+                      "description": "路径参数"
+                    },
+                    "request_body": {
+                      "type": "object",
+                      "description": "请求体"
+                    },
+                    "response_time": {
+                      "type": "number",
+                      "description": "响应耗时（毫秒）"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "description": "创建时间"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "description": "更新时间"
+                    }
+                  }
+                }
+              },
+              "next_cursor": {
+                "type": "string",
+                "description": "下一页游标"
+              }
+            }
+          }
+        },
+        "required": [
+          "code",
+          "msg",
+          "data"
+        ]
+      },
+      "NestjsApiLogsAverageSpeedGetResponse": {
+        "type": "object",
+        "description": "统一接口响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 200,
+            "description": "响应码，与 HTTP 状态码一致"
+          },
+          "msg": {
+            "type": "string",
+            "example": "success",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "array",
+            "description": "接口平均响应时间统计",
+            "items": {
+              "type": "object",
+              "properties": {
+                "api_path": {
+                  "type": "string",
+                  "description": "接口路径"
+                },
+                "api_method": {
+                  "type": "string",
+                  "description": "请求方法"
+                },
+                "api_description": {
+                  "type": "string",
+                  "description": "接口描述"
+                },
+                "avg_response_time": {
+                  "type": "number",
+                  "description": "平均响应时间（毫秒）"
+                },
+                "count": {
+                  "type": "number",
+                  "description": "调用次数"
+                }
+              },
+              "description": "列表项"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "msg",
+          "data"
+        ]
+      },
+      "NestjsApiLogsCalledCountGetResponse": {
+        "type": "object",
+        "description": "统一接口响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 200,
+            "description": "响应码，与 HTTP 状态码一致"
+          },
+          "msg": {
+            "type": "string",
+            "example": "success",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "array",
+            "description": "接口调用次数统计",
+            "items": {
+              "type": "object",
+              "properties": {
+                "api_path": {
+                  "type": "string",
+                  "description": "接口路径"
+                },
+                "api_method": {
+                  "type": "string",
+                  "description": "请求方法"
+                },
+                "api_description": {
+                  "type": "string",
+                  "description": "接口描述"
+                },
+                "call_count": {
+                  "type": "number",
+                  "description": "调用次数"
+                },
+                "avg_response_time": {
+                  "type": "number",
+                  "description": "平均响应时间（毫秒）"
+                }
+              },
+              "description": "列表项"
             }
           }
         },
@@ -3224,6 +3216,32 @@
                 "description": "行数"
               }
             }
+          }
+        },
+        "required": [
+          "code",
+          "msg",
+          "data"
+        ]
+      },
+      "NestjsTaskApilogPostResponse": {
+        "type": "object",
+        "description": "统一接口响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 200,
+            "description": "响应码，与 HTTP 状态码一致"
+          },
+          "msg": {
+            "type": "string",
+            "example": "success",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "null",
+            "description": "返回数据"
           }
         },
         "required": [

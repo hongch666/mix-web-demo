@@ -251,6 +251,128 @@ function hoistInlineSchemas(document: OpenAPIObject): void {
   }
 }
 
+/** OpenAPI 3.1 里表示「允许为 null」的类型标记 */
+const NULL_TYPE = "null";
+
+/**
+ * 给可空字段补上 null 类型
+ *
+ * OpenAPI 3.1 用类型数组表达可空（如 ["string","null"]），而 @ApiProperty({ nullable: true })
+ * 在 3.1 产物里不会体现。这里按 required 判定：未列入 required 的属性（@ApiProperty 声明了
+ * required: false）视为可空，统一补 null；要声明「不允许为 null」就保持 required 默认的 true。
+ * 不补的表现是 Apifox「校验响应」把合法的 null 判成「$.data.xxx 不允许为 null」
+ */
+function markNullableProperties(document: OpenAPIObject): void {
+  const schemas = document.components?.schemas as LooseRecord | undefined;
+  if (schemas) {
+    Object.values(schemas).forEach((schema) =>
+      markSchemaNullable(schema as LooseRecord),
+    );
+  }
+
+  for (const rawPathItem of Object.values(document.paths ?? {})) {
+    for (const [method, rawOperation] of Object.entries(
+      rawPathItem as unknown as LooseRecord,
+    )) {
+      if (!OPERATION_METHODS.has(method)) {
+        continue;
+      }
+      const operation = rawOperation as LooseRecord | undefined;
+      if (!operation) {
+        continue;
+      }
+      const requestContent = (operation.requestBody as LooseRecord | undefined)
+        ?.content as LooseRecord | undefined;
+      if (requestContent) {
+        Object.values(requestContent).forEach((media) =>
+          markSchemaNullable(
+            (media as LooseRecord | undefined)?.schema as
+              | LooseRecord
+              | undefined,
+          ),
+        );
+      }
+      const responses = operation.responses as LooseRecord | undefined;
+      if (!responses) {
+        continue;
+      }
+      Object.values(responses).forEach((rawResponse) => {
+        const content = (rawResponse as LooseRecord | undefined)?.content as
+          | LooseRecord
+          | undefined;
+        if (!content) {
+          return;
+        }
+        Object.values(content).forEach((media) =>
+          markSchemaNullable(
+            (media as LooseRecord | undefined)?.schema as
+              | LooseRecord
+              | undefined,
+          ),
+        );
+      });
+    }
+  }
+}
+
+/** 递归标记 schema 里未列入 required 的属性为可空，并继续下钻 items / 组合结构 */
+function markSchemaNullable(schema: LooseRecord | undefined): void {
+  if (!schema) {
+    return;
+  }
+  const properties = schema.properties as LooseRecord | undefined;
+  if (properties) {
+    const required = Array.isArray(schema.required)
+      ? (schema.required as string[])
+      : [];
+    for (const [name, rawProperty] of Object.entries(properties)) {
+      if (!required.includes(name)) {
+        markPropertyNullable(rawProperty as LooseRecord);
+      }
+    }
+  }
+
+  const items = schema.items as LooseRecord | undefined;
+  if (items) {
+    markSchemaNullable(items);
+  }
+
+  const additional = schema.additionalProperties as LooseRecord | undefined;
+  if (additional && typeof additional === "object") {
+    markSchemaNullable(additional);
+  }
+
+  for (const key of ["allOf", "anyOf", "oneOf"] as const) {
+    const branches = schema[key];
+    if (Array.isArray(branches)) {
+      branches.forEach((branch) => markSchemaNullable(branch as LooseRecord));
+    }
+  }
+}
+
+/**
+ * 给单个属性补 null 类型
+ *
+ * $ref 属性无法在 3.1 里直接扩展、带 enum 的属性补 null 会产生「类型允许 null 但取值不允许」的
+ * 自相矛盾 schema，两种情况都保持原样
+ */
+function markPropertyNullable(property: LooseRecord | undefined): void {
+  if (!property || "$ref" in property || "enum" in property) {
+    return;
+  }
+  const type = property.type;
+  if (Array.isArray(type)) {
+    if (!type.includes(NULL_TYPE)) {
+      type.push(NULL_TYPE);
+    }
+    return;
+  }
+  if (typeof type !== "string" || type === NULL_TYPE) {
+    return;
+  }
+  property.type = [type, NULL_TYPE];
+}
+
 /**
  * 构建 Swagger/OpenAPI 文档对象
  *
@@ -273,5 +395,8 @@ export function buildSwaggerDocument(app: INestApplication): OpenAPIObject {
   applyCommonUnauthorizedResponses(document);
   // 先提升再统一命名：提升后的模型内容与接口响应共用同一份结构，避免两处转换不一致
   hoistInlineSchemas(document);
-  return applySwaggerSnakeCase(document);
+  const named: OpenAPIObject = applySwaggerSnakeCase(document);
+  // 命名统一之后再补可空类型：required 与 properties 的键此时都是下划线命名，比较才对得上
+  markNullableProperties(named);
+  return named;
 }
