@@ -2,7 +2,8 @@ package constants
 
 import "time"
 
-// 日期时间格式常量
+// ===== 日期时间格式常量 =====
+
 const (
 	// DateTimeFormat 用于日志输出、ES 索引、API 响应等场景的标准日期时间格式
 	DateTimeFormat = "2006-01-02 15:04:05"
@@ -14,7 +15,8 @@ const (
 	TraceLogFormatNoTime = "%s - trace_id=%s - %s\n"
 )
 
-// 配置默认值类 — 锁过期时间等
+// ===== 配置默认值类 — 锁过期时间等 =====
+
 const (
 	// 搜索增强控制，召回放大档位：浅页按该粒度向上取整召回，使同一档位内各页共享同一候选集，归一化分母因此保持一致，跨页 FinalScore 可比较
 	SEARCH_RECALL_STEP_SIZE = 100
@@ -31,7 +33,8 @@ var SEARCH_STATS_FILL_METRICS = []string{
 	"views", "likes", "collects", "author_follows", "comment_scores",
 }
 
-// WebSocket 相关默认值
+// ===== WebSocket 相关默认值 =====
+
 const (
 	// WebSocket 读缓冲区大小（字节）
 	WebSocketReadLimit = 512
@@ -47,7 +50,8 @@ const (
 	WebSocketReadReceiptTimeout = 5 * time.Second
 )
 
-// SSE 相关默认值
+// ===== SSE 相关默认值 =====
+
 const (
 	// SSE 发送通道缓冲区大小
 	SSESendBufferSize = 256
@@ -55,7 +59,8 @@ const (
 	SSEHeartbeatInterval = 30 * time.Second
 )
 
-// Elasticsearch 相关默认值
+// ===== Elasticsearch 相关默认值 =====
+
 const (
 	// ES 最大重试次数
 	ESMaxRetries = 3
@@ -65,13 +70,15 @@ const (
 	ESHealthcheckTimeoutStartup = 5 * time.Second
 )
 
-// RabbitMQ / 消息队列相关默认值
+// ===== RabbitMQ / 消息队列相关默认值 =====
+
 const (
 	// ES 同步批次间延迟
 	ESSyncBatchDelay = 200 * time.Millisecond
 )
 
-// Nacos 相关默认值
+// ===== Nacos 相关默认值 =====
+
 const (
 	// Nacos 客户端超时（毫秒）
 	NacosClientTimeoutMs = 5000
@@ -91,7 +98,8 @@ const (
 	NacosTempDirName = "nacos"
 )
 
-// 数据库连接超时
+// ===== 数据库连接超时 =====
+
 const (
 	// Redis 连接超时
 	RedisConnectTimeout = 5 * time.Second

@@ -1,6 +1,7 @@
 package constants
 
-// 脚本类 — SQL DDL/查询、ES 搜索脚本、ES 索引 Mapping
+// ===== 脚本类 — SQL DDL/查询、ES 搜索脚本、ES 索引 Mapping =====
+
 const (
 	// chat_messages 建表 SQL
 	CREATE_CHAT_MESSAGES_TABLE_SQL = `

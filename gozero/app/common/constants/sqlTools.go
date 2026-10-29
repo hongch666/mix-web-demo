@@ -70,7 +70,7 @@ type SqlToolsColumnInfo struct {
 //
 // 唯一真相源：common/constants/scripts.go 中的 CREATE_CHAT_MESSAGES_TABLE_SQL
 // （启动期由 initChatMessagesTable 执行）。此处字段必须与 DDL 严格一致，
-// 任何表结构变更都要同步本 map，否则 /sql-tools/tables 会向 Agent 返回不存在的列。
+// 任何表结构变更都要同步本 map，否则 /sql-tools/tables 会向 Agent 返回不存在的列
 var SqlToolsTableSchemas = map[string][]SqlToolsColumnInfo{
 	"chat_messages": {
 		{Name: "id", Type: "bigint unsigned", Key: "PRI", Comment: "消息ID，主键"},
