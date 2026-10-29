@@ -3,9 +3,9 @@ import { Cron } from "@nestjs/schedule";
 import { trace } from "@opentelemetry/api";
 import { Defaults, Messages, RedisKeys } from "src/common/constants";
 import { LoggerService } from "src/module/common/logger/logger.service";
-import { taskDuration, taskRuns } from "../telemetry/metrics";
+import { taskDuration, taskRuns } from "src/module/common/telemetry/metrics";
 import { ApiLogService } from "src/module/system/apiLog/apiLog.service";
-import { RedisService } from "../redis/redis.service";
+import { RedisService } from "src/module/common/redis/redis.service";
 
 /**
  * 定时任务服务，通过 Cron 定时并配合 Redis 分布式锁清理过期的 API 日志与文章日志

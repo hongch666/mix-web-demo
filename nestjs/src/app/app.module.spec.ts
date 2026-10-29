@@ -57,6 +57,15 @@ const amqpConnectionStub = {
 };
 
 /**
+ * 内部令牌工具桩：真实构造依赖配置中的密钥，冒烟测试只关心 DI 图解析，
+ * 按单测规范以固定桩替换，避免依赖真实 .env 或应用配置
+ */
+const internalTokenUtilStub = {
+  generateInternalToken: (): string => "stub-token",
+  validateInternalToken: (): unknown => ({ userId: -1 }),
+};
+
+/**
  * AppModule 冒烟测试
  *
  * 模块未 import、Provider 未导出等依赖装配错误只有 Nest 解析整个 DI 图时才会暴露，
@@ -77,6 +86,8 @@ describe("AppModule 冒烟测试", () => {
       .useValue(amqpConnectionManagerStub)
       .overrideProvider(AmqpConnection)
       .useValue(amqpConnectionStub)
+      .overrideProvider(InternalTokenUtil)
+      .useValue(internalTokenUtilStub)
       .compile();
 
     try {

@@ -249,7 +249,7 @@ export class ApiLogService {
 
   /**
    * 删除指定日期之前的过期日志
-   * 供 TaskModule 定时任务调用，避免 common 层直接操作 system 层 schema
+   * 供 TaskModule 定时任务调用，避免任务层直接操作 schema
    * @param before 删除此日期之前的日志
    * @returns 删除的日志数量
    */
