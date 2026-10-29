@@ -173,7 +173,7 @@ NestJS 模块按职责划分为两层：
 | Grafana Loki            | `grafana/loki:3.0.0`                           | 日志聚合存储，HTTP 接口 3100                                                 |
 | Promtail                | `grafana/promtail:2.9.7`                       | 采集 `logs/`（或 `dist/logs/`）日志，解析行首时间戳与 `trace_id` 后写入 Loki |
 | Grafana                 | `grafana/grafana:11.4.0`                       | 统一查询入口，预置 Loki/Tempo/Prometheus 数据源，支持日志与 Trace 互跳       |
-| Prometheus              | `prom/prometheus:v2.55.1`                      | 抓取四个服务的指标端点，HTTP 接口 9090（仅容器网络内可达）                   |
+| Prometheus              | `prom/prometheus:v2.55.1`                      | 抓取四个服务的指标端点，HTTP 接口 9090                                       |
 | APISIX OpenTelemetry    | APISIX 3.11 内置插件                           | 网关侧生成 Trace，并把 `trace_id` 写入 access.log                            |
 
 配置文件位置：
@@ -227,9 +227,9 @@ Grafana 的 Prometheus 数据源预置了 `exemplarTraceIdDestinations`，配置
 - `./mix compose up` 的容器编排固定启用 OTel，无需额外开关
 - Grafana：`http://localhost:3000`（匿名 Admin，Loki、Tempo 与 Prometheus 数据源已预置）
 - Loki：`http://localhost:3100`
+- Prometheus：`http://localhost:9090`（容器内仍为 `http://prometheus:9090`，Grafana 数据源走容器网络）
 - OTLP 接收端（独立观测栈映射到宿主机）：`http://localhost:4318`，gRPC 为 4317，仅绑定 `127.0.0.1`
 - Tempo 查询接口 3200 只在容器网络内暴露，统一通过 Grafana 查看
-- Prometheus 9090 只在容器网络内暴露，统一通过 Grafana 的 Prometheus 数据源查询
 
 ## 登录相关
 
@@ -2008,7 +2008,7 @@ Compose 部署只把网关与部分观测组件映射到宿主机，业务服务
 - Loki: http://localhost:3100
 - Grafana: http://localhost:3000（已预置 Loki、Tempo 与 Prometheus 数据源，可在日志与链路间互跳）
 - OTLP 接收端（仅容器网络内）: http://otel-collector:4318
-- Prometheus: 容器内 http://prometheus:9090（仅容器网络内，未映射宿主机端口）
+- Prometheus: http://localhost:9090（容器内为 http://prometheus:9090）
 
 Spring（8081）、GoZero（8082）、NestJS（8083）、FastAPI（8084）在 Compose 下只在 `hcsy` 容器网络内可达，容器之间通过服务名互访。下游服务无条件信任网关注入的 `X-User-Id`，收敛端口暴露是防止绕过网关伪造身份的前提，因此不要给业务服务补 `ports` 映射。
 

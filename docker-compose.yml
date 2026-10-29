@@ -52,8 +52,8 @@ services:
       - prometheus-data:/prometheus
     networks:
       - hcsy
-    expose:
-      - "9090"
+    ports:
+      - "9090:9090"
     healthcheck:
       test:
         [
