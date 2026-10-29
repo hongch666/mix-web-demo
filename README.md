@@ -127,8 +127,8 @@
 
 NestJS 模块按职责划分为两层：
 
-- `src/module/common/`：通用能力和基础设施模块，包括 GitHub OAuth、邮件、Nacos、OSS、Redis、客户端、定时任务和 Word 文档处理。
-- `src/module/system/`：系统业务和接口模块，包括文章、用户、文章日志、API 日志、下载、上传和测试模块。
+- `src/module/common/`：通用能力和基础设施模块，包括 GitHub OAuth、邮件、Nacos、OSS、Redis、客户端和 Word 文档处理。
+- `src/module/system/`：系统业务和接口模块，包括文章、用户、文章日志、API 日志、下载、上传、定时任务和测试模块。
 
 ### FastAPI 服务（端口 8084）
 
