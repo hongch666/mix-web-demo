@@ -78,6 +78,7 @@ public class SwaggerConfig {
                 openApi.getComponents().getSchemas().values().forEach(this::transformSchema);
             }
             if (openApi.getPaths() == null) {
+                markNullableProperties(openApi);
                 return;
             }
             openApi.getPaths().values().forEach(pathItem -> pathItem.readOperations().forEach(operation -> {
@@ -124,7 +125,92 @@ public class SwaggerConfig {
                     });
                 }
             }));
+            markNullableProperties(openApi);
         };
+    }
+
+    /**
+     * 为可为 null 的字段补上 null 类型
+     *
+     * OpenAPI 3.1 用 type 数组表达可空（如 ["string","null"]），而 @Schema(nullable = true) 是 3.0 的写法，
+     * springdoc 以 openapi_3_1 输出时直接忽略它。Java 的引用类型本身就可能为 null，DB 可空列取出来也是 null，
+     * 因此对未列入 required 的属性统一补 null：需要声明「不允许为 null」时，在字段上打 @NotNull / @NotBlank /
+     * @NotEmpty 或 @Schema(requiredMode = REQUIRED)，springdoc 会把它写进 required，这里就不再补 null。
+     * 不补的表现是 Apifox「校验响应」把合法的 null 判成「$.data.github_id 不允许为 null」
+     */
+    private void markNullableProperties(OpenAPI openApi) {
+        if (openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
+            openApi.getComponents().getSchemas().values().forEach(this::markSchemaNullable);
+        }
+        if (openApi.getPaths() == null) {
+            return;
+        }
+        openApi.getPaths().values().forEach(pathItem -> pathItem.readOperations().forEach(operation -> {
+            if (operation.getRequestBody() != null && operation.getRequestBody().getContent() != null) {
+                operation.getRequestBody().getContent().values()
+                    .forEach(mediaType -> markSchemaNullable(mediaType.getSchema()));
+            }
+            if (operation.getResponses() == null) {
+                return;
+            }
+            operation.getResponses().values().forEach(apiResponse -> {
+                if (apiResponse.getContent() == null) {
+                    return;
+                }
+                apiResponse.getContent().values().forEach(mediaType -> markSchemaNullable(mediaType.getSchema()));
+            });
+        }));
+    }
+
+    /** 递归标记 schema 里未列入 required 的属性为可空 */
+    private void markSchemaNullable(Schema<?> schema) {
+        if (schema == null) {
+            return;
+        }
+        if (schema.getProperties() != null) {
+            List<String> required = schema.getRequired() == null ? List.of() : schema.getRequired();
+            schema.getProperties().forEach((name, value) -> {
+                if (value instanceof Schema<?> property && !required.contains(String.valueOf(name))) {
+                    markPropertyNullable(property);
+                }
+            });
+        }
+        if (schema instanceof ArraySchema arraySchema) {
+            markSchemaNullable(arraySchema.getItems());
+        }
+        if (schema instanceof MapSchema mapSchema
+            && mapSchema.getAdditionalProperties() instanceof Schema additionalSchema) {
+            markSchemaNullable(additionalSchema);
+        }
+        if (schema instanceof ComposedSchema composedSchema) {
+            transformSchemaListNullable(composedSchema.getAllOf());
+            transformSchemaListNullable(composedSchema.getAnyOf());
+            transformSchemaListNullable(composedSchema.getOneOf());
+        }
+    }
+
+    /** 给单个属性补 null 类型；$ref 属性无法在 3.1 里直接扩展，保持原样 */
+    private void markPropertyNullable(Schema<?> property) {
+        if (property == null || property.get$ref() != null) {
+            return;
+        }
+        if (property.getTypes() == null || property.getTypes().isEmpty()) {
+            if (property.getType() == null) {
+                return;
+            }
+            property.addType(property.getType());
+        }
+        if (!property.getTypes().contains(NULL_TYPE)) {
+            property.addType(NULL_TYPE);
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private void transformSchemaListNullable(List<Schema> schemas) {
+        if (schemas == null) {
+            return;
+        }
+        schemas.forEach(this::markSchemaNullable);
     }
 
     /**

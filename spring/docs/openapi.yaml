@@ -3533,7 +3533,9 @@ components:
       description: "更新用户请求"
       properties:
         password:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "登录密码，留空表示不修改"
           pattern: "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
         name:
@@ -3549,12 +3551,16 @@ components:
           type: "string"
           description: "邮箱"
         img:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "头像地址"
           maxLength: 255
           minLength: 0
         signature:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "个性签名"
           maxLength: 255
           minLength: 0
@@ -3564,7 +3570,9 @@ components:
           description: "用户ID"
           minimum: 0
         role:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "角色，admin 或 user"
           pattern: "admin|user"
       required:
@@ -3585,6 +3593,9 @@ components:
         data:
           description: "返回数据"
           type: "null"
+      required:
+      - "code"
+      - "msg"
     CommentUpdateDTO:
       description: "更新评论请求"
       properties:
@@ -3663,12 +3674,16 @@ components:
           description: "类型，link 或 pdf"
           pattern: "^(link|pdf)$"
         link:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "官网链接，类型为 link 时必填"
           maxLength: 255
           minLength: 0
         pdf:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "PDF 链接，类型为 pdf 时必填"
           maxLength: 255
           minLength: 0
@@ -3692,7 +3707,9 @@ components:
           maxLength: 50
           minLength: 1
         tags:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "标签，多个用英文逗号分隔"
           maxLength: 200
           minLength: 0
@@ -3723,7 +3740,9 @@ components:
       description: "创建用户请求"
       properties:
         password:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "登录密码，留空表示不修改"
           pattern: "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
         name:
@@ -3739,12 +3758,16 @@ components:
           type: "string"
           description: "邮箱"
         img:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "头像地址"
           maxLength: 255
           minLength: 0
         signature:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "个性签名"
           maxLength: 255
           minLength: 0
@@ -3763,9 +3786,14 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     RefreshTokenDTO:
       description: "刷新访问令牌请求"
       properties:
@@ -3787,35 +3815,54 @@ components:
         data:
           $ref: "#/components/schemas/TokenRefreshVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     TokenRefreshVO:
       description: "刷新令牌结果"
       properties:
         access_token:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "访问令牌"
         refresh_token:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "刷新令牌"
         token_type:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "令牌类型"
         expires_in:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "访问令牌有效期，单位秒"
         refresh_expires_in:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "刷新令牌有效期，单位秒"
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "用户ID"
         username:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "用户名"
         session_id:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "会话ID"
     ResetPasswordDTO:
       description: "重置密码请求"
@@ -3856,10 +3903,14 @@ components:
           maximum: 150
           minimum: 0
         img:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "头像地址"
         signature:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "个性签名"
           maxLength: 255
           minLength: 0
@@ -3913,53 +3964,80 @@ components:
         data:
           $ref: "#/components/schemas/UserLoginVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     UserLoginVO:
       description: "登录结果"
       properties:
         access_token:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "访问令牌"
         refresh_token:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "刷新令牌"
         token_type:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "令牌类型"
         expires_in:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "访问令牌有效期，单位秒"
         refresh_expires_in:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "刷新令牌有效期，单位秒"
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "用户ID"
         username:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "用户名"
         session_id:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "会话ID"
         online_device_count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "在线设备数"
     KickOtherDevicesVO:
       description: "踢出其他设备结果"
       properties:
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "用户ID"
         removed_session_count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "已移除会话数"
         online_device_count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "当前在线设备数"
     ResultKickOtherDevicesVO:
@@ -3975,6 +4053,9 @@ components:
         data:
           $ref: "#/components/schemas/KickOtherDevicesVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     GithubTokenExchangeDTO:
       description: "GitHub 登录票据换取令牌请求"
       properties:
@@ -4000,10 +4081,14 @@ components:
       description: "GitHub 登录票据"
       properties:
         ticket:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "一次性登录票据"
         expires_in:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "有效期，单位秒"
     ResultGithubTokenTicketVO:
@@ -4019,6 +4104,9 @@ components:
         data:
           $ref: "#/components/schemas/GithubTokenTicketVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     GithubUserInternalDTO:
       description: "GitHub 用户内部同步请求"
       properties:
@@ -4029,16 +4117,24 @@ components:
           type: "string"
           description: "GitHub 登录名"
         github_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "GitHub 显示名"
         github_url:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "GitHub 主页地址"
         avatar_url:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "头像地址"
         email:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "邮箱"
       required:
       - "github_id"
@@ -4056,69 +4152,106 @@ components:
         data:
           $ref: "#/components/schemas/UserVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     UserVO:
       description: "用户视图"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "用户ID"
         github_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "GitHub 用户ID"
         github_login:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "GitHub 登录名"
         github_url:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "GitHub 主页地址"
         password:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "密码"
           writeOnly: true
         name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "用户名"
         age:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "年龄"
         email:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "邮箱"
         role:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "角色"
         img:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "头像地址"
         signature:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "个性签名"
         auth_provider:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "认证来源"
         last_login_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "最近登录时间"
         login_status:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "登录状态，1在线 0离线"
         online_device_count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "在线设备数"
     EmailCodeSendDTO:
       description: "发送邮箱验证码请求"
       properties:
         email:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "收件邮箱"
         type:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "验证码场景，register、login 或 reset"
     EmailLoginDTO:
       description: "邮箱验证码登录请求"
@@ -4166,10 +4299,15 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/UserVO"
+      required:
+      - "code"
+      - "msg"
     SqlQueryDTO:
       description: "只读 SQL 查询请求"
       properties:
@@ -4177,7 +4315,9 @@ components:
           type: "string"
           description: "只读 SELECT 语句，使用 :param 占位"
         params:
-          type: "object"
+          type:
+          - "object"
+          - "null"
           additionalProperties: {}
           description: "命名参数"
       required:
@@ -4195,22 +4335,31 @@ components:
         data:
           $ref: "#/components/schemas/SqlQueryResultVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     SqlQueryResultVO:
       description: "只读SQL查询结果"
       properties:
         columns:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "结果列名，顺序与每行值的顺序一致"
           items:
             type: "string"
         rows:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "结果行，每行按列顺序排列"
           items:
             type: "array"
             items: {}
         row_count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "返回行数"
     ArticleLikeDTO:
@@ -4231,7 +4380,9 @@ components:
       description: "批量计数结果"
       properties:
         counts:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "ID 与数量列表"
           items:
             $ref: "#/components/schemas/IdCountVO"
@@ -4239,11 +4390,15 @@ components:
       description: "ID 与数量"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "ID"
         count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "数量"
     ResultBatchCountVO:
@@ -4259,6 +4414,9 @@ components:
         data:
           $ref: "#/components/schemas/BatchCountVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     FocusDTO:
       description: "用户关注请求"
       properties:
@@ -4306,11 +4464,15 @@ components:
       description: "文章评论评分"
       properties:
         article_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "文章ID"
         role_scores:
-          type: "object"
+          type:
+          - "object"
+          - "null"
           additionalProperties:
             $ref: "#/components/schemas/CommentScoreDTO"
           description: "按角色汇总的评分"
@@ -4318,11 +4480,15 @@ components:
       description: "评论评分统计"
       properties:
         average_score:
-          type: "number"
+          type:
+          - "number"
+          - "null"
           format: "double"
           description: "平均评分"
         count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "评论数量"
     ResultListArticleCommentScoresVO:
@@ -4336,65 +4502,96 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/ArticleCommentScoresVO"
+      required:
+      - "code"
+      - "msg"
     Comments:
       description: "评论"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "评论ID"
         content:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "评论内容"
         star:
-          type: "number"
+          type:
+          - "number"
+          - "null"
           format: "double"
           description: "星级评分，1到10"
         article_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "文章ID"
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "用户ID"
         create_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "创建时间"
         update_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
     CommentSyncVO:
       description: "评论同步数据"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "评论ID"
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "评论作者用户ID"
         article_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "所属文章ID"
         star:
-          type: "number"
+          type:
+          - "number"
+          - "null"
           format: "double"
           description: "评论评分，未评分时为空"
         create_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "创建时间"
         update_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
     ResultListCommentSyncVO:
@@ -4408,10 +4605,15 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/CommentSyncVO"
+      required:
+      - "code"
+      - "msg"
     ArticleCollectDTO:
       description: "文章收藏请求"
       properties:
@@ -4458,30 +4660,45 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/SubCategoryVO"
+      required:
+      - "code"
+      - "msg"
     SubCategoryVO:
       description: "子分类"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "子分类ID"
         name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "子分类名称"
         category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "父分类ID"
         create_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "创建时间"
         update_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
     CategoryReferenceCreateDTO:
@@ -4496,12 +4713,16 @@ components:
           description: "类型，link 或 pdf"
           pattern: "^(link|pdf)$"
         link:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "官网链接，类型为 link 时必填"
           maxLength: 255
           minLength: 0
         pdf:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "PDF 链接，类型为 pdf 时必填"
           maxLength: 255
           minLength: 0
@@ -4512,22 +4733,32 @@ components:
       description: "分类"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "分类ID"
         name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "分类名称"
         create_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "创建时间"
         update_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
         sub_categories:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "子分类列表"
           items:
             $ref: "#/components/schemas/SubCategoryVO"
@@ -4542,10 +4773,15 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/CategoryVO"
+      required:
+      - "code"
+      - "msg"
     ArticleCreateDTO:
       description: "创建文章请求"
       properties:
@@ -4563,7 +4799,9 @@ components:
           maxLength: 50
           minLength: 1
         tags:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "标签，多个用英文逗号分隔"
           maxLength: 200
           minLength: 0
@@ -4595,61 +4833,94 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/IdCountVO"
+      required:
+      - "code"
+      - "msg"
     ArticleWithCategoryVO:
       description: "带分类的文章"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "文章ID"
         title:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章标题"
         content:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章内容"
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "作者用户ID"
         username:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "作者名称"
         tags:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "标签，多个用英文逗号分隔"
         status:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "状态，0草稿 1已发布"
         views:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "浏览量"
         sub_category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "子分类ID"
         sub_category_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "子分类名称"
         category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "父分类ID"
         category_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "父分类名称"
         create_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "创建时间"
         update_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
     ResultListArticleWithCategoryVO:
@@ -4663,10 +4934,15 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/ArticleWithCategoryVO"
+      required:
+      - "code"
+      - "msg"
     ResultSyncPage:
       description: "统一响应"
       properties:
@@ -4680,23 +4956,36 @@ components:
         data:
           $ref: "#/components/schemas/SyncPage"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     SyncPage:
       properties:
         list:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           items:
             type: "object"
             additionalProperties: {}
         page:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
         size:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
         has_more:
-          type: "boolean"
+          type:
+          - "boolean"
+          - "null"
         upper_watermark:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
     ResultUserListVO:
       description: "统一响应"
@@ -4711,15 +5000,22 @@ components:
         data:
           $ref: "#/components/schemas/UserListVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     UserListVO:
       description: "用户分页结果"
       properties:
         total:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "总记录数"
         list:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "用户列表"
           items:
             $ref: "#/components/schemas/UserVO"
@@ -4734,8 +5030,13 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "boolean"
+          type:
+          - "boolean"
+          - "null"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     ResultListUserSyncVO:
       description: "统一响应"
       properties:
@@ -4747,48 +5048,73 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/UserSyncVO"
+      required:
+      - "code"
+      - "msg"
     UserSyncVO:
       description: "用户同步数据"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "用户ID"
         name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "用户名"
         email:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "邮箱"
         role:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "角色，如 user、admin、ai"
         img:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "头像地址"
         signature:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "个性签名"
         created_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "创建时间"
         updated_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
     ImageCaptchaVO:
       description: "图形验证码"
       properties:
         captcha_id:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "图形验证码ID"
         image_base64:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "图形验证码 Base64"
     ResultImageCaptchaVO:
       description: "统一响应"
@@ -4803,6 +5129,9 @@ components:
         data:
           $ref: "#/components/schemas/ImageCaptchaVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     ResultString:
       description: "统一响应"
       properties:
@@ -4814,8 +5143,13 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     ResultListSqlTableSchemaVO:
       description: "统一响应"
       properties:
@@ -4827,37 +5161,56 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/SqlTableSchemaVO"
+      required:
+      - "code"
+      - "msg"
     SqlColumnInfoVO:
       description: "数据库列信息"
       properties:
         name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "列名"
         type:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "列类型"
         key:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "键类型，如 PRI"
         comment:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "列注释"
     SqlTableSchemaVO:
       description: "数据库表结构"
       properties:
         table:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "表名"
         row_count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "表行数，无法统计时为 -1，未查询时为空"
         columns:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "列信息，仅在指定表名查询时返回"
           items:
             $ref: "#/components/schemas/SqlColumnInfoVO"
@@ -4865,68 +5218,102 @@ components:
       description: "文章点赞视图"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "点赞ID"
         article_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "文章ID"
         title:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章标题"
         content:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章内容"
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "作者用户ID"
         author_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "作者名称"
         tags:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "标签，多个用英文逗号分隔"
         status:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "状态，0草稿 1已发布"
         views:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "浏览量"
         sub_category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "子分类ID"
         category_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "父分类名称"
         sub_category_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "子分类名称"
         article_create_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "文章创建时间"
         article_update_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "文章更新时间"
         liked_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "点赞时间"
     PageVOArticleLikeVO:
       description: "分页结果"
       properties:
         total:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "总记录数"
         list:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "当前页数据"
           items:
             $ref: "#/components/schemas/ArticleLikeVO"
@@ -4943,11 +5330,16 @@ components:
         data:
           $ref: "#/components/schemas/PageVOArticleLikeVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     MapDataVO:
       description: "键值数据"
       properties:
         data:
-          type: "object"
+          type:
+          - "object"
+          - "null"
           additionalProperties: {}
           description: "动态键值对"
     ResultMapDataVO:
@@ -4963,6 +5355,9 @@ components:
         data:
           $ref: "#/components/schemas/MapDataVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     ResultDouble:
       description: "统一响应"
       properties:
@@ -4974,22 +5369,33 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "number"
+          type:
+          - "number"
+          - "null"
           format: "double"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     ArticleRelationSyncVO:
       description: "用户文章关系同步数据"
       properties:
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "用户ID"
         article_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "文章ID"
         created_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "关系创建时间"
     ResultListArticleRelationSyncVO:
@@ -5003,15 +5409,22 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/ArticleRelationSyncVO"
+      required:
+      - "code"
+      - "msg"
     LikeCountVO:
       description: "点赞数量"
       properties:
         like_count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "点赞数"
     ResultLikeCountVO:
@@ -5027,11 +5440,16 @@ components:
         data:
           $ref: "#/components/schemas/LikeCountVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     LikeCheckVO:
       description: "点赞状态"
       properties:
         liked:
-          type: "boolean"
+          type:
+          - "boolean"
+          - "null"
           description: "是否已点赞"
     ResultLikeCheckVO:
       description: "统一响应"
@@ -5046,19 +5464,28 @@ components:
         data:
           $ref: "#/components/schemas/LikeCheckVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     FocusSyncVO:
       description: "用户关注关系同步数据"
       properties:
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "关注发起用户ID"
         focus_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "被关注用户ID"
         created_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "关注时间"
     ResultListFocusSyncVO:
@@ -5072,49 +5499,74 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/FocusSyncVO"
+      required:
+      - "code"
+      - "msg"
     FocusUserVO:
       description: "关注用户"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "用户ID"
         name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "用户名"
         age:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "年龄"
         email:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "邮箱"
         img:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "头像地址"
         signature:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "个性签名"
         role:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "角色"
         focused_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "关注时间"
     PageVOFocusUserVO:
       description: "分页结果"
       properties:
         total:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "总记录数"
         list:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "当前页数据"
           items:
             $ref: "#/components/schemas/FocusUserVO"
@@ -5131,11 +5583,16 @@ components:
         data:
           $ref: "#/components/schemas/PageVOFocusUserVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     CountVO:
       description: "数量结果"
       properties:
         count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "数量"
     ResultCountVO:
@@ -5151,11 +5608,16 @@ components:
         data:
           $ref: "#/components/schemas/CountVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     FocusCheckVO:
       description: "关注状态"
       properties:
         focused:
-          type: "boolean"
+          type:
+          - "boolean"
+          - "null"
           description: "是否已关注"
     ResultFocusCheckVO:
       description: "统一响应"
@@ -5170,44 +5632,67 @@ components:
         data:
           $ref: "#/components/schemas/FocusCheckVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     CommentsVO:
       description: "评论视图"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "评论ID"
         content:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "评论内容"
         star:
-          type: "number"
+          type:
+          - "number"
+          - "null"
           format: "double"
           description: "星级评分"
         username:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "用户名"
         pic:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "头像地址"
         article_title:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章标题"
         create_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "创建时间"
         update_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "更新时间"
     PageVOCommentsVO:
       description: "分页结果"
       properties:
         total:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "总记录数"
         list:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "当前页数据"
           items:
             $ref: "#/components/schemas/CommentsVO"
@@ -5224,6 +5709,9 @@ components:
         data:
           $ref: "#/components/schemas/PageVOCommentsVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     ResultCommentsVO:
       description: "统一响应"
       properties:
@@ -5237,21 +5725,32 @@ components:
         data:
           $ref: "#/components/schemas/CommentsVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     AICommentsVO:
       description: "AI 评论"
       properties:
         content:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "评论内容"
         star:
-          type: "number"
+          type:
+          - "number"
+          - "null"
           format: "double"
           description: "星级评分"
         ai_type:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "AI 类型"
         pic:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "头像地址"
     ResultListAICommentsVO:
       description: "统一响应"
@@ -5264,76 +5763,115 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/AICommentsVO"
+      required:
+      - "code"
+      - "msg"
     ArticleCollectVO:
       description: "文章收藏视图"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "收藏ID"
         article_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "文章ID"
         title:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章标题"
         content:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章内容"
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "作者用户ID"
         author_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "作者名称"
         tags:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "标签，多个用英文逗号分隔"
         status:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "状态，0草稿 1已发布"
         views:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "浏览量"
         sub_category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "子分类ID"
         category_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "父分类名称"
         sub_category_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "子分类名称"
         article_create_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "文章创建时间"
         article_update_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "文章更新时间"
         collected_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "收藏时间"
     PageVOArticleCollectVO:
       description: "分页结果"
       properties:
         total:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "总记录数"
         list:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "当前页数据"
           items:
             $ref: "#/components/schemas/ArticleCollectVO"
@@ -5350,11 +5888,16 @@ components:
         data:
           $ref: "#/components/schemas/PageVOArticleCollectVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     CollectCountVO:
       description: "收藏数量"
       properties:
         collect_count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "收藏数"
     ResultCollectCountVO:
@@ -5370,11 +5913,16 @@ components:
         data:
           $ref: "#/components/schemas/CollectCountVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     CollectCheckVO:
       description: "收藏状态"
       properties:
         collected:
-          type: "boolean"
+          type:
+          - "boolean"
+          - "null"
           description: "是否已收藏"
     ResultCollectCheckVO:
       description: "统一响应"
@@ -5389,6 +5937,9 @@ components:
         data:
           $ref: "#/components/schemas/CollectCheckVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     ResultCategoryVO:
       description: "统一响应"
       properties:
@@ -5402,25 +5953,38 @@ components:
         data:
           $ref: "#/components/schemas/CategoryVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     CategoryReferenceVO:
       description: "权威参考文本"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "参考ID"
         sub_category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "子分类ID"
         type:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "类型，link 或 pdf"
         link:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "官网链接"
         pdf:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "PDF 链接"
     ResultCategoryReferenceVO:
       description: "统一响应"
@@ -5435,15 +5999,22 @@ components:
         data:
           $ref: "#/components/schemas/CategoryReferenceVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     PageVOCategoryVO:
       description: "分页结果"
       properties:
         total:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "总记录数"
         list:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "当前页数据"
           items:
             $ref: "#/components/schemas/CategoryVO"
@@ -5460,6 +6031,9 @@ components:
         data:
           $ref: "#/components/schemas/PageVOCategoryVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     ResultListSubCategoryWithParentVO:
       description: "统一响应"
       properties:
@@ -5471,33 +6045,50 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/SubCategoryWithParentVO"
+      required:
+      - "code"
+      - "msg"
     SubCategoryWithParentVO:
       description: "子分类及父分类信息"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "子分类ID"
         name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "子分类名称"
         category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "所属分类ID"
         category_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "所属分类名称"
         create_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "创建时间"
         update_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
     ResultListSubCategorySyncVO:
@@ -5511,40 +6102,59 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/SubCategorySyncVO"
+      required:
+      - "code"
+      - "msg"
     SubCategorySyncVO:
       description: "子分类同步数据"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "子分类ID"
         name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "子分类名称"
         category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "所属分类ID"
         update_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
     CategorySyncVO:
       description: "分类同步数据"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "分类ID"
         name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "分类名称"
         update_time:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
     ResultListCategorySyncVO:
@@ -5558,10 +6168,15 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/CategorySyncVO"
+      required:
+      - "code"
+      - "msg"
     ResultArticleWithCategoryVO:
       description: "统一响应"
       properties:
@@ -5575,15 +6190,22 @@ components:
         data:
           $ref: "#/components/schemas/ArticleWithCategoryVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     PageVOArticleWithCategoryVO:
       description: "分页结果"
       properties:
         total:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "总记录数"
         list:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "当前页数据"
           items:
             $ref: "#/components/schemas/ArticleWithCategoryVO"
@@ -5600,6 +6222,9 @@ components:
         data:
           $ref: "#/components/schemas/PageVOArticleWithCategoryVO"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     ResultInteger:
       description: "统一响应"
       properties:
@@ -5611,47 +6236,72 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     ArticleSyncVO:
       description: "文章同步数据"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "文章ID"
         title:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章标题"
         content:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章正文"
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "作者用户ID"
         tags:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "标签，多个标签以逗号分隔"
         status:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "文章状态，0 草稿，1 已发布"
         views:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "浏览量"
         sub_category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "子分类ID"
         create_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "创建时间"
         update_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
     ResultListArticleSyncVO:
@@ -5665,18 +6315,27 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/ArticleSyncVO"
+      required:
+      - "code"
+      - "msg"
     MonthlyPublishCountVO:
       description: "月度文章发布数量统计"
       properties:
         year_month:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "年月，格式 yyyy-MM"
         count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "该月发布文章数量"
     ResultListMonthlyPublishCountVO:
@@ -5690,69 +6349,106 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/MonthlyPublishCountVO"
+      required:
+      - "code"
+      - "msg"
     ArticleExportVO:
       description: "文章导出数据"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "文章ID"
         title:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章标题"
         content:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章正文"
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "作者用户ID"
         username:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "作者用户名"
         tags:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "标签，多个标签以逗号分隔"
         status:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "文章状态，0 草稿，1 已发布"
         create_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "创建时间"
         update_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
         views:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "浏览量"
         sub_category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "子分类ID"
         sub_category_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "子分类名称"
         category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "分类ID"
         category_name:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "分类名称"
         like_count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "点赞数"
         collect_count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "收藏数"
     ResultListArticleExportVO:
@@ -5766,19 +6462,28 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/ArticleExportVO"
+      required:
+      - "code"
+      - "msg"
     CategoryArticleCountVO:
       description: "子分类文章数量统计"
       properties:
         sub_category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "子分类ID"
         count:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "该子分类下的文章数量"
     ResultListCategoryArticleCountVO:
@@ -5792,59 +6497,88 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "返回数据"
           items:
             $ref: "#/components/schemas/CategoryArticleCountVO"
+      required:
+      - "code"
+      - "msg"
     Article:
       description: "文章"
       properties:
         id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "文章ID"
         title:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章标题"
         content:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "文章内容"
         user_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "作者用户ID"
         tags:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           description: "标签，多个用英文逗号分隔"
         status:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "状态，0草稿 1已发布"
         views:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "浏览量"
         sub_category_id:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int32"
           description: "子分类ID"
         create_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "创建时间"
         update_at:
-          type: "string"
+          type:
+          - "string"
+          - "null"
           format: "date-time"
           description: "更新时间"
     PageVOArticle:
       description: "分页结果"
       properties:
         total:
-          type: "integer"
+          type:
+          - "integer"
+          - "null"
           format: "int64"
           description: "总记录数"
         list:
-          type: "array"
+          type:
+          - "array"
+          - "null"
           description: "当前页数据"
           items:
             $ref: "#/components/schemas/Article"
@@ -5861,6 +6595,9 @@ components:
         data:
           $ref: "#/components/schemas/PageVOArticle"
           description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     UnauthorizedResponse:
       type: "object"
       description: "统一错误响应"

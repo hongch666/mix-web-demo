@@ -15,10 +15,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Schema(description = "统一响应")
 public class Result<T> {
-    @Schema(description = "响应码")
+    @Schema(description = "响应码", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer code;
 
-    @Schema(description = "响应信息")
+    @Schema(description = "响应信息", requiredMode = Schema.RequiredMode.REQUIRED)
     private String msg;
 
     @Schema(description = "返回数据")
