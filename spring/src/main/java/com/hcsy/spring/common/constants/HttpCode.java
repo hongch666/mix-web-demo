@@ -5,6 +5,8 @@ package com.hcsy.spring.common.constants;
  */
 public class HttpCode {
 
+    // ===== HTTP 状态码 =====
+
     // 成功
     public static final int OK = 200;
 

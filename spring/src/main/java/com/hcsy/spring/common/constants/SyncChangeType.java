@@ -17,12 +17,16 @@ public enum SyncChangeType {
         this.value = value;
     }
 
+    // ===== 变更类型取值 =====
+
     /**
      * 返回下发到下游的变更类型字符串值
      */
     public String value() {
         return value;
     }
+
+    // ===== 变更类型推导 =====
 
     /**
      * 根据文章操作类型推导变更类型

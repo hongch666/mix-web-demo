@@ -6,6 +6,8 @@ package com.hcsy.spring.common.constants;
  */
 public final class RabbitQueues {
 
+    // ===== 队列名称 =====
+
     /** 接口日志队列，由 NestJS 消费后落 MongoDB */
     public static final String API_LOG = "api-log-queue";
 

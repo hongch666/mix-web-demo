@@ -20,6 +20,8 @@ public enum SyncAction {
         this.value = value;
     }
 
+    // ===== 同步动作取值 =====
+
     /**
      * 下发到消息队列与下游的字符串值
      */

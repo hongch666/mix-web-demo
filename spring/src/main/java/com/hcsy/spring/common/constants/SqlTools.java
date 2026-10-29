@@ -17,6 +17,8 @@ public final class SqlTools {
     private SqlTools() {
     }
 
+    // ===== 白名单 =====
+
     /**
      * 表名白名单：Spring 服务自管的 MySQL 业务表
      */
@@ -29,6 +31,8 @@ public final class SqlTools {
      */
     public static final Set<String> ALLOWED_PREFIXES = new HashSet<>(Arrays.asList(
         "SELECT", "WITH", "SHOW", "DESC", "DESCRIBE", "EXPLAIN"));
+
+    // ===== 校验正则 =====
 
     /**
      * 表名匹配正则（FROM / JOIN 后跟表名）
@@ -62,6 +66,8 @@ public final class SqlTools {
     public static final Pattern WHITESPACE_PATTERN = Pattern.compile(
         "\\s+");
 
+    // ===== 查询限制 =====
+
     /**
      * SQL 查询最大返回行数（LIMIT 上限）
      */
@@ -71,6 +77,8 @@ public final class SqlTools {
      * SQL 查询超时时间
      */
     public static final Duration QUERY_TIMEOUT = Duration.ofSeconds(10);
+
+    // ===== SQL 模板 =====
 
     /**
      * 统计表行数 SQL 模板（表名来自白名单，使用反引号包裹避免保留字冲突）

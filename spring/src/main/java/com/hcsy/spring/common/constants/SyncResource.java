@@ -12,12 +12,22 @@ public final class SyncResource {
     private SyncResource() {
     }
 
+    // ===== 同步资源名 =====
+
+    /** 同步资源名：文章 */
     public static final String ARTICLES = "articles";
+    /** 同步资源名：用户 */
     public static final String USER = "user";
+    /** 同步资源名：分类 */
     public static final String CATEGORY = "category";
+    /** 同步资源名：子分类 */
     public static final String SUB_CATEGORY = "sub_category";
+    /** 同步资源名：点赞 */
     public static final String LIKES = "likes";
+    /** 同步资源名：收藏 */
     public static final String COLLECTS = "collects";
+    /** 同步资源名：评论 */
     public static final String COMMENTS = "comments";
+    /** 同步资源名：关注 */
     public static final String FOCUS = "focus";
 }

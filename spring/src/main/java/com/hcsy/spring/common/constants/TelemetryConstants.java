@@ -11,7 +11,11 @@ public final class TelemetryConstants {
     private TelemetryConstants() {
     }
 
+    // ===== 链路标识 =====
+
+    /** 无活动链路时使用的占位 traceId */
     public static final String EMPTY_TRACE_ID = "-";
+    /** 带时间戳的日志行格式 */
     public static final String LOG_ENTRY_FORMAT = "%s - %s - trace_id=%s - %s%n";
 
     /**

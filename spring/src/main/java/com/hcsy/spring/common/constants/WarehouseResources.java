@@ -25,6 +25,8 @@ public final class WarehouseResources {
     private WarehouseResources() {
     }
 
+    // ===== 资源规格 =====
+
     /**
      * 数仓同步资源规格，包含实体类型、水位线属性与行映射逻辑
      */
@@ -35,6 +37,9 @@ public final class WarehouseResources {
         Function<Object, Map<String, Object>> rowMapper) {
     }
 
+    // ===== 同步资源定义 =====
+
+    /** 全部数仓同步资源，键为同步资源名，与 SyncResource 保持一致 */
     public static final Map<String, ResourceSpec> ALL = createResources();
 
     /**
@@ -99,6 +104,8 @@ public final class WarehouseResources {
             }));
         return Map.copyOf(resources);
     }
+
+    // ===== 内部工具方法 =====
 
     /**
      * 将键值交替参数组装为有序 Map

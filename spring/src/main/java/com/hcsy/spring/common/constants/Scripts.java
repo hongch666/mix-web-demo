@@ -19,10 +19,16 @@ public final class Scripts {
     public static final String REDIS_UNLOCK = "if redis.call('get', KEYS[1]) == ARGV[1] "
         + "then return redis.call('del', KEYS[1]) else return 0 end";
 
+    // ===== 用户初始化 SQL =====
+
+    /** 插入 AI 用户的幂等 SQL */
     public static final String INSERT_AI_USER = "INSERT IGNORE INTO user "
         + "(id, name, password, email, role, img, create_at, update_at) "
         + "VALUES (?, ?, ?, ?, 'ai', ?, NOW(), NOW())";
 
+    // ===== 建表 SQL =====
+
+    /** 用户表建表 SQL */
     public static final String CREATE_USER_TABLE = """
         CREATE TABLE IF NOT EXISTS user (
             id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
@@ -45,6 +51,7 @@ public final class Scripts {
         ) COMMENT='用户表'
         """;
 
+    /** 文章表建表 SQL */
     public static final String CREATE_ARTICLES_TABLE = """
         CREATE TABLE IF NOT EXISTS articles (
             id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '文章id',
@@ -63,6 +70,7 @@ public final class Scripts {
         ) COMMENT='文章表'
         """;
 
+    /** 分类表建表 SQL */
     public static final String CREATE_CATEGORY_TABLE = """
         CREATE TABLE IF NOT EXISTS category (
             id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
@@ -72,6 +80,7 @@ public final class Scripts {
         ) COMMENT='分类表'
         """;
 
+    /** 子分类表建表 SQL */
     public static final String CREATE_SUBCATEGORY_TABLE = """
         CREATE TABLE IF NOT EXISTS sub_category (
             id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
@@ -84,6 +93,7 @@ public final class Scripts {
         ) COMMENT='子分类表'
         """;
 
+    /** 分类权威参考文本表建表 SQL */
     public static final String CREATE_CATEGORY_REFERENCE_TABLE = """
         CREATE TABLE IF NOT EXISTS category_reference (
             id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
@@ -96,6 +106,7 @@ public final class Scripts {
         ) COMMENT='分类权威参考文本表'
         """;
 
+    /** 文章评论表建表 SQL */
     public static final String CREATE_COMMENTS_TABLE = """
         CREATE TABLE IF NOT EXISTS comments (
             id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
@@ -110,6 +121,7 @@ public final class Scripts {
         ) COMMENT='文章评论表'
         """;
 
+    /** 文章点赞表建表 SQL */
     public static final String CREATE_LIKES_TABLE = """
         CREATE TABLE IF NOT EXISTS likes (
             id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
@@ -122,6 +134,7 @@ public final class Scripts {
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户点赞表'
         """;
 
+    /** 文章收藏表建表 SQL */
     public static final String CREATE_COLLECTS_TABLE = """
         CREATE TABLE IF NOT EXISTS collects (
             id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
@@ -134,6 +147,7 @@ public final class Scripts {
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户收藏表'
         """;
 
+    /** 用户关注表建表 SQL */
     public static final String CREATE_FOCUS_TABLE = """
         CREATE TABLE IF NOT EXISTS focus (
             id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
