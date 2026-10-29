@@ -2,11 +2,10 @@ package com.hcsy.spring.application.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 
@@ -14,14 +13,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
+import org.springframework.data.relational.core.query.Query;
 
 import com.hcsy.spring.entity.po.Article;
-import com.hcsy.spring.infra.repository.WarehouseSyncRepository;
 
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,13 +31,13 @@ class WarehouseSyncServiceImplTest {
     private static final LocalDateTime UPDATED_AFTER = LocalDateTime.parse("2026-04-01T00:00:00");
 
     @Mock
-    private WarehouseSyncRepository warehouseSyncRepository;
+    private R2dbcEntityTemplate entityTemplate;
 
     private WarehouseSyncServiceImpl warehouseSyncService;
 
     @BeforeEach
     void setUp() {
-        warehouseSyncService = new WarehouseSyncServiceImpl(warehouseSyncRepository);
+        warehouseSyncService = new WarehouseSyncServiceImpl(entityTemplate);
     }
 
     @Test
@@ -48,13 +48,13 @@ class WarehouseSyncServiceImplTest {
                 && error.getMessage().contains("unknown"))
             .verify();
 
-        verify(warehouseSyncRepository, never()).findLatest(any(), anyString());
+        verify(entityTemplate, never()).select(any(Query.class), ArgumentMatchers.<Class<Article>>any());
     }
 
     @Test
     @DisplayName("资源不存在时返回空页并跳过区间查询")
     void returnsEmptyPageWhenNoData() {
-        when(warehouseSyncRepository.findLatest(Article.class, "updateAt")).thenReturn(Mono.empty());
+        stubSelect(Flux.empty());
 
         StepVerifier.create(warehouseSyncService.sync("articles", null, 1, 10))
             .assertNext(page -> {
@@ -64,17 +64,13 @@ class WarehouseSyncServiceImplTest {
             })
             .verifyComplete();
 
-        verify(warehouseSyncRepository, never()).findUpdated(any(), anyString(), any(), any(), anyInt(),
-            anyInt());
+        verify(entityTemplate, times(1)).select(any(Query.class), ArgumentMatchers.<Class<Article>>any());
     }
 
     @Test
     @DisplayName("非法页码与超限每页大小被归一化后查询")
     void normalizesPageAndSizeBeforeQuery() {
-        when(warehouseSyncRepository.findLatest(Article.class, "updateAt"))
-            .thenReturn(Mono.just(article(UPPER_WATERMARK)));
-        when(warehouseSyncRepository.findUpdated(Article.class, "updateAt", null, UPPER_WATERMARK, 0, 5001))
-            .thenReturn(Flux.empty());
+        stubSelect(Flux.just(article(UPPER_WATERMARK)), Flux.empty());
 
         StepVerifier.create(warehouseSyncService.sync("articles", null, 0, 6000))
             .assertNext(page -> {
@@ -83,15 +79,15 @@ class WarehouseSyncServiceImplTest {
                 assertThat(page.hasMore()).isFalse();
             })
             .verifyComplete();
+
+        verify(entityTemplate, times(2)).select(any(Query.class), ArgumentMatchers.<Class<Article>>any());
     }
 
     @Test
     @DisplayName("存在下一条数据时标记 hasMore 并将结果裁剪到请求条数")
     void trimsResultAndFlagsHasMore() {
-        when(warehouseSyncRepository.findLatest(Article.class, "updateAt"))
-            .thenReturn(Mono.just(article(UPPER_WATERMARK)));
-        when(warehouseSyncRepository.findUpdated(Article.class, "updateAt", UPDATED_AFTER, UPPER_WATERMARK, 0, 3))
-            .thenReturn(Flux.just(article(UPPER_WATERMARK), article(UPPER_WATERMARK), article(UPPER_WATERMARK)));
+        stubSelect(Flux.just(article(UPPER_WATERMARK)),
+            Flux.just(article(UPPER_WATERMARK), article(UPPER_WATERMARK), article(UPPER_WATERMARK)));
 
         StepVerifier.create(warehouseSyncService.sync("articles", UPDATED_AFTER, 1, 2))
             .assertNext(page -> {
@@ -100,6 +96,15 @@ class WarehouseSyncServiceImplTest {
                 assertThat(page.upperWatermark()).isEqualTo(UPPER_WATERMARK);
             })
             .verifyComplete();
+    }
+
+    /**
+     * 按调用顺序给定 select 的返回：服务先查水位线上界，再查区间增量数据
+     */
+    @SafeVarargs
+    private final void stubSelect(Flux<Article> first, Flux<Article>... rest) {
+        doReturn(first, (Object[]) rest).when(entityTemplate)
+            .select(any(Query.class), ArgumentMatchers.<Class<Article>>any());
     }
 
     private Article article(LocalDateTime updateAt) {

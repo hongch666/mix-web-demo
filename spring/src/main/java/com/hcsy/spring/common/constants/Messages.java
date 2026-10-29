@@ -133,6 +133,10 @@ public class Messages {
     public static final String WAREHOUSE_SYNC_SUCCESS = "ClickHouse 数仓同步已触发";
     /** 数仓同步资源不受支持的日志消息 */
     public static final String WAREHOUSE_UNSUPPORTED_RESOURCE = "不支持的数仓同步资源: %s";
+    /** 数仓同步资源规格缺少水位线属性或映射函数的错误消息 */
+    public static final String WAREHOUSE_SPEC_INCOMPLETE = "数仓同步资源 %s 的规格缺少水位线属性、水位线取值或行映射函数";
+    /** 数仓同步资源的水位线属性在实体上不存在的错误消息 */
+    public static final String WAREHOUSE_SPEC_INVALID_PROPERTY = "数仓同步资源 %s 的水位线属性 %s 在实体 %s 上不存在";
 
     // ===== Neo4j 同步任务描述 =====
 
