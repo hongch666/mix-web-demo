@@ -22,6 +22,10 @@
 #   --create-readme README 目标文档不存在时先创建（其余场景跳过并提示）
 #   令牌与项目 ID 从根目录 .env 读取，变量说明见 .env.example
 # 默认以文档为准做全量对齐：清理目标目录下文档里没有的接口与数据模型（置 APIFOX_DELETE_UNMATCHED_RESOURCES=false 回到只增量、不清理）
+#   数据模型目录必须按服务分开配置（APIFOX_SCHEMA_FOLDER_<服务>）：模型都落到同一个目录时，
+#   各服务的全量对齐会互相删除对方刚同步的模型，接口上的模型引用失效，Apifox「校验响应」报 can't resolve reference
+# 导入结束后会导出一次项目快照自检接口与数据模型的引用完整性，发现断链时对本轮服务按覆盖模式重导一次
+#   置 APIFOX_VERIFY_SCHEMA_REFS=false 可关闭该自检（关闭后断链只能靠人工在 Apifox 里重新导入修复）
 
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -35,6 +39,7 @@ DEFAULT_MAINTAINER_CLEAN_EXTENSION="true"
 DEFAULT_MAINTAINER_FORCE="false"
 # 接口以代码生成的文档为唯一事实来源：默认清理目标目录下文档里没有的接口与数据模型
 DEFAULT_DELETE_UNMATCHED_RESOURCES="true"
+DEFAULT_VERIFY_SCHEMA_REFS="true"
 RETRY_TIMES=3
 RETRY_INTERVAL_SECONDS=3
 REQUEST_TIMEOUT_SECONDS=180
@@ -154,6 +159,26 @@ folder_env_name() {
     esac
 }
 
+schema_folder_env_name() {
+    case "$1" in
+        gozero) printf 'APIFOX_SCHEMA_FOLDER_GOZERO' ;;
+        spring) printf 'APIFOX_SCHEMA_FOLDER_SPRING' ;;
+        nestjs) printf 'APIFOX_SCHEMA_FOLDER_NESTJS' ;;
+        fastapi) printf 'APIFOX_SCHEMA_FOLDER_FASTAPI' ;;
+    esac
+}
+
+# 服务的数据模型目录 ID：优先按服务配置，未配置时退回全局 APIFOX_SCHEMA_FOLDER_ID
+schema_folder_for() {
+    local service="$1"
+    local folder_id
+    folder_id=$(env_int "$(schema_folder_env_name "$service")")
+    if [ -z "$folder_id" ]; then
+        folder_id=$(env_int APIFOX_SCHEMA_FOLDER_ID)
+    fi
+    printf '%s' "$folder_id"
+}
+
 spec_path_for() {
     case "$1" in
         gozero) printf '%s' "$WORKDIR/gozero/app/docs/openapi.json" ;;
@@ -249,7 +274,7 @@ build_options_json() {
     fi
 
     local schema_folder_id
-    schema_folder_id=$(env_int APIFOX_SCHEMA_FOLDER_ID)
+    schema_folder_id=$(schema_folder_for "$service")
     if [ -n "$schema_folder_id" ]; then
         json="$json,\"targetSchemaFolderId\":$schema_folder_id"
     fi
@@ -286,6 +311,33 @@ build_payload_file() {
         printf '","options":%s}' "$options_json"
     } > "$out_file"
     return 0
+}
+
+# 导入一份 OpenAPI 文档：按传入的覆盖策略临时改写全局策略后构造 options，再调用导入接口
+# 用法：import_openapi_doc <service> <spec 路径> <接口策略> <模型策略> <临时文件名标记> <响应输出文件>
+import_openapi_doc() {
+    local service="$1"
+    local spec_path="$2"
+    local endpoint_mode="$3"
+    local schema_mode="$4"
+    local tag="$5"
+    local response_out="$6"
+
+    local saved_endpoint="$endpoint_behavior"
+    local saved_schema="$schema_behavior"
+    endpoint_behavior="$endpoint_mode"
+    schema_behavior="$schema_mode"
+    local options
+    options=$(build_options_json "$service")
+    endpoint_behavior="$saved_endpoint"
+    schema_behavior="$saved_schema"
+
+    local payload_file="$TMP_DIR/$service-$tag-payload.json"
+    local endpoint_url="$base_url/v1/projects/$project_id/import-openapi?locale=$locale"
+    if ! build_payload_file "$spec_path" "$options" "$payload_file"; then
+        return 1
+    fi
+    post_import_openapi "$endpoint_url" "$payload_file" "$response_out" "${response_out%.json}.curl.err"
 }
 
 extract_counter() {
@@ -792,7 +844,8 @@ main() {
 
     local name
     for name in APIFOX_FOLDER_GOZERO APIFOX_FOLDER_SPRING APIFOX_FOLDER_NESTJS APIFOX_FOLDER_FASTAPI \
-        APIFOX_SCHEMA_FOLDER_ID APIFOX_BRANCH_ID APIFOX_MODULE_ID; do
+        APIFOX_SCHEMA_FOLDER_GOZERO APIFOX_SCHEMA_FOLDER_SPRING APIFOX_SCHEMA_FOLDER_NESTJS \
+        APIFOX_SCHEMA_FOLDER_FASTAPI APIFOX_SCHEMA_FOLDER_ID APIFOX_BRANCH_ID APIFOX_MODULE_ID; do
         require_int_if_set "$name" || return 1
     done
 
@@ -828,6 +881,20 @@ main() {
     print_info "Apifox 项目: $project_id（$base_url）"
     if [ "$delete_unmatched" = "true" ]; then
         print_info "对齐全量模式：以文档为准，清理目标目录下未匹配的接口与数据模型（置 APIFOX_DELETE_UNMATCHED_RESOURCES=false 可关闭）"
+        # 全量对齐的清理范围是「本服务的数据模型目录」：多个服务共用同一个模型目录时，
+        # 每个服务导入都会删掉其它服务刚同步的模型，接口上的 $ref 随之指向不存在的模型
+        local service_check
+        local schema_folder_missing=""
+        for service_check in $ALL_SERVICES; do
+            if [ -z "$(schema_folder_for "$service_check")" ]; then
+                schema_folder_missing="$schema_folder_missing $service_check"
+            fi
+        done
+        if [ -n "$schema_folder_missing" ]; then
+            print_warn "以下服务未配置独立的数据模型目录：$schema_folder_missing"
+            print_warn "模型会落到项目根目录，全量对齐会删除其它服务刚同步的模型，接口上的模型引用断链（Apifox「校验响应」报 can't resolve reference）"
+            print_warn "修复方式：apifox folder create --project $project_id --type schema --name <服务名>，再把目录 ID 填到 .env 的 APIFOX_SCHEMA_FOLDER_<服务>"
+        fi
     else
         print_info "增量模式：保留 Apifox 中多出的接口与数据模型（置 APIFOX_DELETE_UNMATCHED_RESOURCES=true 可开启全量对齐）"
     fi
@@ -884,7 +951,7 @@ main() {
     local services="${service_args:-$ALL_SERVICES}"
     local failed_services=""
     local schema_state_updated="false"
-    local spec_file options_json payload_file response_file curl_err_file response
+    local spec_file options_json response_file response
     local url created updated ignored failed errors
 
     for service in $services; do
@@ -976,13 +1043,8 @@ main() {
             continue
         fi
 
-        payload_file="$TMP_DIR/$service-payload.json"
         response_file="$TMP_DIR/$service-response.json"
-        curl_err_file="$TMP_DIR/$service-curl.err"
-        build_payload_file "$import_spec" "$options_json" "$payload_file"
-
-        url="$base_url/v1/projects/$project_id/import-openapi?locale=$locale"
-        if ! post_import_openapi "$url" "$payload_file" "$response_file" "$curl_err_file"; then
+        if ! import_openapi_doc "$service" "$import_spec" "$endpoint_behavior" "$schema_behavior" "import" "$response_file"; then
             print_error "[$service] 同步失败"
             failed_services="$failed_services $service"
             continue
@@ -1014,9 +1076,7 @@ main() {
         # Apifox 解析责任人后仍会把扩展原样留在接口的 oasExtensions 里，文档页会多渲染一行
         # 用不带扩展的原文档再导入一次即可清掉，责任人字段已经落库不受影响
         if [ "$injected_spec" = "true" ] && [ "$clean_extension" = "true" ]; then
-            payload_file="$TMP_DIR/$service-payload-clean.json"
-            build_payload_file "$spec_file" "$options_json" "$payload_file"
-            if post_import_openapi "$url" "$payload_file" "$response_file" "$curl_err_file"; then
+            if import_openapi_doc "$service" "$spec_file" "$endpoint_behavior" "$schema_behavior" "clean" "$TMP_DIR/$service-clean-response.json"; then
                 print_info "[$service] 已清理接口文档残留的 x-apifox-maintainer 扩展行"
             else
                 print_warn "[$service] 扩展残留清理失败，接口文档可能多出一行 x-apifox-maintainer"
@@ -1032,6 +1092,15 @@ main() {
             fi
         fi
     done
+
+    # 模型引用自检：全量对齐会删除未匹配的模型，接口上的模型引用不会自动回滚，
+    # 断链时 Apifox 的「校验响应」报 can't resolve reference，这里自检并自动重导修复
+    if [ "$dry_run" != "true" ] && [ -z "$failed_services" ] \
+        && [ -n "$python_bin" ] \
+        && [ "$(env_flag APIFOX_VERIFY_SCHEMA_REFS "$DEFAULT_VERIFY_SCHEMA_REFS")" = "true" ]; then
+        echo ""
+        verify_schema_refs "$services" || failed_services="$failed_services 模型引用自检"
+    fi
 
     # 基线是共享的：只有提交之后其他机器才能据此判断「模型没变、无需覆盖」
     if [ "$schema_state_updated" = "true" ]; then
@@ -1062,6 +1131,88 @@ main() {
     fi
 
     print_info "Apifox 同步完成"
+    return 0
+}
+
+# ==================== 模型引用自检与修复 ====================
+
+# 导出项目快照并统计断链数量，同时把断链示例打成告警；导出失败时返回空串
+# 判断依据：接口请求体/响应体里的 #/definitions/<模型ID> 必须能落到现存数据模型上
+count_dangling_refs() {
+    local snapshot="$1"
+    local models="$2"
+    local checker="$3"
+
+    if ! apifox export --project "$project_id" --access-token "$token" --format apifox --scope all \
+        --no-include-api-cases --output "$snapshot" >/dev/null 2>&1; then
+        printf ''
+        return 0
+    fi
+    if ! apifox schema list --project "$project_id" --access-token "$token" >"$models" 2>/dev/null; then
+        printf ''
+        return 0
+    fi
+
+    local output
+    output=$("$python_bin" "$checker" --check "$snapshot" --models "$models" --examples 3 2>/dev/null || true)
+    printf '%s\n' "$output" | sed -n '3,$p' | while IFS= read -r line; do
+        if [ -n "$line" ]; then
+            print_warn "  断链: $line"
+        fi
+    done
+    printf '%s' "$(printf '%s\n' "$output" | sed -n 's/^DANGLING=//p' | head -n 1)"
+}
+
+# 同步后自检接口与数据模型的引用完整性，断链时对本轮服务按覆盖模式重导修复
+verify_schema_refs() {
+    local services="$1"
+
+    if [ -z "$python_bin" ] || ! command -v apifox >/dev/null 2>&1; then
+        print_info "未安装 Apifox CLI 或 python，跳过模型引用自检"
+        return 0
+    fi
+
+    local checker="$WORKDIR/scripts/apifox-schema-refs.py"
+    if [ ! -f "$checker" ]; then
+        print_warn "缺少 $checker，跳过模型引用自检"
+        return 0
+    fi
+
+    local snapshot="$TMP_DIR/verify-snapshot.apifox.json"
+    local models="$TMP_DIR/verify-models.json"
+    local dangling
+    dangling=$(count_dangling_refs "$snapshot" "$models" "$checker")
+    if [ -z "$dangling" ]; then
+        print_warn "模型引用自检跳过：项目快照或数据模型清单导出失败"
+        return 0
+    fi
+    if [ "$dangling" = "0" ]; then
+        print_info "模型引用自检通过：接口与数据模型的引用都指向现存模型"
+        return 0
+    fi
+
+    print_warn "模型引用自检发现 $dangling 处断链，Apifox「校验响应」会报 can't resolve reference"
+    print_info "按覆盖模式重导本轮服务，把接口重新绑定到现存数据模型..."
+
+    local service spec_path
+    for service in $services; do
+        spec_path=$(spec_path_for "$service")
+        if [ ! -f "$spec_path" ]; then
+            continue
+        fi
+        print_info "[$service] 覆盖重导：重新绑定接口与数据模型"
+        if ! import_openapi_doc "$service" "$spec_path" "OVERWRITE_EXISTING" "OVERWRITE_EXISTING" \
+            "repair" "$TMP_DIR/$service-repair-response.json"; then
+            print_warn "[$service] 覆盖重导失败，该服务的接口引用可能仍是断链"
+        fi
+    done
+
+    dangling=$(count_dangling_refs "$snapshot" "$models" "$checker")
+    if [ -n "$dangling" ] && [ "$dangling" != "0" ]; then
+        print_error "覆盖重导后仍有 $dangling 处断链，请在 Apifox 里对相关服务手工重新导入一次"
+        return 1
+    fi
+    print_info "模型引用已修复：接口与数据模型重新绑定完成"
     return 0
 }
 

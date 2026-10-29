@@ -92,6 +92,7 @@ show_help() {
     echo "  setup                    - Initialize environment and install dependencies"
     echo "  swag [services...]       - Generate static OpenAPI docs into each service docs/ (offline)"
     echo "  apifox [services...]     - Sync service docs + README to Apifox (offline, needs .env)"
+    echo "  apifox-check             - Check Apifox endpoint/model reference integrity (read-only, needs .env)"
     echo "  apifox-readme            - Sync README.md into an Apifox Markdown doc (needs .env)"
     echo "  goctl-api [args...]      - Generate GoZero API code"
     echo "  goctl-orm [args...]      - Generate GoZero ORM code"
@@ -151,6 +152,8 @@ show_help() {
     echo "  ./mix apifox --no-readme       # Sync service docs only, skip README"
     echo "  ./mix apifox --no-maintainer   # Sync endpoint docs without filling the responsible person"
     echo "  ./mix apifox --create-readme   # Create the README doc when no doc ID is configured"
+    echo "  ./mix apifox-check             # Check endpoint/model reference integrity (read-only)"
+    echo "  ./mix apifox-check --keep /tmp/apifox # Check and keep the exported snapshot for triage"
     echo "  ./mix apifox-readme            # Sync README.md into the configured Apifox doc"
     echo "  ./mix apifox-readme --dry-run  # Build and validate the doc payload without writing"
     echo "  ./mix apifox-readme --create   # Create the doc first when no doc ID is configured"
@@ -330,6 +333,10 @@ case $COMMAND in
     apifox)
         echo "Syncing OpenAPI documentation to Apifox..."
         bash "$SCRIPTS_DIR/apifox-sync.sh" "${@:2}"
+        ;;
+    apifox-check)
+        echo "Checking Apifox endpoint/model references..."
+        bash "$SCRIPTS_DIR/apifox-check.sh" "${@:2}"
         ;;
     apifox-readme)
         echo "Syncing README.md to Apifox Markdown document..."
