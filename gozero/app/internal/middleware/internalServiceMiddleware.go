@@ -13,11 +13,12 @@ import (
 // 校验内部服务调用令牌的中间件
 type InternalServiceMiddleware struct {
 	*utils.ZeroLogger
+	tokenUtil *utils.InternalTokenUtil
 }
 
 // NewInternalServiceMiddleware 创建内部服务令牌校验中间件
-func NewInternalServiceMiddleware(log *utils.ZeroLogger) *InternalServiceMiddleware {
-	return &InternalServiceMiddleware{ZeroLogger: log}
+func NewInternalServiceMiddleware(log *utils.ZeroLogger, tokenUtil *utils.InternalTokenUtil) *InternalServiceMiddleware {
+	return &InternalServiceMiddleware{ZeroLogger: log, tokenUtil: tokenUtil}
 }
 
 // validateInternalToken 从上下文中提取并校验内部令牌（公共逻辑），返回 claims、错误响应是否已发送、是否应该继续处理
@@ -39,13 +40,12 @@ func validateInternalToken(
 	}
 
 	// 验证令牌
-	tokenUtil, err := utils.GetTokenUtil()
-	if err != nil {
-		logger.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))
+	if m.tokenUtil == nil {
+		logger.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, constants.INTERNAL_TOKEN_NOT_INITIALIZED, r.URL.Path))
 		utils.Error(w, constants.HttpUnauthorized, constants.INTERNAL_TOKEN_INVALID)
 		return false
 	}
-	claims, err := tokenUtil.ValidateInternalToken(tokenString)
+	claims, err := m.tokenUtil.ValidateInternalToken(tokenString)
 	if err != nil {
 		logger.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))
 		utils.Error(w, constants.HttpUnauthorized, constants.INTERNAL_TOKEN_INVALID)
@@ -81,8 +81,8 @@ func (m *InternalServiceMiddleware) Handle(next http.HandlerFunc) http.HandlerFu
 }
 
 // NewInternalTokenMiddleware 创建需要验证特定服务的中间件
-func NewInternalTokenMiddleware(log *utils.ZeroLogger, serviceName string) func(http.HandlerFunc) http.HandlerFunc {
-	m := &InternalServiceMiddleware{ZeroLogger: log}
+func NewInternalTokenMiddleware(log *utils.ZeroLogger, tokenUtil *utils.InternalTokenUtil, serviceName string) func(http.HandlerFunc) http.HandlerFunc {
+	m := &InternalServiceMiddleware{ZeroLogger: log, tokenUtil: tokenUtil}
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			if !validateInternalToken(w, r, m, serviceName) {

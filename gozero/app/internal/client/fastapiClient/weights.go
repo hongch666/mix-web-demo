@@ -142,40 +142,63 @@ func parseSearchScriptParams(data any) (search.ScriptParamMapping, error) {
 	return paramMap, nil
 }
 
-// 全局权重缓存
-var (
-	cachedWeights     *search.SearchWeights
-	weightsCacheMutex sync.RWMutex
-	weightsLastFetch  time.Time
-	weightCacheTTL    = 60 * time.Second
+// 搜索配置缓存 TTL
+const (
+	weightCacheTTL       = 60 * time.Second
+	scriptCacheTTL       = 60 * time.Second
+	scriptParamsCacheTTL = 60 * time.Second
 )
 
-// 全局搜索脚本缓存
-var (
-	cachedScript     *search.SearchScript
-	scriptCacheMutex sync.RWMutex
-	scriptLastFetch  time.Time
-	scriptCacheTTL   = 60 * time.Second
-)
+// searchValueCache 搜索配置的实例级缓存，随 FastapiClient 生命周期存在，不使用包级全局状态
+type searchValueCache[T any] struct {
+	mu        sync.RWMutex
+	value     *T
+	lastFetch time.Time
+}
 
-// 全局脚本参数名映射缓存
-var (
-	cachedScriptParams     *search.ScriptParamMapping
-	scriptParamsCacheMutex sync.RWMutex
-	scriptParamsLastFetch  time.Time
-	scriptParamsCacheTTL   = 60 * time.Second
-)
+// read 读取未过期的缓存副本
+func (c *searchValueCache[T]) read(ttl time.Duration) (T, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.value != nil && time.Since(c.lastFetch) < ttl {
+		return *c.value, true
+	}
+	var zero T
+	return zero, false
+}
+
+// stale 读取任意已有缓存副本，远端拉取失败时降级使用
+func (c *searchValueCache[T]) stale() (T, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.value != nil {
+		return *c.value, true
+	}
+	var zero T
+	return zero, false
+}
+
+// write 写入缓存副本并记录拉取时间
+func (c *searchValueCache[T]) write(v T) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.value = &v
+	c.lastFetch = time.Now()
+}
+
+// searchConfigCache 搜索配置（权重、脚本、脚本参数映射）的实例级缓存集合
+type searchConfigCache struct {
+	weights      searchValueCache[search.SearchWeights]
+	script       searchValueCache[search.SearchScript]
+	scriptParams searchValueCache[search.ScriptParamMapping]
+}
 
 // GetSearchWeights 从 FastAPI 获取搜索权重（缓存 60s）
 func (c *FastapiClient) GetSearchWeights(ctx context.Context) (search.SearchWeights, error) {
 	// 读缓存
-	weightsCacheMutex.RLock()
-	if cachedWeights != nil && time.Since(weightsLastFetch) < weightCacheTTL {
-		w := *cachedWeights
-		weightsCacheMutex.RUnlock()
+	if w, ok := c.searchCache.weights.read(weightCacheTTL); ok {
 		return w, nil
 	}
-	weightsCacheMutex.RUnlock()
 
 	// 调用 FastAPI
 	result, err := c.serviceDisc.CallService(ctx, c.serviceName, "/algorithm/search/weights", client.RequestOptions{
@@ -183,13 +206,9 @@ func (c *FastapiClient) GetSearchWeights(ctx context.Context) (search.SearchWeig
 	})
 	if err != nil {
 		// FastAPI 不可用时返回旧缓存（如果存在）
-		weightsCacheMutex.RLock()
-		if cachedWeights != nil {
-			w := *cachedWeights
-			weightsCacheMutex.RUnlock()
+		if w, ok := c.searchCache.weights.stale(); ok {
 			return w, nil
 		}
-		weightsCacheMutex.RUnlock()
 		return search.SearchWeights{}, err
 	}
 
@@ -200,10 +219,7 @@ func (c *FastapiClient) GetSearchWeights(ctx context.Context) (search.SearchWeig
 	}
 
 	// 写缓存
-	weightsCacheMutex.Lock()
-	cachedWeights = &w
-	weightsLastFetch = time.Now()
-	weightsCacheMutex.Unlock()
+	c.searchCache.weights.write(w)
 
 	return w, nil
 }
@@ -211,13 +227,9 @@ func (c *FastapiClient) GetSearchWeights(ctx context.Context) (search.SearchWeig
 // GetSearchScript 从 FastAPI 获取 ES 搜索脚本模板（缓存 60s），返回使用 params.xxx 占位符的 Painless 脚本，由调用方通过 elastic.NewScript(script).Param(...) 传入权重后使用
 func (c *FastapiClient) GetSearchScript(ctx context.Context) (search.SearchScript, error) {
 	// 读缓存
-	scriptCacheMutex.RLock()
-	if cachedScript != nil && time.Since(scriptLastFetch) < scriptCacheTTL {
-		s := *cachedScript
-		scriptCacheMutex.RUnlock()
+	if s, ok := c.searchCache.script.read(scriptCacheTTL); ok {
 		return s, nil
 	}
-	scriptCacheMutex.RUnlock()
 
 	// 调用 FastAPI 新接口
 	result, err := c.serviceDisc.CallService(ctx, c.serviceName, "/algorithm/search/script", client.RequestOptions{
@@ -225,13 +237,9 @@ func (c *FastapiClient) GetSearchScript(ctx context.Context) (search.SearchScrip
 	})
 	if err != nil {
 		// FastAPI 不可用时返回旧缓存（如果存在）
-		scriptCacheMutex.RLock()
-		if cachedScript != nil {
-			s := *cachedScript
-			scriptCacheMutex.RUnlock()
+		if s, ok := c.searchCache.script.stale(); ok {
 			return s, nil
 		}
-		scriptCacheMutex.RUnlock()
 		return search.SearchScript{}, err
 	}
 
@@ -242,10 +250,7 @@ func (c *FastapiClient) GetSearchScript(ctx context.Context) (search.SearchScrip
 	}
 
 	// 写缓存
-	scriptCacheMutex.Lock()
-	cachedScript = &s
-	scriptLastFetch = time.Now()
-	scriptCacheMutex.Unlock()
+	c.searchCache.script.write(s)
 
 	return s, nil
 }
@@ -255,13 +260,9 @@ func (c *FastapiClient) GetSearchScript(ctx context.Context) (search.SearchScrip
 // 当 FastAPI 修改脚本参数名时，GoZero 无需修改代码即可自适应
 func (c *FastapiClient) GetSearchScriptParams(ctx context.Context) (search.ScriptParamMapping, error) {
 	// 读缓存
-	scriptParamsCacheMutex.RLock()
-	if cachedScriptParams != nil && time.Since(scriptParamsLastFetch) < scriptParamsCacheTTL {
-		pm := *cachedScriptParams
-		scriptParamsCacheMutex.RUnlock()
+	if pm, ok := c.searchCache.scriptParams.read(scriptParamsCacheTTL); ok {
 		return pm, nil
 	}
-	scriptParamsCacheMutex.RUnlock()
 
 	// 调用 FastAPI
 	result, err := c.serviceDisc.CallService(ctx, c.serviceName, "/algorithm/search/script-params", client.RequestOptions{
@@ -269,13 +270,9 @@ func (c *FastapiClient) GetSearchScriptParams(ctx context.Context) (search.Scrip
 	})
 	if err != nil {
 		// FastAPI 不可用时返回旧缓存（如果存在）
-		scriptParamsCacheMutex.RLock()
-		if cachedScriptParams != nil {
-			pm := *cachedScriptParams
-			scriptParamsCacheMutex.RUnlock()
+		if pm, ok := c.searchCache.scriptParams.stale(); ok {
 			return pm, nil
 		}
-		scriptParamsCacheMutex.RUnlock()
 		return nil, err
 	}
 
@@ -286,10 +283,7 @@ func (c *FastapiClient) GetSearchScriptParams(ctx context.Context) (search.Scrip
 	}
 
 	// 写缓存
-	scriptParamsCacheMutex.Lock()
-	cachedScriptParams = &paramMap
-	scriptParamsLastFetch = time.Now()
-	scriptParamsCacheMutex.Unlock()
+	c.searchCache.scriptParams.write(paramMap)
 
 	return paramMap, nil
 }

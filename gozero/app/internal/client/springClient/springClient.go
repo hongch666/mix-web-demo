@@ -22,11 +22,12 @@ func NewSpringClient(
 	nc naming_client.INamingClient,
 	remoteCallConfig client.RemoteCallConfig,
 	logger *utils.ZeroLogger,
+	tokenUtil *utils.InternalTokenUtil,
 ) *SpringClient {
 	return &SpringClient{
 		serviceName:  "spring",
 		namingClient: nc,
-		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig, logger),
+		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig, logger, tokenUtil),
 	}
 }
 

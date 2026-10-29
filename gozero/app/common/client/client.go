@@ -46,10 +46,11 @@ type ServiceDiscovery struct {
 	lbIndex      map[string]uint64        // 负载均衡轮询索引
 	config       RemoteCallConfig         // 远程调用配置
 	logger       *utils.ZeroLogger        // 运行期日志（可为 nil，nil 时退化为仅 logx）
+	tokenUtil    *utils.InternalTokenUtil // 内部令牌工具（可为 nil，nil 时跳过内部令牌注入）
 }
 
 // NewServiceDiscovery 创建服务发现客户端并初始化统一的 HTTP 客户端与负载均衡索引
-func NewServiceDiscovery(client naming_client.INamingClient, cfg RemoteCallConfig, logger *utils.ZeroLogger) *ServiceDiscovery {
+func NewServiceDiscovery(client naming_client.INamingClient, cfg RemoteCallConfig, logger *utils.ZeroLogger, tokenUtil *utils.InternalTokenUtil) *ServiceDiscovery {
 	return &ServiceDiscovery{
 		namingClient: client,
 		httpClient:   newHTTPClient(cfg),
@@ -57,6 +58,7 @@ func NewServiceDiscovery(client naming_client.INamingClient, cfg RemoteCallConfi
 		lbIndex:      make(map[string]uint64),
 		config:       cfg,
 		logger:       logger,
+		tokenUtil:    tokenUtil,
 	}
 }
 
@@ -104,7 +106,7 @@ func (sd *ServiceDiscovery) service(serviceName string) httpc.Service {
 	svc := httpc.NewServiceWithClient(
 		constants.RemoteBreakerNamePrefix+serviceName,
 		sd.httpClient,
-		injectContextHeaders,
+		sd.injectContextHeaders,
 	)
 	sd.services[serviceName] = svc
 
@@ -121,7 +123,7 @@ func (sd *ServiceDiscovery) Close() {
 }
 
 // injectContextHeaders 注入用户上下文与内部令牌，httpc 构建请求时已把调用上下文写入 request
-func injectContextHeaders(r *http.Request) *http.Request {
+func (sd *ServiceDiscovery) injectContextHeaders(r *http.Request) *http.Request {
 	ctx := r.Context()
 
 	userID, _ := ctx.Value(keys.UserIDKey).(int64)
@@ -136,8 +138,7 @@ func injectContextHeaders(r *http.Request) *http.Request {
 		r.Header.Set(constants.HeaderAuthorization, constants.BearerPrefix+token)
 	}
 
-	tokenUtil, err := utils.GetTokenUtil()
-	if err != nil {
+	if sd.tokenUtil == nil {
 		return r
 	}
 
@@ -146,7 +147,7 @@ func injectContextHeaders(r *http.Request) *http.Request {
 	if finalUserID <= 0 {
 		finalUserID = -1
 	}
-	internalToken, err := tokenUtil.GenerateInternalToken(finalUserID, constants.InternalTokenServiceName)
+	internalToken, err := sd.tokenUtil.GenerateInternalToken(finalUserID, constants.InternalTokenServiceName)
 	if err != nil {
 		return r
 	}

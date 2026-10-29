@@ -19,12 +19,11 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 )
 
+const testCallTokenSecret = "unit-test-secret-unit-test-secret"
+
 // 验证该测试场景的预期行为
 
 func TestCallWithRetryPropagatesContextHeadersAndInternalToken(t *testing.T) {
-	if err := utils.InitInternalTokenUtil("unit-test-secret-unit-test-secret", 60000); err != nil {
-		t.Fatalf("初始化内部令牌失败: %v", err)
-	}
 	var captured http.Header
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		captured = r.Header.Clone()
@@ -63,9 +62,6 @@ func TestCallWithRetryPropagatesContextHeadersAndInternalToken(t *testing.T) {
 // 验证该测试场景的预期行为
 
 func TestCallWithRetryUsesSystemIdentityWithoutUserContext(t *testing.T) {
-	if err := utils.InitInternalTokenUtil("unit-test-secret-unit-test-secret", 60000); err != nil {
-		t.Fatalf("初始化内部令牌失败: %v", err)
-	}
 	var internalToken string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		internalToken = r.Header.Get("X-Internal-Token")
@@ -158,10 +154,14 @@ func newTestServiceDiscovery(t *testing.T, server *httptest.Server, maxRetries i
 	if err != nil {
 		t.Fatalf("转换测试服务端口失败: %v", err)
 	}
+	tokenUtil, err := utils.NewInternalTokenUtil(testCallTokenSecret, 60000)
+	if err != nil {
+		t.Fatalf("创建内部令牌工具失败: %v", err)
+	}
 	sd := NewServiceDiscovery(nil, RemoteCallConfig{
 		Timeout:    time.Second,
 		MaxRetries: maxRetries,
-	}, nil)
+	}, nil, tokenUtil)
 	sd.httpClient = server.Client()
 	sd.serviceMap.Store("spring", &serviceCache{
 		instances: []model.Instance{{Ip: host, Port: port}},
@@ -176,9 +176,9 @@ func parseInternalTokenHeader(t *testing.T, header string) *utils.InternalTokenC
 	if len(header) <= len(prefix) || header[:len(prefix)] != prefix {
 		t.Fatalf("内部令牌请求头格式错误: %q", header)
 	}
-	tokenUtil, err := utils.GetTokenUtil()
+	tokenUtil, err := utils.NewInternalTokenUtil(testCallTokenSecret, 60000)
 	if err != nil {
-		t.Fatalf("获取内部令牌工具失败: %v", err)
+		t.Fatalf("创建内部令牌工具失败: %v", err)
 	}
 	claims, err := tokenUtil.ValidateInternalToken(header[len(prefix):])
 	if err != nil {

@@ -23,26 +23,15 @@ type InternalTokenUtil struct {
 	expiration int64
 }
 
-var tokenUtil *InternalTokenUtil
-
-// InitInternalTokenUtil 初始化内部令牌工具
-func InitInternalTokenUtil(secret string, expiration int64) error {
+// NewInternalTokenUtil 创建内部令牌工具实例，由组合根装配并注入到使用方，不使用包级全局状态
+func NewInternalTokenUtil(secret string, expiration int64) (*InternalTokenUtil, error) {
 	if secret == "" {
-		return errors.New(constants.INTERNAL_TOKEN_SECRET_NOT_NULL)
+		return nil, errors.New(constants.INTERNAL_TOKEN_SECRET_NOT_NULL)
 	}
-	tokenUtil = &InternalTokenUtil{
+	return &InternalTokenUtil{
 		secret:     secret,
 		expiration: expiration,
-	}
-	return nil
-}
-
-// GetTokenUtil 获取内部令牌工具实例
-func GetTokenUtil() (*InternalTokenUtil, error) {
-	if tokenUtil == nil {
-		return nil, errors.New(constants.INTERNAL_TOKEN_NOT_INITIALIZED)
-	}
-	return tokenUtil, nil
+	}, nil
 }
 
 // GenerateInternalToken 生成内部服务令牌

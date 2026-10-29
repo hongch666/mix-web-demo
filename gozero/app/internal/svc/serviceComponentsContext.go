@@ -35,6 +35,7 @@ func newClientContext(
 	namingClient naming_client.INamingClient,
 	remoteCallConfig config.RemoteCallConfig,
 	zLogger *utils.ZeroLogger,
+	tokenUtil *utils.InternalTokenUtil,
 ) *ClientContext {
 	remoteCallCfg := client.RemoteCallConfig{
 		Timeout:        time.Duration(remoteCallConfig.Timeout) * time.Millisecond,
@@ -43,9 +44,9 @@ func newClientContext(
 		MaxBackoff:     time.Duration(remoteCallConfig.MaxBackoff) * time.Millisecond,
 	}
 	return &ClientContext{
-		FastapiClient: fastapiClient.NewFastapiClient(namingClient, remoteCallCfg, zLogger),
-		NestjsClient:  nestjsClient.NewNestjsClient(namingClient, remoteCallCfg, zLogger),
-		SpringClient:  springClient.NewSpringClient(namingClient, remoteCallCfg, zLogger),
+		FastapiClient: fastapiClient.NewFastapiClient(namingClient, remoteCallCfg, zLogger, tokenUtil),
+		NestjsClient:  nestjsClient.NewNestjsClient(namingClient, remoteCallCfg, zLogger, tokenUtil),
+		SpringClient:  springClient.NewSpringClient(namingClient, remoteCallCfg, zLogger, tokenUtil),
 	}
 }
 
@@ -53,12 +54,13 @@ func newClientContext(
 func newMiddlewareContext(
 	zLogger *utils.ZeroLogger,
 	adminChecker middleware.AdminChecker,
+	tokenUtil *utils.InternalTokenUtil,
 ) *MiddlewareContext {
 	return &MiddlewareContext{
 		UserContextMiddleware:     middleware.NewUserContextMiddleware().Handle,
 		AllowSelfMiddleware:       middleware.NewAllowSelfMiddleware(adminChecker, zLogger).Handle,
 		RecoveryMiddleware:        middleware.NewRecoveryMiddleware(zLogger).Handle,
-		InternalServiceMiddleware: middleware.NewInternalServiceMiddleware(zLogger).Handle,
+		InternalServiceMiddleware: middleware.NewInternalServiceMiddleware(zLogger, tokenUtil).Handle,
 	}
 }
 

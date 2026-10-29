@@ -34,7 +34,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		panic(err)
 	}
 
-	if err := utils.InitInternalTokenUtil(c.InternalToken.Secret, c.InternalToken.Expiration); err != nil {
+	tokenUtil, err := utils.NewInternalTokenUtil(c.InternalToken.Secret, c.InternalToken.Expiration)
+	if err != nil {
 		logx.Errorf(constants.INTERNAL_TOKEN_INIT_FAIL, err)
 		panic(err)
 	}
@@ -42,7 +43,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	infrastructure := newInfrastructureContext(c, zLogger)
 	// 装配后立即校验依赖清单：必需依赖缺失直接 panic，避免带病启动
 	validateDependencies(infrastructure)
-	clientCtx := newClientContext(infrastructure.NamingClient, c.RemoteCall, zLogger)
+	clientCtx := newClientContext(infrastructure.NamingClient, c.RemoteCall, zLogger, tokenUtil)
 	models := newModelContext(c, infrastructure, clientCtx, zLogger)
 
 	serviceCtx := &ServiceContext{
@@ -52,7 +53,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		HubContext:            newHubContext(zLogger),
 		ClientContext:         clientCtx,
 		LoggerContext:         newLoggerContext(zLogger),
-		MiddlewareContext:     newMiddlewareContext(zLogger, clientCtx.SpringClient),
+		MiddlewareContext:     newMiddlewareContext(zLogger, clientCtx.SpringClient, tokenUtil),
 	}
 	if models.ChatMessagesModel != nil {
 		serviceCtx.ChatHub.ConfigureReadMarker(models.ChatMessagesModel.MarkChatHistoryAsReadThrough)

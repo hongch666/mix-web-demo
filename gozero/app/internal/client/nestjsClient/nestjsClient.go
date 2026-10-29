@@ -22,11 +22,12 @@ func NewNestjsClient(
 	nc naming_client.INamingClient,
 	remoteCallConfig client.RemoteCallConfig,
 	logger *utils.ZeroLogger,
+	tokenUtil *utils.InternalTokenUtil,
 ) *NestjsClient {
 	return &NestjsClient{
 		serviceName:  "nestjs",
 		namingClient: nc,
-		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig, logger),
+		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig, logger, tokenUtil),
 	}
 }
 
