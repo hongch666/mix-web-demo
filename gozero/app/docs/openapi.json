@@ -316,7 +316,10 @@
                   "properties": {
                     "message": {
                       "description": "聊天消息体，无消息时省略",
-                      "type": "object",
+                      "type": [
+                        "object",
+                        "null"
+                      ],
                       "required": [
                         "id",
                         "sender_id",
@@ -354,18 +357,27 @@
                     },
                     "type": {
                       "description": "帧类型，消息通知为 message",
-                      "type": "string"
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "unread_counts": {
                       "description": "与各对端的未读数，key 为对端用户 ID",
-                      "type": "object",
+                      "type": [
+                        "object",
+                        "null"
+                      ],
                       "additionalProperties": {
                         "type": "integer"
                       }
                     },
                     "user_id": {
                       "description": "接收通知的用户 ID",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     }
                   },
                   "title": "ChatSSEMessage"
@@ -377,7 +389,10 @@
                   "properties": {
                     "message": {
                       "description": "聊天消息体，无消息时省略",
-                      "type": "object",
+                      "type": [
+                        "object",
+                        "null"
+                      ],
                       "required": [
                         "id",
                         "sender_id",
@@ -415,18 +430,27 @@
                     },
                     "type": {
                       "description": "帧类型，消息通知为 message",
-                      "type": "string"
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "unread_counts": {
                       "description": "与各对端的未读数，key 为对端用户 ID",
-                      "type": "object",
+                      "type": [
+                        "object",
+                        "null"
+                      ],
                       "additionalProperties": {
                         "type": "integer"
                       }
                     },
                     "user_id": {
                       "description": "接收通知的用户 ID",
-                      "type": "integer"
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
                     }
                   }
                 }
@@ -1180,7 +1204,10 @@
         "properties": {
           "params": {
             "description": "占位符参数，key 为参数名",
-            "type": "object",
+            "type": [
+              "object",
+              "null"
+            ],
             "additionalProperties": {
               "type": "string"
             }
@@ -1248,7 +1275,10 @@
         "properties": {
           "table": {
             "description": "表名，可选；不传则返回白名单内全部表",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -1267,7 +1297,10 @@
           },
           "data": {
             "description": "表结构列表",
-            "type": "array",
+            "type": [
+              "array",
+              "null"
+            ],
             "items": {
               "type": "object",
               "required": [
@@ -1348,18 +1381,27 @@
         "properties": {
           "change_type": {
             "description": "变更类型：insert、update、delete",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "ids": {
             "description": "受影响文章 ID，为空时退化为全量同步",
-            "type": "array",
+            "type": [
+              "array",
+              "null"
+            ],
             "items": {
               "type": "integer"
             }
           },
           "resource": {
             "description": "资源名，固定 articles",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -1463,11 +1505,17 @@
           },
           "page": {
             "description": "页码，可选，传入时须为正整数",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "size": {
             "description": "每页条数，可选，传入时须为正整数",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "user_id": {
             "description": "当前用户 ID，须为正整数",

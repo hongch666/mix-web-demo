@@ -31,6 +31,9 @@ VOLATILE_FIELDS = ("x-date", "x-goctl-version")
 # 声明与 NestJS 的 SwaggerNullData 保持一致
 EMPTY_DATA_SCHEMA = {"type": "null", "description": "响应数据"}
 
+# OpenAPI 3.1 里表示「允许为 null」的类型标记
+NULL_TYPE = "null"
+
 # SSE 帧在 application/json 视图下的 schema 标题
 # Apifox 用 schema 的 title 作为「返回响应」里的节点名，FastAPI 侧由框架按 response_model
 # 自动生成（形如 Response Stream Message Chat Stream Post），GoZero 这里显式给出帧类型名
@@ -58,6 +61,84 @@ NON_HOISTED_MEDIA_TYPES = ("text/event-stream",)
 # 服务内嵌的 swagger-ui 资源为 5.x（支持 3.1）；4.x 只认 swagger 2.0 与 openapi 3.0.x，会直接白屏
 # 这里统一固定，顺带消除 swagger2openapi 版本差异造成的产物抖动
 OPENAPI_VERSION = "3.1.0"
+
+
+def mark_schema_nullable(schema):
+    """递归标记 schema 里可空的属性
+
+    判定规则：
+    1. 未列入 required 的属性（`.api` 里标了 json:",optional"）——字段可缺省，Apifox 允许缺省却把 null 判成非法
+    2. 切片属性（type: array）——Go 的 nil slice 经 json.Marshal 就是 null，即使字段必填也会输出 null
+    $ref 与 enum 无法在 3.1 里直接扩展，保持原样
+    """
+    if not isinstance(schema, dict):
+        return
+
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        required = schema.get("required")
+        required = required if isinstance(required, list) else []
+        for name, prop in properties.items():
+            if not isinstance(prop, dict):
+                continue
+            if name in required and prop.get("type") != "array":
+                continue
+            mark_property_nullable(prop)
+
+    mark_schema_nullable(schema.get("items"))
+
+    additional = schema.get("additionalProperties")
+    if isinstance(additional, dict):
+        mark_schema_nullable(additional)
+
+    for key in ("allOf", "anyOf", "oneOf"):
+        for branch in schema.get(key) or []:
+            mark_schema_nullable(branch)
+
+
+def mark_property_nullable(prop):
+    """把单个属性的 type 补成 [X, "null"]，已是数组形式时追加 null"""
+    if not isinstance(prop, dict) or "$ref" in prop or "enum" in prop:
+        return
+    kind = prop.get("type")
+    if isinstance(kind, list):
+        if NULL_TYPE not in kind:
+            kind.append(NULL_TYPE)
+        return
+    if not isinstance(kind, str) or kind == NULL_TYPE:
+        return
+    prop["type"] = [kind, NULL_TYPE]
+
+
+def mark_nullable_properties(swagger_data):
+    """为可空字段补上 OpenAPI 3.1 的 null 类型
+
+    3.1 用类型数组表达可空（如 ["string","null"]），nullable: true 是 3.0 的写法、
+    在 3.1 下会被忽略。不补的表现是 Apifox「校验响应」把合法的 null 判成
+    「$.data.xxx 不允许为 null」
+    """
+    components = swagger_data.get("components") or {}
+    schemas = components.get("schemas")
+    if isinstance(schemas, dict):
+        for schema in schemas.values():
+            mark_schema_nullable(schema)
+
+    for methods in (swagger_data.get("paths") or {}).values():
+        if not isinstance(methods, dict):
+            continue
+        for details in methods.values():
+            if not isinstance(details, dict):
+                continue
+            request_content = (details.get("requestBody") or {}).get("content") or {}
+            for media in request_content.values():
+                if isinstance(media, dict):
+                    mark_schema_nullable(media.get("schema"))
+            for response in (details.get("responses") or {}).values():
+                if not isinstance(response, dict):
+                    continue
+                for media in (response.get("content") or {}).values():
+                    if isinstance(media, dict):
+                        mark_schema_nullable(media.get("schema"))
 
 
 def add_chinese_tags_to_dict(swagger_data):
@@ -174,6 +255,9 @@ def add_chinese_tags_to_dict(swagger_data):
     # 必须排在 wrap_unified_responses 之后：提升的是补好统一外壳的完整响应；
     # 必须排在 drop_websocket_paths 之后：否则被剔除的 WS 响应会留下无人引用的孤儿模型
     hoist_inline_models(swagger_data)
+
+    # 最后补可空声明：模型与内联结构都已定型，此时补不会漏掉任何一层
+    mark_nullable_properties(swagger_data)
 
     return swagger_data, websocket_endpoints
 
