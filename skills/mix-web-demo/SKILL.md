@@ -153,6 +153,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 - **依赖方向**：`web` 调用 `application/service`，应用服务使用 `infra` 的客户端与 Repository；`application/task` 调用业务服务，`web/sync` 的切面调用同步服务。`common` 不依赖 `web` 或 `application`；`entity/assembler` 现有实现依赖 `infra/repository`，新增跨层组件前先确认依赖方向
 - 文章创建/更新的作者解析、评论创建/更新的关联规则与评论列表补全由应用服务执行；Controller 只映射原接口的成功或缺失响应。定时任务的异步订阅由任务组件启动，Controller 只触发任务。保留 `@ArticleSync` / `@DataSync` 所需的创建主键与成功结果形态
 - ORM 是 Spring Data R2DBC，不是 MyBatisPlus：Repository 继承 `ReactiveCrudRepository<T, ID>`；自定义 SQL 用 `@Query` + `:param`，更新加 `@Modifying`；事务用 `TransactionalOperator.transactional()` 包裹，禁止 `@Transactional`
+- **跨实体的动态 Criteria 查询不建 Repository 类**：`infra/repository` 里只放继承 `ReactiveCrudRepository` 的接口；需要 `R2dbcEntityTemplate` + `Criteria`/`Query` 动态拼条件时（参照 `CommentsServiceImpl`、`WarehouseSyncServiceImpl`），注入模板后写成对应 `service/impl` 的私有成员方法，不要新造泛型 `XxxRepository` 类或 `XxxQuerySupport`。实体属性名、排序字段这类只能运行时验证的字符串，在 `@PostConstruct` 里做启动期校验（例如数仓水位线属性），让写错时启动即失败而不是首次查询才报错
 - Controller 返回 `Mono<Result<T>>` / `Flux<Result<T>>`，Service 返回 `Mono<T>` / `Flux<T>`；禁止返回裸类型、禁止调用 `.block()`
 - 请求上下文走 Reactor Context：`UserContextWebFilter` 用 `.contextWrite()` 写入，业务用 `Mono.deferContextual(ctx -> ...)` 读取 `UserContext.getUserId(ctx)`；禁止 `ThreadLocal`、`RequestContextHolder`、`OncePerRequestFilter`、`HandlerInterceptor`
 - 并行独立 IO 用 `Mono.zip()` / `Mono.when()`，禁止 `CompletableFuture.allOf()`
