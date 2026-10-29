@@ -71,12 +71,20 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
 5. **交付前必须验证编译通过**：格式与 lint 之后跑 `./mix compile <service>`（只编译校验，不产出打包目录），未通过不得交付；该步骤与「验证命令」章节里各服务的编译命令等价，省略服务名时处理四个服务全部。`./mix compile` 与打包命令 `./mix dist build` 职责不同，不要用后者替代前者（后者会清理 dist 并产出可运行产物）。对应工具未安装时该服务返回码 2 自动跳过，不允许据此判定通过
    - **Windows 环境下所有 `./mix` 命令必须用 Git Bash 执行**，例如 PowerShell 中：`& "C:\Program Files\Git\bin\bash.exe" -c "./mix format spring"`。禁止用 PowerShell 直接 `./mix`（会被静默空跑，退出码 0 但什么都没做），也禁止用 WSL 的 `bash`（WSL 侧没有各服务工具链，会导致 gozero/fastapi 等被「工具未安装」跳过、NestJS 的 `tsc` 找不到 `node_modules/.bin` shim 而误报失败）。确认 Git Bash 安装路径不存在时改用本机服务工具链直接验证（如 `go build ./...`、`node node_modules/typescript/bin/tsc --noEmit`、`python -m compileall`），并如实说明未跑 mix
 6. 常量抽取：四个服务均有常量类，消息类字符串必须进常量类引用
-   - Spring：`common/constants/Messages.java`、`HttpCode.java`
-   - NestJS：`common/constants/`（`Messages`、`HttpCode`、`Defaults`、`ErrorIds`）
-   - FastAPI：`core/constants/`（`Messages`、`HttpCode`、`RedisKeys`、`Scripts`、`WarehouseScripts`）
-   - GoZero：`app/common/constants/`（`messages.go`、`defaults.go`）
+   - Spring：`common/constants/`（`Messages`、`Defaults`、`RedisKeys`、`Scripts`、`SqlTools`、`HttpCode`、`HeaderNames`、`MetricNames`、`RabbitQueues`、`SyncResource`、`SyncAction`、`SyncChangeType`、`TelemetryConstants`、`WarehouseResources`）
+   - NestJS：`common/constants/`（`Messages`、`HttpCode`、`Defaults`、`ErrorIds`、`RedisKey`、`SqlTools`、`MongoTools`、`Swagger`、`Telemetry`、`MetricNames`、`ExportTemplate`）
+   - FastAPI：`core/constants/`（`Messages`、`Defaults`、`HttpCode`、`ErrorCodes`、`RedisKeys`、`Scripts`、`WarehouseScripts`、`Prompts`、`Algorithm`、`Intent`、`Vector`、`AiUsers`、`SwaggerConfig`、`Telemetry`、`MetricNames`）
+   - GoZero：`app/common/constants/`（`messages.go`、`defaults.go`、`validations.go`、`httpCode.go`、`remoteCall.go`、`redisKeys.go`、`scripts.go`、`sqlTools.go`）
    - 语言支持字符串模板时（Python f-string、TS 模板串、Go fmt），动态部分用模板拼接常量，不把整句抽离
-   - **常量类内部成员顺序：函数型成员必须全部排在普通常量之前**（NestJS 为 `static readonly NAME = (...) => ...` 形式的静态属性，FastAPI 为 `@staticmethod` 方法），新增常量时先写函数成员再写普通常量；该约定由 `./mix lint` 与 `./mix format` 里的 `scripts/constants-order.py` 检查与自动整理
+   - **常量类内部成员顺序：函数型成员必须全部排在普通常量之前**（NestJS 为 `static readonly NAME = (...) => ...` 形式的静态属性，FastAPI 为 `@staticmethod` 方法），新增常量时先写函数成员再写普通常量；该约定由 `./mix lint` 里的 `scripts/constants.py` 检查并报错，`./mix format` 不做任何常量整理（Spring 与 GoZero 的常量前缀与其配套方法成对书写，只检查注释与分类，不参与顺序检查）
+   - **常量注释与分类（四个服务统一）**：每个常量与每个函数型成员都必须带能被 IDE 悬停展示的注释，注释写在成员的声明处而不是集中写一块
+     - Spring：成员上方 `/** 单行说明 */`（Javadoc），字段用单行形式，不需要 `@param` 之类的标签
+     - NestJS：成员上方 `/** 单行说明 */`（JSDoc），与类、方法的 JSDoc 同一风格
+     - GoZero：成员上方 `// 单行说明`，逐行注释，与 gofmt 对齐后的列宽无关
+     - FastAPI：普通常量写在**变量下方**的三双引号字符串里（PEP 257 属性文档串，Pylance 与 PyCharm 会作为悬停说明展示），形如 `ARTICLE_TOP10: str = "article:top10"` 下一行写 `"""文章阅读量前十榜单的缓存 key"""`；`@staticmethod` 方法仍写在函数体内第一行
+     - 成员按用途分类摆放，每个分类以单行分类注释开头：Java / NestJS / GoZero 用 `// ===== 分类名 =====`，FastAPI 用 `# ===== 分类名 =====`；分类注释与下方的成员注释之间空一行，分类内部不再拆散不相干的常量，Go 的 `const` / `var` 块把分类注释写在 `const (` 上方或块内首行均可
+     - 注释内容说明该常量的用途、取值来源或与其它服务的对齐关系（如「需与 GoZero 侧 `SEARCH_GRAPH_CANDIDATE_LIMIT` 保持一致」），不复述常量名与字面值；结尾不加中文句号（见通用规则 13）
+     - 该约定由 `./mix lint` 里的 `scripts/constants.py` 检查：缺少成员注释、成员未归入任何分类都会报错并打印文件与行号
    - 注解 / 装饰器的字符串参数**不抽常量**，直接写字面量：这类字符串只在声明处使用一次，抽到常量类后需跳转查看，反而降低可读性
      - Spring：`@Operation(summary, description)`、`@Tag`
      - NestJS：`@ApiOperation({ summary, description })`、`@ApiTags`
@@ -602,21 +610,21 @@ FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大�
 
 ```bash
 # Spring：Eclipse formatter + import 四段分组，配置在 spring/eclipse-formatter.xml
-# lint 额外执行 scripts/controller-vo.py，检查控制器是否返回匿名 Map
+# lint 额外执行 scripts/controller-vo.py（控制器是否返回匿名 Map）与 scripts/constants.py（常量注释与分类）
 ./mix format spring      # mvn spotless:apply
-./mix lint spring        # mvn spotless:check + 控制器返回类型检查
+./mix lint spring        # mvn spotless:check + 控制器返回类型检查 + 常量规范检查
 
 # GoZero：Go 配置在 gozero/app/.golangci.yml，.api 文件用 goctl api format
 ./mix format gozero      # golangci-lint fmt + goctl api format
-./mix lint gozero        # golangci-lint run + .api 格式检查（临时目录格式化后 diff）
+./mix lint gozero        # 常量规范检查 + golangci-lint run + .api 格式检查（临时目录格式化后 diff）
 
 # NestJS：配置在 nestjs/.prettierrc 与 nestjs/eslint.config.mjs
 ./mix format nestjs      # npm run format + npm run lint:fix
-./mix lint nestjs        # npm run lint + npm run format:check
+./mix lint nestjs        # npm run lint + npm run format:check + 常量规范检查
 
 # FastAPI：配置在 fastapi/pyproject.toml
 ./mix format fastapi     # ruff format . + ruff check --fix .
-./mix lint fastapi       # ruff check .
+./mix lint fastapi       # ruff check . + 常量规范检查
 ```
 
 底层脚本是 `scripts/format.sh` 与 `scripts/lint.sh`，对应工具未安装时该服务会自动跳过并提示；`gateway` 为 APISIX 配置，不参与。行尾由根目录 `.gitattributes` 统一为 LF。
