@@ -26,7 +26,7 @@ public class TestController {
      * GET /test/spring 接口，返回固定的欢迎信息，用于验证Spring服务是否正常运行
      */
     @GetMapping("/spring")
-    @Operation(summary = "Spring自己的测试", description = "输出欢迎信息")
+    @Operation(summary = "测试Spring服务", description = "输出欢迎信息")
     @ApiLog("测试Spring服务")
     public Mono<Result<String>> getHello() {
         return Mono.just(Result.success(Defaults.TEST));

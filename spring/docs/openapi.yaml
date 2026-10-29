@@ -1699,7 +1699,7 @@ paths:
     get:
       tags:
       - "测试模块"
-      summary: "Spring自己的测试"
+      summary: "测试Spring服务"
       description: "输出欢迎信息"
       operationId: "getHello"
       responses:
