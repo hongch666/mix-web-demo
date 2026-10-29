@@ -6,10 +6,16 @@ class SwaggerConfig:
     Swagger/OpenAPI 配置类
     """
 
+    # ===== 文档基础信息 =====
+
     SWAGGER_TITLE: str = "FastAPI部分的Swagger文档"
+    """文档标题"""
     SWAGGER_DESCRIPTION: str = "这是项目的FastAPI部分的Swagger文档"
+    """文档描述"""
     SWAGGER_VERSION: str = "1.0.0"
+    """接口版本号"""
     OPENAPI_VERSION: str = "3.1.0"
+    """产物的 OpenAPI 规范版本，3.1 才能表达空值响应"""
     STREAM_CHAT_RESPONSES: dict[int | str, dict[str, Any]] = {
         200: {
             "description": "SSE 流式响应：native 返回 ChatResponse，openai 返回 OpenAIStreamChunk",
@@ -25,6 +31,7 @@ class SwaggerConfig:
             },
         }
     }
+    """流式聊天接口的响应声明，200 同时挂 SSE 与两种帧结构"""
     OPENAPI_TAGS = [
         {
             "name": "AI历史模块",
@@ -71,3 +78,4 @@ class SwaggerConfig:
             "description": "定时任务相关API，包括手动触发同步ES等任务操作",
         },
     ]
+    """接口分组标签，与路由上的 tags 对应"""

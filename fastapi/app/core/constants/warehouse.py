@@ -5,16 +5,19 @@ from typing import Final
 class WarehouseScripts:
     """ClickHouse 数仓同步和汇总 SQL"""
 
+    # ===== ODS 表与水位线 =====
+
     ODS_ARTICLE_LOG_TABLE: Final[str] = "ods_article_log"
+    """文章日志的 ODS 表名"""
 
     ODS_API_LOG_TABLE: Final[str] = "ods_api_log"
+    """API 日志的 ODS 表名"""
 
-    # 水位线旧行清理：ClickHouse 没有行级 UPSERT，写入新水位前先删除同表旧行
     WATERMARK_DELETE_BY_TABLE: Final[str] = (
         "ALTER TABLE warehouse.sync_watermark DELETE WHERE table_name = %(table_name)s"
     )
+    """清理同表旧水位线的模板，ClickHouse 没有行级 UPSERT，只能先删后写"""
 
-    # Agent 数仓工具使用的固定 ADS 查询，避免模型直接拼接 ClickHouse SQL
     WAREHOUSE_AGENT_QUERIES: Final[dict[str, str]] = {
         "platform_stats": """
             SELECT total_views, total_articles, active_authors, average_views,
@@ -87,12 +90,17 @@ class WarehouseScripts:
             LIMIT %(limit)s
         """,
     }
+    """Agent 数仓工具使用的固定 ADS 查询，避免模型直接拼接 ClickHouse SQL"""
+    # ===== 数仓 Agent 数据集元信息 =====
+
     WAREHOUSE_AGENT_DATASETS: Final[tuple[str, ...]] = tuple(
         WAREHOUSE_AGENT_QUERIES.keys()
     )
+    """数仓工具支持的数据集清单"""
     WAREHOUSE_AGENT_USER_DATASETS: Final[frozenset[str]] = frozenset(
         {"user_profile", "user_daily_actions", "user_view_articles"}
     )
+    """需要按用户维度过滤的数据集清单"""
     WAREHOUSE_AGENT_DATASET_DESCRIPTIONS: Final[dict[str, str]] = {
         "platform_stats": "平台总浏览量、文章数、作者数、点赞和收藏",
         "top_articles": "阅读量最高的文章榜单",
@@ -105,6 +113,7 @@ class WarehouseScripts:
         "user_daily_actions": "指定用户的日行为汇总",
         "user_view_articles": "指定用户浏览文章及次数",
     }
+    """数仓数据集的说明文案，用于工具描述"""
     WAREHOUSE_AGENT_RESULT_COLUMNS: Final[dict[str, list[str]]] = {
         "platform_stats": [
             "total_views",
@@ -169,11 +178,16 @@ class WarehouseScripts:
         ],
         "user_view_articles": ["article_id", "article_title", "view_count"],
     }
+    """数仓数据集的输出列清单"""
 
     # ========== 数仓刷新 SQL（复杂多表聚合由 ClickHouse 执行） ==========
+
     BATCH_SIZE: Final[int] = 1000
+    """同步写入的单批行数"""
     ARTICLE_LOG_BATCH_SIZE: Final[int] = 5000
+    """文章日志同步的单批行数"""
     EPOCH_DATETIME: Final[datetime] = datetime(1970, 1, 1)
+    """增量同步起始时间的基准值"""
     REMOTE_SOURCES: Final[tuple[tuple[str, str, tuple[str, ...]], ...]] = (
         (
             "ods_articles",
@@ -210,12 +224,15 @@ class WarehouseScripts:
         ),
         ("ods_focus", "focus", ("id", "user_id", "focus_id", "created_time")),
     )
+    """远程数据源清单，每项为 ODS 表、源表与列名"""
     DATETIME_COLUMNS: Final[frozenset[str]] = frozenset(
         {"create_at", "update_at", "create_time", "update_time", "created_time"}
     )
+    """需要按时间解析的列名集合"""
     STRING_COLUMNS: Final[frozenset[str]] = frozenset(
         {"tags", "role", "img", "signature", "title", "name"}
     )
+    """按字符串处理的列名集合"""
     INTEGER_COLUMNS: Final[frozenset[str]] = frozenset(
         {
             "status",
@@ -228,7 +245,9 @@ class WarehouseScripts:
             "focus_id",
         }
     )
+    """按整数处理的列名集合"""
     FLOAT_COLUMNS: Final[frozenset[str]] = frozenset({"star"})
+    """按浮点处理的列名集合"""
 
     # 数仓增量刷新说明
     # 派生表分两类维护方式：
@@ -236,7 +255,6 @@ class WarehouseScripts:
     #   2) 快照表：维度表与全局聚合快照，无日期分区，按依赖图只重建本次源表变更影响到的表
     # 两类表的依赖关系与执行顺序见文件末尾的依赖图与 REFRESH 批次
 
-    # ODS 源表 -> 用于推导脏分区的日期字段，同步时按该字段取出行内日期，作为需要重建的月份分区
     SOURCE_DIRTY_DATE_FIELD: Final[dict[str, str]] = {
         "ods_article_log": "created_at",
         "ods_api_log": "created_at",
@@ -245,26 +263,30 @@ class WarehouseScripts:
         "ods_comments": "create_time",
         "ods_focus": "created_time",
     }
+    """各数据源判断新增数据的时间字段"""
 
-    # 分区值模板：分区键由 toYYYYMM 生成，形如 202609
     PARTITION_VALUE_TEMPLATE: Final[str] = "toString(toYYYYMM(%s)) = %(partition)s"
+    """分区值匹配条件模板"""
 
-    # 分区清理模板：表名与分区值为内部生成的常量（分区值必为纯数字），ClickHouse 的 DROP PARTITION 不接受绑定参数，与项目内其他 DDL 模板同样采用受控拼接
     PARTITION_DROP_TEMPLATE: Final[str] = "ALTER TABLE warehouse.%s DROP PARTITION %s"
+    """删除指定分区的模板"""
 
     TRUNCATE_TEMPLATE: Final[str] = "TRUNCATE TABLE warehouse.%s"
+    """清空整表的模板"""
 
     REFRESH_DIM_USER: Final[str] = """
         INSERT INTO warehouse.dim_user
         SELECT id, name, role, img, signature, create_at, update_at
         FROM warehouse.ods_user FINAL
     """
+    """刷新用户维度表的 SQL"""
     REFRESH_DIM_CATEGORY: Final[str] = """
         INSERT INTO warehouse.dim_category
         SELECT sc.id, sc.name, sc.category_id, ifNull(c.name, ''), sc.update_time
         FROM warehouse.ods_sub_category AS sc FINAL
         LEFT JOIN warehouse.ods_category AS c FINAL ON sc.category_id = c.id
     """
+    """刷新分类维度表的 SQL"""
     REFRESH_DWD_ARTICLE: Final[str] = """
         INSERT INTO warehouse.dwd_article_event
         SELECT a.id, a.title, a.user_id, a.views, a.status,
@@ -275,6 +297,7 @@ class WarehouseScripts:
         LEFT JOIN warehouse.dim_category AS d FINAL ON a.sub_category_id = d.sub_category_id
         WHERE a.status = 1
     """
+    """刷新文章明细表的 SQL"""
     REFRESH_DWD_ACTION: Final[str] = """
         INSERT INTO warehouse.dwd_user_action
         -- 主数据源：MongoDB 事件流（12 类行为，含 view 与 unlike 等负信号）
@@ -305,6 +328,7 @@ class WarehouseScripts:
         WHERE created_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
           AND toString(toYYYYMM(created_time)) = %(partition)s
     """
+    """刷新行为明细表的 SQL"""
     REFRESH_DWS_ARTICLE: Final[str] = """
         INSERT INTO warehouse.dws_article_day
         -- 行为按日聚合为主驱动（不依赖文章发布日），文章维度 LEFT JOIN 补齐
@@ -333,6 +357,7 @@ class WarehouseScripts:
         ) AS x
         LEFT JOIN warehouse.dwd_article_event AS a FINAL ON x.article_id = a.id
     """
+    """刷新文章汇总表的 SQL"""
     REFRESH_DWS_USER: Final[str] = """
         INSERT INTO warehouse.dws_user_day
         SELECT action_date, user_id,
@@ -343,6 +368,7 @@ class WarehouseScripts:
         WHERE toString(toYYYYMM(action_date)) = %(partition)s
         GROUP BY action_date, user_id
     """
+    """刷新用户汇总表的 SQL"""
     REFRESH_ADS: Final[tuple[str, ...]] = (
         """
         INSERT INTO warehouse.ads_top10_articles
@@ -375,8 +401,8 @@ class WarehouseScripts:
         FROM warehouse.dwd_article_event FINAL
         """,
     )
+    """刷新文章相关应用层表的 SQL 列表"""
 
-    # 用户分析 ADS 层刷新：日粒度行为汇总（含作为观众的行为）
     REFRESH_ADS_USER_DAY: Final[str] = """
         INSERT INTO warehouse.ads_user_day
         SELECT action_date, user_id,
@@ -387,8 +413,8 @@ class WarehouseScripts:
         WHERE toString(toYYYYMM(action_date)) = %(partition)s
         GROUP BY action_date, user_id
     """
+    """刷新用户日活应用层表的 SQL"""
 
-    # 用户分析 ADS 层刷新：用户浏览的文章分布（预聚合浏览事件，消除查询期 JOIN）
     REFRESH_ADS_USER_VIEW_ARTICLES: Final[str] = """
         INSERT INTO warehouse.ads_user_view_articles
         SELECT v.user_id, v.article_id, ifNull(a.title, ''), v.view_count, now()
@@ -401,8 +427,8 @@ class WarehouseScripts:
         ) AS v
         LEFT JOIN warehouse.dwd_article_event AS a FINAL ON v.article_id = a.id
     """
+    """刷新用户浏览文章应用层表的 SQL"""
 
-    # 用户分析 ADS 层刷新：用户累计指标（作为观众的主动行为 + 作为作者的被动数据）
     REFRESH_ADS_USER_STATS: Final[str] = """
         INSERT INTO warehouse.ads_user_stats
         SELECT
@@ -483,8 +509,8 @@ class WarehouseScripts:
             GROUP BY author_id
         ) AS f ON u.id = f.author_id
     """
+    """刷新用户画像应用层表的 SQL"""
 
-    # API 日志 DWD 层：ODS 明细补齐日期维度
     REFRESH_DWD_API_CALL: Final[str] = """
         INSERT INTO warehouse.dwd_api_call
         SELECT event_id, api_path, api_method, api_description, user_id, username,
@@ -492,8 +518,8 @@ class WarehouseScripts:
         FROM warehouse.ods_api_log FINAL
         WHERE toString(toYYYYMM(created_at)) = %(partition)s
     """
+    """刷新 API 调用明细表的 SQL"""
 
-    # API 日志 DWS 层：按日 + 接口维度轻度聚合
     REFRESH_DWS_API_DAY: Final[str] = """
         INSERT INTO warehouse.dws_api_day
         SELECT action_date, api_path, api_method, api_description,
@@ -502,8 +528,8 @@ class WarehouseScripts:
         WHERE toString(toYYYYMM(action_date)) = %(partition)s
         GROUP BY action_date, api_path, api_method, api_description
     """
+    """刷新 API 日汇总表的 SQL"""
 
-    # API 日志 ADS 层刷新：平均响应速度与调用次数（与远程聚合接口输出同构）
     REFRESH_ADS_API: Final[tuple[str, ...]] = (
         """
         INSERT INTO warehouse.ads_api_average_speed
@@ -522,8 +548,8 @@ class WarehouseScripts:
         GROUP BY api_path, api_method, api_description
         """,
     )
+    """刷新 API 分析应用层表的 SQL 列表"""
 
-    # 搜索关键词 ADS 层刷新：与 NestJS 词云接口保持相同的去重、排序语义
     REFRESH_ADS_SEARCH_KEYWORDS: Final[str] = """
         INSERT INTO warehouse.ads_search_keywords
         SELECT keyword, now()
@@ -540,10 +566,10 @@ class WarehouseScripts:
         WHERE keyword != ''
         GROUP BY keyword
     """
+    """刷新搜索关键词应用层表的 SQL"""
 
     # ========== 派生层刷新执行顺序 ==========
-    # 分区增量表：表名 -> (分区清理后需执行的 INSERT SQL, 分区日期列)
-    # 刷新流程对每个脏分区执行 DROP PARTITION + INSERT，只重建受影响月份
+
     PARTITIONED_REFRESH_STEPS: Final[dict[str, tuple[str, str]]] = {
         "dwd_user_action": (REFRESH_DWD_ACTION, "action_date"),
         "dwd_api_call": (REFRESH_DWD_API_CALL, "action_date"),
@@ -552,8 +578,8 @@ class WarehouseScripts:
         "dws_api_day": (REFRESH_DWS_API_DAY, "action_date"),
         "ads_user_day": (REFRESH_ADS_USER_DAY, "stat_date"),
     }
+    """分区刷新步骤与执行语句的对应关系"""
 
-    # 分区表的依赖顺序：上游分区表必须先于下游重建
     PARTITIONED_REFRESH_ORDER: Final[tuple[str, ...]] = (
         "dwd_user_action",
         "dwd_api_call",
@@ -562,10 +588,10 @@ class WarehouseScripts:
         "dws_api_day",
         "ads_user_day",
     )
+    """分区刷新的执行顺序"""
 
     # ========== 快照表依赖关系 ==========
-    # 快照表 -> 直接依赖的上游节点（ODS 源表或上游派生表）
-    # 源表发生变更时沿该图推导闭包，只重建真正受影响的快照表
+
     SNAPSHOT_DEPENDENCIES: Final[dict[str, frozenset[str]]] = {
         "dim_user": frozenset({"ods_user"}),
         "dim_category": frozenset({"ods_sub_category", "ods_category"}),
@@ -588,8 +614,8 @@ class WarehouseScripts:
         "ads_api_average_speed": frozenset({"dws_api_day"}),
         "ads_api_called_count": frozenset({"dws_api_day"}),
     }
+    """快照表之间的依赖关系"""
 
-    # 分区表 -> 直接依赖的上游节点，参与闭包推导（分区表本身按脏分区重建，不整表重刷）
     PARTITIONED_DEPENDENCIES: Final[dict[str, frozenset[str]]] = {
         "dwd_user_action": frozenset(
             {
@@ -606,8 +632,8 @@ class WarehouseScripts:
         "dws_api_day": frozenset({"dwd_api_call"}),
         "ads_user_day": frozenset({"dwd_user_action"}),
     }
+    """分区表之间的依赖关系"""
 
-    # 上游快照批次：不依赖分区表结果，需在分区表重建之前执行
     UPSTREAM_SNAPSHOT_STEPS: Final[tuple[tuple[str, str], ...]] = (
         ("dim_user", REFRESH_DIM_USER),
         ("dim_category", REFRESH_DIM_CATEGORY),
@@ -617,8 +643,8 @@ class WarehouseScripts:
         ("ads_monthly_publish", REFRESH_ADS[2]),
         ("ads_search_keywords", REFRESH_ADS_SEARCH_KEYWORDS),
     )
+    """上游快照的刷新步骤"""
 
-    # 下游快照批次：依赖分区表（dwd_user_action、dws_api_day）结果，需在分区表重建之后执行
     DOWNSTREAM_SNAPSHOT_STEPS: Final[tuple[tuple[str, str], ...]] = (
         ("ads_platform_stats", REFRESH_ADS[3]),
         ("ads_user_view_articles", REFRESH_ADS_USER_VIEW_ARTICLES),
@@ -626,8 +652,9 @@ class WarehouseScripts:
         ("ads_api_average_speed", REFRESH_ADS_API[0]),
         ("ads_api_called_count", REFRESH_ADS_API[1]),
     )
+    """下游快照的刷新步骤"""
 
-    # 全部快照表：表名 -> INSERT SQL，按依赖顺序排列（上游批 + 下游批）
     FULL_REFRESH_STEPS: Final[tuple[tuple[str, str], ...]] = (
         UPSTREAM_SNAPSHOT_STEPS + DOWNSTREAM_SNAPSHOT_STEPS
     )
+    """全量刷新的执行步骤"""

@@ -4,6 +4,7 @@ class Prompts:
     """
 
     # ===== Agent 提示词模板 =====
+
     @staticmethod
     def AGENT_PROMPT() -> str:
         """构造 Agent 系统提示词，规定工具选择规则、多服务数据划分与安全约束"""
@@ -121,12 +122,14 @@ class Prompts:
         """
 
     # ===== HyDE 提示词 =====
+
     @staticmethod
     def HYDE_GENERATION_PROMPT(query: str) -> str:
         """构造 HyDE 假设性文档生成的提示词"""
         return f"请用一段话回答以下问题，使用专业语言：\n\n{query}"
 
     # ===== 意图路由提示词 =====
+
     ROUTER_INTENT_PROMPT: str = """你是一个智能路由助手，需要判断用户的问题类型。
 
     分析用户问题，判断涉及哪些处理方式，可以同时命中多个领域：
@@ -195,20 +198,25 @@ class Prompts:
     可选值：database_query、article_search、log_analysis、knowledge_query、general_chat
     组合示例："分析最近的API日志并找出相关的技术文章" 返回 log_analysis,article_search
     """
+    """意图路由的系统提示词，要求模型输出结构化意图列表"""
 
     # ===== RAG 工具描述 =====
+
     RAG_TOOL_DESC: str = """检索本站文章库（向量检索站内已收录的文章）。
     适用于查找本站文章内容、教程笔记等已收录资料，支持按关键词匹配相似文章。
     不收录站外资讯，最新版本特性、新闻动态等时效性问题无法覆盖，需由 mcp_ 前缀的外部工具补充或替代。
     参数格式: 用户的问题或关键词(字符串) 示例: "如何使用Python进行数据分析"
     使用场景: 用户想查找本站相关文章、需要引用站内文章内容，或作为外部工具补充前的第一跳检索。"""
+    """站内文章检索工具的描述"""
 
     # ===== MongoDB 日志工具描述 =====
+
     MONGODB_LIST_COLLECTIONS_TOOL_DESC: str = """列出 MongoDB 日志数据库中的所有 collection 及其基本信息。
     返回每个 collection 的记录数和样本字段，帮助确认可查询的数据集合。
     参数格式: 无参数。
     使用场景: 用户需要先了解日志库里有哪些 collection 以及大致字段结构时使用。
     """
+    """列出 MongoDB 集合工具的说明"""
 
     MONGODB_QUERY_TOOL_DESC: str = """MongoDB 日志查询工具，仅用于查询日志相关 collection 的原始记录。
     参数按字段类型直接传值，不要把整个参数拼成一个字符串:
@@ -220,6 +228,7 @@ class Prompts:
     例如统计耗时超过 200 毫秒的接口要用 {"response_time": {"$gt": 200}}，不能靠放大 limit 实现。
     需要计数、分组、排序、取 TOP 这类聚合统计时改用 aggregate_mongodb 工具，本工具只返回原始样本。
     """
+    """MongoDB 日志查询工具的说明"""
 
     MONGODB_AGGREGATE_TOOL_DESC: str = """MongoDB 日志聚合查询工具，用于日志的统计、分组、排序与阈值分析。
     参数按字段类型直接传值，不要把整个参数拼成一个字符串:
@@ -240,13 +249,16 @@ class Prompts:
         * limit 只控制返回结果条数, 不是过滤条件, 不要靠放大 limit 拿全量数据
         * $group 后建议接 $project 固定输出字段, 便于阅读
     """
+    """MongoDB 日志聚合查询工具的说明"""
 
     # ===== FastAPI 本地 SQL 工具描述 =====
+
     FASTAPI_SQL_TABLE_TOOL_DESC: str = """获取 FastAPI 本地 MySQL 数据库的表结构信息。
     可查表: ai_history (AI对话历史记录)
     参数格式: 表名(字符串)，如 'ai_history'，留空则返回所有表。
     使用场景: 查询AI对话记录、对话统计分析前，先了解表结构。
     """
+    """FastAPI 数据库表结构工具的说明"""
 
     FASTAPI_SQL_QUERY_TOOL_DESC: str = """执行 FastAPI 本地 MySQL 只读 SQL 查询。
     可查表: ai_history (AI对话历史记录)
@@ -256,8 +268,10 @@ class Prompts:
     示例: query="SELECT * FROM ai_history WHERE user_id = :uid LIMIT 10", params={"uid": 123}
     使用场景: 查询AI对话历史、对话统计分析。
     """
+    """FastAPI 只读 SQL 查询工具的说明"""
 
     # ===== Spring SQL 代理工具描述 =====
+
     SPRING_SQL_TABLE_TOOL_DESC: str = """获取 Spring 服务的 MySQL 业务数据库表结构信息。
     可查表: articles(文章), user(用户), comments(评论), likes(点赞),
             collects(收藏), focus(关注), category(分类), sub_category(子分类),
@@ -265,6 +279,7 @@ class Prompts:
     参数格式: 表名(字符串)，如 'articles'，留空则返回所有表。
     使用场景: 查询文章统计、用户信息、排行榜、分类统计、互动数据前，先了解表结构。
     """
+    """Spring 业务库表结构工具的说明"""
 
     SPRING_SQL_QUERY_TOOL_DESC: str = """执行 Spring 服务的 MySQL 业务数据库只读 SQL 查询。
     可查表: articles(文章), user(用户), comments(评论), likes(点赞),
@@ -276,13 +291,16 @@ class Prompts:
     示例: query="SELECT * FROM articles WHERE user_id = :uid LIMIT 10", params={"uid": 123}
     使用场景: 查询文章统计、用户信息、排行榜、分类统计、互动数据。
     """
+    """Spring 业务库只读 SQL 查询工具的说明"""
 
     # ===== NestJS SQL 代理工具描述 =====
+
     NESTJS_SQL_TABLE_TOOL_DESC: str = """获取 NestJS 服务的 MySQL 设置数据库表结构信息。
     可查表: user_table_settings(用户表格列设置)
     参数格式: 表名(字符串)，如 'user_table_settings'，留空则返回所有表。
     使用场景: 查询用户自定义的表格列配置前，先了解表结构。
     """
+    """NestJS 日志库表结构工具的说明"""
 
     NESTJS_SQL_QUERY_TOOL_DESC: str = """执行 NestJS 服务的 MySQL 设置数据库只读 SQL 查询。
     可查表: user_table_settings(用户表格列设置)
@@ -292,13 +310,16 @@ class Prompts:
     示例: query="SELECT * FROM user_table_settings WHERE user_id = :uid LIMIT 10", params={"uid": 123}
     使用场景: 查询用户自定义的表格列配置。
     """
+    """NestJS 日志库只读 SQL 查询工具的说明"""
 
     # ===== GoZero SQL 代理工具描述 =====
+
     GOZERO_SQL_TABLE_TOOL_DESC: str = """获取 GoZero 服务的 MySQL 消息数据库表结构信息。
     可查表: chat_messages(聊天消息)
     参数格式: 表名(字符串)，如 'chat_messages'，留空则返回所有表。
     使用场景: 查询聊天记录、消息统计分析前，先了解表结构。
     """
+    """GoZero 信息库表结构工具的说明"""
 
     GOZERO_SQL_QUERY_TOOL_DESC: str = """执行 GoZero 服务的 MySQL 消息数据库只读 SQL 查询。
     可查表: chat_messages(聊天消息)
@@ -308,25 +329,31 @@ class Prompts:
     示例: query="SELECT * FROM chat_messages WHERE sender_id = :sid LIMIT 10", params={"sid": "u123"}
     使用场景: 查询聊天记录、消息统计分析。
     """
+    """GoZero 信息库只读 SQL 查询工具的说明"""
 
     # ===== Neo4j 工具描述 =====
+
     NEO4J_PREDEFINED_QUERY_TOOL_DESC: str = """执行预定义的 Neo4j 知识图谱查询。
     适用于文章详情、分类热门文章、作者文章、同分类相似文章、关注链推荐、热门文章、标签排行和个性化推荐。
     参数包含 query_name 和 params。
     优先使用预定义查询，limit 最大 50。
     """
+    """预定义知识图谱查询工具的说明"""
 
     NEO4J_CUSTOM_CYPHER_TOOL_DESC: str = """执行自定义只读 Cypher 查询。
     图谱包含 User、Article、Category、SubCategory、Tag 节点，以及 PUBLISHED_BY、BELONGS_TO、BELONGS_TO_CATEGORY、TAGGED_AS、LIKES、COLLECTS、COMMENTED_ON、FOLLOWS 关系。
     仅允许 MATCH、OPTIONAL MATCH、WITH、RETURN 或 CALL db.* 类型的只读查询。
     """
+    """自定义只读 Cypher 查询工具的说明"""
 
     # ===== ClickHouse 数仓工具描述 =====
+
     CLICKHOUSE_WAREHOUSE_LIST_TOOL_DESC: str = """列出当前可用的 ClickHouse 数仓 ADS 数据集及字段说明。
     数仓数据是由 ODS/DWD/DWS 定时汇总生成的分析数据，适合平台统计、排行榜、趋势、用户画像和 API 统计。
     使用场景：不确定应该查询哪个 ADS 数据集时先调用此工具。
     不包含原始文章明细、任意业务表或自定义 SQL；这些场景请使用对应服务的 SQL 工具。
     """
+    """列出 ClickHouse 数仓数据集工具的说明"""
 
     CLICKHOUSE_WAREHOUSE_QUERY_TOOL_DESC: str = """查询 ClickHouse 数仓中的预定义 ADS 聚合数据集。
     支持数据集：platform_stats（平台汇总）、top_articles（文章榜单）、category_stats（分类统计）、
@@ -338,3 +365,4 @@ class Prompts:
     这不是通用 SQL 工具：不要传 SQL，不要用它查询原始明细或未列出的表；普通业务查询请使用 Spring/FastAPI/NestJS/GoZero SQL 工具。
     示例：dataset="platform_stats"；dataset="top_articles", limit=10；dataset="user_profile", user_id=123。
     """
+    """ClickHouse 数仓数据集查询工具的说明"""

@@ -6,6 +6,8 @@ class Messages:
     消息类常量 — 日志消息、用户提示、RabbitMQ/Redis/Nacos 消息
     """
 
+    # ===== OpenTelemetry 配置校验 =====
+
     @staticmethod
     def OTEL_INVALID_SAMPLER_RATIO(ratio: object) -> str:
         """构造无效 OpenTelemetry 采样比例的错误消息"""
@@ -1240,6 +1242,7 @@ class Messages:
         return f"[知识图谱任务] MySQL 到 Neo4j 同步失败: {error}"
 
     # ===== 生成模块 =====
+
     @staticmethod
     def ARTICLE_AI_COMMENT_EXISTS_DELETING(article_id: int) -> str:
         """构造文章已存在 AI 评论先删除旧评论的日志消息"""
@@ -1447,6 +1450,7 @@ class Messages:
         return f"完整思考过程: {text}"
 
     # ===== AI基础服务模块 =====
+
     @staticmethod
     def BASIC_CHAT_START(message: str) -> str:
         """构造基础对话开始的日志消息"""
@@ -1632,6 +1636,7 @@ class Messages:
         return f"用户问题: {message}\n\n我已经获取到以下信息:\n{agent_result}\n\n请基于这些信息,用清晰、友好的方式回答用户的问题。"
 
     # ===== 向量同步任务模块 =====
+
     @staticmethod
     def VECTOR_ARTICLE_HASH_COMPUTED(title: str, hash_val: str) -> str:
         """构造文章内容 hash 计算完成的日志消息"""
@@ -1825,6 +1830,7 @@ class Messages:
         return f"初始化文章 hash 缓存失败: {error}"
 
     # ===== Neo4j 同步任务模块 =====
+
     @staticmethod
     def NEO4J_SYNC_CLEANUP_COMPLETE(cleanup_result: Any) -> str:
         """构造删除同步清理完成的日志消息"""
@@ -1836,6 +1842,7 @@ class Messages:
         return f"[知识图谱] 全量同步完成: {result}"
 
     # ===== RAG 结果格式化模块 =====
+
     @staticmethod
     def RAG_SEARCH_RESULT_HEADER(dedup_count: int, threshold: float) -> str:
         """构造 RAG 搜索结果头部展示文本"""
@@ -2148,178 +2155,261 @@ class Messages:
         return f"不支持的用户分析指标: {metric}"
 
     WORDCLOUD_ADS_SOURCE: str = "词云关键词使用 ClickHouse ADS 数据源"
+    """词云关键词取数来源说明，标示已切换到 ClickHouse ADS"""
 
     WORDCLOUD_ADS_EMPTY_FALLBACK_NESTJS: str = (
         "ClickHouse 词云关键词 ADS 层暂无数据，降级为 NestJS 查询"
     )
+    """ADS 无数据时回退调用 NestJS 统计词云的日志消息"""
 
     WAREHOUSE_REFRESH_SKIPPED: str = "ClickHouse 数仓无新增数据，跳过派生层刷新"
+    """数仓没有新数据时跳过刷新的日志消息"""
 
     WAREHOUSE_SCHEMA_READY: str = "ClickHouse 数仓库表检查通过（全部存在）"
+    """数仓表结构校验通过、全量窗口准备就绪的日志消息"""
 
     APILOG_ADS_SOURCE: str = "API日志分析使用 ClickHouse ADS 数据源"
+    """API 日志取数来源说明，标示已切换到 ClickHouse ADS"""
 
     APILOG_ADS_EMPTY_FALLBACK_REMOTE: str = (
         "ClickHouse API日志 ADS 层暂无数据，降级为远程查询"
     )
+    """ADS 无数据时回退远程服务取数的日志消息"""
 
     WAREHOUSE_LOCK_NOT_ACQUIRED: str = (
         "ClickHouse 数仓任务未获取到分布式锁，跳过本次执行"
     )
+    """未抢到数仓刷新分布式锁时的提示"""
 
     INTERNAL_TOKEN_SECRET_NOT_NULL: str = "内部令牌密钥未配置"
+    """内部令牌密钥未配置的错误消息"""
 
     INTERNAL_TOKEN_EXPIRATION_NOT_SET: str = "内部令牌过期时间未配置"
+    """内部令牌过期时间未配置的错误消息"""
 
     INTERNAL_TOKEN_MISSING: str = "请求头中缺少内部令牌"
+    """请求头缺少内部令牌的错误消息"""
 
     INTERNAL_TOKEN_INVALID: str = "内部令牌无效"
+    """内部令牌无效的错误消息"""
 
     INTERNAL_TOKEN_EXPIRED: str = "内部令牌已过期"
+    """内部令牌已过期的错误消息"""
 
     SERVICE_NAME_MISMATCH: str = "服务名称不匹配"
+    """内部令牌服务名与期望不一致的错误消息"""
 
     TEST_MESSAGE: str = "Hello, I am FastAPI!"
+    """服务连通性测试返回的固定消息"""
 
     STARTUP_MESSAGE: str = "FastAPI服务启动成功"
+    """服务启动成功的提示"""
 
     # ===== AI评论 =====
+
     AI_COMMENT_TASK_SUBMITTED: str = "AI生成评论任务已提交"
+    """AI 评论生成任务已提交的日志消息"""
 
     AI_COMMENT_WITH_REFERENCE_TASK_SUBMITTED: str = (
         "基于权威参考文本的AI生成评论任务已提交"
     )
+    """带权威参考文本的 AI 评论任务已提交的日志消息"""
 
     # ===== 缓存 =====
+
     CACHE_HIT_L1: str = "L1缓存命中"
+    """L1 缓存命中的日志消息"""
 
     CACHE_HIT_L2: str = "L2缓存命中"
+    """L2 缓存命中的日志消息"""
 
     CACHE_MISS: str = "L1/L2缓存均未命中，从数据源查询"
+    """两级缓存都未命中并回源查询的日志消息"""
 
     CACHE_SET_L1: str = "设置L1缓存"
+    """写入 L1 缓存的日志消息"""
 
     CACHE_SET_L2: str = "设置L2缓存"
+    """写入 L2 缓存的日志消息"""
 
     # ===== RabbitMQ =====
+
     RABBITMQ_CONNECTED_MESSAGE: str = "RabbitMQ 连接已建立"
+    """RabbitMQ 连接建立的日志消息"""
 
     RABBITMQ_CONNECTED_AUTO_RECONNECT: str = "RabbitMQ 连接成功（自动重连已启用）"
+    """RabbitMQ 连接成功并启用自动重连的日志消息"""
 
     RABBITMQ_RECONNECT_CHANNEL_RECOVERED: str = "RabbitMQ 重连成功，channel 已恢复"
+    """RabbitMQ 重连成功后 channel 恢复的日志消息"""
 
     RABBITMQ_CLIENT_NOT_INITIALIZED_MESSAGE: str = "RabbitMQ 客户端未初始化"
+    """RabbitMQ 客户端未初始化的日志消息"""
 
     RABBITMQ_CONNECTION_CLOSED_MESSAGE: str = "RabbitMQ 连接已关闭"
+    """RabbitMQ 连接已关闭的日志消息"""
 
     RABBITMQ_SEND_TO_QUEUE_SUCCESS: str = "RabbitMQ 消息已发送到队列"
+    """RabbitMQ 消息发送成功的日志消息"""
 
     RABBITMQ_SEND_TO_QUEUE_FAILURE: str = "RabbitMQ 发送消息到队列失败"
+    """RabbitMQ 消息发送失败的日志消息"""
 
     RABBITMQ_NOT_AVAILABLE: str = "日志装饰器捕获到异常，请检查日志详情"
+    """日志组件降级、跳过日志投递的日志消息"""
 
     API_RABBITMQ_LOGGING_SUCCESS: str = "API 日志已发送到队列"
+    """API 日志投递成功的日志消息"""
 
     API_RABBITMQ_LOGGING_FAILURE: str = "API 日志发送到队列失败"
+    """API 日志投递失败的日志消息"""
 
     # ===== Redis =====
+
     REDIS_INITIALIZED_MESSAGE: str = "Redis 客户端初始化成功"
+    """Redis 客户端初始化成功的日志消息"""
 
     # ===== Nacos =====
+
     NACOS_REGISTER_SUCCESS: str = "注册到 nacos 成功"
+    """注册到 Nacos 成功的日志消息"""
 
     # ===== 异常处理 =====
+
     EXCEPTION_HANDLER_MESSAGE: str = "FastAPI服务器错误"
+    """全局异常处理器兜底输出的消息"""
 
     # ===== 分布式锁 =====
+
     REDIS_LOCK_ACQUIRE_SUCCESS: str = "获取分布式锁成功"
+    """分布式锁获取成功的日志消息"""
 
     REDIS_LOCK_ACQUIRE_FAIL: str = "获取分布式锁失败"
+    """分布式锁获取失败的日志消息"""
 
     REDIS_LOCK_RELEASE_SUCCESS: str = "释放分布式锁成功"
+    """分布式锁释放成功的日志消息"""
 
     REDIS_LOCK_RELEASE_FAIL: str = "释放分布式锁失败"
+    """分布式锁释放失败的日志消息"""
 
     # ===== 调度器 =====
+
     SCHEDULER_STARTED: str = "定时任务调度器已启动"
+    """定时任务调度器启动的日志消息"""
 
     SCHEDULER_STOPPED: str = "定时任务调度器已停止"
+    """定时任务调度器停止的日志消息"""
 
     SCHEDULER_DISABLED: str = "定时任务开关已关闭，不注册本地调度任务"
+    """定时任务开关关闭、不注册本地任务的日志消息"""
 
     # ===== 服务降级 =====
+
     UNKNOWN_ERROR: str = "未知错误"
+    """未知异常的兜底文案"""
 
     CIRCUIT_BREAKER_OPEN: str = "熔断器已开启"
+    """熔断器打开时的降级文案"""
 
     AI_CHAT_NO_INSTANCE_MESSAGE: str = "找不到可用的服务实例"
+    """找不到可用服务实例的降级文案"""
 
     # ===== 向量搜索 =====
+
     VECTOR_SEARCH_SIMILARITY_REASON: str = "语义内容高度相关"
+    """向量相似度较高时返回的语义原因文案"""
 
     VECTOR_ENHANCE_DEGRADE_LOG: str = "向量增强失败"
+    """向量增强失败后降级的日志消息"""
 
     # ===== 图谱搜索 =====
+
     GRAPH_SEARCH_QUERY_SUCCESS: str = "图谱查询成功"
+    """图谱查询成功的日志消息"""
 
     GRAPH_SEARCH_QUERY_FAILURE: str = "图谱查询失败"
+    """图谱查询失败的日志消息"""
 
     # ===== Agent =====
+
     EMBEDDING_CONFIG_INCOMPLETE_MESSAGE: str = "Embedding配置不完整"
+    """Embedding 配置不完整的日志消息"""
 
     RAG_SERVICE_NOT_INITIALIZED_MESSAGE: str = "RAG服务未初始化"
+    """RAG 服务未初始化的日志消息"""
 
     NEO4J_SERVICE_UNAVAILABLE_MESSAGE: str = "Neo4j 知识图谱服务暂不可用"
+    """Neo4j 知识图谱服务暂不可用的降级文案"""
 
     NEO4J_CONFIG_NOT_INITIALIZED_MESSAGE: str = "Neo4j 连接参数未初始化"
+    """Neo4j 连接配置未初始化的日志消息"""
 
     NEO4J_QUERY_TOOLS_INITIALIZED_MESSAGE: str = "Neo4j 查询工具初始化成功"
+    """Neo4j 查询工具初始化成功的日志消息"""
 
     NEO4J_SCHEMA_INSTALLED_MESSAGE: str = "Neo4j 图谱约束与索引已按模型声明安装"
+    """Neo4j 图约束与索引安装完成的日志消息"""
 
     NEO4J_NO_RESULT_MESSAGE: str = "未找到相关知识图谱结果"
+    """未命中知识图谱结果时的文案"""
 
     NEO4J_QUERY_EMPTY_MESSAGE: str = "查询未返回结果"
+    """Neo4j 查询未返回结果的日志消息"""
 
     NEO4J_READ_ONLY_LIMIT_MESSAGE: str = (
         "安全限制：Neo4j 工具只允许执行单条只读 Cypher 查询"
     )
+    """Neo4j 只读查询限制的提示文案"""
 
     UPDATE_ANALYZE_CACHES_ANALYZE_SERVICE_NONE_MESSAGE: str = (
         "update_analyze_caches: analyze_service 为 None，跳过缓存更新"
     )
+    """分析服务缺失时缓存刷新任务输出的提示"""
 
     UPDATE_ANALYZE_CACHES_START_MESSAGE: str = "开始更新分析接口缓存"
+    """分析缓存刷新开始的日志消息"""
 
     UPDATE_ANALYZE_CACHES_TOP10_START_MESSAGE: str = "更新前10篇文章缓存..."
+    """前十文章缓存刷新开始的日志消息"""
 
     UPDATE_ANALYZE_CACHES_TOP10_SUCCESS_MESSAGE: str = "前10篇文章缓存更新成功"
+    """前十文章缓存刷新成功的日志消息"""
 
     UPDATE_ANALYZE_CACHES_WORDCLOUD_START_MESSAGE: str = "更新词云图缓存..."
+    """词云生成开始的日志消息"""
 
     UPDATE_ANALYZE_CACHES_WORDCLOUD_SUCCESS_MESSAGE: str = "词云图缓存更新成功"
+    """词云生成成功的日志消息"""
 
     UPDATE_ANALYZE_CACHES_STATISTICS_START_MESSAGE: str = "更新文章统计信息缓存..."
+    """平台统计信息刷新开始的日志消息"""
 
     UPDATE_ANALYZE_CACHES_STATISTICS_SUCCESS_MESSAGE: str = "文章统计信息缓存更新成功"
+    """平台统计信息刷新成功的日志消息"""
 
     UPDATE_ANALYZE_CACHES_CATEGORY_STATISTICS_START_MESSAGE: str = (
         "更新按分类统计文章数量缓存..."
     )
+    """分类统计缓存刷新开始的日志消息"""
 
     UPDATE_ANALYZE_CACHES_CATEGORY_STATISTICS_SUCCESS_MESSAGE: str = (
         "按分类统计文章数量缓存更新成功"
     )
+    """分类统计缓存刷新成功的日志消息"""
 
     UPDATE_ANALYZE_CACHES_MONTHLY_STATISTICS_START_MESSAGE: str = (
         "更新月度文章发布统计缓存..."
     )
+    """月度统计缓存刷新开始的日志消息"""
 
     UPDATE_ANALYZE_CACHES_MONTHLY_STATISTICS_SUCCESS_MESSAGE: str = (
         "月度文章发布统计缓存更新成功"
     )
+    """月度统计缓存刷新成功的日志消息"""
 
     UPDATE_ANALYZE_CACHES_COMPLETE_MESSAGE: str = "分析接口缓存更新完成"
+    """分析缓存刷新全部完成的日志消息"""
 
     AGENT_PARSING_ERROR_HINT: str = (
         "上一轮回复格式不正确，请严格按以下格式输出，并且不要输出多余内容：\n"
@@ -2329,46 +2419,64 @@ class Messages:
         "如果已经有最终答案，再输出：\n"
         "Final Answer: 最终回答"
     )
+    """回复内容解析失败时追加给用户的提示"""
 
     AGENT_PROCESSING_MESSAGE: str = (
         "使用Agent处理，可同时调用SQL、RAG和Neo4j知识图谱工具"
     )
+    """Agent 处理中占位提示"""
 
     AGENT_START_PROCESSING_MESSAGE: str = "Agent开始处理..."
+    """Agent 开始处理的日志消息"""
 
     AGENT_START_STREAMING_MESSAGE: str = "Agent思考完成,开始流式输出优化后的答案"
+    """Agent 由思考切换到流式输出的日志消息"""
 
     FINAL_STREAM_EMPTY_FALLBACK: str = "最终流式回答为空，使用Agent结果兜底"
+    """流式回复为空时使用兜底文案的日志消息"""
 
     INTENT_ROUTER_STRUCTURED_OUTPUT_READY: str = (
         "意图路由器初始化成功：使用 with_structured_output 结构化模式"
     )
+    """意图路由结构化输出就绪的日志消息"""
 
     AIO_PKA_EVENT_LOOP_ERROR: str = "检测到运行中的事件循环，跳过 RabbitMQ 同步关闭"
+    """aio-pika 在事件循环中同步关闭的告警消息"""
 
     DATABASE_TABLE_INITIALIZATION_SUCCESS: str = "数据库表结构初始化完成"
+    """数据库表结构初始化完成的日志消息"""
 
     WAREHOUSE_REFRESH_SUCCESS: str = "ClickHouse 数仓同步与汇总刷新完成"
+    """ClickHouse 数仓同步与刷新成功的日志消息"""
 
     SCHEDULER_WAREHOUSE_SYNC_MESSAGE: str = "已启动 ClickHouse 数仓同步任务"
+    """调度器触发数仓同步的日志消息"""
 
     STATISTICS_CLICKHOUSE_SOURCE: str = "文章统计使用 ClickHouse ADS 数据源"
+    """平台统计使用 ClickHouse ADS 数据源的说明"""
 
     ARTICLE_STATISTICS_SERVICE_NAME: str = "get_article_statistics_service"
+    """文章统计服务的注册名，用于跨服务定位"""
 
     CLICKHOUSE_PLATFORM_STATS_EMPTY: str = "ClickHouse 平台统计表暂无数据"
+    """ClickHouse 平台统计表为空的日志消息"""
 
     CLICKHOUSE_USER_PROFILE_EMPTY: str = "ClickHouse 用户画像表暂无该用户数据"
+    """ClickHouse 用户画像为空时的降级提示"""
 
     APILOG_ASYNC_ERROR: str = "apiLog 装饰器只支持异步函数"
+    """apiLog 装饰器被同步调用时的错误消息"""
 
     ARTICLE_MAPPER_METHOD_MISSING_ERROR: str = "ArticleMapper 未提供获取文章的方法"
+    """ArticleMapper 缺少取数方法时的错误消息"""
 
     ARTICLE_NOT_EXISTS_ERROR: str = "文章不存在"
+    """文章不存在时的错误消息"""
 
     ASYNC_SYNC_CALL_IN_EVENT_LOOP_ERROR: str = (
         "同步方法不能在运行中的事件循环里直接调用"
     )
+    """在事件循环中调用同步接口的错误消息"""
 
     BLOCKED_KEYWORDS: list[str] = [
         "CREATE",
@@ -2381,34 +2489,45 @@ class Messages:
         "LOAD CSV",
         "CALL APOC",
     ]
+    """词云生成时过滤的无意义停用词"""
 
     CATEGORY_NO_AUTHORITATIVE_REFERENCE_TEXT_ERROR: str = (
         "该分类暂无权威参考文本，请根据您的专业知识进行评价。"
     )
+    """分类缺少权威参考文本时的错误消息"""
 
     CATEGORY_STATISTICS_CACHE_FETCH_FAILED: str = (
         "get_category_article_count_service: [缓存未命中] 开始查询数据源"
     )
+    """分类统计缓存读取失败的日志消息"""
 
     CATEGORY_STATISTICS_CLICKHOUSE_GET: str = "从ClickHouse获取分类文章统计"
+    """从 ClickHouse 取分类统计的日志消息"""
 
     CATEGORY_STATISTICS_CLICKHOUSE_QUERY: str = "从ClickHouse查询分类文章统计数据"
+    """从 ClickHouse 查询分类统计结果的日志消息"""
 
     CATEGORY_STATISTICS_DB_SOURCE: str = (
         "get_category_article_count_service: 使用 DB 数据源"
     )
+    """分类统计回源数据库的说明"""
 
     CHAT_SYSTEM_MESSAGE: str = (
         "你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"
     )
+    """对话使用的系统提示词"""
 
     CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE: str = "ClickHouse缓存未命中，将查询数据源"
+    """ClickHouse 缓存未命中、回源查询的日志消息"""
 
     COLLECTION_NAME_VALIDATION_ERROR: str = "错误: 必须提供 collection_name 参数"
+    """MongoDB 工具缺少 collection_name 的校验消息"""
 
     CONCURRENT_CHAT_MESSAGE_SUCCESS: str = "权威文章生成完成，所有大模型总结已完成"
+    """权限校验完成后并发执行对话与总结的日志消息"""
 
     CONCURRENT_SUMMARY_MESSAGE: str = "开始并发调用三个大模型进行总结"
+    """并发触发模型总结的日志消息"""
 
     DANGEROUS_SQL_REQUEST_PATTERNS: list[str] = [
         r"\b(update|delete|insert|drop|alter|truncate|create|replace|merge)\b",
@@ -2418,18 +2537,25 @@ class Messages:
         r"(删除|清空|重置).*(数据|记录|表|文章|用户|评论)",
         r"(新增|插入|写入|创建).*(数据|记录|表|文章|用户|评论)",
     ]
+    """识别请求文本中危险 SQL 意图的正则"""
 
     CLAUDE_CALL_FAILED_ERROR: str = "Claude调用失败"
+    """Claude 调用失败的错误消息"""
 
     DB_CACHE_MISS_QUERY_DB_MESSAGE: str = "[缓存] L1/L2 都未命中，需要查询 DB"
+    """两级缓存未命中、回源数据库的日志消息"""
 
     DEEPSEEK_CALL_FAILED_ERROR: str = "DeepSeek调用失败"
+    """DeepSeek 调用失败的错误消息"""
 
     GLM_AGENT_INITIALIZATION_SUCCESS: str = "GLM Agent服务初始化完成"
+    """GLM Agent 服务初始化成功的日志消息"""
 
     GLM_CALL_FAILED_ERROR: str = "GLM调用失败"
+    """GLM 调用失败的错误消息"""
 
     GLM_CONFIGURATION_INCOMPLETE_ERROR: str = "GLM配置不完整，客户端未初始化"
+    """GLM 配置不完整、客户端未初始化的错误消息"""
 
     DEFAULT_KEYWORDS: list[str] = [
         "我的",
@@ -2445,8 +2571,10 @@ class Messages:
         "互动",
         "关注",
     ]
+    """词云与关键词提取使用的默认关键词列表"""
 
     # ===== 参考资料提取器 =====
+
     KEY_POINT_KEYWORDS: list[str] = [
         "定义",
         "概念",
@@ -2459,358 +2587,525 @@ class Messages:
         "案例",
         "注意事项",
     ]
+    """识别文章要点使用的关键词列表"""
 
-    # 参考内容提取步骤描述
     REFERENCE_STEP_DOWNLOAD_PDF: str = "下载PDF"
+    """参考资料提取步骤：下载 PDF"""
     REFERENCE_STEP_EXTRACT_PDF: str = "PDF内容提取"
+    """参考资料提取步骤：解析 PDF 文本"""
     REFERENCE_STEP_EXTRACT_LINK: str = "提取链接内容"
+    """参考资料提取步骤：抓取链接"""
     REFERENCE_STEP_EXTRACT_LINK_CONTENT: str = "链接内容提取"
+    """参考资料提取步骤：清理链接正文"""
 
-    # 参考内容提取错误描述
     REFERENCE_ERR_INIT_SPLITTER: str = "初始化文本分割器失败"
+    """文本分割器初始化失败的错误消息"""
     REFERENCE_ERR_EXTRACT_PDF: str = "PDF内容提取失败"
+    """PDF 文本提取失败的错误消息"""
     REFERENCE_ERR_EXTRACT_LINK: str = "链接内容提取失败"
+    """链接抓取失败的错误消息"""
     REFERENCE_ERR_EXTRACT_CONTENT: str = "参考内容提取失败"
+    """参考正文提取失败的错误消息"""
     REFERENCE_ERR_SPLIT_TEXT: str = "文本分割失败"
+    """文本分割失败的错误消息"""
     REFERENCE_ERR_AI_SUMMARIZE_FALLBACK: str = "AI总结失败，使用原始内容"
+    """AI 总结失败改用原始正文的错误消息"""
 
     ERROR_AI_CHAT_NO_INSTANCE: str = "AI_CHAT_NO_INSTANCE"
+    """错误标识：没有可用的 AI 对话实例"""
 
     ERROR_ARTICLE_NOT_FOUND: str = "ARTICLE_NOT_FOUND"
+    """错误标识：文章不存在"""
 
     ERROR_COLLECTION_NAME_REQUIRED: str = "COLLECTION_NAME_REQUIRED"
+    """错误标识：缺少 collection_name"""
 
     ERROR_GLM_CALL_FAILED: str = "GLM_CALL_FAILED"
+    """错误标识：GLM 调用失败"""
 
     ERROR_GLM_NOT_CONFIGURED: str = "GLM_NOT_CONFIGURED"
+    """错误标识：GLM 未配置"""
 
     ERROR_FASTAPI_SERVER_ERROR: str = "FASTAPI_SERVER_ERROR"
+    """错误标识：FastAPI 服务内部错误"""
 
     ERROR_GEMINI_CALL_FAILED: str = "GEMINI_CALL_FAILED"
+    """错误标识：Gemini 调用失败"""
 
     ERROR_GEMINI_NOT_CONFIGURED: str = "GEMINI_NOT_CONFIGURED"
+    """错误标识：Gemini 未配置"""
 
     ERROR_GEMINI_QUOTA_EXCEEDED: str = "GEMINI_QUOTA_EXCEEDED"
+    """错误标识：Gemini 配额用尽"""
 
     ERROR_GEMINI_RATE_LIMIT_EXCEEDED: str = "GEMINI_RATE_LIMIT_EXCEEDED"
+    """错误标识：Gemini 调用频率超限"""
 
     ERROR_GPT_CALL_FAILED: str = "GPT_CALL_FAILED"
+    """错误标识：GPT 调用失败"""
 
     ERROR_GPT_NOT_CONFIGURED: str = "GPT_NOT_CONFIGURED"
+    """错误标识：GPT 未配置"""
 
     ERROR_GPT_RATE_LIMIT_EXCEEDED: str = "GPT_RATE_LIMIT_EXCEEDED"
+    """错误标识：GPT 调用频率超限"""
 
     ERROR_INITIALIZATION_ERROR: str = "INITIALIZATION_ERROR"
+    """错误标识：初始化失败"""
 
     ERROR_INTENT_ROUTER_NO_PERMISSION: str = "INTENT_ROUTER_NO_PERMISSION"
+    """错误标识：意图路由无权限"""
 
     ERROR_INTERNAL_TOKEN_EXPIRED: str = "INTERNAL_TOKEN_EXPIRED"
+    """错误标识：内部令牌已过期"""
 
     ERROR_INTERNAL_TOKEN_INVALID: str = "INTERNAL_TOKEN_INVALID"
+    """错误标识：内部令牌无效"""
 
     ERROR_INTERNAL_TOKEN_MISSING: str = "INTERNAL_TOKEN_MISSING"
+    """错误标识：缺少内部令牌"""
 
     ERROR_INTERNAL_TOKEN_SECRET_NOT_NULL: str = "INTERNAL_TOKEN_SECRET_NOT_NULL"
+    """错误标识：内部令牌密钥未配置"""
 
     ERROR_INTERNAL_TOKEN_EXPIRATION_NOT_SET: str = "INTERNAL_TOKEN_EXPIRATION_NOT_SET"
+    """错误标识：内部令牌过期时间未配置"""
 
     ERROR_INTERNAL_TOKEN_SERVICE_MISMATCH: str = "INTERNAL_TOKEN_SERVICE_MISMATCH"
+    """错误标识：内部令牌服务名不匹配"""
 
     ERROR_NO_ADMIN_PERMISSION: str = "NO_ADMIN_PERMISSION"
+    """错误标识：缺少管理员权限"""
 
     ERROR_NO_AVAILABLE_SERVICE_INSTANCE: str = "NO_AVAILABLE_SERVICE_INSTANCE"
+    """错误标识：没有可用的服务实例"""
 
     ERROR_NO_RELEVANT_ARTICLES: str = "NO_RELEVANT_ARTICLES"
+    """错误标识：没有相关文章"""
 
     ERROR_OSS_CLIENT_NOT_INITIALIZED: str = "OSS_CLIENT_NOT_INITIALIZED"
+    """错误标识：OSS 客户端未初始化"""
 
     ERROR_OSS_PUT_TIMEOUT: str = "OSS_PUT_TIMEOUT"
+    """错误标识：OSS 上传超时"""
 
     ERROR_PARAM_PARSE_FAILED: str = "PARAM_PARSE_FAILED"
+    """错误标识：参数解析失败"""
 
     ERROR_PERMISSION_CHECK_FAILED: str = "PERMISSION_CHECK_FAILED"
+    """错误标识：权限校验失败"""
 
     ERROR_RABBITMQ_CLIENT_NOT_INITIALIZED: str = "RABBITMQ_CLIENT_NOT_INITIALIZED"
+    """错误标识：RabbitMQ 客户端未初始化"""
 
     ERROR_RABBITMQ_CONFIG_NOT_FOUND: str = "RABBITMQ_CONFIG_NOT_FOUND"
+    """错误标识：RabbitMQ 配置缺失"""
 
     ERROR_RABBITMQ_NOT_CONNECTED: str = "RABBITMQ_NOT_CONNECTED"
+    """错误标识：RabbitMQ 未连接"""
 
     ERROR_REQUEST_TIMEOUT: str = "REQUEST_TIMEOUT"
+    """错误标识：请求超时"""
 
     ERROR_SERVICE_CALL_FAILED: str = "SERVICE_CALL_FAILED"
+    """错误标识：服务调用失败"""
 
     ERROR_SERVICE_DISCOVERY_FAILED: str = "SERVICE_DISCOVERY_FAILED"
+    """错误标识：服务发现失败"""
 
     ERROR_USER_NOT_FOUND: str = "USER_NOT_FOUND"
+    """错误标识：用户不存在"""
 
     ERROR_USER_NOT_LOGIN: str = "USER_NOT_LOGIN"
+    """错误标识：用户未登录"""
 
     ERROR_USER_NO_ADMIN_PERMISSION: str = "USER_NO_ADMIN_PERMISSION"
+    """错误标识：用户不是管理员"""
 
     ERROR_USER_SCOPE_TARGET_MISSING: str = "USER_SCOPE_TARGET_MISSING"
+    """错误标识：缺少目标用户 ID"""
 
     ERROR_USER_SCOPE_FORBIDDEN: str = "USER_SCOPE_FORBIDDEN"
+    """错误标识：越权访问其他用户数据"""
 
     EXPORT_ARTICLES_EXCEL_FILENAME: str = "articles.xlsx"
+    """文章导出 Excel 的默认文件名"""
 
     EXPORT_ARTICLES_EXCEL_TIP: str = "文章表（本表导出自系统，包含所有文章数据）"
+    """文章导出 Excel 的提示文案"""
 
     FIRST_TIME_SYNC_MESSAGE: str = "首次同步向量库，将同步所有已发布文章"
+    """首次同步、后续改为增量同步的提示"""
 
     GEMINI_AGENT_INITIALIZATION_SUCCESS: str = "Gemini Agent服务初始化完成"
+    """Gemini Agent 服务初始化成功的日志消息"""
 
     GEMINI_CALL_FAILED_ERROR: str = "Gemini调用失败"
+    """Gemini 调用失败的错误消息"""
 
     GEMINI_CONFIGURATION_INCOMPLETE_ERROR: str = "Gemini配置不完整，客户端未初始化"
+    """Gemini 配置不完整、客户端未初始化的错误消息"""
 
     GEMINI_INVALID_API_KEY_ERROR: str = "API密钥无效。请检查Gemini API密钥配置。"
+    """Gemini API 密钥无效的错误消息"""
 
     GEMINI_QUOTA_EXCEEDED_ERROR: str = "Gemini API 配额已用完。请稍后重试。"
+    """Gemini 接口配额用尽返回给用户的文案"""
 
     GEMINI_RATE_LIMIT_EXCEEDED_ERROR: str = "Gemini API调用频率超限。请稍后重试。"
+    """Gemini 接口频率超限返回给用户的文案"""
 
     GENERIC_CHAT_MESSAGE: str = (
         "你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"
     )
+    """不带工具的通用对话提示词"""
 
     GET_TOP_FAIL: str = "获取文章浏览分布失败"
+    """获取前十文章分布失败的日志消息"""
 
     GPT_AGENT_INITIALIZATION_SUCCESS: str = "GPT Agent服务初始化完成"
+    """GPT Agent 服务初始化成功的日志消息"""
 
     GPT_CALL_FAILED_ERROR: str = "GPT调用失败"
+    """GPT 调用失败的错误消息"""
 
     GPT_CONFIGURATION_INCOMPLETE_ERROR: str = "GPT配置不完整，客户端未初始化"
+    """GPT 配置不完整、客户端未初始化的错误消息"""
 
     GPT_INVALID_API_KEY_ERROR: str = "API密钥无效。请检查GPT API密钥配置。"
+    """GPT API 密钥无效的错误消息"""
 
     GPT_QUOTA_EXCEEDED_ERROR: str = "GPT API 配额已用完。请稍后重试。"
+    """GPT 接口配额用尽返回给用户的文案"""
 
     GPT_RATE_LIMIT_EXCEEDED_ERROR: str = "GPT API调用频率超限。请稍后重试。"
+    """GPT 接口频率超限返回给用户的文案"""
 
     QWEN_CALL_FAILED_ERROR: str = "Qwen调用失败"
+    """Qwen 调用失败的错误消息"""
 
     GRAPH_SEARCH_PATH_CANDIDATE: str = "Article-TAGGED_AS-Tag-TAGGED_AS-Article"
+    """图谱召回路径说明：标签共现"""
 
     GRAPH_SEARCH_PATH_FOLLOWED: str = "User-FOLLOWS-User-PUBLISHED_BY-Article"
+    """图谱召回路径说明：关注作者"""
 
     GRAPH_SEARCH_PATH_INTEREST: str = "User-LIKES-Article-TAGGED_AS-Tag"
+    """图谱召回路径说明：兴趣标签"""
 
     # ===== 精确同步（变更事件驱动） =====
+
     SYNC_VECTOR_EXACT_STARTED: str = "向量精确同步开始"
+    """向量精确同步开始的日志消息"""
     SYNC_VECTOR_EXACT_COMPLETED: str = "向量精确同步完成"
+    """向量精确同步完成的日志消息"""
     SYNC_VECTOR_EXACT_DELETED: str = "向量精确同步删除完成"
+    """向量精确同步删除完成的日志消息"""
     SYNC_NEO4J_EXACT_COMPLETED: str = "Neo4j 精确同步完成"
+    """Neo4j 精确同步完成的日志消息"""
     SYNC_NEO4J_EXACT_SKIPPED: str = "Neo4j 精确同步跳过未知资源"
+    """Neo4j 精确同步跳过未知来源的日志消息"""
 
     GRAPH_SEARCH_PATH_KEYWORD: str = "Article-TAGGED_AS-Tag"
+    """图谱召回路径说明：关键词命中标签"""
 
     GRAPH_SEARCH_PATH_SUB_CATEGORY: str = (
         "User-LIKES|COLLECTS|COMMENTED_ON-Article-BELONGS_TO-SubCategory"
     )
+    """图谱召回路径说明：同一子分类"""
 
     GRAPH_SEARCH_REASON_CANDIDATE: str = "与当前搜索结果中的多篇文章标签相关"
+    """语义原因文案：与候选文章标签重合"""
 
     GRAPH_SEARCH_REASON_FOLLOWED: str = "来自你关注的作者"
+    """语义原因文案：来自已关注作者"""
 
     GRAPH_SEARCH_REASON_INTEREST: str = "命中兴趣标签"
+    """语义原因文案：命中兴趣标签"""
 
     GRAPH_SEARCH_REASON_KEYWORD: str = "命中图谱标签"
+    """语义原因文案：命中图谱标签"""
 
     GRAPH_SEARCH_REASON_SUB_CATEGORY: str = "属于你常看的分类"
+    """语义原因文案：属于常读分类"""
 
     HTTP_CLIENT_INTERNAL_POOL_CLOSED: str = "httpx 内网连接池已关闭"
+    """内网 httpx 连接池关闭的日志消息"""
 
     HTTP_CLIENT_INTERNAL_POOL_INITIALIZED: str = "httpx 内网连接池已初始化"
+    """内网 httpx 连接池初始化的日志消息"""
 
     HTTP_CLIENT_POOL_CLOSED: str = "httpx 共享连接池已关闭"
+    """外部抓取 httpx 连接池关闭的日志消息"""
 
     HTTP_CLIENT_POOL_INITIALIZED: str = "httpx 共享连接池已初始化"
+    """外部抓取 httpx 连接池初始化的日志消息"""
 
     INITIALIZATION_ERROR: str = "聊天服务未配置或初始化失败"
+    """依赖未配置导致初始化失败的提示"""
 
     INIT_IP: str = "127.0.0.1"
+    """服务启动时探测本机 IP 的兜底值"""
 
     INTENT_ROUTER_NO_PERMISSION_ERROR: str = "权限拒绝：此功能需要登录后才能使用。请先登录您的账户。您可以继续使用文章搜索和闲聊功能。"
+    """意图路由拒绝权限后返回给用户的文案"""
 
     KEYWORDS_EMPTY: str = "关键词字典为空，无法生成词云图"
+    """关键词为空、无法生成词云的日志消息"""
 
     L1_CACHE_CLEARED: str = "[L1缓存] 已清除"
+    """L1 缓存清空的日志消息"""
 
     L1_CACHE_TTL_EXPIRED: str = "[L1缓存] TTL过期"
+    """L1 缓存过期的日志消息"""
 
     L1_CACHE_UPDATED: str = "[L1缓存] 已更新"
+    """L1 缓存更新的日志消息"""
 
     L2_CACHE_CLEARED: str = "[L2缓存] Redis 已清除"
+    """L2 缓存清空的日志消息"""
 
     L2_CACHE_HIT: str = "[L2缓存] 命中 Redis"
+    """L2 命中 Redis 的日志消息"""
 
     L2_CACHE_MISS: str = "[L2缓存] Redis 未命中"
+    """L2 未命中 Redis 的日志消息"""
 
     L2_CACHE_UNAVAILABLE: str = "[L2缓存] Redis 不可用"
+    """Redis 不可用时的降级日志消息"""
 
     MESSAGE_RETRIEVAL_ERROR: str = "无法获取结果"
+    """无法获取历史消息的错误消息"""
 
     MONGODB_AGGREGATE_TOOL_NAME: str = "aggregate_mongodb"
+    """MongoDB 聚合工具对外的工具名"""
 
     MONGODB_COLLECTION_NAME_INPUT_DESC: str = "collection 的名称"
+    """MongoDB 工具 collection_name 参数的说明"""
 
     MONGODB_FILTER_INPUT_DESC: str = "MongoDB 查询条件"
+    """MongoDB 工具查询条件参数的说明"""
 
     MONGODB_LIST_COLLECTIONS_TOOL_NAME: str = "list_mongodb_collections"
+    """列出 MongoDB 集合的工具名"""
 
     MONGODB_PIPELINE_EMPTY_ERROR: str = "聚合管道不能为空，请至少提供一个聚合阶段"
+    """聚合管道为空的错误消息"""
 
     MONGODB_PIPELINE_INPUT_DESC: str = (
         "聚合管道，按顺序执行的阶段数组，每项只包含一个阶段操作符"
     )
+    """MongoDB 聚合管道参数的说明"""
 
     MONGODB_QUERY_TOOL_NAME: str = "query_mongodb"
+    """MongoDB 查询工具对外的工具名"""
 
     MONTHLY_STATISTICS_CACHE_FETCH_FAILED: str = (
         "get_monthly_publish_count_service: [缓存未命中] 开始查询数据源"
     )
+    """月度发布统计缓存读取失败的日志消息"""
 
     MONTHLY_STATISTICS_CLICKHOUSE_GET: str = "从ClickHouse获取月度发布统计"
+    """从 ClickHouse 取月度发布统计的日志消息"""
 
     MONTHLY_STATISTICS_CLICKHOUSE_QUERY: str = "从ClickHouse查询月度发布统计数据"
+    """从 ClickHouse 查询月度发布统计结果的日志消息"""
 
     MONTHLY_STATISTICS_DB_SOURCE: str = (
         "get_monthly_publish_count_service: 使用 DB 数据源"
     )
+    """月度发布统计回源数据库的说明"""
 
     NACOS_INITIALIZATION_FAILED: str = "nacos 初始化不可用"
+    """Nacos 初始化失败的日志消息"""
 
     NEO4J_CLEANUP_DELETED_DATA_START_MESSAGE: str = (
         "[知识图谱] 开始清理 Neo4j 中已删除的 MySQL 数据"
     )
+    """Neo4j 清理失效数据的日志消息"""
 
     NEO4J_CLEANUP_LABEL_ARTICLE: str = "失效文章节点"
+    """清理统计标签：失效文章节点"""
 
     NEO4J_CLEANUP_LABEL_ARTICLE_SUB_CATEGORY_RELATION: str = "失效文章子分类关系"
+    """清理统计标签：失效文章与子分类关系"""
 
     NEO4J_CLEANUP_LABEL_CATEGORY: str = "失效主分类节点"
+    """清理统计标签：失效分类节点"""
 
     NEO4J_CLEANUP_LABEL_COLLECT_RELATION: str = "失效收藏关系"
+    """清理统计标签：失效收藏关系"""
 
     NEO4J_CLEANUP_LABEL_COMMENT_RELATION: str = "失效评论关系"
+    """清理统计标签：失效评论关系"""
 
     NEO4J_CLEANUP_LABEL_FOLLOW_RELATION: str = "失效关注关系"
+    """清理统计标签：失效关注关系"""
 
     NEO4J_CLEANUP_LABEL_LIKE_RELATION: str = "失效点赞关系"
+    """清理统计标签：失效点赞关系"""
 
     NEO4J_CLEANUP_LABEL_PUBLISHED_BY_RELATION: str = "失效文章作者关系"
+    """清理统计标签：失效发布关系"""
 
     NEO4J_CLEANUP_LABEL_SUB_CATEGORY: str = "失效子分类节点"
+    """清理统计标签：失效子分类节点"""
 
     NEO4J_CLEANUP_LABEL_SUB_CATEGORY_CATEGORY_RELATION: str = "失效子分类主分类关系"
+    """清理统计标签：失效子分类与分类关系"""
 
     NEO4J_CLEANUP_LABEL_TAG: str = "失效标签节点"
+    """清理统计标签：失效标签节点"""
 
     NEO4J_CLEANUP_LABEL_TAGGED_AS_RELATION: str = "失效文章标签关系"
+    """清理统计标签：失效文章标签关系"""
 
     NEO4J_CLEANUP_LABEL_USER: str = "失效用户节点"
+    """清理统计标签：失效用户节点"""
 
     NEO4J_CURRENT_LOOP_DRIVER_CLOSED_MESSAGE: str = "Neo4j 当前事件循环驱动已关闭"
+    """当前事件循环下 Neo4j 驱动已关闭的日志消息"""
 
     NEO4J_CUSTOM_CYPHER_INPUT_DESC: str = "只读 Cypher 查询语句"
+    """自定义 Cypher 工具查询语句参数的说明"""
 
     NEO4J_CUSTOM_CYPHER_TOOL_NAME: str = "execute_custom_cypher_query"
+    """自定义 Cypher 查询的工具名"""
 
     NEO4J_DRIVER_CLOSED_MESSAGE: str = "Neo4j 驱动已关闭"
+    """Neo4j 驱动已关闭的日志消息"""
 
     NEO4J_DRIVER_NOT_INITIALIZED_MESSAGE: str = "Neo4j 驱动未初始化，无法创建会话"
+    """Neo4j 驱动未初始化、无法创建会话的日志消息"""
 
     NEO4J_GRAPH_COUNT_CYPHER: str = "MATCH (n) RETURN count(n) AS total LIMIT 1"
+    """统计图谱节点总数的 Cypher 语句"""
 
     NEO4J_GRAPH_EMPTY_FULL_SYNC_MESSAGE: str = "Neo4j 当前无图谱数据，切换为全量同步"
+    """图谱为空时切换为全量同步的日志消息"""
 
     NEO4J_INCREMENTAL_SYNC_START_MESSAGE: str = "[知识图谱] 开始增量同步 MySQL 到 Neo4j"
+    """增量同步 MySQL 到 Neo4j 开始的日志消息"""
 
     NEO4J_LABEL_ARTICLE: str = "文章"
+    """图谱中文名：文章"""
 
     NEO4J_LABEL_ARTICLE_AUTHOR_RELATION: str = "文章-作者关系"
+    """图谱中文名：文章与作者关系"""
 
     NEO4J_LABEL_ARTICLE_SUB_CATEGORY_RELATION: str = "文章-子分类关系"
+    """图谱中文名：文章与子分类关系"""
 
     NEO4J_LABEL_ARTICLE_TAG_RELATION: str = "文章-标签关系"
+    """图谱中文名：文章与标签关系"""
 
     NEO4J_LABEL_CATEGORY: str = "主分类"
+    """图谱中文名：分类"""
 
     NEO4J_LABEL_COLLECT_RELATION: str = "收藏关系"
+    """图谱中文名：收藏关系"""
 
     NEO4J_LABEL_COMMENT_RELATION: str = "评论关系"
+    """图谱中文名：评论关系"""
 
     NEO4J_LABEL_FOLLOW_RELATION: str = "关注关系"
+    """图谱中文名：关注关系"""
 
     NEO4J_LABEL_LIKE_RELATION: str = "点赞关系"
+    """图谱中文名：点赞关系"""
 
     NEO4J_LABEL_SUB_CATEGORY: str = "子分类"
+    """图谱中文名：子分类"""
 
     NEO4J_LABEL_SUB_CATEGORY_RELATION: str = "子分类-主分类关系"
+    """图谱中文名：子分类与分类关系"""
 
     NEO4J_LABEL_TAG: str = "标签"
+    """图谱中文名：标签"""
 
     NEO4J_LABEL_USER: str = "用户"
+    """图谱中文名：用户"""
 
     NEO4J_LOOP_NOT_RUNNING_MESSAGE: str = (
         "当前没有运行中的事件循环，无法创建 Neo4j 异步驱动"
     )
+    """事件循环未运行、无法执行异步同步的提示"""
 
     NEO4J_NO_INCREMENTAL_DATA_MESSAGE: str = "没有检测到需要同步的 Neo4j 增量数据"
+    """没有增量数据需要同步的日志消息"""
 
     NEO4J_INCREMENTAL_SKIP_CLEANUP_MESSAGE: str = "增量同步跳过全图清理：已删除数据的清理由每周全量同步兜底，避免用增量快照误删全图"
+    """增量同步跳过全图清理的说明"""
 
     NEO4J_FULL_SYNC_SKIP_CLEANUP_MESSAGE: str = "全量同步跳过全图清理：以全量快照 MERGE 重建图，清理冗余且曾出现误删；历史脏数据通过清空 Neo4j + 全量同步重建兜底"
+    """全量同步跳过全图清理的说明"""
 
     NEO4J_PREDEFINED_QUERY_TOOL_NAME: str = "execute_knowledge_graph_query"
+    """预定义图谱查询的工具名"""
 
     NEO4J_QUERY_NAME_INPUT_DESC: str = "预定义查询名称，可选值: "
+    """预定义查询名称参数的说明"""
 
     NEO4J_QUERY_PARAMS_INPUT_DESC: str = (
         '查询参数（对象），例如 {"id": 1, "name": "人工智能", "limit": 10}'
     )
+    """预定义查询参数对象的说明"""
 
     NEO4J_SQL_SELECT_ARTICLES: str = (
         "SELECT id, title, tags, status, views, user_id, sub_category_id, "
         "create_at, update_at, content FROM articles"
     )
+    """同步使用的文章取数 SQL"""
 
     NEO4J_SQL_SELECT_CATEGORIES: str = "SELECT id, name, update_time FROM category"
+    """同步使用的分类取数 SQL"""
 
     NEO4J_SQL_SELECT_COLLECTS: str = (
         "SELECT user_id, article_id, created_time FROM collects"
     )
+    """同步使用的收藏取数 SQL"""
 
     NEO4J_SQL_SELECT_COMMENTS: str = (
         "SELECT id, user_id, article_id, create_time, update_time FROM comments"
     )
+    """同步使用的评论取数 SQL"""
 
     NEO4J_SQL_SELECT_FOCUS: str = "SELECT user_id, focus_id, created_time FROM focus"
+    """同步使用的关注取数 SQL"""
 
     NEO4J_SQL_SELECT_LIKES: str = "SELECT user_id, article_id, created_time FROM likes"
+    """同步使用的点赞取数 SQL"""
 
     NEO4J_SQL_SELECT_SUB_CATEGORIES: str = (
         "SELECT id, name, category_id, update_time FROM sub_category"
     )
+    """同步使用的子分类取数 SQL"""
 
     NEO4J_SQL_SELECT_USERS: str = (
         "SELECT id, name, email, role, img, signature, create_at, update_at FROM user"
     )
+    """同步使用的用户取数 SQL"""
 
     NEO4J_SYNC_START_MESSAGE: str = "[知识图谱] 开始全量同步 MySQL 到 Neo4j"
+    """全量同步 MySQL 到 Neo4j 开始的日志消息"""
 
     NEO4J_TASK_START_MESSAGE: str = "[知识图谱任务] 开始执行 MySQL 到 Neo4j 全量同步"
+    """定时任务触发全量同步的日志消息"""
 
     NO_ARTICLES_DATA_MESSAGE: str = "没有文章数据"
+    """没有文章数据的提示"""
 
     NO_CHANGED_ARTICLES_MESSAGE: str = "没有文章内容变更，跳过向量库同步"
+    """文章内容无变化、跳过同步的日志消息"""
 
     NO_PERMISSION_ERROR: str = "您没有权限访问此功能，请联系管理员开通相关权限。"
+    """无权限访问功能时返回给用户的文案"""
 
     NO_PUBLISHED_ARTICLES_MESSAGE: str = "没有已发布的文章需要同步"
+    """没有已发布文章需要同步的日志消息"""
 
     NO_RELEVANT_ARTICLES_FOUND_MESSAGE: str = "未找到相关文章。可能没有匹配的内容或相似度不足。请提供更具体的查询词或重新表述问题。"
+    """未检索到相关文章时返回给用户的文案"""
 
     OPENAPI_TAGS = [
         {
@@ -2850,65 +3145,89 @@ class Messages:
             "description": "向量搜索相关API，包括根据 ES 候选文章进行语义分、语义原因和匹配片段增强",
         },
     ]
+    """接口分组标签，与路由上的 tags 对应"""
 
     PERMISSION_CHECK_FAILED_MESSAGE: str = "权限检查失败"
+    """权限校验失败返回给用户的文案"""
 
     RABBITMQ_CONFIG_NOT_FOUND_MESSAGE: str = "RabbitMQ 配置不存在，跳过连接"
+    """RabbitMQ 配置缺失的日志消息"""
 
     RABBITMQ_CREATE_QUEUES_FAILURE_MESSAGE: str = "无法创建队列：RabbitMQ未连接"
+    """无法创建队列的日志消息"""
 
     RABBITMQ_NOT_CONNECTED_MESSAGE: str = "RabbitMQ 未连接，无法发送消息"
+    """RabbitMQ 未连接、无法发送消息的日志消息"""
 
     RAG_TOOL_NAME: str = "search_articles"
+    """RAG 检索工具对外的工具名"""
 
     REDIS_CONNECTION_FAILED_MESSAGE: str = "Redis 连接失败，无法获取上次同步时间戳"
+    """Redis 连接失败、无法读取上次同步时间的日志消息"""
 
     REDIS_CONNECTION_SAVE_FAILED_MESSAGE: str = "Redis 连接失败，无法保存同步时间戳"
+    """Redis 连接失败、无法写入同步时间的日志消息"""
 
     REDIS_COROUTINE_SYNC_EXECUTION_ERROR: str = (
         "Redis 协程不能在运行中的事件循环里直接同步执行"
     )
+    """在协程中同步执行 Redis 操作的错误消息"""
 
     REDIS_DATABASE_CLEARED_MESSAGE: str = "Redis数据库已清空"
+    """Redis 数据库清空的日志消息"""
 
     REFERENCE_CHAT_MESSAGE: str = (
         "你是一个专业的文章评价助手。请根据提供的权威参考文本进行客观、专业的评价。"
     )
+    """带参考资料的对话提示词"""
 
     REFERENCE_TEXT_EXTRACTION_ERROR: str = "无法提取参考文本"
+    """无法提取参考文本的错误消息"""
 
     REQUEST_PROCESSING: str = "请求正在处理中"
+    """请求处理中的占位文案"""
 
     REQUEST_TIMEOUT_ERROR: str = "请求超时，请稍后重试。"
+    """请求超时返回给用户的文案"""
 
     REQUIRE_INTERNAL_TOKEN_ASYNC_ERROR: str = (
         "requireInternalToken 装饰器只支持异步函数"
     )
+    """requireInternalToken 装饰器被同步调用时的错误消息"""
 
     REQUIRE_SELF_ASYNC_ERROR: str = "requireSelf 装饰器只支持异步函数"
+    """requireSelf 装饰器被同步调用时的错误消息"""
 
     ROLE_ADMIN: str = "admin"
+    """管理员角色标识"""
 
     ROLE_USER: str = "user"
+    """普通用户角色标识"""
 
     SAFE_SQL_QUERY_REQUEST_PATTERNS: list[str] = [
         r"^(查询|查看|统计|列出|展示|获取|分析).*(最近|最新|已)?(更新|新增)的",
         r"^(查询|查看|统计|列出|展示|获取|分析).*(列表|数量|总数|排行|明细)",
     ]
+    """识别请求文本中只读 SQL 意图的正则"""
 
     SCHEDULER_ANALYZE_CACHE_UPDATE_MESSAGE: str = (
         "  - 分析接口缓存更新任务：每 10 分钟执行一次（启动时立即执行）"
     )
+    """调度器触发分析缓存刷新的日志消息"""
 
     SCHEDULER_NEO4J_SYNC_MESSAGE: str = (
         "  - Neo4j 知识图谱同步任务：每 24 小时执行一次（启动时立即执行）"
     )
+    """调度器触发图谱同步的日志消息"""
 
     SCHEDULER_STARTED_MESSAGE: str = "定时任务调度器已启动："
+    """调度器启动的日志消息"""
 
     SCHEDULER_VECTOR_SYNC_MESSAGE: str = "  - 向量同步任务：每 24 小时执行一次"
+    """调度器说明中的向量同步间隔"""
 
     SKIP_VERSION_CHECK: str = "[缓存] 获取当前版本号失败，跳过版本检测"
+    """版本号读取失败、跳过版本比对的日志消息"""
 
     SQL_DANGEROUS_KEYWORDS: list[str] = [
         "INSERT",
@@ -2937,6 +3256,7 @@ class Messages:
         "REPAIR",
         "KILL",
     ]
+    """自然语言写操作检测使用的 SQL 危险关键字"""
 
     SQL_DANGEROUS_PATTERNS: list[str] = [
         "INTO OUTFILE",
@@ -2944,24 +3264,32 @@ class Messages:
         "FOR UPDATE",
         "LOCK IN SHARE MODE",
     ]
+    """自然语言写操作检测使用的危险语句正则"""
 
     SQL_NATURAL_LANGUAGE_WRITE_BLOCK_MESSAGE: str = "安全限制：当前请求带有新增、修改、删除等数据库写操作意图。SQL 工具仅支持只读查询，请改为查询类问题。"
+    """自然语言携带写操作时返回给用户的拒绝文案"""
 
     SQL_QUERY_INPUT_DESC: str = "完整的只读 SQL 查询语句"
+    """SQL 查询工具查询语句参数的说明"""
 
     SQL_QUERY_MULTIPLE_STATEMENTS_ERROR: str = (
         "安全限制：SQL 工具只允许执行单条只读查询，禁止多语句执行。"
     )
+    """多条 SQL 语句被拒的错误消息"""
 
     SQL_QUERY_NO_RES: str = "查询成功，但没有返回结果"
+    """查询成功但没有返回结果的日志消息"""
 
     SQL_QUERY_PREFIX: str = "SELECT"
+    """只读查询语句的统一前缀"""
 
     SQL_QUERY_TOOL_NAME: str = "execute_sql_query"
+    """SQL 查询工具对外的工具名"""
 
     SQL_QUERY_WRITE_OPERATION_ERROR: str = (
         "安全限制：检测到 SQL 包含写操作或锁表行为，只允许执行只读查询。"
     )
+    """检测到写操作语句的错误消息"""
 
     SQL_READONLY_ALLOWED_PREFIXES: list[str] = [
         "SELECT",
@@ -2971,70 +3299,101 @@ class Messages:
         "DESCRIBE",
         "EXPLAIN",
     ]
+    """只读语句前缀白名单"""
 
     SQL_TABLE_INPUT_DESC: str = "表名，留空则返回所有表"
+    """表结构工具表名参数的说明"""
 
     SQL_TABLE_TOOL_NAME: str = "get_table_schema"
+    """表结构查询工具对外的工具名"""
 
     # ===== SQL 代理工具（多数据源）通用安全约束消息 =====
 
     SQL_TOOL_QUERY_EMPTY: str = "SQL查询语句不能为空"
+    """SQL 查询语句为空的提示"""
 
     SQL_TOOL_FORBIDDEN_STATEMENT: str = (
         "安全限制：只允许执行只读查询（SELECT/WITH/SHOW/DESC/DESCRIBE/EXPLAIN）"
     )
+    """命中禁止语句的提示"""
 
     SQL_TOOL_MULTIPLE_STATEMENTS: str = "安全限制：禁止执行多条SQL语句"
+    """禁止执行多条 SQL 的提示"""
 
     SQL_TOOL_LIMIT_REQUIRED: str = "安全限制：SQL查询必须包含LIMIT子句"
+    """要求必须带 LIMIT 的提示"""
 
     SQL_TOOL_LIMIT_EXCEEDED: str = "安全限制：LIMIT超过最大限制100"
+    """LIMIT 超过上限的提示"""
 
     SQL_TOOL_NO_TABLE_SCHEMA: str = "未找到表结构信息"
+    """未找到表结构信息的提示"""
 
     SQL_TOOL_DB_SESSION_UNAVAILABLE: str = "数据库会话不可用"
+    """数据库会话不可用的提示"""
 
     # ===== SQL 代理工具输入参数描述 =====
 
     SQL_TOOL_TABLE_SCHEMA_INPUT_DESC: str = "表名，留空则返回所有白名单表"
+    """表结构工具表名参数的说明"""
 
     SQL_TOOL_QUERY_INPUT_DESC: str = "完整的只读 SQL 查询语句"
+    """查询工具查询语句参数的说明"""
 
     SQL_TOOL_PARAMS_INPUT_DESC: str = "参数化查询参数，对象形式的键值对，不要写成字符串"
+    """查询工具命名参数的说明"""
 
     # ===== SQL 代理工具名 =====
 
     SQL_TOOL_FASTAPI_TABLE_TOOL_NAME: str = "get_fastapi_table_schema"
+    """FastAPI 表结构工具的对外工具名"""
     SQL_TOOL_FASTAPI_QUERY_TOOL_NAME: str = "execute_fastapi_sql_query"
+    """FastAPI 查询工具的对外工具名"""
     SQL_TOOL_SPRING_TABLE_TOOL_NAME: str = "get_spring_table_schema"
+    """Spring 表结构工具的对外工具名"""
     SQL_TOOL_SPRING_QUERY_TOOL_NAME: str = "execute_spring_sql_query"
+    """Spring 查询工具的对外工具名"""
     SQL_TOOL_NESTJS_TABLE_TOOL_NAME: str = "get_nestjs_table_schema"
+    """NestJS 表结构工具的对外工具名"""
     SQL_TOOL_NESTJS_QUERY_TOOL_NAME: str = "execute_nestjs_sql_query"
+    """NestJS 查询工具的对外工具名"""
     SQL_TOOL_GOZERO_TABLE_TOOL_NAME: str = "get_gozero_table_schema"
+    """GoZero 表结构工具的对外工具名"""
     SQL_TOOL_GOZERO_QUERY_TOOL_NAME: str = "execute_gozero_sql_query"
+    """GoZero 查询工具的对外工具名"""
 
     WAREHOUSE_LIST_DATASETS_TOOL_NAME: str = "list_clickhouse_warehouse_datasets"
+    """列出数仓数据集工具的对外工具名"""
     WAREHOUSE_QUERY_TOOL_NAME: str = "query_clickhouse_warehouse"
+    """数仓查询工具的对外工具名"""
     WAREHOUSE_DATASET_INPUT_DESC: str = (
         "ADS 数据集名称，例如 platform_stats、top_articles、user_profile"
     )
+    """数仓工具数据集名称参数的说明"""
     WAREHOUSE_USER_ID_INPUT_DESC: str = (
         "用户 ID；查询 user_profile、user_daily_actions、user_view_articles 时必填"
     )
+    """数仓工具用户 ID 参数的说明"""
     WAREHOUSE_DATE_INPUT_DESC: str = (
         "用户日行为查询的日期范围，格式 YYYY-MM-DD（左闭右开）"
     )
+    """数仓工具日期参数的说明"""
     WAREHOUSE_LIMIT_INPUT_DESC: str = "最多返回的记录数，范围 1-100"
+    """数仓工具记录数上限参数的说明"""
     WAREHOUSE_QUERY_FAILED: str = "ClickHouse 数仓查询失败: {error}"
+    """数仓查询失败的错误消息"""
     WAREHOUSE_DATASET_UNSUPPORTED: str = "不支持的数仓数据集: {dataset}"
+    """数仓数据集不支持的错误消息"""
     WAREHOUSE_USER_ID_REQUIRED: str = "查询数仓用户数据时必须提供 user_id"
+    """查询用户维度数据集必须带 user_id 的错误消息"""
     WAREHOUSE_DATE_INVALID: str = "日期格式必须为 YYYY-MM-DD"
+    """数仓日期格式错误的提示"""
 
     SQL_TOOL_FASTAPI_TABLE_WHITELIST: list[str] = ["ai_history"]
+    """FastAPI 侧 SQL 工具的表名白名单"""
 
     # ===== SQL 代理工具（本地直连 FastAPI）安全约束配置 =====
 
-    # 只读语句前缀白名单
     SQL_TOOL_ALLOWED_PREFIXES: list[str] = [
         "SELECT",
         "WITH",
@@ -3043,22 +3402,22 @@ class Messages:
         "DESCRIBE",
         "EXPLAIN",
     ]
+    """SQL 工具的只读语句前缀白名单"""
 
-    # SQL 查询最大返回行数（LIMIT 上限）
     SQL_TOOL_MAX_LIMIT: int = 100
+    """SQL 工具允许的 LIMIT 上限"""
 
     # ===== SQL 代理工具（本地直连 FastAPI）正则约束 =====
 
-    # 表名匹配正则（FROM / JOIN 后跟表名）
     SQL_TOOL_TABLE_NAME_REGEX: str = r"\b(?:FROM|JOIN)\s+`?(\w+)`?"
+    """提取 SQL 表名的正则"""
 
-    # LIMIT 匹配正则
     SQL_TOOL_LIMIT_REGEX: str = r"\bLIMIT\s+(\d+)"
+    """提取 LIMIT 数值的正则"""
 
-    # 命名参数占位符匹配正则（:paramName）
     SQL_TOOL_NAMED_PARAM_REGEX: str = r":\w+"
+    """提取命名参数的正则"""
 
-    # FastAPI 本地表结构信息（硬编码，避免每次查 information_schema）
     SQL_TOOL_FASTAPI_TABLE_SCHEMAS: dict[str, list[dict[str, str]]] = {
         "ai_history": [
             {"name": "id", "type": "bigint", "key": "PRI", "comment": "主键ID"},
@@ -3081,16 +3440,20 @@ class Messages:
             },
         ],
     }
+    """FastAPI 侧表结构说明，供 SQL 工具做字段校验"""
 
     START_INITIALIZING_ARTICLE_HASH_CACHE_MESSAGE: str = (
         "开始初始化文章内容 hash 缓存..."
     )
+    """文章内容 hash 缓存初始化开始的日志消息"""
 
     START_SYNC_TO_POSTGRES_MESSAGE: str = "开始同步文章内容到PostgreSQL向量库..."
+    """同步数据到 PostgreSQL 开始的日志消息"""
 
     STATISTICS_CACHE_FETCH_FAILED: str = (
         "get_article_statistics_service: [缓存未命中] 开始查询数据源"
     )
+    """平台统计缓存读取失败的日志消息"""
 
     STREAMING_CHAT_THINKING_SYSTEM_MESSAGE: str = (
         "你是一个中文AI思考型助手，用于提供文章和博客推荐、日志分析以及系统数据查询的思考内容。"
@@ -3099,49 +3462,69 @@ class Messages:
         "当查询的数据量可能较大时，必须主动加上时间范围、用户范围、状态条件或 limit 等限制，避免一次性返回过多数据。"
         "回答文本应该展示调用工具和分析的思考过程。"
     )
+    """流式对话思考阶段使用的系统提示词"""
 
     SUMMARIZE_CHAT_MESSAGE: str = (
         "你是一个专业的内容总结助手。请精准提取核心信息，用凝练的语言进行总结。"
     )
+    """对话总结使用的提示词"""
 
     CHAT_MEMORY_COMPACT_SYSTEM_MESSAGE: str = (
         "你是一个对话记忆整理助手。请把多轮对话压缩成可长期复用的记忆摘要，"
         "保留结论、关键实体、用户偏好与约束，丢弃寒暄与重复表述。"
     )
+    """聊天记忆压缩使用的系统提示词"""
 
     CHAT_MEMORY_EMPTY_SUMMARY: str = "无"
+    """记忆摘要为空时的占位文案"""
 
     CHAT_MEMORY_COMPACT_EMPTY_RESULT: str = "历史记忆压缩结果为空"
+    """历史压缩结果为空时的日志消息"""
 
     SWAGGER_DESCRIPTION: str = "这是项目的FastAPI部分的Swagger文档"
+    """文档描述"""
 
     SWAGGER_TITLE: str = "FastAPI部分的Swagger文档"
+    """文档标题"""
 
     SWAGGER_VERSION: str = "1.0.0"
+    """接口版本号"""
 
     SYNC_TIME_SET_MESSAGE: str = "已设置同步时间戳，下次同步将使用增量模式"
+    """设置同步时间、后续走增量模式的日志消息"""
 
     TEXT_SPLITTER_INITIALIZATION_SUCCESS: str = "文本切分器初始化成功"
+    """文本分割器初始化成功的日志消息"""
 
     TOP10_CACHE_MISS: str = "get_top10_articles_service: [缓存未命中] 开始查询数据源"
+    """前十文章缓存未命中并回源查询的日志消息"""
 
     TOP10_CLICKHOUSE_GET: str = "从ClickHouse获取Top10文章"
+    """从 ClickHouse 获取前十文章的日志消息"""
 
     TOP10_DB_SOURCE: str = "get_top10_articles_service: 使用 DB 数据源"
+    """前十文章回源数据库的说明"""
 
     UNKNOWN_ARTICLE: str = "未知文章"
+    """文章信息缺失时使用的兜底名称"""
 
     USER_NOT_EXISTS_ERROR: str = "用户不存在"
+    """用户不存在的错误消息"""
 
     USER_IDENTITY_MISSING_MESSAGE: str = "请求缺少用户身份，请确认请求经过网关转发"
+    """请求缺少用户身份的错误消息"""
 
     USER_SCOPE_TARGET_MISSING_MESSAGE: str = "请求缺少目标用户标识"
+    """请求缺少目标用户标识的错误消息"""
 
     USER_SCOPE_FORBIDDEN_MESSAGE: str = "无权访问其他用户的数据"
+    """越权访问其他用户数据的错误消息"""
 
     USER_NOT_LOGGED_IN_MESSAGE: str = "用户未登录，请先登录"
+    """用户未登录的错误消息"""
 
     USER_NO_ADMIN_PERMISSION_MESSAGE: str = "权限不足，仅管理员可访问"
+    """权限不足、仅管理员可用的错误消息"""
 
     USER_RELATED_TABLE: list[str] = [
         "likes",
@@ -3150,31 +3533,44 @@ class Messages:
         "ai_history",
         "chat_messages",
     ]
+    """用户相关的表名清单，用于补齐表结构信息"""
 
     VECTOR_SEARCH_REASON_HIGH: str = "语义内容与搜索词高度相关"
+    """语义原因文案：相似度高"""
 
     VECTOR_SEARCH_REASON_LOW: str = "语义内容与搜索词存在相关性"
+    """语义原因文案：相似度较低"""
 
     VECTOR_SEARCH_REASON_MEDIUM: str = "语义内容与搜索词较相关"
+    """语义原因文案：相似度中等"""
 
     VECTOR_STORE_INITIALIZATION_SUCCESS: str = "PostgreSQL向量存储初始化成功"
+    """向量存储初始化成功的日志消息"""
 
     VERSION_CHANGED_CLEAR_CACHE: str = "[缓存] 版本变化，清除所有缓存"
+    """版本变化清理本地缓存的日志消息"""
 
     WORDCLOUD_CACHE_DELETED: str = "词云图缓存已删除"
+    """词云缓存删除的日志消息"""
 
     WORDCLOUD_CACHE_FETCH_FAILED: str = (
         "get_wordcloud_service: [缓存未命中] 开始生成词云图"
     )
+    """词云缓存读取失败的日志消息"""
 
     WORDCLOUD_FILENAME: str = "search_keywords_wordcloud.png"
+    """词云图文件名"""
 
     WORDCLOUD_GENERATION_SUCCESS: str = (
         "词云图生成成功，保存为 search_keywords_wordcloud.png"
     )
+    """词云生成成功的日志消息"""
 
     LANGSMITH_CLIENT_CLOSED: str = "LangSmith 客户端已关闭"
+    """LangSmith 客户端已关闭的日志消息"""
 
     LANGSMITH_TRACING_DISABLED: str = "LangSmith 追踪未启用，跳过客户端初始化"
+    """LangSmith 追踪未启用、跳过客户端初始化的日志消息"""
 
     LANGSMITH_PACKAGE_NOT_INSTALLED: str = "LangSmith 依赖未安装，跳过客户端初始化"
+    """LangSmith 依赖未安装、跳过客户端初始化的日志消息"""

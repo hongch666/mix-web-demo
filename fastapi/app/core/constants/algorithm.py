@@ -4,7 +4,8 @@ from .defaults import Defaults
 class AlgorithmConstants:
     """搜索排序算法相关常量"""
 
-    # 权重定义表：权重键、默认值、说明
+    # ===== 搜索权重定义 =====
+
     WEIGHT_DEFINITIONS: tuple[tuple[str, float | int, str], ...] = (
         # ES 传统8项权重
         ("es_score_weight", Defaults.SEARCH_ES_SCORE_WEIGHT, "ES BM25 相关度权重"),
@@ -63,8 +64,10 @@ class AlgorithmConstants:
             "融合时 ES 最低保底权重",
         ),
     )
+    """ES 复合打分与融合排序的权重清单，每项为权重键、默认值与说明，默认值统一取自 Defaults"""
 
-    # 脚本参数映射表：权重键、脚本参数名、说明
+    # ===== 脚本参数映射 =====
+
     SCRIPT_PARAM_MAPPINGS: tuple[tuple[str, str, str], ...] = (
         # ES 传统8项权重
         ("es_score_weight", "esWeight", "ES BM25 相关度权重"),
@@ -83,3 +86,4 @@ class AlgorithmConstants:
         # 时间衰减
         ("recency_decay_days", "decayDaysSq", "新鲜度衰减参数(天)"),
     )
+    """权重键与 ES 搜索脚本参数名的对应关系，参数名需与 Scripts 的搜索脚本一致"""
