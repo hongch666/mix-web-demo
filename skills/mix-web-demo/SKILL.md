@@ -526,12 +526,17 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 四个服务都是**离线生成**：不启动 HTTP 服务，不连 Nacos / MySQL / Redis / RabbitMQ，也不需要各服务的 `.env`（Spring 的 Nacos 配置拉取由 `spring/src/test/resources/bootstrap.yaml` 覆盖关闭）。对应工具未安装时该服务跳过并提示，其余服务继续生成；`gateway` 为配置驱动，无 OpenAPI 产物。
 
-生成后核对四件事：
+生成后核对五件事：
 
 1. 新接口出现在产物里，路径、方法、参数与响应结构和实现一致
 2. `openapi.json` 与 `openapi.yaml` 成对更新，不要只提交其中一份
 3. 新增接口在 `components.schemas` 里有对应的具名模型（GoZero 看 `Gozero*`、NestJS 看 `Nestjs*` 前缀），且 `schemas` 里没有无人引用的孤儿模型；只有事件流响应与 multipart 请求体允许保持内联
-4. GoZero 若改了 `.api`，确认产物里没有 `x-date` / `x-goctl-version`（出现即说明 `fix.py` 后处理没跑到）；同时确认 `gozero/app/docs/websocket.json` 里的描述与 `.api` 的 `@doc` 一致，该文件与 `openapi.json` 一样属于要提交的产物
+4. **允许为 null 的字段必须在产物里表达成可空**，否则 Apifox「校验响应」会把合法的 `null` 判成「`$.data.xxx` 不允许为 null」。四个服务都是 OpenAPI 3.1，可空只能写成类型数组 `type: ["integer","null"]`（或 `anyOf: [{type: "integer"}, {type: "null"}]`）——`nullable: true` 是 3.0 的写法，3.1 下会被忽略（实测 `@Schema(nullable = true)` 在 springdoc 3.1 产物里没有任何效果）
+   - Spring：`SwaggerConfig#markNullableProperties` 统一处理——未列入 `required` 的属性自动补 `null`；需要声明「不允许为 null」就在字段上加 `@NotNull` / `@NotBlank` / `@NotEmpty` 或 `@Schema(requiredMode = Schema.RequiredMode.REQUIRED)`（统一响应的 `code`/`msg` 已按此声明，`data` 保持可空）
+   - NestJS：`app/swagger.ts#markNullableProperties` 同理——`@ApiProperty({ required: false })` 的字段补 `null`，默认 `required: true` 的不补
+   - FastAPI：Pydantic 的 `Optional[X]` 已生成 `anyOf: [{type: X}, {type: null}]`，无需额外处理
+   - GoZero：`script/swagger/fix.py#mark_nullable_properties` 在提升模型之后统一补——`.api` 里标了 `json:",optional"` 的字段（goctl 不写进 `required`）与切片字段（Go 的 nil slice 序列化就是 `null`）补 `null`；要让某个标量字段允许 null，在 `.api` 里给它加 `optional`，不要改 `fix.py` 的清单
+5. GoZero 若改了 `.api`，确认产物里没有 `x-date` / `x-goctl-version`（出现即说明 `fix.py` 后处理没跑到）；同时确认 `gozero/app/docs/websocket.json` 里的描述与 `.api` 的 `@doc` 一致，该文件与 `openapi.json` 一样属于要提交的产物
 
 ### 第二步：同步到 Apifox（配置了令牌时执行）
 
@@ -544,6 +549,9 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 # 或同步全部
 ./mix apifox
+
+# 只读检查 Apifox 侧接口与数据模型的引用是否完整（断链会报 can't resolve reference）
+./mix apifox-check
 ```
 
 - 脚本读取的是仓库内的静态产物，**必须先完成第一步**，否则同步上去的是旧文档
@@ -554,6 +562,9 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 对齐是全量覆盖语义：Apifox 侧手工新增的 HTTP 接口与数据模型会在下次同步时被清掉（`WebSocket` 与 Markdown 文档不受影响）。排查期可临时关闭：`APIFOX_DELETE_UNMATCHED_RESOURCES=false ./mix apifox <service>`；删除是真实删除，可先 `apifox export --project <id> --format apifox --scope all --output <file>` 整项目备份，误删内容可从 Apifox 回收站找回
 - **警惕「AUTO_MERGE + 全量对齐」组合造成接口响应结构引用断链**：`AUTO_MERGE` 不整体重写已存在接口的响应结构绑定，而 `APIFOX_DELETE_UNMATCHED_RESOURCES=true` 会删除文档里已不存在的数据模型。当模型命名变化（例：Spring 补 Swagger 注解后 springdoc 改变 `Result«XxxVO»` 的生成名）时，接口上残留的 `$ref` 仍指向被清理的旧模型，Apifox「校验响应」报 `can't resolve reference #/definitions/<数字ID> from id http://json-schema.org/draft-04/schema#`（数字 ID 是 Apifox 数据模型的内部 ID，产物本身引用链完好）。**已由脚本自动切换**：`apifox-sync.sh` 为每个服务计算 `components.schemas` 的规范化 sha256（只关心模型本身，与排版、字段顺序、paths 调整无关），与 `.apifox-state/<service>.schemas.sha256` 里上次成功同步的指纹比对——指纹变化或首次无记录时，该服务本轮自动切到 `OVERWRITE_EXISTING` 并打印原因；指纹未变则保持默认 `AUTO_MERGE`。显式设置了 `APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR` / `APIFOX_SCHEMA_OVERWRITE_BEHAVIOR` 时以显式值为准、不做自动切换；只有导入成功才写回指纹，失败保留旧值以便下次重试。**`.apifox-state/` 必须随仓库提交**：它记录的是「共享 Apifox 项目当前已同步到哪个模型版本」这一远端基线，不是本机状态。漏提交会让其他机器的指纹停留在旧值、误判为「模型有变」而触发覆盖同步，把已保留的手工 Mock 与示例冲掉；同理，同步成功后要与 `docs/` 产物一起提交它。**手工修复**（自动机制被显式配置绕过时）——`APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR=OVERWRITE_EXISTING APIFOX_SCHEMA_OVERWRITE_BEHAVIOR=OVERWRITE_EXISTING ./mix apifox <service>`，跑完恢复默认 AUTO_MERGE；代价是该服务接口上手工维护的参数说明、Mock 与示例会被产物覆盖。应急也可在 Apifox 接口「返回响应 → 数据结构」里手工重新绑定现行数据模型。预防：凡是重命名/调整 VO 或响应包装导致 springdoc/文档生成器模型名变化，同步前先跑一次 OVERWRITE_EXISTING 再回到 AUTO_MERGE
 - 导入前会为**本轮文档新增**的接口补写 Apifox 责任人扩展 `x-apifox-maintainer`（值取团队内昵称或用户账户名），默认取 `APIFOX_ACCESS_TOKEN` 对应账号的用户名；可用 `APIFOX_MAINTAINER` 显式指定，或用 `--no-maintainer` 关闭填充
+- **数据模型目录必须按服务隔离（`can't resolve reference` 的根本修复）**：`deleteUnmatchedResources` 的清理范围是「该服务的导入目录」。接口早有 `APIFOX_FOLDER_<服务>` 按服务分开，但数据模型此前都落在项目根目录，于是任一服务的全量对齐都会删掉其它服务刚同步的模型，而接口上的 `$ref` 不会回滚 —— 产物本身引用链完好，Apifox「校验响应」却报 `can't resolve reference #/definitions/<数字ID>`。现在脚本按服务下发 `targetSchemaFolderId`（`APIFOX_SCHEMA_FOLDER_SPRING/GOZERO/NESTJS/FASTAPI`，未配置时回退 `APIFOX_SCHEMA_FOLDER_ID`），全量对齐只清理本服务目录内的模型；开启全量对齐却有服务没配模型目录时，脚本直接告警并给出 `apifox folder create --project <项目ID> --type schema --name <服务名>` 的修复命令
+- **同步后自检并自动修复断链**：导入结束后导出一次项目快照（`apifox export --format apifox`），由 `scripts/apifox-schema-refs.py` 比对接口里 `#/definitions/<模型ID>` 与 `apifox schema list` 的现存模型，统计断链；命中时对本轮服务按 `OVERWRITE_EXISTING` 重导一次重新绑定，再复核一遍，仍有残留才报错退出（`APIFOX_VERIFY_SCHEMA_REFS=false` 可关闭自检）
+- **只读检查入口 `./mix apifox-check`**：不改代码、只确认远端引用状态时用它（`--keep <目录>` 保留快照、`--examples <n>` 调整示例条数、`--no-color` 关彩色），输出「接口 N 个，数据模型 M 个」并逐条列出断链位置，退出码 0 完整 / 1 断链 / 2 缺配置或依赖。它需要联网与 `.env` 令牌，因此**不并入离线的 `./mix lint`**
 - **责任人只补新增接口**：脚本先用一次 `apifox endpoint list` 取现有接口清单（`method path`），与产物求差集后只给新增接口注入扩展。原因是 Apifox 对「无差异导入」按不变处理（本地实测 `新增 0 / 更新 0 / 忽略 0 / 失败 0`），而每轮给全部接口重写扩展会让所有接口都被判定为已修改（修改时间与变更历史被刷新）；稳态下导入的就是原文档，计数全 0。要整体重写责任人时置 `APIFOX_MAINTAINER_FORCE=true`（此时退回逐接口全量注入）
 - 该扩展会被 Apifox 保留在接口 `oasExtensions` 里并在文档页多渲染一行 `x-apifox-maintainer`，**只有真的注入过**才会再导入一次不带扩展的原文档把它清掉（`APIFOX_MAINTAINER_CLEAN_EXTENSION=false` 可保留，此时按全量注入以保证每轮导入内容与 Apifox 现存一致），责任人字段不受影响
 - 令牌等同账号密码，脚本输出不回显令牌，根目录 `.env` 已被 `.gitignore` 忽略
