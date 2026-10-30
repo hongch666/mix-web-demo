@@ -37,18 +37,41 @@ for d in pic excel upload; do
     chmod -R 777 "$WORKDIR/static/$d"
 done
 
+# 远程镜像前缀：未在环境中配置时读取根目录 .env 的 DOCKER_IMAGE_PREFIX
+# 取值必须以 / 结尾（例如 docker.io/yourname/），与 docker-compose.yml 的镜像名拼接规则一致
+if [ -z "${DOCKER_IMAGE_PREFIX:-}" ] && [ -f "$WORKDIR/.env" ]; then
+    DOCKER_IMAGE_PREFIX="$(grep -E '^DOCKER_IMAGE_PREFIX=' "$WORKDIR/.env" | tail -n 1 | cut -d= -f2-)"
+fi
+
 app_services=(spring gozero nestjs fastapi)
 missing_images=()
+retag_images=()
 
 for service in "${app_services[@]}"; do
-    if ! docker image inspect "mix-${service}:latest" >/dev/null 2>&1; then
-        missing_images+=("$service")
+    effective_image="${DOCKER_IMAGE_PREFIX:-}mix-${service}:latest"
+    if docker image inspect "$effective_image" >/dev/null 2>&1; then
+        continue
     fi
+    # 本地构建镜像存在时补打同名标签，保证本地构建结果优先于远程镜像
+    if docker image inspect "mix-${service}:latest" >/dev/null 2>&1; then
+        retag_images+=("$service")
+        continue
+    fi
+    missing_images+=("$service")
+done
+
+for service in "${retag_images[@]}"; do
+    docker tag "mix-${service}:latest" "${DOCKER_IMAGE_PREFIX:-}mix-${service}:latest"
+    echo "本地构建镜像已补打标签: ${DOCKER_IMAGE_PREFIX:-}mix-${service}:latest"
 done
 
 if [ ${#missing_images[@]} -gt 0 ]; then
-    echo "缺少应用镜像，使用 mix Docker 脚本构建: ${missing_images[*]}"
-    bash "$WORKDIR/mix" docker build "${missing_images[@]}"
+    if [ -n "${DOCKER_IMAGE_PREFIX:-}" ]; then
+        echo "本地缺少镜像: ${missing_images[*]}，已配置 DOCKER_IMAGE_PREFIX，由 compose 从远程仓库拉取"
+    else
+        echo "缺少应用镜像，使用 mix Docker 脚本构建: ${missing_images[*]}"
+        bash "$WORKDIR/mix" docker build "${missing_images[@]}"
+    fi
 else
     echo "应用镜像已存在，跳过镜像构建"
 fi

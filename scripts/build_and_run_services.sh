@@ -9,6 +9,12 @@ set -o pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NETWORK_NAME="hcsy"
+
+# 远程镜像前缀：未在环境中配置时读取根目录 .env 的 DOCKER_IMAGE_PREFIX
+# 取值必须以 / 结尾（例如 docker.io/yourname/），与 docker-compose.yml 的镜像名拼接规则一致
+if [ -z "${DOCKER_IMAGE_PREFIX:-}" ] && [ -f "$PROJECT_DIR/.env" ]; then
+    DOCKER_IMAGE_PREFIX="$(grep -E '^DOCKER_IMAGE_PREFIX=' "$PROJECT_DIR/.env" | tail -n 1 | cut -d= -f2-)"
+fi
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -146,6 +152,11 @@ build_image() {
     docker build --progress=plain "${build_args[@]}" -t "mix-${service}:latest" . || build_status=$?
 
     if [ $build_status -eq 0 ]; then
+        # 配置了远程镜像前缀时给本地构建镜像补打同名标签，
+        # 保证 compose 引用的 <前缀>mix-<service>:latest 命中本地构建结果，而不是拉取远程旧镜像
+        if [ -n "${DOCKER_IMAGE_PREFIX:-}" ]; then
+            docker tag "mix-${service}:latest" "${DOCKER_IMAGE_PREFIX}mix-${service}:latest"
+        fi
         print_success "${service} 镜像构建完成"
     else
         print_error "${service} 镜像构建失败"
