@@ -31,3 +31,14 @@ Thumbs.db
 # 日志
 *.log
 logs/
+
+# 运行时不需要的目录与文件
+# 单测与源码同目录（src/**/*.spec.ts），e2e 按约定放 test/；两者都不参与镜像构建：
+# tsconfig.build.json 已用 exclude 挡住 **/*spec.ts，删除这些文件不影响 npm run node:build
+# test/ 预留给后续新增的 e2e 目录，当前仓库还没有该目录
+test/
+**/*.spec.ts
+**/*-spec.ts
+docs/
+coverage/
+*.md

@@ -24,12 +24,19 @@ Thumbs.db
 .gitignore
 
 # 文档
+# 只排除根目录的 docs，不要写成 **/docs：app/docs 下的 swagger 资源由 go:embed 编进二进制，缺失会直接构建失败
 *.md
 docs/
 
-# 测试文件
-*_test.go
+# 测试文件（含嵌套目录，go build 不编译 _test.go）
+**/*_test.go
 .coverage
+
+# 仅宿主机使用：API 定义、goctl 模板与代码生成脚本，构建镜像只需要 app/ 下的 Go 源码
+api/
+template/
+script/
+.golangci.yml
 
 # 日志
 logs/

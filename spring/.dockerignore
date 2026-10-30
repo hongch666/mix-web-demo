@@ -28,3 +28,10 @@ Thumbs.db
 
 # Maven
 .m2/
+
+# 运行时不需要的目录与文件
+# 运行镜像只包含 target 下打出的 jar，测试源码、文档产物与本地日志不参与构建
+src/test/
+docs/
+logs/
+*.md

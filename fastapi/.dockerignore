@@ -47,3 +47,10 @@ Thumbs.db
 .env
 .env.docker
 *.log
+
+# 运行时不需要的目录与文件
+# 入口只有 main.py 与 app/，以下内容仅用于本地开发、测试与文档生成，不进镜像可减小体积并避免暴露内部测试数据与说明
+tests/
+docs/
+script/
+*.md

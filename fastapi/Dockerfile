@@ -1,7 +1,43 @@
-# 使用官方Python运行时作为基础镜像
+# 构建阶段：安装运行期依赖，并把业务源码编译为字节码后删除 .py
+# 运行阶段只复制字节码与依赖，镜像内不存在可直接阅读的业务源码
+FROM python:3.12-slim-bookworm AS builder
+
+# 构建时接收代理，供 RUN 里的 pip 使用
+ARG http_proxy
+ARG https_proxy
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+
+WORKDIR /app
+
+# 依赖装在独立虚拟环境里，便于整体复制到运行阶段，避免把构建缓存与工具链带进正式镜像
+ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
+    PIP_TRUSTED_HOST=mirrors.aliyun.com
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# 先复制依赖清单，单独安装依赖，方便缓存复用
+COPY requirements.txt /app/
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip setuptools && \
+    pip install -r requirements.txt
+
+# 再复制项目代码，避免代码改动触发依赖重装
+COPY . /app/
+
+# -b 让 .pyc 与源码同目录（main.pyc、__init__.pyc），删除 .py 后仍可按模块导入
+# -f 强制重新编译，避免命中华而不实的旧编译产物
+RUN set -eux; \
+    python -m compileall -b -f -q main.py app; \
+    find /app -name '*.py' -delete; \
+    find /app -type d -name '__pycache__' -prune -exec rm -rf {} +; \
+    rm -f /app/requirements.txt /app/pyproject.toml /app/uv.lock
+
+# 运行阶段：仅保留解释器、运行期依赖与字节码
 FROM python:3.12-slim-bookworm
 
-# 构建时接收代理，供 RUN 里的 apt / pip 使用
+# 构建时接收代理，供 RUN 里的 apt 使用
 ARG http_proxy
 ARG https_proxy
 ARG HTTP_PROXY
@@ -13,8 +49,8 @@ WORKDIR /app
 # 设置环境变量
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
-    PIP_TRUSTED_HOST=mirrors.aliyun.com
+    PATH="/opt/venv/bin:$PATH" \
+    TZ=Asia/Shanghai
 
 # 词云需使用中文字体
 # 源改为 HTTPS（走代理稳定），保留代理环境变量
@@ -32,19 +68,9 @@ RUN set -eux; \
     install -y --no-install-recommends fonts-noto-cjk tzdata; \
     rm -rf /var/lib/apt/lists/*
 
-# 进程时区固定为东八区，保证日志行时间与 APScheduler 任务按本地时间触发
-ENV TZ=Asia/Shanghai
-
-# 先复制依赖清单，单独安装依赖，方便缓存复用
-COPY requirements.txt /app/
-
-# 安装Python依赖
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --upgrade pip setuptools && \
-    pip install -r requirements.txt
-
-# 再复制项目代码，避免代码改动触发依赖重装
-COPY . /app/
+# 依赖与编译产物来自构建阶段，业务代码只有 .pyc
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /app /app
 
 # 创建日志目录和文件目录
 RUN mkdir -p /app/logs/fastapi \
