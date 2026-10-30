@@ -744,7 +744,7 @@ async def sync_article_vectors_manually_async(
     ids: list[int],
     dependencies: VectorSyncDependencies,
 ) -> None:
-    """根据手动触发请求选择精确同步或常规同步。"""
+    """根据手动触发请求选择精确同步或常规同步"""
     if ids:
         await export_article_vectors_by_changes_async(change_type, ids, dependencies)
         return

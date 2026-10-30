@@ -1043,7 +1043,7 @@ async def sync_neo4j_changes_async(events: list[dict[str, Any]]) -> None:
 async def sync_neo4j_manually_async(
     events: list[dict[str, Any]], force_full: bool
 ) -> None:
-    """根据手动触发请求选择精确同步或常规同步。"""
+    """根据手动触发请求选择精确同步或常规同步"""
     if events and not force_full:
         await sync_neo4j_changes_async(events)
         return

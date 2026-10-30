@@ -269,7 +269,7 @@ class ChatApplicationService:
         return session.frame_context, generate()
 
     def stream_frames(self, request: ChatStreamRequest) -> AsyncGenerator[str, None]:
-        """执行流式聊天并返回请求指定格式的 SSE 帧。"""
+        """执行流式聊天并返回请求指定格式的 SSE 帧"""
         context, events = self.stream(request)
         return self.format_stream(
             context, events, request.streamFormat == StreamFormat.OPENAI
@@ -281,7 +281,7 @@ class ChatApplicationService:
         events: AsyncGenerator[ChatStreamEvent, None],
         openai_format: bool,
     ) -> AsyncGenerator[str, None]:
-        """将聊天事件转换为项目或 OpenAI 兼容的 SSE 帧。"""
+        """将聊天事件转换为项目或 OpenAI 兼容的 SSE 帧"""
         accumulated_message = ""
         if openai_format:
             yield build_openai_start_frame(context)

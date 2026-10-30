@@ -40,7 +40,7 @@ def enforce_sql_row_scope(
     """SQL 工具的行级范围校验，返回拒绝消息或 None 表示放行
 
     管理员放行；未登录或作用域缺失一律拒绝（fail-closed）。
-    任意 SQL 无法通过字符串匹配可靠地证明行级隔离，因此非管理员禁止使用。
+    任意 SQL 无法通过字符串匹配可靠地证明行级隔离，因此非管理员禁止使用
     """
     scope = get_tool_scope()
     if scope is None:
