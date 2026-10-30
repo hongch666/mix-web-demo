@@ -23,8 +23,6 @@ const (
 	SERVER_MODE_MESSAGE = "运行模式: %s"
 	// Swagger 文档地址的日志消息
 	SWAGGER_DOCS_MESSAGE = "Swagger 文档地址 http://%s:%d/swagger/index.html"
-	// 未探测到本机 IP 时使用的兜底地址
-	INIT_IP = "127.0.0.1"
 	// 服务启动成功的日志消息
 	SERVER_START_SUCCESS = "服务启动成功"
 	// 服务启动失败的日志消息

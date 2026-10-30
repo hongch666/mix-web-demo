@@ -11,7 +11,7 @@ import (
 
 // PrintStartupInfo 输出服务启动信息
 func PrintStartupInfo(c config.Config) {
-	host := constants.INIT_IP
+	host := c.Host
 	port := c.Port
 	logger, err := utils.NewZeroLogger(c.Logs.Path, c.Logs.TimestampEnabled())
 	if err != nil {
