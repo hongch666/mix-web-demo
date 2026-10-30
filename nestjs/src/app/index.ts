@@ -10,7 +10,6 @@ import { FastifyAdapter } from "@nestjs/platform-fastify";
 import type { OpenAPIObject } from "@nestjs/swagger";
 import { SwaggerModule } from "@nestjs/swagger";
 import {
-  Defaults,
   ErrorIds,
   HttpCode,
   Messages,
@@ -111,7 +110,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
   const configService: ConfigService<unknown, boolean> = app.get(ConfigService);
   const port: number = configService.get<number>("server.port")!;
   const mode: string = configService.get<string>("server.mode")!;
-  const ip: string = Defaults.INIT_IP;
+  const ip: string = configService.get<string>("server.ip")!;
   // 输出启动信息和Swagger地址（从容器获取日志服务）
   const logger: LoggerService = app.get(LoggerService);
   logger.info(Messages.START_WELCOME);

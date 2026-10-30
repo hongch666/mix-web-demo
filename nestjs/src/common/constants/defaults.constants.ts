@@ -2,11 +2,6 @@
  * 配置默认值常量 — 数字、URL、超时等非消息型默认值
  */
 export class Defaults {
-  // ===== 启动 =====
-
-  /** 服务监听与注册使用的默认 IP */
-  static readonly INIT_IP = "127.0.0.1";
-
   // ===== OSS =====
 
   /** OSS 上传使用的 HTTP 方法 */
