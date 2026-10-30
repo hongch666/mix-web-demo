@@ -1,6 +1,6 @@
 ---
 name: mix-web-demo
-description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Spring WebFlux、NestJS、FastAPI、GoZero 四个服务与 APISIX 网关的分层组织、依赖注入、请求校验、实时链路、日志、测试、常量、并行化、SQL 参数化、远程调用、Swagger 生成与 Apifox 同步约定，并含仓库工程约束（行尾、goctl 生成流程）。在本仓库生成或修改任何服务代码时必须使用；与通用 skills 冲突时以本 skill 的项目实证约定为准。
+description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Spring WebFlux、NestJS、FastAPI、GoZero 四个服务与 APISIX 网关的分层组织、依赖注入、请求校验、实时链路、日志、测试、常量、并行化、SQL 参数化、远程调用、Swagger 生成与 Apifox 同步约定，并含仓库工程约束（行尾、goctl 生成流程）与容器镜像约定（多阶段构建、镜像推送与版本、本地优先/远程兜底的镜像名前缀配置、各服务 .dockerignore 边界）。在本仓库生成或修改任何服务代码时必须使用；与通用 skills 冲突时以本 skill 的项目实证约定为准。
 ---
 
 # mix-web-demo 项目专属编码规范
