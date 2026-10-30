@@ -40,7 +40,7 @@ from app.internal.tasks import resolve_task_enabled, start_scheduler
 
 # 加载服务器配置
 server_config: dict[str, Any] = load_config("server")
-IP: str = Messages.INIT_IP
+IP: str = str(server_config["ip"])
 PORT: int = server_config["port"]
 SERVER_MODE: str = str(server_config["mode"])
 

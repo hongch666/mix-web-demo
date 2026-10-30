@@ -2844,9 +2844,6 @@ class Messages:
     INITIALIZATION_ERROR: str = "聊天服务未配置或初始化失败"
     """依赖未配置导致初始化失败的提示"""
 
-    INIT_IP: str = "127.0.0.1"
-    """服务启动时探测本机 IP 的兜底值"""
-
     INTENT_ROUTER_NO_PERMISSION_ERROR: str = "权限拒绝：此功能需要登录后才能使用。请先登录您的账户。您可以继续使用文章搜索和闲聊功能。"
     """意图路由拒绝权限后返回给用户的文案"""
 
