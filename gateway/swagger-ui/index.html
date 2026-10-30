@@ -548,6 +548,38 @@
         color: #cbd5e1;
       }
 
+      /* Markdown 导出按钮 */
+      .export-md {
+        background: #2563eb;
+        border: 1px solid #2563eb;
+        border-radius: 6px;
+        padding: 7px 14px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #fff;
+        font-weight: 500;
+        transition: all 0.25s ease;
+        margin-left: 8px;
+        font-family: inherit;
+      }
+      .export-md:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+      }
+      .export-md:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      body[data-theme="dark"] .export-md {
+        background: #3b82f6;
+        border-color: #3b82f6;
+        color: #f8fafc;
+      }
+      body[data-theme="dark"] .export-md:hover {
+        background: #2563eb;
+        border-color: #2563eb;
+      }
+
       /* —— 应用主布局 (侧边栏 + 内容区) —— */
       .app-layout {
         display: flex;
@@ -1056,6 +1088,12 @@
           placeholder="输入 Token 后回车生效" />
         <span class="token-status empty" id="tokenStatus"></span>
       </div>
+      <button
+        class="export-md"
+        id="exportMd"
+        title="按当前加载的 OpenAPI 规范实时导出 Markdown 文档">
+        导出 Markdown
+      </button>
       <button class="theme-toggle" id="themeToggle" title="切换主题">&#x263E;</button>
     </div>
     <div class="app-layout">
@@ -1072,6 +1110,7 @@
     <script
       src="/swagger-ui/swagger-ui-standalone-preset.js"
       charset="UTF-8"></script>
+    <script src="/swagger-ui/markdown-export.js" charset="UTF-8"></script>
     <script>
       (function () {
         // 禁止浏览器自动恢复上次的滚动位置
@@ -1105,6 +1144,7 @@
         var tabs = document.querySelectorAll(".tab");
         var container = document.getElementById("swagger-ui");
         var tokenInput = document.getElementById("tokenInput");
+        var exportBtn = document.getElementById("exportMd");
         var tokenStatus = document.getElementById("tokenStatus");
         var sidebar = document.getElementById("sidebar");
         var sidebarTagList = document.getElementById("sidebarTagList");
@@ -1351,6 +1391,151 @@
             tab.classList.add("active");
             loadSpec(tab.getAttribute("data-url"));
           });
+        });
+
+        // ============== Markdown 导出 ==============
+        // 规范来源就是各 Tab 上声明的 Swagger 地址，导出内容随服务实时变化，不读取任何预生成文件
+        function downloadMarkdown(content) {
+          var blob = new Blob([content], {
+            type: "text/markdown;charset=utf-8",
+          });
+          var url = URL.createObjectURL(blob);
+          var link = document.createElement("a");
+          link.href = url;
+          link.download = window.SwaggerMarkdownExport.fileName();
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(function () {
+            URL.revokeObjectURL(url);
+          }, 0);
+        }
+
+        // 单个规范请求：带 20 秒超时与一次重试，避免上游瞬时抖动让整份文档缺一个服务
+        function fetchSpec(url) {
+            var maxAttempt = 2;
+            var attempt = 0;
+
+            function request() {
+              attempt += 1;
+
+              var controller =
+                typeof AbortController !== "undefined"
+                  ? new AbortController()
+                  : null;
+              var timer = controller
+                ? setTimeout(function () {
+                    controller.abort();
+                  }, 20000)
+                : null;
+
+              function clearTimer() {
+                if (timer) {
+                  clearTimeout(timer);
+                }
+              }
+
+              return fetch(
+                url,
+                controller ? { signal: controller.signal } : undefined,
+              )
+                .then(function (res) {
+                  if (!res.ok) {
+                    throw new Error("HTTP " + res.status);
+                  }
+                  return res.json();
+                })
+                .then(
+                  function (spec) {
+                    clearTimer();
+                    return spec;
+                  },
+                  function (error) {
+                    clearTimer();
+                    // 超时与网络错误都值得重试一次，第二次仍失败则抛给上层汇总
+                    if (attempt < maxAttempt) {
+                      return new Promise(function (resolve) {
+                        setTimeout(resolve, 800);
+                      }).then(request);
+                    }
+                    if (error && error.name === "AbortError") {
+                      throw new Error("请求超时（20s）");
+                    }
+                    throw error;
+                  },
+                );
+            }
+
+            return request();
+        }
+
+        exportBtn.addEventListener("click", function () {
+          if (!window.SwaggerMarkdownExport) {
+            window.alert(
+              "导出脚本未加载，请检查 /swagger-ui/markdown-export.js 是否可访问",
+            );
+            return;
+          }
+
+          var services = Array.prototype.map.call(tabs, function (tab) {
+            return {
+              name: tab.getAttribute("data-name") || "未知服务",
+              url: tab.getAttribute("data-url"),
+            };
+          });
+
+          var label = exportBtn.textContent;
+          exportBtn.disabled = true;
+          exportBtn.textContent = "导出中...";
+
+          Promise.all(
+            services.map(function (service) {
+              return fetchSpec(service.url)
+                .then(function (spec) {
+                  return { name: service.name, spec: spec };
+                })
+                .catch(function (error) {
+                  return { name: service.name, error: error };
+                });
+            }),
+          )
+            .then(function (results) {
+              var loaded = results.filter(function (item) {
+                return item.spec;
+              });
+              if (!loaded.length) {
+                throw new Error("所有服务的 OpenAPI 规范都未取到");
+              }
+              downloadMarkdown(window.SwaggerMarkdownExport.build(loaded));
+
+              var failed = results.filter(function (item) {
+                return !item.spec;
+              });
+              if (failed.length) {
+                window.alert(
+                  "以下服务规范获取失败，已跳过（已重试一次）：\n" +
+                    failed
+                      .map(function (item) {
+                        var reason =
+                          item.error && item.error.message
+                            ? item.error.message
+                            : item.error;
+                        return "· " + item.name + "：" + reason;
+                      })
+                      .join("\n") +
+                    "\n\n可直接访问对应的 /swagger/<服务>.json 排查，服务恢复后重试即可。",
+                );
+              }
+            })
+            .catch(function (error) {
+              window.alert(
+                "导出失败：" + (error && error.message ? error.message : error),
+              );
+            })
+            .then(function () {
+              exportBtn.disabled = false;
+              exportBtn.textContent = label;
+            });
         });
 
         // 自动加载默认激活的 Tab
