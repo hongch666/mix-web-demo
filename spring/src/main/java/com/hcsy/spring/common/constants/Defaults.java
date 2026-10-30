@@ -79,8 +79,6 @@ public class Defaults {
 
     // ===== 启动 =====
 
-    /** 开发环境服务监听的默认 IP */
-    public static final String INIT_IP = "localhost";
     /** 服务启动成功的日志消息 */
     public static final String INIT_MSG = "Spring Boot应用已启动";
     /** 运行模式的日志消息模板 */

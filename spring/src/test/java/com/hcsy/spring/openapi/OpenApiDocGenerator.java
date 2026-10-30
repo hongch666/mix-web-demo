@@ -236,7 +236,7 @@ class OpenApiDocGenerator {
         /** SwaggerConfig 依赖服务端配置，切片测试不会加载 @ConfigurationPropertiesScan，这里显式提供 */
         @Bean
         ServerProperties serverProperties() {
-            return new ServerProperties("dev", 8081);
+            return new ServerProperties("dev", 8081, "0.0.0.0");
         }
     }
 }

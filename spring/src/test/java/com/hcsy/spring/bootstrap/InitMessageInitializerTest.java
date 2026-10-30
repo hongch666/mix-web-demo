@@ -15,10 +15,10 @@ class InitMessageInitializerTest {
     @DisplayName("启动时输出运行模式与服务地址")
     void logsStartupAddress() {
         SimpleLogger logger = mock(SimpleLogger.class);
-        new InitMessageInitializer(logger, new ServerProperties("dev", 9000)).run(null);
+        new InitMessageInitializer(logger, new ServerProperties("dev", 9000, "127.0.0.1")).run(null);
         verify(logger).info(Defaults.INIT_MSG);
         verify(logger).info(Defaults.INIT_MODE, "dev");
-        verify(logger).info(Defaults.INIT_ADDR, Defaults.INIT_IP, 9000);
-        verify(logger).info(Defaults.INIT_SWAGGER_ADDR, Defaults.INIT_IP, 9000);
+        verify(logger).info(Defaults.INIT_ADDR, "127.0.0.1", 9000);
+        verify(logger).info(Defaults.INIT_SWAGGER_ADDR, "127.0.0.1", 9000);
     }
 }

@@ -25,10 +25,12 @@ public class InitMessageInitializer implements ApplicationRunner {
      */
     @Override
     public void run(ApplicationArguments args) {
-        String ip = Defaults.INIT_IP;
+        String mode = serverProperties.mode();
+        String address = serverProperties.address();
+        int port = serverProperties.port();
         logger.info(Defaults.INIT_MSG);
-        logger.info(Defaults.INIT_MODE, serverProperties.mode());
-        logger.info(Defaults.INIT_ADDR, ip, serverProperties.port());
-        logger.info(Defaults.INIT_SWAGGER_ADDR, ip, serverProperties.port());
+        logger.info(Defaults.INIT_MODE, mode);
+        logger.info(Defaults.INIT_ADDR, address, port);
+        logger.info(Defaults.INIT_SWAGGER_ADDR, address, port);
     }
 }
