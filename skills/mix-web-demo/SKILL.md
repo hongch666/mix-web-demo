@@ -462,6 +462,8 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 ## 网关（gateway/，Apache APISIX）
 
 - 以 YAML 数据面运行（`role_data_plane` + `config_provider: yaml`），无业务代码；路由与插件全部在 `apisix/apisix.yaml`
+- 静态文档：`gateway/swagger-ui` → `/swagger-ui/`（Swagger UI，可在线调试），由 `nginx_config.http_server_configuration_snippet` 的 `location` + compose 挂载提供；新增静态目录按同一模式加 volume 与 `location`
+- Swagger UI 页面自带「导出 Markdown」按钮：`gateway/swagger-ui/markdown-export.js` 在浏览器里把页面上已加载的各服务规范（Tab 上的 `data-url`，即 `/swagger/*.json`）实时转成 Markdown 并下载，**不依赖仓库里任何预生成文件**；改导出格式只改这个脚本，四个服务新增接口无需重新生成产物
 - **认证外置**：业务路由挂 `forward-auth` 回调 Spring 的 `/users/internal/auth/validate`，由网关注入 `X-User-Id` / `X-Username` / `X-Session-Id` 供下游透传；**下游服务只信任请求头**，不自行解析 JWT
 - 内部接口防护靠 `block-internal` 路由（URI 黑名单），新增内部接口必须同步加入黑名单
 - **`block-internal` 的 `uri` 是精确匹配**（只有以 `*` 结尾才是前缀匹配），而它要挡的接口往往落在宽松前缀路由（`/articles/*`、`/users/*`、`/email/*`、`/ai_history/*`）覆盖范围内。新增内部接口时除了加黑名单，还要确认黑名单条目能覆盖实际访问路径，否则会出现「精确路径被挡、子路径可直达」的缺口
@@ -513,6 +515,8 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - build / compose-up / push 三个脚本都会在环境变量未设置时读取根目录 `.env` 的同名变量，保持同一口径
 - `./mix compose up` 的本地镜像检查发生在 compose 合并逻辑之外：纯用远端镜像时直接 `docker compose up -d` 或先 `docker compose pull`，不要依赖该脚本跳过本地构建
 - 本机访问 Docker Hub 失败（`failed to fetch anonymous token`、`dial tcp` 超时）时，`docker build` 与 `docker buildx build --check` 都会停在拉取基础镜像元数据阶段，这是环境问题（未配置加速或代理），不要据此判定 Dockerfile 写法有误
+- **网关的 Nacos 发现只在容器创建时拉一次服务列表，之后只刷新已知服务**：若创建瞬间服务尚未注册或容器网络未就绪，个别服务会永久缺席，表现为 `/swagger/<服务>.json` 返回 503、`logs/gateway/error.log` 里 `failed to set upstream: no valid upstream node: nil`。dev 模式已加两道保护——`run.sh` 的 `wait_nacos_registration` 等四个服务注册后再起网关，`scripts/gateway-dev.sh` 启动后自检四个规范，不可达就 `docker compose restart` 重建缓存（实测 restart 稳定恢复）；手工排查时先看 `docker compose restart` 是否恢复，不要改 `apisix.yaml` 的 upstream 配置
+- **docker compose 需 ≥ v2.36.0**：v2.35.x 在 `up` 时并发拉取镜像会 `fatal error: concurrent map writes`，栈顶在 `pkg/compose.(*composeService).pullRequiredImages`（docker/compose#12747，v2.36.0 修复）；`scripts/prepull-images.sh` 在 `./mix dev seq` 启动网关前与 `./mix compose up` 前用 `docker CLI` 串行预拉缺失镜像做兜底（命中缓存即跳过、失败不阻断），根治仍是升级 compose 或临时降到 ≤ v2.27.x；遇到该崩溃先看 `docker compose version`，不要改项目编排文件
 
 ### FastAPI 镜像只保留字节码
 
