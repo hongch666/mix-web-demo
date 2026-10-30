@@ -1,16 +1,10 @@
-from collections.abc import Callable, Coroutine
-from time import perf_counter
-from typing import Any
-
-from fastapi import FastAPI, Request
-from fastapi.openapi.utils import get_openapi
-from starlette.responses import Response
+from fastapi import FastAPI
 
 from app.core.constants import SwaggerConfig
 from app.core.errors import exception_handlers
 from app.core.middleware import middlewares
+from app.core.swagger import setup_openapi
 from app.core.telemetry import instrument_fastapi
-from app.core.telemetry.metrics import http_duration, http_requests
 from app.internal.api import routers
 
 from .lifespan import lifespan
@@ -30,37 +24,10 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    @app.middleware("http")
-    async def record_http_metrics(
-        request: Request, call_next: Callable[[Request], Coroutine[Any, Any, Response]]
-    ) -> Response:
-        """FastAPI HTTP 中间件，统计每个请求的调用次数与响应耗时 Prometheus 指标"""
-        started_at: float = perf_counter()
-        response = await call_next(request)
-        route: str = getattr(request.scope.get("route"), "path", "UNKNOWN")
-        http_requests.labels(request.method, route, str(response.status_code)).inc()
-        http_duration.labels(request.method, route).observe(perf_counter() - started_at)
-        return response
-
     instrument_fastapi(app)
 
     # 覆写 openapi 方法以设置 OpenAPI 版本
-    def custom_openapi():
-        """生成并缓存 OpenAPI 文档，以配置指定的 OpenAPI 版本覆写默认行为"""
-        if app.openapi_schema:
-            return app.openapi_schema
-        openapi_schema = get_openapi(
-            title=app.title,
-            version=app.version,
-            openapi_version=SwaggerConfig.OPENAPI_VERSION,
-            description=app.description,
-            routes=app.routes,
-            tags=SwaggerConfig.OPENAPI_TAGS,
-        )
-        app.openapi_schema = openapi_schema
-        return app.openapi_schema
-
-    app.openapi = custom_openapi
+    setup_openapi(app)
 
     # 添加中间件
     for middleware in middlewares:
