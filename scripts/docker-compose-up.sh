@@ -40,7 +40,8 @@ done
 # 远程镜像前缀：未在环境中配置时读取根目录 .env 的 DOCKER_IMAGE_PREFIX
 # 取值必须以 / 结尾（例如 docker.io/yourname/），与 docker-compose.yml 的镜像名拼接规则一致
 if [ -z "${DOCKER_IMAGE_PREFIX:-}" ] && [ -f "$WORKDIR/.env" ]; then
-    DOCKER_IMAGE_PREFIX="$(grep -E '^DOCKER_IMAGE_PREFIX=' "$WORKDIR/.env" | tail -n 1 | cut -d= -f2-)"
+    # .env 未启用该键时 grep 返回 1，避免在 set -e 下让赋值语句失败退出脚本
+    DOCKER_IMAGE_PREFIX="$(grep -E '^DOCKER_IMAGE_PREFIX=' "$WORKDIR/.env" | tail -n 1 | cut -d= -f2-)" || true
 fi
 
 app_services=(spring gozero nestjs fastapi)

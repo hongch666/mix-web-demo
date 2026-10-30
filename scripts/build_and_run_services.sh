@@ -13,7 +13,9 @@ NETWORK_NAME="hcsy"
 # 远程镜像前缀：未在环境中配置时读取根目录 .env 的 DOCKER_IMAGE_PREFIX
 # 取值必须以 / 结尾（例如 docker.io/yourname/），与 docker-compose.yml 的镜像名拼接规则一致
 if [ -z "${DOCKER_IMAGE_PREFIX:-}" ] && [ -f "$PROJECT_DIR/.env" ]; then
-    DOCKER_IMAGE_PREFIX="$(grep -E '^DOCKER_IMAGE_PREFIX=' "$PROJECT_DIR/.env" | tail -n 1 | cut -d= -f2-)"
+    # .env 未启用该键时 grep 返回 1，配合 set -e + pipefail 会让赋值语句失败并静默退出脚本，
+    # 因此必须吞掉命令替换的退出码
+    DOCKER_IMAGE_PREFIX="$(grep -E '^DOCKER_IMAGE_PREFIX=' "$PROJECT_DIR/.env" | tail -n 1 | cut -d= -f2-)" || true
 fi
 # 颜色定义
 RED='\033[0;31m'
