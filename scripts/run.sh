@@ -197,9 +197,51 @@ tmux send-keys -t $SESSION:4 \
 # container_name: mix-gateway，若之前通过 ./mix compose up 启动过会报容器名冲突
 bash "$WORKDIR/scripts/gateway-cleanup.sh"
 
+# 等待四个服务在 Nacos 注册完成后再拉起网关
+# 网关的 Nacos 发现只在启动时拉取一次服务列表、之后只刷新已知服务，
+# 若此刻服务尚未注册，上游节点会一直是空：/swagger/*.json 返回 503，
+# error.log 里是 "no valid upstream node: nil"。超时只告警不阻断启动
+wait_nacos_registration() {
+    local nacos="${NACOS_ADDR:-127.0.0.1:8848}"
+    local timeout="${1:-120}"
+    local deadline=$((SECONDS + timeout))
+    local pending="" service
+
+    if ! command -v curl >/dev/null 2>&1; then
+        echo "未找到 curl，跳过 Nacos 注册等待"
+        return 0
+    fi
+
+    while [ $SECONDS -lt $deadline ]; do
+        pending=""
+        for service in spring gozero nestjs fastapi; do
+            if ! curl -s --noproxy '*' --max-time 2 \
+                "http://$nacos/nacos/v1/ns/instance/list?serviceName=$service" 2>/dev/null |
+                grep -q '"hosts":\[{'; then
+                pending="$pending $service"
+            fi
+        done
+        if [ -z "$pending" ]; then
+            echo "四个服务已在 Nacos 注册，开始启动网关"
+            return 0
+        fi
+        sleep 3
+    done
+
+    echo "警告：以下服务在 ${timeout}s 内未完成 Nacos 注册:$pending"
+    echo "      网关可能返回 503；服务就绪后可重建网关: cd gateway && docker compose up -d --force-recreate"
+    return 0
+}
+
+wait_nacos_registration 120
+
+# docker compose v2.35.x 并发拉取镜像会崩（docker/compose#12747），先串行预拉一遍，
+# 镜像命中本地缓存后 compose up 不再走并发拉取分支；拉取失败不阻断，交给 compose 处理
+bash "$WORKDIR/scripts/prepull-images.sh" "$WORKDIR/gateway/docker-compose.yml" "docker compose"
+
 tmux new-window -t $SESSION:5 -n gateway -c "$WORKDIR"
 tmux send-keys -t $SESSION:5 \
-"source '$WORKDIR/scripts/otel-env.sh' gateway && cd gateway && echo 'Starting APISIX Gateway...' && docker compose up" C-m
+"source '$WORKDIR/scripts/otel-env.sh' gateway && echo 'Starting APISIX Gateway...' && bash '$WORKDIR/scripts/gateway-dev.sh'" C-m
 
 # 选择 spring 窗口并附加
 tmux select-window -t $SESSION:1

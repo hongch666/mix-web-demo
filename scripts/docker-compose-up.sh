@@ -90,6 +90,10 @@ echo "启动应用与可观测性服务，不含第三方依赖组件"
 
 echo "请先通过 ./scripts/docker-services.sh 启动 MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse 等依赖"
 
+# 应用镜像此时已就绪，这里只会串行拉取缺失的第三方镜像；
+# 规避 docker compose v2.35.x 并发拉取镜像的 fatal error: concurrent map writes（docker/compose#12747）
+bash "$WORKDIR/scripts/prepull-images.sh" "$COMPOSE_FILE" "$COMPOSE_CMD"
+
 $COMPOSE_CMD -f "$COMPOSE_FILE" up -d
 
 echo "应用服务已启动，使用 $COMPOSE_CMD -f $COMPOSE_FILE ps 查看状态"
