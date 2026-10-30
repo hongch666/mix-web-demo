@@ -237,7 +237,7 @@ def add_chinese_tags_to_dict(swagger_data):
     fix_streaming_endpoints(swagger_data)
 
     # goctl 只根据 returns 生成 data 的 schema，实际 handler 模板会通过
-    # utils.Success/Error 统一包装为 {code, msg, data}，这里补齐文档外壳。
+    # utils.Success/Error 统一包装为 {code, msg, data}，这里补齐文档外壳
     wrap_unified_responses(swagger_data)
 
     # 401 未登录响应对所有接口通用，统一注入（必须在 wrap_unified_responses 之后，
@@ -268,7 +268,7 @@ def wrap_unified_responses(swagger_data):
     SSE 接口的 200 响应同时声明 text/event-stream 与 application/json
     （见 fix_streaming_endpoints），凡是内容类型里含 text/event-stream 的响应整体跳过，
     否则帧 schema 会被当成业务数据包进 code/msg/data 外壳。
-    函数可重复执行：已经包含 code/msg/data 的 schema 不会再次嵌套。
+    函数可重复执行：已经包含 code/msg/data 的 schema 不会再次嵌套
     """
     paths = swagger_data.get("paths")
     if not isinstance(paths, dict):
