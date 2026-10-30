@@ -496,6 +496,45 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - **数据库初始化脚本**统一放根目录 `db/<类型>/`（`mysql`、`postgresql`、`clickhouse`、`mongodb`、`es`、`neo4j`），只放表、扩展、索引、集合级别的脚本；`CREATE DATABASE` 与 `USE` 一律由使用方按需自行执行，**不在脚本中写死库名**，库名以各服务的数据库配置项为准（`DB_NAME`、`DB_MYSQL_DBNAME`、`DB_DATABASE`、`DB_MYSQL_DATABASE`、`DB_POSTGRES_DATABASE`、`DB_MONGODB_DATABASE`）。PostgreSQL 容器侧的初始库由 `scripts/docker-services.sh` 的 `POSTGRES_DB` 创建，需与 `DB_POSTGRES_DATABASE` 保持一致
 - 本技能包（`skills/mix-web-demo/`，目录名与 SKILL.md 的 `name` 一致）改完后用 `./mix skills` 同步到本机 Agent 技能目录：目标清单在 `scripts/skills-targets.conf`（只列用户级 `<home>` 技能目录，可自行追加工具，仓库内项目级目录不参与），只同步技能根目录已存在的目标，同步为镜像覆盖且内容一致时跳过；`--list` 看检测结果、`--dry-run` 预演，脚本为 `scripts/skills-sync.sh`（Windows 在 Git Bash 下执行）。脚本用 `HOME`（无则 `USERPROFILE`）解析清单里的 `<home>`，因此在 WSL 的 bash 里执行会把技能写到 Linux 侧主目录 `/home/<user>`，而 IDE 读的是 `C:\Users\<user>`，看起来「同步成功」但技能并未更新（同样是 Windows + WSL 才有的问题）；Windows 下要么用 Git Bash，要么先执行 `HOME=/mnt/c/Users/<user> ./mix skills`
 
+## 容器镜像与镜像分发
+
+### 镜像名称、推送与版本
+
+- `./mix docker build` 产出本地镜像 `mix-<service>:latest`（只处理 spring/gozero/nestjs/fastapi；gateway 用官方 `apache/apisix` 镜像，不构建也不推送）
+- `./mix docker push --prefix <前缀> [--tag <tag>] [service...]` 把本地镜像重打标签为 `<前缀>/mix-<service>:<tag>` 后推送：**不传 `--tag` 时固定推 `latest`**，脚本没有从 Git 提交号或时间推导版本的逻辑，也不读本地镜像的实际 tag；`gateway` 直接跳过，未知服务名只警告
+- 推送脚本只做 `docker tag` + `docker push`，**不执行 `docker login`**：首次推送前自行登录目标仓库
+
+### 本地构建优先、远程镜像兜底
+
+- 统一镜像名的开关是根目录 `.env` 的 `DOCKER_IMAGE_PREFIX`，**取值必须以 `/` 结尾**（`docker.io/yourname/`、`registry.example.com/team/`）；未配置时保持纯本地模式，行为与引入该变量前完全一致
+- `docker-compose.yml` 四个业务服务的镜像写 `${DOCKER_IMAGE_PREFIX:-}mix-<service>:latest`：前缀为空退化为本地名，配置后为 `<前缀>mix-<service>:latest`，与推送出去的镜像名一致
+- `scripts/build_and_run_services.sh` 在构建成功后按前缀补打同名标签，保证 compose 命中的就是本次本地构建结果；`scripts/docker-compose-up.sh` 先按有效名检查，本地构建存在但有效名缺失时补标签，两者都缺失且配置了前缀时交给 compose 拉取，未配置前缀才走本地构建
+- 生效依赖 Compose 默认的 `pull_policy: missing`：本地有同名镜像直接使用，缺失才拉取。要强制以远端为准必须显式 `pull_policy: always`，代价是每次 `up` 都拉取、本地构建结果会被同名远端镜像覆盖
+- build / compose-up / push 三个脚本都会在环境变量未设置时读取根目录 `.env` 的同名变量，保持同一口径
+- `./mix compose up` 的本地镜像检查发生在 compose 合并逻辑之外：纯用远端镜像时直接 `docker compose up -d` 或先 `docker compose pull`，不要依赖该脚本跳过本地构建
+- 本机访问 Docker Hub 失败（`failed to fetch anonymous token`、`dial tcp` 超时）时，`docker build` 与 `docker buildx build --check` 都会停在拉取基础镜像元数据阶段，这是环境问题（未配置加速或代理），不要据此判定 Dockerfile 写法有误
+
+### FastAPI 镜像只保留字节码
+
+- `fastapi/Dockerfile` 为多阶段：builder 用 `python -m venv /opt/venv` 装依赖，`compileall -b -f main.py app` 后 `find /app -name '*.py' -delete`；runtime 只复制 `/opt/venv` 与 `/app`
+- `-b` 是必需项：产出与源码同目录的 `main.pyc`、`__init__.pyc`（legacy 布局），删掉 `.py` 后仍可按模块名导入；不加 `-b` 时产物落在 `__pycache__/`，删源码就无法导入
+- 两个阶段必须使用同一基础镜像 tag（当前 `python:3.12-slim-bookworm`），否则字节码 magic number 与 ABI 不匹配；升级 Python 版本要两处同步改
+- 仍会出现在镜像中且属预期：`application.yaml`（`load_config` 按 `Path(__file__).parents[3]` 定位，`.pyc` 与 `.py` 同目录时结果一致）、`/opt/venv` 下第三方库的 `.py`、`logs/`、`static/`
+- 已知边界：`.pyc` 可被反编译（提高门槛而非绝对保护）、traceback 不再打印源码行、容器内不能开 `--reload`（热重载依赖 `.py`）
+- 改依赖或包结构后正常重建即可；`requirements.txt` 只在 builder 阶段需要，runtime 已删除
+
+### .dockerignore 约定（四个业务服务）
+
+构建上下文是服务目录本身（`docker build` 在服务目录内执行，不是仓库根目录），只排除构建与运行都不需要的内容：
+
+- 公共项：`.env` / `.env.docker`（运行期由 `--env-file` / `env_file` 传入）、IDE 与 OS 文件、`.git`、日志目录、本地构建产物
+- `spring/`：`src/test/`（`mvn package -DskipTests` 不需要测试源码，排除后不再编译测试类）、`docs/`、`logs/`、`*.md`
+- `gozero/`：`api/`、`template/`、`script/`、`**/*_test.go`、`.golangci.yml`。**禁止改成 `**/docs`**：`gozero/app/docs` 的 swagger 资源由 `go:embed` 嵌入二进制，缺失会直接构建失败；现有根级 `docs/` 只匹配上下文根目录，安全
+- `nestjs/`：单测与源码同目录，必须用 `**/*.spec.ts` 覆盖 `src/**`，并用 `**/*-spec.ts` 覆盖 `*.e2e-spec.ts` / `*.integration-spec.ts`。**只写 `test/` 等于没写**（当前仓库没有该目录），`test/` 仅作后续 e2e 目录的预留；`tsconfig.build.json` 本来就 exclude `**/*spec.ts`，因此排除后不影响 `nest build`
+- `fastapi/`：`tests/`、`docs/`、`script/`、`*.md`
+- 匹配语义是 Go 的 `filepath.Match`：`*` 不跨 `/`，所以 `*.md` 只排除上下文根目录那一层；要按任意层级排除必须写 `**/xxx`，写之前先确认目标不是编译期或运行期依赖（gozero 的 `app/docs` 就是反例）
+- 改完 `.dockerignore` 或 Dockerfile 后自检：`./mix docker build <service>`，再用 `docker run --rm --entrypoint sh mix-<service>:latest -c "ls /app"` 核对内容（fastapi 追加 `find /app -name '*.py'`，预期无输出）
+
 ## 接口文档收尾流程
 
 新增、修改或删除对外接口后，除了本服务的格式化、lint 与构建校验，还要走完「重新生成静态文档 → 同步 Apifox」两步，文档产物与服务代码在同一次提交里。
