@@ -263,6 +263,8 @@ app/internal/agents     LangChain Agent 与工具
 - Agent 工具权限：`internal/agents/toolScope.py` 的 contextvars 作用域（**fail-closed**）——`intentRouter` 在路由前统一写入 `ToolScope(user_id, is_admin)`，SQL 与 MongoDB 工具执行前校验行级范围（查询必须含 `user_id` 且绑定值等于当前用户，admin 放行）。禁止把请求态写进 `@lru_cache` 单例的实例字段
 - 日志：`from app.core.base import Logger`，`Logger.info/warning/error/debug`
 - 上下文：`core/middleware/contextMiddleware.py` 的 contextvars（`get_current_user_id` 等），深层函数免参读取用户信息
+- **OpenAPI 文档定制放 `core/swagger/` 包**（实现 `openapi.py`，由 `__init__.py` 导出 `setup_openapi`，调用方只 `from app.core.swagger import setup_openapi`），在 `create_app()` 里紧随 `instrument_fastapi(app)` 调用；由它覆写 `app.openapi`，使用 `SwaggerConfig.OPENAPI_VERSION` 生成并缓存到 `app.openapi_schema`。禁止在 `app.py` 内联 `custom_openapi`（与 NestJS `app/swagger.ts`、GoZero `boot/swagger.go`、Spring `config/SwaggerConfig` 对齐）
+- **HTTP 中间件一律放 `core/middleware/`（`XxxMiddleware` 继承 `BaseHTTPMiddleware`），在 `core/middleware/__init__.py` 的 `middlewares` 列表统一注册，禁止在 `app.py` 用 `@app.middleware("http")` 内联**：`add_middleware` 会把后注册的放到最外层，列表因此按「内层 → 外层」声明（当前为 `[MetricsMiddleware, ContextMiddleware]`，跑出来 `Context → Metrics`）；现有两个中间件分别是 `contextMiddleware.py`（上下文/contextvars）与 `metricsMiddleware.py`（Prometheus `mix_http_*` 指标，路由取自 `request.scope["route"]`，必须在 `call_next` 之后读取）
 - **类与函数必须带单行中文 docstring**（风格参考 `internal/models/warehouse/base.py`）：类说明职责，方法/函数说明做什么，`__init__` 说明注入了哪些依赖；常量类 `@staticmethod` 用一句话概括消息/常量用途，SQL 模板常量概括查询目的；单行书写、结尾不加中文句号（对齐通用规则 13）；私有方法（`_` 前缀）与嵌套类同样要求，已存在的 docstring 不改写。新增类和函数遗漏 docstring 视同未完成；交付前可用 AST 复核（遍历 `ClassDef` / `FunctionDef` / `AsyncFunctionDef`，`ast.get_docstring` 为 None 的清单必须为空）
 
 ## GoZero 服务（gozero/，API-First）
