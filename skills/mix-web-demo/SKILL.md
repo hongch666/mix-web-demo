@@ -521,7 +521,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - build / compose-up / push 三个脚本都会在环境变量未设置时读取根目录 `.env` 的同名变量，保持同一口径
 - `./mix compose up` 的本地镜像检查发生在 compose 合并逻辑之外：纯用远端镜像时直接 `docker compose up -d` 或先 `docker compose pull`，不要依赖该脚本跳过本地构建
 - 本机访问 Docker Hub 失败（`failed to fetch anonymous token`、`dial tcp` 超时）时，`docker build` 与 `docker buildx build --check` 都会停在拉取基础镜像元数据阶段，这是环境问题（未配置加速或代理），不要据此判定 Dockerfile 写法有误
-- **网关的 Nacos 发现只在容器创建时拉一次服务列表，之后只刷新已知服务**：若创建瞬间服务尚未注册或容器网络未就绪，个别服务会永久缺席，表现为 `/swagger/<服务>.json` 返回 503、`logs/gateway/error.log` 里 `failed to set upstream: no valid upstream node: nil`。dev 模式已加两道保护——`run.sh` 的 `wait_nacos_registration` 等四个服务注册后再起网关，`scripts/gateway-dev.sh` 启动后自检四个规范，不可达就 `docker compose restart` 重建缓存（实测 restart 稳定恢复）；手工排查时先看 `docker compose restart` 是否恢复，不要改 `apisix.yaml` 的 upstream 配置
+- **网关的 Nacos 发现只在容器创建时拉一次服务列表，之后只刷新已知服务**：若创建瞬间服务尚未注册或容器网络未就绪，个别服务会永久缺席，表现为 `/swagger/<服务>.json` 返回 503、`logs/gateway/error.log` 里 `failed to set upstream: no valid upstream node: nil`。dev 模式不在启动前等待服务注册，改由 `scripts/gateway-dev.sh` 在 `GATEWAY_WAIT_SECONDS`（默认 180 秒）窗口内轮询四个 Swagger 规范，不可达就 `docker compose restart` 重建发现缓存（实测 restart 稳定恢复），服务注册完成后自动收敛；手工排查时先看 `docker compose restart` 是否恢复，不要改 `apisix.yaml` 的 upstream 配置
 - **docker compose 需 ≥ v2.36.0**：v2.35.x 在 `up` 时并发拉取镜像会 `fatal error: concurrent map writes`，栈顶在 `pkg/compose.(*composeService).pullRequiredImages`（docker/compose#12747，v2.36.0 修复）；`scripts/prepull-images.sh` 在 `./mix dev seq` 启动网关前与 `./mix compose up` 前用 `docker CLI` 串行预拉缺失镜像做兜底（命中缓存即跳过、失败不阻断），根治仍是升级 compose 或临时降到 ≤ v2.27.x；遇到该崩溃先看 `docker compose version`，不要改项目编排文件
 
 ### FastAPI 镜像只保留字节码
