@@ -2,7 +2,6 @@ package com.hcsy.spring.application.service.impl;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -276,31 +275,11 @@ public class TokenServiceImpl implements TokenService {
     }
 
     /**
-     * 校验访问令牌的Redis反向索引与会话哈希中存储的令牌是否一致，返回Boolean的Mono结果
-     */
-    @Override
-    public Mono<Boolean> validateAccessTokenInRedis(Long userId, String sessionId, String accessToken) {
-        String expectedValue = userId + ":" + sessionId;
-        return Mono.zip(
-            redisUtil.get(RedisKeys.userAccess(accessToken)).defaultIfEmpty(""),
-            redisUtil.getHash(RedisKeys.userSession(userId, sessionId), "accessToken").defaultIfEmpty(""))
-            .map(values -> expectedValue.equals(values.getT1()) && accessToken.equals(values.getT2()));
-    }
-
-    /**
      * 以用户会话集合的大小作为在线设备数量返回
      */
     @Override
     public Mono<Long> getUserOnlineDeviceCount(Long userId) {
         return redisUtil.getSetSize(RedisKeys.userSessions(userId));
-    }
-
-    /**
-     * 读取Redis中用户的会话ID集合并以列表返回
-     */
-    @Override
-    public Mono<List<String>> getUserSessions(Long userId) {
-        return redisUtil.getSet(RedisKeys.userSessions(userId));
     }
 
     /**

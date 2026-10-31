@@ -437,38 +437,6 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 查询非AI角色的用户ID的Flux流
-     */
-    @Override
-    public Flux<Long> getNormalUserIds() {
-        return userRepository.findIdsByRoleNot(Defaults.AI_ROLE);
-    }
-
-    /**
-     * 查询AI角色用户的ID的Flux流
-     */
-    @Override
-    public Flux<Long> getAiUserIds() {
-        return userRepository.findIdsByRole(Defaults.AI_ROLE);
-    }
-
-    /**
-     * 统计非AI角色用户数量并返回Mono响应式结果
-     */
-    @Override
-    public Mono<Long> countNormalUsers() {
-        return userRepository.countByRoleNot(Defaults.AI_ROLE);
-    }
-
-    /**
-     * 统计AI角色用户数量并返回Mono响应式结果
-     */
-    @Override
-    public Mono<Long> countAiUsers() {
-        return userRepository.countByRole(Defaults.AI_ROLE);
-    }
-
-    /**
      * 事务保存用户，未加密的密码先加密，随后初始化登录状态并失效全量用户缓存
      */
     @Override

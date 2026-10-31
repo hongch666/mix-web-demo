@@ -113,11 +113,6 @@ public interface ArticleService {
     Mono<PageDTO<ArticleWithCategoryVO>> listUnpublishedArticlesWithCategory(long page, long size);
 
     /**
-     * 按标题精确查找第一篇文章
-     */
-    Mono<Article> findByArticleTitle(String articleTitle);
-
-    /**
      * 按标题模糊匹配并流式返回所有文章
      */
     Flux<Article> listAllArticlesByTitle(String articleTitle);

@@ -281,14 +281,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * 实现按标题精确查找第一篇文章
-     */
-    @Override
-    public Mono<Article> findByArticleTitle(String articleTitle) {
-        return articleRepository.findFirstByTitle(articleTitle);
-    }
-
-    /**
      * 实现按标题模糊匹配并流式返回所有文章
      */
     @Override

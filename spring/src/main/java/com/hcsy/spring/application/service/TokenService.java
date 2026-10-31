@@ -1,7 +1,5 @@
 package com.hcsy.spring.application.service;
 
-import java.util.List;
-
 import com.hcsy.spring.entity.dto.AuthIdentityDTO;
 import com.hcsy.spring.entity.vo.TokenRefreshVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
@@ -44,19 +42,9 @@ public interface TokenService {
     Mono<Void> removeSession(Long userId, String sessionId);
 
     /**
-     * 校验访问令牌在Redis中的反向索引与会话记录是否匹配，返回Boolean的Mono结果
-     */
-    Mono<Boolean> validateAccessTokenInRedis(Long userId, String sessionId, String accessToken);
-
-    /**
      * 统计用户在线设备数量，返回Mono包装的会话集合大小
      */
     Mono<Long> getUserOnlineDeviceCount(Long userId);
-
-    /**
-     * 查询用户全部会话ID列表，返回Mono响应式结果
-     */
-    Mono<List<String>> getUserSessions(Long userId);
 
     /**
      * 强制指定用户下线，删除其全部会话并将登录状态置为离线

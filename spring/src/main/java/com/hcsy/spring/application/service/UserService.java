@@ -175,26 +175,6 @@ public interface UserService {
     Mono<Void> updateUserStatus(Long userId, String status);
 
     /**
-     * 查询全部非AI用户的ID的Flux流
-     */
-    Flux<Long> getNormalUserIds();
-
-    /**
-     * 查询全部AI角色用户的ID的Flux流
-     */
-    Flux<Long> getAiUserIds();
-
-    /**
-     * 统计非AI用户数量并返回Mono响应式结果
-     */
-    Mono<Long> countNormalUsers();
-
-    /**
-     * 统计AI角色用户数量并返回Mono响应式结果
-     */
-    Mono<Long> countAiUsers();
-
-    /**
      * 根据ID查询用户并返回Mono响应式结果
      */
     Mono<User> getById(Long id);

@@ -63,21 +63,6 @@ public interface UserRepository extends ReactiveCrudRepository<User, Long> {
     Flux<User> findByRoleOrderByIdAsc(String role);
 
     /**
-     * 统计指定角色之外的用户数量
-     */
-    Mono<Long> countByRoleNot(String role);
-
-    /**
-     * 统计指定角色之外且用户名模糊匹配的用户数量
-     */
-    Mono<Long> countByRoleNotAndNameContaining(String role, String name);
-
-    /**
-     * 统计指定角色的用户数量
-     */
-    Mono<Long> countByRole(String role);
-
-    /**
      * 查询指定角色之外的用户 ID 列表，用于批量同步普通用户
      */
     @Query("SELECT id FROM user WHERE role <> :role ORDER BY id")

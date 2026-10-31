@@ -116,16 +116,6 @@ class EmailVerificationServiceImplTest {
     }
 
     @Test
-    @DisplayName("邮箱已验证标记直接查询 Redis 是否存在")
-    void isEmailVerifiedReadsRedisExistence() {
-        when(redisUtil.exists(RedisKeys.emailVerified(EMAIL))).thenReturn(Mono.just(true));
-
-        StepVerifier.create(emailVerificationService.isEmailVerified(EMAIL))
-            .expectNext(true)
-            .verifyComplete();
-    }
-
-    @Test
     @DisplayName("标记邮箱已验证时写入一天的标记")
     void markEmailAsVerifiedWritesOneDayFlag() {
         when(redisUtil.set(RedisKeys.emailVerified(EMAIL), "true", VERIFIED_TTL_SECONDS))

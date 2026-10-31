@@ -3,7 +3,6 @@ package com.hcsy.spring.infra.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,19 +19,9 @@ import reactor.core.publisher.Mono;
  */
 public interface CommentsRepository extends ReactiveCrudRepository<Comments, Long> {
     /**
-     * 按创建时间倒序分页查询指定用户发表的评论列表
-     */
-    Flux<Comments> findByUserIdOrderByCreateTimeDesc(Long userId, Pageable pageable);
-
-    /**
      * 统计指定用户发表的评论总数
      */
     Mono<Long> countByUserId(Long userId);
-
-    /**
-     * 按创建时间倒序查询指定文章下的全部评论
-     */
-    Flux<Comments> findByArticleIdOrderByCreateTimeDesc(Long articleId);
 
     /**
      * 统计指定文章下来自给定用户集合的评论数量，用于统计 AI 用户评论数

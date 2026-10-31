@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.hcsy.spring.application.service.CategoryService;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
@@ -30,10 +31,10 @@ import com.hcsy.spring.entity.vo.CategoryVO;
 import com.hcsy.spring.entity.vo.SubCategorySyncVO;
 import com.hcsy.spring.entity.vo.SubCategoryVO;
 import com.hcsy.spring.entity.vo.SubCategoryWithParentVO;
+import com.hcsy.spring.infra.repository.CategoryReferenceRepository;
 import com.hcsy.spring.infra.repository.CategoryRepository;
 import com.hcsy.spring.infra.repository.SubCategoryRepository;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -54,6 +55,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
+    private final CategoryReferenceRepository categoryReferenceRepository;
     private final CacheUtil cacheUtil;
     private final TransactionalOperator transactionalOperator;
 
@@ -148,19 +150,20 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     /**
-     * 实现删除指定子分类并清除分类缓存
+     * 实现删除指定子分类及其权威参考文本并清除分类缓存
      */
     @Override
     public Mono<Void> deleteSubCategory(Long id) {
         Mono<Void> databaseOperation = subCategoryRepository.findById(id)
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
-            .flatMap(subCategoryRepository::delete);
+            .flatMap(subCategory -> categoryReferenceRepository.deleteBySubCategoryId(id)
+                .then(subCategoryRepository.delete(subCategory)));
         return transactionalOperator.transactional(databaseOperation)
             .then(evictAllCategoryCaches());
     }
 
     /**
-     * 实现批量删除子分类，任一ID不存在时抛404异常
+     * 实现批量删除子分类及其权威参考文本，任一ID不存在时抛404异常
      */
     @Override
     public Mono<Void> deleteSubCategories(List<Long> ids) {
@@ -172,6 +175,8 @@ public class CategoryServiceImpl implements CategoryService {
             .count()
             .filter(count -> count == distinctIds.size())
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORIES)))
+            .thenMany(Flux.fromIterable(distinctIds)
+                .concatMap(categoryReferenceRepository::deleteBySubCategoryId))
             .then(subCategoryRepository.deleteAllById(distinctIds));
         return transactionalOperator.transactional(databaseOperation)
             .then(evictAllCategoryCaches());

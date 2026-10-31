@@ -17,11 +17,6 @@ public interface EmailVerificationService {
     Mono<Boolean> verifyCode(String email, String code);
 
     /**
-     * 查询邮箱是否已通过验证
-     */
-    Mono<Boolean> isEmailVerified(String email);
-
-    /**
      * 将邮箱标记为已验证并保留24小时
      */
     Mono<Void> markEmailAsVerified(String email);

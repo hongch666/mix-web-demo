@@ -70,14 +70,6 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     }
 
     /**
-     * 实现查询邮箱是否已通过验证
-     */
-    @Override
-    public Mono<Boolean> isEmailVerified(String email) {
-        return redisUtil.exists(RedisKeys.emailVerified(email));
-    }
-
-    /**
      * 实现将邮箱标记为已验证并保留24小时
      */
     @Override

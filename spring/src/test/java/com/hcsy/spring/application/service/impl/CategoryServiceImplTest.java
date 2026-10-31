@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -31,6 +33,7 @@ import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
+import com.hcsy.spring.infra.repository.CategoryReferenceRepository;
 import com.hcsy.spring.infra.repository.CategoryRepository;
 import com.hcsy.spring.infra.repository.SubCategoryRepository;
 
@@ -49,6 +52,8 @@ class CategoryServiceImplTest {
     @Mock
     private SubCategoryRepository subCategoryRepository;
     @Mock
+    private CategoryReferenceRepository categoryReferenceRepository;
+    @Mock
     private CacheUtil cacheUtil;
     @Mock
     private TransactionalOperator transactionalOperator;
@@ -57,8 +62,8 @@ class CategoryServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        categoryService = new CategoryServiceImpl(categoryRepository, subCategoryRepository, cacheUtil,
-            transactionalOperator);
+        categoryService = new CategoryServiceImpl(categoryRepository, subCategoryRepository,
+            categoryReferenceRepository, cacheUtil, transactionalOperator);
     }
 
     @Test
@@ -196,6 +201,23 @@ class CategoryServiceImplTest {
             .verify();
 
         verify(subCategoryRepository).findAllById(List.of(1L, 2L));
+    }
+
+    @Test
+    @DisplayName("删除子分类时先清理权威参考文本再删除子分类")
+    void deleteSubCategoryRemovesReferenceBeforeSubCategory() {
+        SubCategory existing = subCategory();
+        when(subCategoryRepository.findById(SUB_CATEGORY_ID)).thenReturn(Mono.just(existing));
+        when(categoryReferenceRepository.deleteBySubCategoryId(SUB_CATEGORY_ID)).thenReturn(Mono.empty());
+        when(subCategoryRepository.delete(existing)).thenReturn(Mono.empty());
+        stubTransactional();
+        stubCategoryCacheEviction();
+
+        StepVerifier.create(categoryService.deleteSubCategory(SUB_CATEGORY_ID)).verifyComplete();
+
+        InOrder inOrder = inOrder(categoryReferenceRepository, subCategoryRepository);
+        inOrder.verify(categoryReferenceRepository).deleteBySubCategoryId(SUB_CATEGORY_ID);
+        inOrder.verify(subCategoryRepository).delete(existing);
     }
 
     @Test
