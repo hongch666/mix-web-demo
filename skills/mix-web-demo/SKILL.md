@@ -381,10 +381,10 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - `page * size` 超过 `SEARCH_RECALL_MAX_SIZE`（200）时退化为窗口内重排并打 `SEARCH_RECALL_DEGRADE_LOG`
 - 融合归一化分母取**整个召回候选集**的最大 ES 分（同一档位内各页可比）；未被向量或图谱召回的候选用**候选集均值**填充，权重保持全局固定。禁止把缺失信号的权重按比例重分配给其余信号
 - 两层权重分开看：ES 内 `script_score` 权重（`ESScoreWeight` / `ViewsWeight` / `RecencyWeight` 等）管第一层，`FusionConfig`（`VectorScoreWeight` / `GraphScoreWeight` / `HybridMinESWeight`）管第二层
-- ES 搜索脚本、权重、参数名映射三件套任一拉取失败 → 整条增强链路关闭，降级为普通 ES 条件分页查询（无脚本时补 `create_at` 降序，避免 `_score` 恒为 0 时顺序不确定）；ES 召回后回填 Spring 实时统计与评分（views / likes / collects / follows / comment_scores）五路任一失败 → 该指标保留 ES 原值，不抛错
+- ES 搜索脚本、权重、参数名映射三件套任一拉取失败 → 整条增强链路关闭，降级为普通 ES 条件分页查询（无脚本时补 `create_at` 降序，避免 `_score` 恒为 0 时顺序不确定）；ES 召回后回填 Spring 实时统计与评分（views / likes / collects / follows / comment_scores）整体失败 → 全部指标保留 ES 原值，不抛错
 - 回填只改变返回给前端的展示值，`script_score` 在 ES 内执行、仍用文档快照里的 `ai_score` / `user_score` 打分，因此评分展示实时、排序最多滞后一个同步周期（整点 cron 或精确同步）
-- **Spring 的批量统计数据是 List/VO，不是 Map**：`/articles/views/batch` 直接返回 `[{id,count}]`，`/likes|collects|focus/counts/batch` 返回 `{counts:[{id,count}]}`，`/comments/scores/batch` 返回 `[{article_id, role_scores}]`（Spring 全局 Jackson 是 SNAKE_CASE，见 `spring/src/main/resources/application.yaml`）。GoZero 侧由 `springClient` 的 `ParseArticleViewsMap` / `ParseCountsMap` / `ParseCommentScoresMap` 转成内部 Map，结构体 tag 必须与 Spring 的 VO 对齐（`IdCountVO`、`BatchCountVO`、`ArticleCommentScoresVO`）
-- **解析错误必须显式暴露，禁止 `_` 丢弃**：ES 同步任务（`esSyncerTask`）解析失败直接 `*_PARSE_ERROR` 报错退出，检索回填（`es.go`）解析失败计入 `SEARCH_STATS_FILL_DEGRADE_LOG` 的 metrics。曾因 Spring 把这三个接口的返回从 Map 改成 List/VO 而 GoZero 仍按 Map 解析，错误被静默吞掉，导致 ES 里点赞/收藏/粉丝数/AI 与用户评分长期全为 0（`views` 不受影响是因为它随文章实体一起同步、回填失败时保留 ES 原值）
+- **统计回填走单一合并接口 `POST /articles/stats/batch`**：入参 `{ids, author_ids}`，返回 `ArticleStatsBatchVO`（`views` / `likes` / `collects` / `follows` 为 `[{id,count}]`，`comment_scores` 为 `[{article_id, role_scores}]`，Spring 全局 Jackson 是 SNAKE_CASE）。原来的 `/articles/views/batch`、`/likes|collects|focus/counts/batch`、`/comments/scores/batch` 已删除，GoZero 侧唯一解析入口是 `springClient.ParseArticleStats`，结构体 tag 必须与 Spring 的 VO 对齐（`ArticleStatsBatchVO`、`IdCountVO`、`ArticleCommentScoresVO`）
+- **解析错误必须显式暴露，禁止 `_` 丢弃**：ES 同步任务（`esSyncerTask`）与检索回填（`es.go`）都调用同一合并接口，解析失败时前者以 `ARTICLE_STATS_QUERY_ERROR` 报错退出、后者计入 `SEARCH_STATS_FILL_DEGRADE_LOG` 的 metrics。历史上解析错误被静默吞掉，导致 ES 里点赞/收藏/粉丝数/AI 与用户评分长期全为 0（`views` 不受影响是因为它随文章实体一起同步、回填失败时保留 ES 原值）
 - 两侧候选上限必须对齐：`SEARCH_VECTOR_CANDIDATE_LIMIT` / `SEARCH_GRAPH_CANDIDATE_LIMIT` ≥ 召回上限，FastAPI 侧 `VECTOR_SEARCH_CANDIDATE_LIMIT` / `GRAPH_SEARCH_CANDIDATE_LIMIT` 同步
 
 ### 错误处理与依赖
