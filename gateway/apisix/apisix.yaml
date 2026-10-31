@@ -59,6 +59,7 @@ routes:
     uris:
       [
         /articles/list,
+        /articles/stats/batch,
         /comments/batch,
         /task/*,
         /logs,
