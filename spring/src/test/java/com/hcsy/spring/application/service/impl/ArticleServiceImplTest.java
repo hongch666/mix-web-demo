@@ -282,31 +282,6 @@ class ArticleServiceImplTest {
     }
 
     @Test
-    @DisplayName("批量查询阅读量时空入参直接返回空列表")
-    void getArticleViewsSkipsEmptyInput() {
-        StepVerifier.create(articleService.getArticleViewsByIDs(List.of()))
-            .assertNext(views -> assertThat(views).isEmpty())
-            .verifyComplete();
-
-        verify(articleRepository, never()).findAllById(anyIterable());
-    }
-
-    @Test
-    @DisplayName("批量查询阅读量时空值按零返回")
-    void getArticleViewsTreatsNullAsZero() {
-        Article article = article();
-        article.setViews(null);
-        when(articleRepository.findAllById(List.of(ARTICLE_ID))).thenReturn(Flux.just(article));
-
-        StepVerifier.create(articleService.getArticleViewsByIDs(List.of(ARTICLE_ID)))
-            .assertNext(views -> {
-                assertThat(views).hasSize(1);
-                assertThat(views.get(0).getCount()).isZero();
-            })
-            .verifyComplete();
-    }
-
-    @Test
     @DisplayName("没有文章时平均阅读量返回零")
     void getAverageViewsReturnsZeroWhenEmpty() {
         when(articleRepository.findAll()).thenReturn(Flux.empty());

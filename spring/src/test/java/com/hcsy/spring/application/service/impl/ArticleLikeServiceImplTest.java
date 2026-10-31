@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,7 +22,6 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.entity.assembler.ArticleInteractionAssembler;
 import com.hcsy.spring.entity.po.ArticleLike;
 import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
-import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.infra.repository.ArticleLikeRepository;
 
 import reactor.core.publisher.Flux;
@@ -110,30 +108,6 @@ class ArticleLikeServiceImplTest {
             .verifyComplete();
 
         verify(articleLikeRepository).deleteByArticleIdAndUserId(ARTICLE_ID, USER_ID);
-    }
-
-    @Test
-    @DisplayName("批量统计点赞数时空入参直接返回空结果")
-    void getLikeCountsSkipsEmptyInput() {
-        StepVerifier.create(articleLikeService.getLikeCountsByArticleIds(List.of()))
-            .assertNext(counts -> assertThat(counts.getCounts()).isEmpty())
-            .verifyComplete();
-
-        verify(articleLikeRepository, never()).countGroupByArticleIdIn(any());
-    }
-
-    @Test
-    @DisplayName("批量统计点赞数时把投影转换为 ID 计数项")
-    void getLikeCountsMapsRows() {
-        when(articleLikeRepository.countGroupByArticleIdIn(List.of(ARTICLE_ID)))
-            .thenReturn(Flux.just(new IdCountVO(ARTICLE_ID, 4L)));
-
-        StepVerifier.create(articleLikeService.getLikeCountsByArticleIds(List.of(ARTICLE_ID)))
-            .assertNext(counts -> {
-                assertThat(counts.getCounts()).hasSize(1);
-                assertThat(counts.getCounts().get(0).getCount()).isEqualTo(4L);
-            })
-            .verifyComplete();
     }
 
     @Test

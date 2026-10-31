@@ -28,7 +28,6 @@ import com.hcsy.spring.entity.vo.ArticleExportVO;
 import com.hcsy.spring.entity.vo.ArticleSyncVO;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 import com.hcsy.spring.entity.vo.CategoryArticleCountVO;
-import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MonthlyPublishCountVO;
 import com.hcsy.spring.entity.vo.SubCategoryWithParentVO;
 import com.hcsy.spring.infra.repository.ArticleRepository;
@@ -302,20 +301,6 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public Flux<Article> listByIds(Collection<Long> ids) {
         return articleRepository.findAllById(ids);
-    }
-
-    /**
-     * 实现批量查询多篇文章的阅读量，空阅读量按0处理
-     */
-    @Override
-    public Mono<List<IdCountVO>> getArticleViewsByIDs(Collection<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return Mono.just(List.of());
-        }
-        return articleRepository.findAllById(ids)
-            .map(article -> new IdCountVO(article.getId(),
-                article.getViews() == null ? 0L : article.getViews().longValue()))
-            .collectList();
     }
 
     /**

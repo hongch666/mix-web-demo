@@ -11,7 +11,6 @@ import com.hcsy.spring.entity.vo.ArticleExportVO;
 import com.hcsy.spring.entity.vo.ArticleSyncVO;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 import com.hcsy.spring.entity.vo.CategoryArticleCountVO;
-import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MonthlyPublishCountVO;
 
 import reactor.core.publisher.Flux;
@@ -126,11 +125,6 @@ public interface ArticleService {
      * 按ID批量流式查询文章
      */
     Flux<Article> listByIds(Collection<Long> ids);
-
-    /**
-     * 批量查询多篇文章的阅读量，返回ID与阅读量对
-     */
-    Mono<List<IdCountVO>> getArticleViewsByIDs(Collection<Long> ids);
 
     /**
      * 获取文章总数

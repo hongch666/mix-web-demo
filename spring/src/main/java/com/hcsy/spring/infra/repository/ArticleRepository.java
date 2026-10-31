@@ -1,6 +1,7 @@
 package com.hcsy.spring.infra.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Modifying;
@@ -11,6 +12,7 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.projection.ArticleExcelRow;
 import com.hcsy.spring.entity.vo.CategoryCountVO;
+import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MonthlyCountVO;
 
 import reactor.core.publisher.Flux;
@@ -136,6 +138,16 @@ public interface ArticleRepository extends ReactiveCrudRepository<Article, Long>
         ORDER BY count DESC
         """)
     Flux<CategoryCountVO> countBySubCategoryIdGroupBy();
+
+    /**
+     * 批量查询多篇文章的阅读量并按ID返回，空阅读量按0处理
+     */
+    @Query("""
+        SELECT id, COALESCE(views, 0) AS count
+        FROM articles
+        WHERE id IN (:ids)
+        """)
+    Flux<IdCountVO> countViewsByIdIn(@Param("ids") Collection<Long> articleIds);
 
     /**
      * 按月分组统计近 24 个月已发布文章数量并按月份倒序返回，用于发布趋势统计

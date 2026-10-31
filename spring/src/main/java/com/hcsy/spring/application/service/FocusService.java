@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.hcsy.spring.entity.dto.PageDTO;
-import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.FocusSyncVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
@@ -49,11 +48,6 @@ public interface FocusService {
      * 统计用户的粉丝数
      */
     Mono<Long> getFollowerCountByUserId(Long userId);
-
-    /**
-     * 批量统计多个用户的粉丝数
-     */
-    Mono<BatchCountVO> getFollowCountsByUserIds(java.util.Collection<Long> userIds);
 
     /**
      * 获取指定时间段内的新增粉丝数

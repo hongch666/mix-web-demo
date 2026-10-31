@@ -1,6 +1,7 @@
 package com.hcsy.spring.infra.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.r2dbc.repository.Modifying;
@@ -49,6 +50,16 @@ public interface CommentsRepository extends ReactiveCrudRepository<Comments, Lon
         @Param("userId") Long userId,
         @Param("firstDay") LocalDateTime firstDay,
         @Param("lastDay") LocalDateTime lastDay);
+
+    /**
+     * 批量查询多篇文章中星级大于0的评论，用于统计文章评论评分
+     * 一次 IN 查询拉取全部相关评论，避免逐篇文章查询导致的 N+1 问题
+     */
+    @Query("""
+        SELECT * FROM comments
+        WHERE article_id IN (:ids) AND star > 0
+        """)
+    Flux<Comments> findScoredByArticleIdIn(@Param("ids") Collection<Long> articleIds);
 
     /**
      * 查询最近 :limit 条评论（按 id 倒序），用于Neo4j同步全量抓取

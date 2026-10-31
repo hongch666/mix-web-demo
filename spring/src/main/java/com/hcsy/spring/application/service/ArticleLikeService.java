@@ -5,7 +5,6 @@ import java.util.List;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
 import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
-import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 
 import reactor.core.publisher.Mono;
@@ -38,11 +37,6 @@ public interface ArticleLikeService {
      * 统计指定文章的点赞总数
      */
     Mono<Long> getLikeCountByArticleId(Long articleId);
-
-    /**
-     * 批量统计多篇文章的点赞数，按文章ID返回计数列表
-     */
-    Mono<BatchCountVO> getLikeCountsByArticleIds(java.util.Collection<Long> articleIds);
 
     /**
      * 获取所有文章的总点赞数

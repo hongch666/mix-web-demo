@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,7 +22,6 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.entity.assembler.ArticleInteractionAssembler;
 import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
-import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.infra.repository.ArticleCollectRepository;
 
 import reactor.core.publisher.Flux;
@@ -110,31 +108,6 @@ class ArticleCollectServiceImplTest {
             .verifyComplete();
 
         verify(articleCollectRepository).deleteByArticleIdAndUserId(ARTICLE_ID, USER_ID);
-    }
-
-    @Test
-    @DisplayName("批量统计收藏数时空入参直接返回空结果")
-    void getCollectCountsSkipsEmptyInput() {
-        StepVerifier.create(articleCollectService.getCollectCountsByArticleIds(List.of()))
-            .assertNext(counts -> assertThat(counts.getCounts()).isEmpty())
-            .verifyComplete();
-
-        verify(articleCollectRepository, never()).countGroupByArticleIdIn(any());
-    }
-
-    @Test
-    @DisplayName("批量统计收藏数时把投影转换为 ID 计数项")
-    void getCollectCountsMapsRows() {
-        when(articleCollectRepository.countGroupByArticleIdIn(List.of(ARTICLE_ID)))
-            .thenReturn(Flux.just(new IdCountVO(ARTICLE_ID, 2L)));
-
-        StepVerifier.create(articleCollectService.getCollectCountsByArticleIds(List.of(ARTICLE_ID)))
-            .assertNext(counts -> {
-                assertThat(counts.getCounts()).hasSize(1);
-                assertThat(counts.getCounts().get(0).getId()).isEqualTo(ARTICLE_ID);
-                assertThat(counts.getCounts().get(0).getCount()).isEqualTo(2L);
-            })
-            .verifyComplete();
     }
 
     @Test

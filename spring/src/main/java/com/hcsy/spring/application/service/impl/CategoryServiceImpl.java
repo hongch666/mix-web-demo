@@ -12,7 +12,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.hcsy.spring.application.service.CategoryService;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
@@ -35,6 +34,7 @@ import com.hcsy.spring.infra.repository.CategoryReferenceRepository;
 import com.hcsy.spring.infra.repository.CategoryRepository;
 import com.hcsy.spring.infra.repository.SubCategoryRepository;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

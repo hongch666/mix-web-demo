@@ -24,7 +24,6 @@ import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
-import com.hcsy.spring.entity.dto.CommentScoreDTO;
 import com.hcsy.spring.entity.dto.CommentUpdateDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
@@ -32,7 +31,6 @@ import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.AICommentsVO;
-import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
 import com.hcsy.spring.entity.vo.CommentSyncVO;
 import com.hcsy.spring.entity.vo.CommentsVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
@@ -379,59 +377,6 @@ public class CommentsServiceImpl implements CommentsService {
      */
     private BusinessException notFound(String message) {
         return BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(message).build();
-    }
-
-    /**
-     * 实现批量查询文章评论评分并按AI与普通用户角色分组计算平均分
-     */
-    @Override
-    public Mono<List<ArticleCommentScoresVO>> getCommentScoresByArticleIds(Collection<Long> articleIds) {
-        if (articleIds == null || articleIds.isEmpty()) {
-            return Mono.just(List.of());
-        }
-        // 批量查询评论评分，按角色（ai/user）分组，与 gozero COMMENT_RATING_QUERY 逻辑一致，优化：一次 in 查询拉取所有文章的相关评论，避免逐篇文章发起查询导致的 N+1 性能问题
-        Criteria criteria = Criteria.where("article_id").in(articleIds).and("star").greaterThan(0);
-        Query query = Query.query(criteria);
-        return entityTemplate.select(Comments.class).matching(query).all()
-            .collectList()
-            .flatMap(comments -> {
-                if (comments.isEmpty()) {
-                    return Mono.just(List.of());
-                }
-                List<Long> userIds = comments.stream().map(Comments::getUserId).distinct().toList();
-                return userRepository.findAllById(userIds)
-                    .collectMap(User::getId, User::getRole)
-                    .map(userRoleMap -> {
-                        Map<Long, Map<String, CommentScoreDTO>> result = new HashMap<>();
-                        // 按文章、角色分组累加评分与数量
-                        for (Comments c : comments) {
-                            long aid = c.getArticleId();
-                            double star = c.getStar() != null ? c.getStar() : 0;
-                            String role = "ai".equals(userRoleMap.getOrDefault(c.getUserId(), "user")) ? "ai" : "user";
-                            Map<String, CommentScoreDTO> roleScores = result.computeIfAbsent(aid, k -> new HashMap<>());
-                            CommentScoreDTO dto = roleScores.get(role);
-                            if (dto == null) {
-                                dto = new CommentScoreDTO(0.0, 0L);
-                                roleScores.put(role, dto);
-                            }
-                            dto.setAverageScore(dto.getAverageScore() + star);
-                            dto.setCount(dto.getCount() + 1);
-                        }
-                        // 计算各角色平均分
-                        for (Map<String, CommentScoreDTO> roleScores : result.values()) {
-                            for (CommentScoreDTO d : roleScores.values()) {
-                                if (d.getCount() > 0) {
-                                    d.setAverageScore(d.getAverageScore() / d.getCount());
-                                }
-                            }
-                        }
-                        // 转为具名 VO 列表，避免 Map<Long, Map<...>> 泛型擦除导致 Jackson 序列化失败
-                        List<ArticleCommentScoresVO> voList = new ArrayList<>(result.size());
-                        result
-                            .forEach((articleId, scores) -> voList.add(new ArticleCommentScoresVO(articleId, scores)));
-                        return voList;
-                    });
-            });
     }
 
     // ==================== 统计方法 ====================

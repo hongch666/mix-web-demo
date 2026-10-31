@@ -4,14 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,8 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
-import org.springframework.data.r2dbc.core.ReactiveSelectOperation;
-import org.springframework.data.relational.core.query.Query;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.hcsy.spring.common.constants.Defaults;
@@ -29,7 +25,6 @@ import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
-import com.hcsy.spring.entity.dto.CommentScoreDTO;
 import com.hcsy.spring.entity.dto.CommentUpdateDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
@@ -289,47 +284,6 @@ class CommentsServiceImplTest {
 
         StepVerifier.create(commentsService.listAICommentsWithFilter(1, 10, new CommentsQueryDTO()))
             .assertNext(page -> assertThat(page.getRecords()).isEmpty())
-            .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("批量查询评论评分时空入参直接返回空列表")
-    void getCommentScoresSkipsEmptyInput() {
-        StepVerifier.create(commentsService.getCommentScoresByArticleIds(List.of()))
-            .assertNext(scores -> assertThat(scores).isEmpty())
-            .verifyComplete();
-
-        verify(entityTemplate, never()).select(any(Class.class));
-    }
-
-    @Test
-    @DisplayName("批量查询评论评分时按 AI 与普通用户角色分别求平均")
-    void getCommentScoresAggregatesByRole() {
-        Comments aiFirst = comment(AI_USER_ID);
-        aiFirst.setStar(8D);
-        Comments userFirst = comment(NORMAL_USER_ID);
-        userFirst.setStar(4D);
-        Comments userSecond = comment(NORMAL_USER_ID);
-        userSecond.setStar(6D);
-
-        ReactiveSelectOperation.ReactiveSelect<Comments> select = mock(ReactiveSelectOperation.ReactiveSelect.class);
-        ReactiveSelectOperation.TerminatingSelect<Comments> terminating = mock(
-            ReactiveSelectOperation.TerminatingSelect.class);
-        when(entityTemplate.select(Comments.class)).thenReturn(select);
-        when(select.matching(any(Query.class))).thenReturn(terminating);
-        when(terminating.all()).thenReturn(Flux.just(aiFirst, userFirst, userSecond));
-        when(userRepository.findAllById(anyList()))
-            .thenReturn(Flux.just(user(AI_USER_ID, Defaults.AI_ROLE), user(NORMAL_USER_ID, "user")));
-
-        StepVerifier.create(commentsService.getCommentScoresByArticleIds(List.of(ARTICLE_ID)))
-            .assertNext(scores -> {
-                assertThat(scores).hasSize(1);
-                Map<String, CommentScoreDTO> roleScores = scores.get(0).getRoleScores();
-                assertThat(roleScores.get("ai").getAverageScore()).isEqualTo(8.0);
-                assertThat(roleScores.get("ai").getCount()).isEqualTo(1L);
-                assertThat(roleScores.get("user").getAverageScore()).isEqualTo(5.0);
-                assertThat(roleScores.get("user").getCount()).isEqualTo(2L);
-            })
             .verifyComplete();
     }
 

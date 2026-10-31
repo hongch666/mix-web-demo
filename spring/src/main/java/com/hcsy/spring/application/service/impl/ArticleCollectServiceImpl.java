@@ -3,7 +3,6 @@ package com.hcsy.spring.application.service.impl;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +19,6 @@ import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
 import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
-import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.infra.repository.ArticleCollectRepository;
 
@@ -98,20 +96,6 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     @Override
     public Mono<Long> getCollectCountByArticleId(Long articleId) {
         return articleCollectRepository.countByArticleId(articleId);
-    }
-
-    /**
-     * 实现按文章ID分组批量统计收藏数
-     */
-    @Override
-    public Mono<BatchCountVO> getCollectCountsByArticleIds(Collection<Long> articleIds) {
-        if (articleIds == null || articleIds.isEmpty()) {
-            return Mono.just(new BatchCountVO(List.of()));
-        }
-        // 具体类投影：接口投影（IdCountRow）映射不出 count 列，会静默返回 null 导致计数为 0
-        return articleCollectRepository.countGroupByArticleIdIn(articleIds)
-            .collectList()
-            .map(BatchCountVO::new);
     }
 
     /**

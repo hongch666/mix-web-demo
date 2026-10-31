@@ -110,6 +110,8 @@ public class Defaults {
 
     /** AI 用户的角色标识 */
     public static final String AI_ROLE = "ai";
+    /** 普通用户的角色标识 */
+    public static final String USER_ROLE = "user";
 
     // ===== GitHub OAuth 票据过期时间（秒） =====
 

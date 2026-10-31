@@ -5,7 +5,6 @@ import java.util.List;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
 import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
-import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 
 import reactor.core.publisher.Mono;
@@ -38,11 +37,6 @@ public interface ArticleCollectService {
      * 统计指定文章的收藏总数
      */
     Mono<Long> getCollectCountByArticleId(Long articleId);
-
-    /**
-     * 批量统计多篇文章的收藏数，按文章ID返回计数列表
-     */
-    Mono<BatchCountVO> getCollectCountsByArticleIds(java.util.Collection<Long> articleIds);
 
     /**
      * 获取所有文章的总收藏数

@@ -8,7 +8,6 @@ import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.vo.AICommentsVO;
-import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
 import com.hcsy.spring.entity.vo.CommentSyncVO;
 import com.hcsy.spring.entity.vo.CommentsVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
@@ -104,12 +103,6 @@ public interface CommentsService {
      * 批量删除评论，任一ID不存在时抛出404异常
      */
     Mono<Void> deleteComments(List<Long> ids);
-
-    /**
-     * 批量查询文章评论评分，按角色（ai/user）分组
-     */
-    Mono<List<ArticleCommentScoresVO>> getCommentScoresByArticleIds(
-        java.util.Collection<Long> articleIds);
 
     /**
      * 获取文章的AI评论数

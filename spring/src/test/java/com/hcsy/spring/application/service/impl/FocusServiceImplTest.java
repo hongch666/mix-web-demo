@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +26,6 @@ import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.FocusSyncVO;
-import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.infra.repository.FocusRepository;
 import com.hcsy.spring.infra.repository.UserRepository;
 
@@ -98,31 +96,6 @@ class FocusServiceImplTest {
             .verifyComplete();
 
         verify(focusRepository, never()).deleteByUserIdAndFocusId(any(), any());
-    }
-
-    @Test
-    @DisplayName("批量统计被关注数时空入参直接返回空结果")
-    void getFollowCountsSkipsEmptyInput() {
-        StepVerifier.create(focusService.getFollowCountsByUserIds(List.of()))
-            .assertNext(counts -> assertThat(counts.getCounts()).isEmpty())
-            .verifyComplete();
-
-        verify(focusRepository, never()).countGroupByFocusIdIn(any());
-    }
-
-    @Test
-    @DisplayName("批量统计被关注数时把投影转换为 ID 计数项")
-    void getFollowCountsMapsRows() {
-        when(focusRepository.countGroupByFocusIdIn(List.of(TARGET_ID)))
-            .thenReturn(Flux.just(new IdCountVO(TARGET_ID, 6L)));
-
-        StepVerifier.create(focusService.getFollowCountsByUserIds(List.of(TARGET_ID)))
-            .assertNext(counts -> {
-                assertThat(counts.getCounts()).hasSize(1);
-                assertThat(counts.getCounts().get(0).getId()).isEqualTo(TARGET_ID);
-                assertThat(counts.getCounts().get(0).getCount()).isEqualTo(6L);
-            })
-            .verifyComplete();
     }
 
     @Test

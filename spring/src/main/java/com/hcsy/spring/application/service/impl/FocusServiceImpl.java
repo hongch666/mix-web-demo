@@ -2,7 +2,6 @@ package com.hcsy.spring.application.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +21,6 @@ import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.po.User;
-import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.FocusSyncVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
@@ -116,20 +114,6 @@ public class FocusServiceImpl implements FocusService {
     @Override
     public Mono<Long> getFollowerCountByUserId(Long userId) {
         return focusRepository.countByFocusId(userId);
-    }
-
-    /**
-     * 实现按用户ID分组批量统计粉丝数
-     */
-    @Override
-    public Mono<BatchCountVO> getFollowCountsByUserIds(Collection<Long> userIds) {
-        if (userIds == null || userIds.isEmpty()) {
-            return Mono.just(new BatchCountVO(List.of()));
-        }
-        // 具体类投影：接口投影（IdCountRow）映射不出 count 列，会静默返回 null 导致计数为 0
-        return focusRepository.countGroupByFocusIdIn(userIds)
-            .collectList()
-            .map(BatchCountVO::new);
     }
 
     /**
