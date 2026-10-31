@@ -42,14 +42,6 @@ export class Messages {
 
   // ===== 文章日志消息 =====
 
-  /** 构造接收 Spring 文章日志的日志消息 */
-  static readonly ARTICLE_LOG_SPRING_MESSAGE = (message: string): string =>
-    `接收到 Spring 发送的 ArticleLog 消息: ${message}`;
-
-  /** 构造接收文章日志的日志消息 */
-  static readonly ARTICLE_LOG_MESSAGE = (message: string): string =>
-    `接收到 ArticleLog 消息: ${message}`;
-
   /** 构造处理文章日志失败的错误消息 */
   static readonly ARTICLE_LOG_PROCESS_FAILED = (message: string): string =>
     `处理 ArticleLog 消息失败: ${message}`;
@@ -62,37 +54,12 @@ export class Messages {
   static readonly ARTICLE_LOG_MISSING_CONTENT = (message: string): string =>
     `ArticleLog 消息缺少 content 字段: ${message}`;
 
-  /** 构造文章日志动作类型无效的错误消息 */
-  static readonly ARTICLE_LOG_INVALID_ACTION = (action: string): string =>
-    `无效的操作类型: ${action}`;
-
   /** 构造文章日志 action 取值非法的错误消息 */
   static readonly ARTICLE_LOG_INVALID_ACTION_DETAIL = (
     action: string,
   ): string => `ArticleLog 消息包含无效的 action 值: ${action}`;
 
-  /** 构造准备保存文章日志的日志消息 */
-  static readonly ARTICLE_LOG_PREPARE_SAVE = (message: string): string =>
-    `准备保存 ArticleLog: ${message}`;
-
   // ===== API 日志消息 =====
-
-  /** 构造接收 Spring API 日志的日志消息 */
-  static readonly API_LOG_SPRING_MESSAGE = (message: string): string =>
-    `接收到 Spring 发送的 ApiLog 消息: ${message}`;
-
-  /** 构造接收 API 日志的日志消息 */
-  static readonly API_LOG_MESSAGE = (message: string): string =>
-    `接收到 ApiLog 消息: ${message}`;
-
-  /** 构造非 API 日志格式消息被忽略的日志消息 */
-  static readonly API_LOG_IGNORED_MESSAGE = (message: string): string =>
-    `收到非 API 日志格式的消息，已忽略: ${message}`;
-
-  /** 构造响应时间异常被修正为 0 的日志消息 */
-  static readonly API_LOG_RESPONSE_TIME_CORRECTED = (
-    responseTime: number,
-  ): string => `接口响应时间为${responseTime}，已将其设置为0: `;
 
   /** 构造处理 API 日志失败的错误消息 */
   static readonly API_LOG_PROCESS_FAILED = (message: string): string =>
@@ -424,18 +391,6 @@ export class Messages {
 
   // ===== 日志攒批 =====
 
-  /** 构造 API 日志进入攒批队列的日志消息 */
-  static readonly API_LOG_BATCH_ENQUEUED = (size: number): string =>
-    `ApiLog 已入队攒批，当前缓冲区: ${size} 条`;
-
-  /** 构造文章日志进入攒批队列的日志消息 */
-  static readonly ARTICLE_LOG_BATCH_ENQUEUED = (size: number): string =>
-    `ArticleLog 已入队攒批，当前缓冲区: ${size} 条`;
-
-  /** 构造攒批刷写失败的错误消息 */
-  static readonly BATCH_FLUSH_FAILED = (error: string): string =>
-    `攒批写入失败: ${error}`;
-
   /** 构造攒批缓冲区初始化的日志消息 */
   static readonly BATCH_INITIALIZED = (
     name: string,
@@ -656,34 +611,10 @@ export class Messages {
 
   // ===== 消息消费 =====
 
-  /** API 日志消息开始消费的日志消息 */
-  static readonly API_RABBITMQ_START = "启动 ApiLog RabbitMQ 消息监听";
-
-  /** API 日志已保存到数据库的日志消息 */
-  static readonly API_SAVE = "API 日志已保存到数据库";
-
-  /** 文章日志消息开始消费的日志消息 */
-  static readonly ARTICLE_RABBITMQ_START = "启动 ArticleLog RabbitMQ 消息监听";
-
-  /** 文章日志消息处理完成的日志消息 */
-  static readonly ARTICLE_HANDLER = "ArticleLog 消息处理完成";
-
-  /** 文章日志消息缺少 action 字段的提示 */
-  static readonly ARTICLE_LESS_ACTION = "ArticleLog 消息缺少 action 字段";
-
-  /** 文章日志消息缺少 content 字段的提示 */
-  static readonly ARTICLE_LESS_CONTNET = "ArticleLog 消息缺少 content 字段";
-
-  /** 文章日志写入成功的提示 */
-  static readonly ARTICLE_SAVE = "ArticleLog 写入成功";
-
   // ===== 通用与兜底文案 =====
 
   /** 未传入文件路径的错误消息 */
   static readonly EMPTY_FILE_PATH = "未配置文件保存路径";
-
-  /** RabbitMQ 连接成功的日志消息 */
-  static readonly RABBITMQ_CONNECTION = "RabbitMQ连接成功";
 
   // ===== 定时任务 =====
 
