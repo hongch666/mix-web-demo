@@ -46,6 +46,36 @@ class RedisKeys:
     WORDCLOUD_URL_VERSION: str = "wordcloud:url:version"
     """词云图地址的版本号"""
 
+    APILOG_AVERAGE_SPEED: str = "apilog:average_speed"
+    """接口平均响应时间统计的缓存 key"""
+
+    APILOG_AVERAGE_SPEED_VERSION: str = "apilog:average_speed:version"
+    """接口平均响应时间统计的版本号"""
+
+    APILOG_CALLED_COUNT: str = "apilog:called_count"
+    """接口调用次数统计的缓存 key"""
+
+    APILOG_CALLED_COUNT_VERSION: str = "apilog:called_count:version"
+    """接口调用次数统计的版本号"""
+
+    USER_DAY_TREND_PREFIX: str = "user:day_trend:"
+    """用户日趋势的缓存 key 前缀，运行时拼接用户与指标"""
+
+    USER_DAY_TREND_VERSION: str = "user:day_trend:version"
+    """用户日趋势的版本号"""
+
+    USER_STATS_PREFIX: str = "user:stats:"
+    """用户统计总览的缓存 key 前缀，运行时拼接用户"""
+
+    USER_STATS_VERSION: str = "user:stats:version"
+    """用户统计总览的版本号"""
+
+    USER_VIEW_DISTRIBUTION_PREFIX: str = "user:view_distribution:"
+    """用户文章阅读分布的缓存 key 前缀，运行时拼接用户"""
+
+    USER_VIEW_DISTRIBUTION_VERSION: str = "user:view_distribution:version"
+    """用户文章阅读分布的版本号"""
+
     # ===== 同步时间 key =====
 
     VECTOR_SYNC_TIME: str = "vector_sync:last_sync_time"

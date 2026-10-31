@@ -10,10 +10,31 @@ def _silence_logger(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(service_module, "Logger", Mock())
 
 
+class NoopCache:
+    """固定不命中的缓存替身，隔离单例缓存对用例的影响"""
+
+    async def get(self) -> None:
+        """始终视为未命中"""
+        return None
+
+    async def set(self, data: object) -> None:
+        """写入直接丢弃"""
+        return None
+
+
 def _make_service() -> tuple[ApiLogService, AsyncMock, AsyncMock]:
     nestjs_client = AsyncMock()
     api_log_mapper = AsyncMock()
-    return ApiLogService(nestjs_client, api_log_mapper), nestjs_client, api_log_mapper
+    return (
+        ApiLogService(
+            nestjs_client,
+            api_log_mapper,
+            speed_cache=NoopCache(),
+            called_count_cache=NoopCache(),
+        ),
+        nestjs_client,
+        api_log_mapper,
+    )
 
 
 # ClickHouse 返回数据时直接采用且不调用 NestJS

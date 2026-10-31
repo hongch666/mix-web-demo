@@ -11,6 +11,18 @@ from app.internal.services.user import (
 )
 
 
+class NoopKeyedCache:
+    """固定不命中的键分片缓存替身，隔离单例缓存对用例的影响"""
+
+    async def get_entry(self, key: str) -> None:
+        """始终视为未命中"""
+        return None
+
+    async def set_entry(self, key: str, data: object) -> None:
+        """写入直接丢弃"""
+        return None
+
+
 @pytest.fixture
 def service_deps(
     monkeypatch: pytest.MonkeyPatch,
@@ -19,7 +31,14 @@ def service_deps(
     spring_client = AsyncMock()
     nestjs_client = AsyncMock()
     user_mapper = AsyncMock()
-    service = UserService(spring_client, nestjs_client, user_mapper)
+    service = UserService(
+        spring_client,
+        nestjs_client,
+        user_mapper,
+        day_cache=NoopKeyedCache(),
+        stats_cache=NoopKeyedCache(),
+        view_cache=NoopKeyedCache(),
+    )
     return service, spring_client, nestjs_client, user_mapper
 
 

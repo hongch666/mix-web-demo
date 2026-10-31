@@ -36,10 +36,15 @@ from app.internal.services import (
 )
 
 from .caches import (
+    ApiLogCalledCountCacheDep,
+    ApiLogSpeedCacheDep,
     ArticleCacheDep,
     CategoryCacheDep,
     PublishTimeCacheDep,
     StatisticsCacheDep,
+    UserDayCacheDep,
+    UserStatsCacheDep,
+    UserViewCacheDep,
     WordcloudCacheDep,
 )
 from .clients import NestjsClientDep, SpringClientDep
@@ -155,10 +160,14 @@ def provide_ai_history_service(
 def provide_api_log_service(
     nestjs_client: NestjsClientDep,
     api_log_mapper: ApiLogMapperDep,
+    speed_cache: ApiLogSpeedCacheDep,
+    called_count_cache: ApiLogCalledCountCacheDep,
     logger: LoggerDep,
 ) -> ApiLogService:
-    """装配 API 日志服务单例，依赖 NestJS 客户端与 API 日志数仓 Mapper"""
-    return get_apilog_service(nestjs_client, api_log_mapper, logger)
+    """装配 API 日志服务单例，依赖 NestJS 客户端、数仓 Mapper 与两个结果缓存"""
+    return get_apilog_service(
+        nestjs_client, api_log_mapper, logger, speed_cache, called_count_cache
+    )
 
 
 def provide_graph_search_service(logger: LoggerDep) -> GraphSearchService:
@@ -170,10 +179,21 @@ def provide_user_service(
     spring_client: SpringClientDep,
     nestjs_client: NestjsClientDep,
     user_mapper: UserMapperDep,
+    day_cache: UserDayCacheDep,
+    stats_cache: UserStatsCacheDep,
+    view_cache: UserViewCacheDep,
     logger: LoggerDep,
 ) -> UserService:
-    """装配用户分析服务单例，依赖 Spring 与 NestJS 客户端及用户数仓 Mapper"""
-    return get_user_service(spring_client, nestjs_client, user_mapper, logger)
+    """装配用户分析服务单例，依赖客户端、数仓 Mapper 与三类按键分片的分析缓存"""
+    return get_user_service(
+        spring_client,
+        nestjs_client,
+        user_mapper,
+        logger,
+        day_cache,
+        stats_cache,
+        view_cache,
+    )
 
 
 def provide_vector_search_service(

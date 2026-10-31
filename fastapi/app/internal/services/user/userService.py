@@ -1,12 +1,22 @@
 import asyncio
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from functools import lru_cache
-from typing import Any
+from typing import Any, Optional
 
 from dateutil.relativedelta import relativedelta
 
 from app.core.base import Logger, LoggerProtocol
 from app.core.constants import Messages
+from app.internal.cache import (
+    KeyedVersionedCache,
+    UserDayCache,
+    UserStatsCache,
+    UserViewCache,
+    get_user_day_cache,
+    get_user_stats_cache,
+    get_user_view_cache,
+)
 from app.internal.clients import NestjsClient, SpringClient
 from app.internal.crud import UserMapper
 
@@ -20,13 +30,48 @@ class UserService:
         nestjs_client: NestjsClient,
         user_mapper: UserMapper,
         logger: LoggerProtocol | None = None,
+        day_cache: Optional[UserDayCache] = None,
+        stats_cache: Optional[UserStatsCache] = None,
+        view_cache: Optional[UserViewCache] = None,
     ) -> None:
-        """注入 Spring 与 NestJS 客户端、用户 Mapper 与日志器"""
+        """注入客户端、Mapper、日志器与三类按键分片的分析缓存"""
         self._spring_client: SpringClient = spring_client
         self._nestjs_client: NestjsClient = nestjs_client
         self._user_mapper: UserMapper = user_mapper
         # 日志器可注入，缺省回退全局单例
         self._logger: LoggerProtocol = logger or Logger
+        # 缓存缺省取单例，保证与依赖注入链路的实例一致
+        self._day_cache: UserDayCache = day_cache or get_user_day_cache(self._logger)
+        self._stats_cache: UserStatsCache = stats_cache or get_user_stats_cache(
+            self._logger
+        )
+        self._view_cache: UserViewCache = view_cache or get_user_view_cache(
+            self._logger
+        )
+
+    async def _cached(
+        self,
+        cache: KeyedVersionedCache,
+        key: str,
+        loader: Callable[[], Awaitable[dict[str, Any]]],
+    ) -> dict[str, Any]:
+        """优先读取两级缓存，未命中执行回源并写缓存，缓存异常时直接回源"""
+        try:
+            cached = await cache.get_entry(key)
+            if cached is not None:
+                return cached
+        except Exception as e:
+            self._logger.debug(
+                Messages.CACHE_GET_FAILED_DETAIL(cache.__class__.__name__, e)
+            )
+
+        result: dict[str, Any] = await loader()
+        if result:
+            try:
+                await cache.set_entry(key, result)
+            except Exception as e:
+                self._logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(e))
+        return result
 
     @staticmethod
     def _period_dates(period: str) -> tuple[datetime, datetime, int, str]:
@@ -78,8 +123,18 @@ class UserService:
     async def get_new_followers_service(
         self, user_id: int, period: str = "day"
     ) -> dict[str, Any]:
+        """获取新增粉丝数统计，优先读取两级缓存"""
+        return await self._cached(
+            self._day_cache,
+            f"{user_id}:new_followers:{period}",
+            lambda: self._load_new_followers(user_id, period),
+        )
+
+    async def _load_new_followers(
+        self, user_id: int, period: str = "day"
+    ) -> dict[str, Any]:
         """
-        获取新增粉丝数统计
+        回源获取新增粉丝数统计
         period: "day" 前7天, "month" 前6个月, "year" 前3年
         """
         try:
@@ -179,7 +234,15 @@ class UserService:
     async def get_article_view_distribution_service(
         self, user_id: int
     ) -> dict[str, Any]:
-        """获取用户的文章浏览分布"""
+        """获取用户的文章浏览分布，优先读取两级缓存"""
+        return await self._cached(
+            self._view_cache,
+            str(user_id),
+            lambda: self._load_article_view_distribution(user_id),
+        )
+
+    async def _load_article_view_distribution(self, user_id: int) -> dict[str, Any]:
+        """回源获取用户的文章浏览分布"""
         try:
             return await self._user_mapper.get_article_view_distribution(user_id)
         except Exception as ch_error:
@@ -198,7 +261,15 @@ class UserService:
     async def get_author_follow_statistics_service(
         self, user_id: int
     ) -> dict[str, Any]:
-        """获取用户关注作者的统计"""
+        """获取用户关注作者的统计，优先读取两级缓存"""
+        return await self._cached(
+            self._day_cache,
+            f"{user_id}:author_follow",
+            lambda: self._load_author_follow_statistics(user_id),
+        )
+
+    async def _load_author_follow_statistics(self, user_id: int) -> dict[str, Any]:
+        """回源获取用户关注作者的统计"""
         try:
             now = datetime.now()
             start = (now - timedelta(days=6)).replace(
@@ -247,7 +318,15 @@ class UserService:
             return {"total_authors": 0, "daily_follows": []}
 
     async def get_monthly_comment_trend_service(self, user_id: int) -> dict[str, Any]:
-        """获取用户本月评论的趋势"""
+        """获取用户本月评论的趋势，优先读取两级缓存"""
+        return await self._cached(
+            self._day_cache,
+            f"{user_id}:comment",
+            lambda: self._load_monthly_comment_trend(user_id),
+        )
+
+    async def _load_monthly_comment_trend(self, user_id: int) -> dict[str, Any]:
+        """回源获取用户本月评论的趋势"""
         try:
             return await self._user_mapper.get_monthly_action_trend(
                 user_id,
@@ -271,7 +350,15 @@ class UserService:
             return {"total": 0, "daily_trends": []}
 
     async def get_monthly_like_trend_service(self, user_id: int) -> dict[str, Any]:
-        """获取用户本月点赞的趋势"""
+        """获取用户本月点赞的趋势，优先读取两级缓存"""
+        return await self._cached(
+            self._day_cache,
+            f"{user_id}:like",
+            lambda: self._load_monthly_like_trend(user_id),
+        )
+
+    async def _load_monthly_like_trend(self, user_id: int) -> dict[str, Any]:
+        """回源获取用户本月点赞的趋势"""
         try:
             start = datetime.now().replace(
                 day=1, hour=0, minute=0, second=0, microsecond=0
@@ -292,7 +379,15 @@ class UserService:
             return {"total": 0, "daily_trends": []}
 
     async def get_monthly_collect_trend_service(self, user_id: int) -> dict[str, Any]:
-        """获取用户本月收藏的趋势"""
+        """获取用户本月收藏的趋势，优先读取两级缓存"""
+        return await self._cached(
+            self._day_cache,
+            f"{user_id}:collect",
+            lambda: self._load_monthly_collect_trend(user_id),
+        )
+
+    async def _load_monthly_collect_trend(self, user_id: int) -> dict[str, Any]:
+        """回源获取用户本月收藏的趋势"""
         try:
             start = datetime.now().replace(
                 day=1, hour=0, minute=0, second=0, microsecond=0
@@ -313,7 +408,15 @@ class UserService:
             return {"total": 0, "daily_trends": []}
 
     async def get_user_profile_service(self, user_id: int) -> dict[str, Any]:
-        """获取用户画像总览（优先 ClickHouse ADS，降级为远程组装）"""
+        """获取用户画像总览，优先读取两级缓存"""
+        return await self._cached(
+            self._stats_cache,
+            str(user_id),
+            lambda: self._load_user_profile(user_id),
+        )
+
+    async def _load_user_profile(self, user_id: int) -> dict[str, Any]:
+        """回源获取用户画像总览（优先 ClickHouse ADS，降级为远程组装）"""
         try:
             return await self._user_mapper.get_user_profile(user_id)
         except Exception as ch_error:
@@ -358,6 +461,9 @@ def get_user_service(
     nestjs_client: NestjsClient,
     user_mapper: UserMapper,
     logger: LoggerProtocol | None = None,
+    day_cache: Optional[UserDayCache] = None,
+    stats_cache: Optional[UserStatsCache] = None,
+    view_cache: Optional[UserViewCache] = None,
 ) -> UserService:
     """获取 UserService 单例实例"""
     return UserService(
@@ -365,4 +471,7 @@ def get_user_service(
         nestjs_client,
         user_mapper,
         logger,
+        day_cache,
+        stats_cache,
+        view_cache,
     )
