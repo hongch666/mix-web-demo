@@ -96,14 +96,8 @@ const (
 
 	// ===== WebSocket =====
 
-	// WebSocket 消息发送成功并标记已读的日志消息
-	WS_SEND_SUCCESS = "消息 %d 通过WebSocket发送成功，已标记为已读"
-	// 用户不在线时消息保存为未读的日志消息
-	WS_SEND_FAIL = "用户 %d 不在线，消息 %d 已保存为未读"
 	// 序列化 WebSocket 消息失败的日志消息
 	WS_SERIALIZE_MESSAGE_ERROR = "序列化WebSocket消息失败: %v"
-	// 发送 WebSocket 关闭帧失败的日志消息
-	WS_CLOSE_FRAME_SEND_FAIL = "发送WebSocket关闭帧失败: %v"
 	// 序列化 WebSocket 心跳响应失败的日志消息
 	WS_HEARTBEAT_RESPONSE_FAIL = "序列化WebSocket心跳响应失败: %v"
 	// 消息发送失败的日志消息
@@ -145,8 +139,6 @@ const (
 
 	// ===== SSE =====
 
-	// 序列化后的 SSE 消息为空的日志消息
-	SSE_SERIALIZE_MESSAGE_EMPTY = "序列化后的SSE消息为null"
 	// SSE 连接已建立的日志消息
 	SSE_CONNECTION_ESTABLISHED_MESSAGE = "SSE 连接已建立"
 	// SSE 心跳写入失败的日志消息
@@ -208,10 +200,6 @@ const (
 	SSE_BROADCAST_FAIL_WARNING_MESSAGE = "无法广播消息，通道已满"
 	// 尝试发送空通知的告警
 	SSE_SEND_EMPTY_WARNING_MESSAGE = "尝试发送空通知"
-	// 尝试发送空 SSE 消息的告警
-	SSE_SEND_EMPTY_MESSAGE_WARNING_MESSAGE = "尝试发送空的SSE消息"
-	// 序列化 SSE 消息失败的日志消息
-	SSE_SERIALIZE_MESSAGE_ERROR_MESSAGE = "序列化SSE消息错误"
 
 	// ===== 查询错误 =====
 
@@ -326,11 +314,6 @@ const (
 	ANONYMOUS_USER_LOG_MESSAGE = "匿名用户 %s %s: %s"
 
 	// ===== 搜索校验字段名 =====
-
-	// 搜索开始时间字段的中文名
-	SEARCH_START_TIME_FIELD = "开始时间"
-	// 搜索结束时间字段的中文名
-	SEARCH_END_TIME_FIELD = "结束时间"
 
 	// ===== API日志 =====
 
@@ -490,7 +473,6 @@ const (
 	// Redis 实时消息格式无效的错误消息
 	REDIS_REALTIME_INVALID_MESSAGE_FORMAT_ERROR = "处理 Redis 实时消息失败: 消息格式无效"
 	// 批量标记消息已读失败的日志消息
-	MARK_MESSAGE_READ_ERROR = "标记聊天消息已读失败: %v"
 
 	// API日志操作描述（ApplyApiLog 的接口描述参数）
 	// 测试 GoZero 服务接口的日志描述
@@ -520,8 +502,6 @@ const (
 	// 执行 SQL 工具只读查询接口的日志描述
 	API_LOG_SQL_TOOLS_EXECUTE_QUERY = "执行SQL工具只读查询"
 	// API_LOG_PENDING_DESCRIPTION 是 handler.tpl 的占位描述，生成后必须替换为具体文案
-	// 待补充接口描述时的占位文案
-	API_LOG_PENDING_DESCRIPTION = "待补充接口描述"
 
 	// Swagger
 	// 获取 Swagger 页面失败的日志消息
@@ -559,10 +539,6 @@ const (
 	SQL_TOOLS_LIMIT_EXCEEDED = "安全限制：LIMIT超过最大限制100"
 	// 表名不在白名单的提示
 	SQL_TOOLS_TABLE_NOT_ALLOWED = "安全限制：表 '%s' 不在白名单内"
-	// SQL 语句长度超限的提示
-	SQL_TOOLS_QUERY_TOO_LONG = "SQL查询语句长度不能超过%d个字符"
-	// 表名长度超限的提示
-	SQL_TOOLS_TABLE_NAME_TOO_LONG = "表名长度不能超过%d个字符"
 	// SQL 查询执行失败的提示
 	SQL_TOOLS_QUERY_FAILED = "执行SQL查询失败"
 	// MySQL 连接未初始化的提示
