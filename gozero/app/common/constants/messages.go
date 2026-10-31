@@ -215,23 +215,8 @@ const (
 
 	// ===== 查询错误 =====
 
-	// 收藏查询错误的日志消息
-	COLLECT_QUERY_ERROR = "收藏查询错误"
-	// 关注查询错误的日志消息
-	FOCUS_QUERY_ERROR = "关注查询错误"
-	// 点赞查询错误的日志消息
-	LIKE_QUERY_ERROR = "点赞查询错误"
-
-	// ===== 响应解析错误 =====
-
-	// 评论评分解析失败的日志消息
-	COMMENT_SCORE_PARSE_ERROR = "评论评分解析错误"
-	// 点赞数解析失败的日志消息
-	LIKE_COUNT_PARSE_ERROR = "点赞数解析错误"
-	// 收藏数解析失败的日志消息
-	COLLECT_COUNT_PARSE_ERROR = "收藏数解析错误"
-	// 粉丝数解析失败的日志消息
-	FOCUS_COUNT_PARSE_ERROR = "粉丝数解析错误"
+	// 文章统计查询或解析失败的日志消息
+	ARTICLE_STATS_QUERY_ERROR = "文章统计查询错误"
 
 	// ===== 初始化 =====
 

@@ -41,56 +41,57 @@ func ParseArticlePage(result client.Result) ([]ArticleVO, int64, error) {
 	return page.Records, page.Total, nil
 }
 
-// ParseArticleViewsMap 解析文章阅读量：Spring 返回 [{id, count}]，这里转成 文章ID → 阅读量
-func ParseArticleViewsMap(result client.Result) (map[int64]int, error) {
-	items, err := parseData[[]IdCountVO](result)
-	if err != nil {
-		return nil, err
-	}
-
-	views := make(map[int64]int, len(items))
-	for _, item := range items {
-		views[item.ID] = int(item.Count)
-	}
-	return views, nil
-}
-
 // ParseUserVOs 解析用户列表
 func ParseUserVOs(result client.Result) ([]UserVO, error) {
 	return parseData[[]UserVO](result)
 }
 
-// ParseCommentScoresMap 解析评论评分：Spring 返回 [{article_id, role_scores}]，这里转成 文章ID → 角色 → 评分
-func ParseCommentScoresMap(result client.Result) (map[int64]map[string]CommentScoreVO, error) {
-	items, err := parseData[[]ArticleCommentScoresVO](result)
-	if err != nil {
-		return nil, err
-	}
-
-	scores := make(map[int64]map[string]CommentScoreVO, len(items))
-	for _, item := range items {
-		scores[item.ArticleID] = item.RoleScores
-	}
-	return scores, nil
+// ArticleStats 合并统计结果，已按文章ID与作者用户ID建好映射
+type ArticleStats struct {
+	Views         map[int64]int
+	Likes         map[int64]int64
+	Collects      map[int64]int64
+	Follows       map[int64]int64
+	CommentScores map[int64]map[string]CommentScoreVO
 }
 
-// ParseCountsMap 解析计数（点赞/收藏/粉丝数）：Spring 返回 {counts: [{id, count}]}，这里转成 ID → 数量
-func ParseCountsMap(result client.Result) (map[int64]int64, error) {
-	body, err := parseData[BatchCountVO](result)
+// ParseArticleStats 解析合并统计接口的返回体，任一字段缺失视为契约不符
+func ParseArticleStats(result client.Result) (ArticleStats, error) {
+	var zero ArticleStats
+	body, err := parseData[ArticleStatsBatchVO](result)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 
-	// counts 缺失说明响应结构与契约不符（历史版本直接返回 Map），显式报错让上层记录降级，合法空结果是 "counts": []，反序列化后是非 nil 空切片，与字段缺失可区分
-	if body.Counts == nil {
-		return nil, fmt.Errorf(constants.RESPONSE_DATA_EMPTY)
+	// 合法空结果是空数组（反序列化后非 nil），字段缺失说明响应结构与契约不符，需显式报错让上层记录降级
+	if body.Views == nil || body.Likes == nil || body.Collects == nil ||
+		body.Follows == nil || body.CommentScores == nil {
+		return zero, fmt.Errorf(constants.RESPONSE_DATA_EMPTY)
 	}
 
-	counts := make(map[int64]int64, len(body.Counts))
-	for _, item := range body.Counts {
-		counts[item.ID] = item.Count
+	stats := ArticleStats{
+		Views:         make(map[int64]int, len(body.Views)),
+		Likes:         make(map[int64]int64, len(body.Likes)),
+		Collects:      make(map[int64]int64, len(body.Collects)),
+		Follows:       make(map[int64]int64, len(body.Follows)),
+		CommentScores: make(map[int64]map[string]CommentScoreVO, len(body.CommentScores)),
 	}
-	return counts, nil
+	for _, item := range body.Views {
+		stats.Views[item.ID] = int(item.Count)
+	}
+	for _, item := range body.Likes {
+		stats.Likes[item.ID] = item.Count
+	}
+	for _, item := range body.Collects {
+		stats.Collects[item.ID] = item.Count
+	}
+	for _, item := range body.Follows {
+		stats.Follows[item.ID] = item.Count
+	}
+	for _, item := range body.CommentScores {
+		stats.CommentScores[item.ArticleID] = item.RoleScores
+	}
+	return stats, nil
 }
 
 // ParseCategoryVOs 解析分类列表

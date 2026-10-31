@@ -9,14 +9,10 @@ import (
 // Client 定义 GoZero 使用的 Spring 调用契约，便于业务层隔离远程依赖
 type Client interface {
 	GetPublishedArticles(context.Context, int, int) (client.Result, error)
-	GetArticleViewsByIDs(context.Context, []int64) (client.Result, error)
+	FetchArticleStats(context.Context, []int64, []int64) (ArticleStats, error)
 	GetArticlesByIDs(context.Context, []int64) (client.Result, error)
 	IsAdminUser(context.Context, int64) (bool, error)
 	GetUsersByIDs(context.Context, []int64) (client.Result, error)
-	GetCommentScoresByArticleIDs(context.Context, []int64) (client.Result, error)
-	GetLikeCountsByArticleIDs(context.Context, []int64) (client.Result, error)
-	GetCollectCountsByArticleIDs(context.Context, []int64) (client.Result, error)
-	GetFollowCountsByUserIDs(context.Context, []int64) (client.Result, error)
 	GetCategoriesByIDs(context.Context, []int64) (client.Result, error)
 	GetSubCategoriesByIDs(context.Context, []int64) (client.Result, error)
 }
@@ -60,15 +56,19 @@ type IdCountVO struct {
 	Count int64 `json:"count"`
 }
 
-// BatchCountVO Spring 点赞/收藏/粉丝数批量接口的返回体，数量包在 counts 字段里
-type BatchCountVO struct {
-	Counts []IdCountVO `json:"counts"`
-}
-
 // ArticleCommentScoresVO Spring 评论评分返回的元素，按角色分组
 type ArticleCommentScoresVO struct {
 	ArticleID  int64                     `json:"article_id"`
 	RoleScores map[string]CommentScoreVO `json:"role_scores"`
+}
+
+// ArticleStatsBatchVO Spring 合并统计接口的返回体，字段与 Spring 的 ArticleStatsBatchVO 保持一致
+type ArticleStatsBatchVO struct {
+	Views         []IdCountVO              `json:"views"`
+	Likes         []IdCountVO              `json:"likes"`
+	Collects      []IdCountVO              `json:"collects"`
+	Follows       []IdCountVO              `json:"follows"`
+	CommentScores []ArticleCommentScoresVO `json:"comment_scores"`
 }
 
 // CategoryVO 分类视图对象

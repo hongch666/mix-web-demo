@@ -67,15 +67,15 @@ func TestApplyCommentScoresKeepsSnapshotWhenScoresMissing(t *testing.T) {
 	}
 }
 
-// TestApplyCommentScoresKeepsSnapshotOnParseFailure 校验评分接口降级（无有效数据）时保留 ES 文档原值
+// TestApplyCommentScoresKeepsSnapshotOnParseFailure 校验统计接口降级（无有效数据）时保留 ES 文档原值
 func TestApplyCommentScoresKeepsSnapshotOnParseFailure(t *testing.T) {
-	scores, err := springClient.ParseCommentScoresMap(client.Result{})
+	stats, err := springClient.ParseArticleStats(client.Result{})
 	if err == nil {
 		t.Fatal("空响应应返回解析错误")
 	}
 
 	article := ArticleES{ID: 1, AIScore: 1.5, AICommentCount: 1, UserScore: 2.5, UserCommentCount: 2}
-	applyCommentScores(&article, scores[article.ID])
+	applyCommentScores(&article, stats.CommentScores[article.ID])
 
 	if article.AIScore != 1.5 || article.AICommentCount != 1 {
 		t.Fatalf("接口降级时 AI 评分应保留原值，实际 = (%v, %d)", article.AIScore, article.AICommentCount)
@@ -85,26 +85,32 @@ func TestApplyCommentScoresKeepsSnapshotOnParseFailure(t *testing.T) {
 	}
 }
 
-// TestApplyCommentScoresFromSpringResponse 校验 Spring 评分响应可解析并按角色回填到文章
+// TestApplyCommentScoresFromSpringResponse 校验合并统计响应中的评分可按角色回填到文章
 func TestApplyCommentScoresFromSpringResponse(t *testing.T) {
-	// Spring 的 /comments/scores/batch 返回 [{article_id, role_scores}] 列表
-	result := client.Result{Data: []any{
-		map[string]any{
-			"article_id": 1,
-			"role_scores": map[string]any{
-				"ai":   map[string]any{"average_score": 8.5, "count": 4},
-				"user": map[string]any{"average_score": 6.0, "count": 2},
+	// Spring 的 /articles/stats/batch 在 comment_scores 里返回 [{article_id, role_scores}] 列表
+	result := client.Result{Data: map[string]any{
+		"views":    []any{},
+		"likes":    []any{},
+		"collects": []any{},
+		"follows":  []any{},
+		"comment_scores": []any{
+			map[string]any{
+				"article_id": 1,
+				"role_scores": map[string]any{
+					"ai":   map[string]any{"average_score": 8.5, "count": 4},
+					"user": map[string]any{"average_score": 6.0, "count": 2},
+				},
 			},
 		},
 	}}
 
-	scores, err := springClient.ParseCommentScoresMap(result)
+	stats, err := springClient.ParseArticleStats(result)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	article := ArticleES{ID: 1}
-	applyCommentScores(&article, scores[article.ID])
+	applyCommentScores(&article, stats.CommentScores[article.ID])
 
 	if article.AIScore != 8.5 || article.AICommentCount != 4 {
 		t.Fatalf("AI 评分解析回填结果 = (%v, %d)，期望 (8.5, 4)", article.AIScore, article.AICommentCount)

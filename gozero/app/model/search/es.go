@@ -7,13 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"app/common/client"
 	"app/common/constants"
 	"app/internal/client/springClient"
 
 	"github.com/olivere/elastic/v7"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/mr"
 )
 
 const (
@@ -169,74 +167,29 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 			authorUserIDs = append(authorUserIDs, article.UserID)
 		}
 
-		// ES 文档里的阅读量、点赞、收藏、粉丝与评分都是同步快照，检索时统一用 Spring 实时值覆盖，失败则保留 ES 文档原值作为降级
-		var viewsResult, likeResult, collectResult, followResult, commentScoreResult client.Result
-		var viewsErr, likeErr, collectErr, followErr, commentScoreErr error
+		// ES 文档里的阅读量、点赞、收藏、粉丝与评分都是同步快照，检索时统一用实时统计覆盖，失败则保留 ES 文档原值作为降级
+		stats, statsErr := m.springClient.FetchArticleStats(ctx, articleIDs, authorUserIDs)
 
-		_ = mr.Finish(
-			func() error {
-				viewsResult, viewsErr = m.springClient.GetArticleViewsByIDs(ctx, articleIDs)
-				return viewsErr
-			},
-			func() error {
-				likeResult, likeErr = m.springClient.GetLikeCountsByArticleIDs(ctx, articleIDs)
-				return likeErr
-			},
-			func() error {
-				collectResult, collectErr = m.springClient.GetCollectCountsByArticleIDs(ctx, articleIDs)
-				return collectErr
-			},
-			func() error {
-				followResult, followErr = m.springClient.GetFollowCountsByUserIDs(ctx, authorUserIDs)
-				return followErr
-			},
-			func() error {
-				commentScoreResult, commentScoreErr = m.springClient.GetCommentScoresByArticleIDs(ctx, articleIDs)
-				return commentScoreErr
-			},
-		)
-
-		viewsMap, viewsParseErr := springClient.ParseArticleViewsMap(viewsResult)
-		likeCounts, likeParseErr := springClient.ParseCountsMap(likeResult)
-		collectCounts, collectParseErr := springClient.ParseCountsMap(collectResult)
-		authorFollowCounts, followParseErr := springClient.ParseCountsMap(followResult)
-		commentScores, commentParseErr := springClient.ParseCommentScoresMap(
-			commentScoreResult,
-		)
-
-		// 回填失败的指标跳过覆盖，保留 ES 文档原值作为降级，不阻断搜索主链路，调用失败与响应结构不符契约（解析失败）一并计入：解析静默失败会让统计与评分长期显示 ES 旧值
-		metrics := constants.SEARCH_STATS_FILL_METRICS
-		fillErrors := []error{
-			firstError(viewsErr, viewsParseErr),
-			firstError(likeErr, likeParseErr),
-			firstError(collectErr, collectParseErr),
-			firstError(followErr, followParseErr),
-			firstError(commentScoreErr, commentParseErr),
-		}
-		degraded := make([]string, 0, len(metrics))
-		for i, fillErr := range fillErrors {
-			if fillErr != nil {
-				degraded = append(degraded, metrics[i])
-			}
-		}
-		if len(degraded) > 0 {
-			logx.WithContext(ctx).Slow("[WARN] " + fmt.Sprintf(constants.SEARCH_STATS_FILL_DEGRADE_LOG, strings.Join(degraded, ","), firstError(fillErrors...)))
+		// 实时统计整体失败或响应结构不符契约时全部指标降级，不阻断搜索主链路：解析静默失败会让统计与评分长期显示 ES 旧值
+		if statsErr != nil {
+			logx.WithContext(ctx).Slow("[WARN] " + fmt.Sprintf(constants.SEARCH_STATS_FILL_DEGRADE_LOG,
+				strings.Join(constants.SEARCH_STATS_FILL_METRICS, ","), statsErr))
 		}
 
 		for i := range articles {
-			if views, ok := viewsMap[articles[i].ID]; ok {
+			if views, ok := stats.Views[articles[i].ID]; ok {
 				articles[i].Views = views
 			}
-			if likes, ok := likeCounts[articles[i].ID]; ok {
+			if likes, ok := stats.Likes[articles[i].ID]; ok {
 				articles[i].LikeCount = int(likes)
 			}
-			if collects, ok := collectCounts[articles[i].ID]; ok {
+			if collects, ok := stats.Collects[articles[i].ID]; ok {
 				articles[i].CollectCount = int(collects)
 			}
-			if followCount, ok := authorFollowCounts[articles[i].UserID]; ok {
+			if followCount, ok := stats.Follows[articles[i].UserID]; ok {
 				articles[i].AuthorFollowCount = int(followCount)
 			}
-			applyCommentScores(&articles[i], commentScores[articles[i].ID])
+			applyCommentScores(&articles[i], stats.CommentScores[articles[i].ID])
 		}
 	}
 
@@ -252,16 +205,6 @@ func getParamName(paramMap ScriptParamMapping, weightKey string) string {
 		}
 	}
 	return weightKey
-}
-
-// firstError 返回第一个非空错误，用于降级日志记录失败原因
-func firstError(errs ...error) error {
-	for _, err := range errs {
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // applyCommentScores 用 Spring 实时评分覆盖 ES 快照中的 AI 与用户评分及其评论数，某类评分缺失（没有该类评论或评分接口降级）时保留 ES 文档原值，与其它统计字段口径一致

@@ -51,12 +51,16 @@ func (c *SpringClient) GetPublishedArticles(ctx context.Context, page, size int)
 	})
 }
 
-// GetArticleViewsByIDs 批量查询文章阅读量
-func (c *SpringClient) GetArticleViewsByIDs(ctx context.Context, ids []int64) (client.Result, error) {
-	return c.serviceDisc.CallService(ctx, c.serviceName, "/articles/views/batch", client.RequestOptions{
+// FetchArticleStats 调用合并统计接口并解析为统计结果，本方法只负责协议与解析，缓存与合并由统计读取器负责
+func (c *SpringClient) FetchArticleStats(ctx context.Context, articleIDs, authorIDs []int64) (ArticleStats, error) {
+	result, err := c.serviceDisc.CallService(ctx, c.serviceName, "/articles/stats/batch", client.RequestOptions{
 		Method:   "POST",
-		BodyData: map[string]any{"ids": ids},
+		BodyData: map[string]any{"ids": articleIDs, "author_ids": authorIDs},
 	})
+	if err != nil {
+		return ArticleStats{}, err
+	}
+	return ParseArticleStats(result)
 }
 
 // GetArticlesByIDs 批量查询文章
@@ -84,38 +88,6 @@ func (c *SpringClient) IsAdminUser(ctx context.Context, id int64) (bool, error) 
 // GetUsersByIDs 批量查询用户
 func (c *SpringClient) GetUsersByIDs(ctx context.Context, ids []int64) (client.Result, error) {
 	return c.serviceDisc.CallService(ctx, c.serviceName, "/users/batch", client.RequestOptions{
-		Method:   "POST",
-		BodyData: map[string]any{"ids": ids},
-	})
-}
-
-// GetCommentScoresByArticleIDs 批量查询评论评分（按角色分组）
-func (c *SpringClient) GetCommentScoresByArticleIDs(ctx context.Context, ids []int64) (client.Result, error) {
-	return c.serviceDisc.CallService(ctx, c.serviceName, "/comments/scores/batch", client.RequestOptions{
-		Method:   "POST",
-		BodyData: map[string]any{"ids": ids},
-	})
-}
-
-// GetLikeCountsByArticleIDs 批量查询点赞数
-func (c *SpringClient) GetLikeCountsByArticleIDs(ctx context.Context, ids []int64) (client.Result, error) {
-	return c.serviceDisc.CallService(ctx, c.serviceName, "/likes/counts/batch", client.RequestOptions{
-		Method:   "POST",
-		BodyData: map[string]any{"ids": ids},
-	})
-}
-
-// GetCollectCountsByArticleIDs 批量查询收藏数
-func (c *SpringClient) GetCollectCountsByArticleIDs(ctx context.Context, ids []int64) (client.Result, error) {
-	return c.serviceDisc.CallService(ctx, c.serviceName, "/collects/counts/batch", client.RequestOptions{
-		Method:   "POST",
-		BodyData: map[string]any{"ids": ids},
-	})
-}
-
-// GetFollowCountsByUserIDs 批量查询粉丝数
-func (c *SpringClient) GetFollowCountsByUserIDs(ctx context.Context, ids []int64) (client.Result, error) {
-	return c.serviceDisc.CallService(ctx, c.serviceName, "/focus/counts/batch", client.RequestOptions{
 		Method:   "POST",
 		BodyData: map[string]any{"ids": ids},
 	})

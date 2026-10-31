@@ -300,64 +300,16 @@ func buildArticleESBatchFromRemote(
 		}
 	}
 
-	// 批量查询评论评分、点赞数、收藏数、粉丝数（四个独立远程调用并行执行）
-	var commentResult, likeResult, collectResult, followResult client.Result
-	var commentErr, likeErr, collectErr, followErr error
-
-	_ = mr.Finish(
-		func() error {
-			commentResult, commentErr = springCli.GetCommentScoresByArticleIDs(ctx, articleIDs)
-			return commentErr
-		},
-		func() error {
-			likeResult, likeErr = springCli.GetLikeCountsByArticleIDs(ctx, articleIDs)
-			return likeErr
-		},
-		func() error {
-			collectResult, collectErr = springCli.GetCollectCountsByArticleIDs(ctx, articleIDs)
-			return collectErr
-		},
-		func() error {
-			followResult, followErr = springCli.GetFollowCountsByUserIDs(ctx, userIDs)
-			return followErr
-		},
-	)
-
-	if commentErr != nil {
-		return nil, logAndWrapError(logger, constants.CREATE_MESSAGE_ERROR, commentErr)
-	}
-	if likeErr != nil {
-		return nil, logAndWrapError(logger, constants.LIKE_QUERY_ERROR, likeErr)
-	}
-	if collectErr != nil {
-		return nil, logAndWrapError(logger, constants.COLLECT_QUERY_ERROR, collectErr)
-	}
-	if followErr != nil {
-		return nil, logAndWrapError(logger, constants.FOCUS_QUERY_ERROR, followErr)
-	}
-
-	// 解析失败必须报错退出：静默降级会把 0 写进 ES，让搜索列表的统计与评分长期为 0
-	commentScores, commentParseErr := springClient.ParseCommentScoresMap(commentResult)
-	if commentParseErr != nil {
-		return nil, logAndWrapError(logger, constants.COMMENT_SCORE_PARSE_ERROR, commentParseErr)
-	}
-	likeCounts, likeParseErr := springClient.ParseCountsMap(likeResult)
-	if likeParseErr != nil {
-		return nil, logAndWrapError(logger, constants.LIKE_COUNT_PARSE_ERROR, likeParseErr)
-	}
-	collectCounts, collectParseErr := springClient.ParseCountsMap(collectResult)
-	if collectParseErr != nil {
-		return nil, logAndWrapError(logger, constants.COLLECT_COUNT_PARSE_ERROR, collectParseErr)
-	}
-	authorFollowCounts, followParseErr := springClient.ParseCountsMap(followResult)
-	if followParseErr != nil {
-		return nil, logAndWrapError(logger, constants.FOCUS_COUNT_PARSE_ERROR, followParseErr)
+	// 一次查询评论评分、点赞数、收藏数与粉丝数，解析失败必须报错退出：静默降级会把 0 写进 ES，让搜索列表的统计与评分长期为 0
+	stats, statsErr := springCli.FetchArticleStats(ctx, articleIDs, userIDs)
+	if statsErr != nil {
+		return nil, logAndWrapError(logger, constants.ARTICLE_STATS_QUERY_ERROR, statsErr)
 	}
 
 	// 组装 ES 文档
 	docs := make([]search.ArticleES, 0, len(articleBatch))
 	for _, article := range articleBatch {
-		scores := commentScores[article.ID]
+		scores := stats.CommentScores[article.ID]
 
 		aiScore := 0.0
 		aiCount := 0
@@ -382,9 +334,9 @@ func buildArticleESBatchFromRemote(
 			Tags:              article.Tags,
 			Status:            article.Status,
 			Views:             article.Views,
-			LikeCount:         int(likeCounts[article.ID]),
-			CollectCount:      int(collectCounts[article.ID]),
-			AuthorFollowCount: int(authorFollowCounts[article.UserID]),
+			LikeCount:         int(stats.Likes[article.ID]),
+			CollectCount:      int(stats.Collects[article.ID]),
+			AuthorFollowCount: int(stats.Follows[article.UserID]),
 			CategoryName:      categoryMap[int64(article.SubCategoryID)],
 			SubCategoryName:   subCategoryMap[int64(article.SubCategoryID)],
 			CreateAt:          toESDatePtr(article.CreateAt),
