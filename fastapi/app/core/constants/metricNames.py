@@ -20,12 +20,3 @@ class MetricNames:
     TASK_DURATION = "mix_task_duration_seconds"
     """定时任务执行耗时直方图"""
     # ===== 资源与 AI 指标 =====
-
-    DB_POOL_CONNECTIONS = "mix_db_pool_connections"
-    """数据库连接池连接数仪表"""
-    AI_CHAT = "mix_ai_chat_total"
-    """AI 对话次数计数器"""
-    AI_TOKENS = "mix_ai_tokens_total"
-    """AI 对话消耗的 token 数计数器"""
-    RAG_RETRIEVAL = "mix_rag_retrieval_total"
-    """RAG 检索次数计数器"""

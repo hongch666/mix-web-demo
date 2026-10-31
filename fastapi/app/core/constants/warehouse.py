@@ -265,9 +265,6 @@ class WarehouseScripts:
     }
     """各数据源判断新增数据的时间字段"""
 
-    PARTITION_VALUE_TEMPLATE: Final[str] = "toString(toYYYYMM(%s)) = %(partition)s"
-    """分区值匹配条件模板"""
-
     PARTITION_DROP_TEMPLATE: Final[str] = "ALTER TABLE warehouse.%s DROP PARTITION %s"
     """删除指定分区的模板"""
 
@@ -653,8 +650,3 @@ class WarehouseScripts:
         ("ads_api_called_count", REFRESH_ADS_API[1]),
     )
     """下游快照的刷新步骤"""
-
-    FULL_REFRESH_STEPS: Final[tuple[tuple[str, str], ...]] = (
-        UPSTREAM_SNAPSHOT_STEPS + DOWNSTREAM_SNAPSHOT_STEPS
-    )
-    """全量刷新的执行步骤"""

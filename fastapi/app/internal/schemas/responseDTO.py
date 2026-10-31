@@ -7,10 +7,6 @@ from pydantic import BaseModel, Field
 from .algorithmDTO import ScoreWeightItem, ScriptParamItem
 
 
-class EmptyResponseData(BaseModel):
-    """无业务数据的成功响应"""
-
-
 class AiHistoryResponse(BaseModel):
     """AI 历史记录"""
 
