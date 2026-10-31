@@ -20,10 +20,8 @@ import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
-import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
 import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
-import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.LikeCheckVO;
 import com.hcsy.spring.entity.vo.LikeCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
@@ -134,18 +132,6 @@ public class ArticleLikeController {
         @Parameter(description = "文章ID", required = true) @PathVariable("article_id") Long articleId) {
         return articleLikeService.getLikeCountByArticleId(articleId)
             .map(count -> Result.success(new LikeCountVO(count)));
-    }
-
-    /**
-     * POST /likes/counts/batch 内部接口，按文章ID列表批量返回各文章的点赞数
-     */
-    @PostMapping("/counts/batch")
-    @Operation(summary = "批量查询点赞数（内部）", description = "根据文章ID列表批量查询点赞数，供内部服务远程调用")
-    @RequireInternalToken
-    @ApiLog("内部批量查询点赞数")
-    public Mono<Result<BatchCountVO>> getLikeCountsByArticleIds(@Valid @RequestBody BatchIdsDTO dto) {
-        return articleLikeService.getLikeCountsByArticleIds(dto.getIds())
-            .map(Result::success);
     }
 
     /**

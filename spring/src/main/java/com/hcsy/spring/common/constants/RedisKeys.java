@@ -45,6 +45,23 @@ public final class RedisKeys {
         return ALL_USERS_CACHE_KEY;
     }
 
+    // ===== 用户名称快照缓存 =====
+
+    /** 用户名称快照缓存的 Redis key */
+    private static final String USER_NAMES_CACHE_KEY = "user:names:all";
+    /** 用户名称快照本地缓存名称 */
+    private static final String USER_NAMES_CACHE_NAME = "user-names";
+
+    /** 返回用户名称快照缓存的 key */
+    public static String userNames() {
+        return USER_NAMES_CACHE_KEY;
+    }
+
+    /** 返回用户名称快照本地缓存名称 */
+    public static String userNamesCacheName() {
+        return USER_NAMES_CACHE_NAME;
+    }
+
     // ===== 用户角色缓存 =====
 
     /** 生成用户角色缓存的 Redis key */
@@ -128,6 +145,21 @@ public final class RedisKeys {
      */
     public static String categoryPage(long page, long size) {
         return CATEGORY_PREFIX + "page:p_%d_s_%d".formatted(page, size);
+    }
+
+    /** 子分类名称快照缓存的 Redis key，被 categoryAllPattern 覆盖 */
+    private static final String CATEGORY_SUB_SNAPSHOT_KEY = CATEGORY_PREFIX + "sub-snapshot";
+    /** 子分类名称快照本地缓存名称 */
+    private static final String CATEGORY_SUB_SNAPSHOT_CACHE_NAME = "category-sub-snapshot";
+
+    /** 返回子分类名称快照缓存的 Redis key */
+    public static String categorySubSnapshot() {
+        return CATEGORY_SUB_SNAPSHOT_KEY;
+    }
+
+    /** 返回子分类名称快照本地缓存名称 */
+    public static String categorySubSnapshotCacheName() {
+        return CATEGORY_SUB_SNAPSHOT_CACHE_NAME;
     }
 
     // ===== 会话 / Token 反向索引 =====

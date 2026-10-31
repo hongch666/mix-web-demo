@@ -2,6 +2,7 @@ package com.hcsy.spring.application.service;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
@@ -62,6 +63,11 @@ public interface UserService {
      * 查询全部非AI用户列表，支持按用户名过滤，无过滤条件时走多级缓存
      */
     Mono<UserListVO> getAllUsers(String username);
+
+    /**
+     * 按ID集合读取用户名称映射，走多级缓存，供文章组装等场景复用
+     */
+    Mono<Map<Long, String>> getUserNamesByIds(Collection<Long> ids);
 
     /**
      * 查询全部AI角色用户列表

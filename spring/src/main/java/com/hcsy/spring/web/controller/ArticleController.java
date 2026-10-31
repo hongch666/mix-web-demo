@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.application.service.ArticleService;
+import com.hcsy.spring.application.service.ArticleStatsService;
 import com.hcsy.spring.common.constants.BusinessType;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
@@ -21,14 +22,15 @@ import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
+import com.hcsy.spring.entity.dto.ArticleStatsBatchDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.vo.ArticleExportVO;
+import com.hcsy.spring.entity.vo.ArticleStatsBatchVO;
 import com.hcsy.spring.entity.vo.ArticleSyncVO;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 import com.hcsy.spring.entity.vo.CategoryArticleCountVO;
-import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MonthlyPublishCountVO;
 import com.hcsy.spring.entity.vo.PageVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
@@ -52,6 +54,7 @@ import reactor.core.publisher.Mono;
 public class ArticleController {
 
     private final ArticleService articleService;
+    private final ArticleStatsService articleStatsService;
 
     /**
      * POST /articles 接口，根据创建DTO新增文章并返回新文章ID，作者不存在时返回404
@@ -213,15 +216,13 @@ public class ArticleController {
         return articleService.getArticleDetailsByTitle(title).map(Result::success);
     }
 
-    /**
-     * POST /articles/views/batch 内部接口，按ID列表批量返回各文章的阅读量
-     */
-    @PostMapping("/views/batch")
-    @Operation(summary = "批量查询文章阅读量（内部）", description = "根据ID列表批量查询文章阅读量，供内部服务远程调用")
+    @PostMapping("/stats/batch")
+    @Operation(summary = "批量查询文章统计数据（内部）", description = "一次返回阅读量、点赞、收藏、粉丝与评论评分，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部批量查询文章阅读量")
-    public Mono<Result<List<IdCountVO>>> getArticleViewsByIds(@Valid @RequestBody BatchIdsDTO dto) {
-        return articleService.getArticleViewsByIDs(dto.getIds())
+    @ApiLog("内部批量查询文章统计")
+    public Mono<Result<ArticleStatsBatchVO>> getArticleStatsBatch(
+        @Valid @RequestBody ArticleStatsBatchDTO dto) {
+        return articleStatsService.getStatsBatch(dto.getIds(), dto.getAuthorIds())
             .map(Result::success);
     }
 

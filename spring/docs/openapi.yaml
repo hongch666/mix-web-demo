@@ -1002,32 +1002,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UnauthorizedResponse"
-  /likes/counts/batch:
-    post:
-      tags:
-      - "文章点赞模块"
-      summary: "批量查询点赞数（内部）"
-      description: "根据文章ID列表批量查询点赞数，供内部服务远程调用"
-      operationId: "getLikeCountsByArticleIds"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/BatchIdsDTO"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ResultBatchCountVO"
-        "401":
-          description: "用户未登录或登录已失效"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
   /focus:
     post:
       tags:
@@ -1088,32 +1062,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UnauthorizedResponse"
-  /focus/counts/batch:
-    post:
-      tags:
-      - "用户关注模块"
-      summary: "批量查询粉丝数（内部）"
-      description: "根据用户ID列表批量查询粉丝数，供内部服务远程调用"
-      operationId: "getFollowCountsByUserIds"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/BatchIdsDTO"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ResultBatchCountVO"
-        "401":
-          description: "用户未登录或登录已失效"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
   /comments/statistics/delete-ai/{articleId}:
     post:
       tags:
@@ -1135,32 +1083,6 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
-        "401":
-          description: "用户未登录或登录已失效"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
-  /comments/scores/batch:
-    post:
-      tags:
-      - "评论模块"
-      summary: "批量查询评论评分（内部）"
-      description: "根据文章ID列表批量查询评论评分，按角色分组，供内部服务远程调用"
-      operationId: "getCommentScoresByArticleIds"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/BatchIdsDTO"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ResultListArticleCommentScoresVO"
         "401":
           description: "用户未登录或登录已失效"
           content:
@@ -1279,32 +1201,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UnauthorizedResponse"
-  /collects/counts/batch:
-    post:
-      tags:
-      - "文章收藏模块"
-      summary: "批量查询收藏数（内部）"
-      description: "根据文章ID列表批量查询收藏数，供内部服务远程调用"
-      operationId: "getCollectCountsByArticleIds"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/BatchIdsDTO"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ResultBatchCountVO"
-        "401":
-          description: "用户未登录或登录已失效"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
   /category/sub/batch:
     post:
       tags:
@@ -1357,18 +1253,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UnauthorizedResponse"
-  /articles/views/batch:
+  /articles/stats/batch:
     post:
       tags:
       - "文章模块"
-      summary: "批量查询文章阅读量（内部）"
-      description: "根据ID列表批量查询文章阅读量，供内部服务远程调用"
-      operationId: "getArticleViewsByIds"
+      summary: "批量查询文章统计数据（内部）"
+      description: "一次返回阅读量、点赞、收藏、粉丝与评论评分，供内部服务远程调用"
+      operationId: "getArticleStatsBatch"
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/BatchIdsDTO"
+              $ref: "#/components/schemas/ArticleStatsBatchDTO"
         required: true
       responses:
         "200":
@@ -1376,7 +1272,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/ResultListIdCountVO"
+                $ref: "#/components/schemas/ResultArticleStatsBatchVO"
         "401":
           description: "用户未登录或登录已失效"
           content:
@@ -4376,47 +4272,6 @@ components:
       required:
       - "article_id"
       - "user_id"
-    BatchCountVO:
-      description: "批量计数结果"
-      properties:
-        counts:
-          type:
-          - "array"
-          - "null"
-          description: "ID 与数量列表"
-          items:
-            $ref: "#/components/schemas/IdCountVO"
-    IdCountVO:
-      description: "ID 与数量"
-      properties:
-        id:
-          type:
-          - "integer"
-          - "null"
-          format: "int64"
-          description: "ID"
-        count:
-          type:
-          - "integer"
-          - "null"
-          format: "int64"
-          description: "数量"
-    ResultBatchCountVO:
-      description: "统一响应"
-      properties:
-        code:
-          type: "integer"
-          format: "int32"
-          description: "响应码"
-        msg:
-          type: "string"
-          description: "响应信息"
-        data:
-          $ref: "#/components/schemas/BatchCountVO"
-          description: "返回数据"
-      required:
-      - "code"
-      - "msg"
     FocusDTO:
       description: "用户关注请求"
       properties:
@@ -4460,57 +4315,6 @@ components:
       - "content"
       - "star"
       - "username"
-    ArticleCommentScoresVO:
-      description: "文章评论评分"
-      properties:
-        article_id:
-          type:
-          - "integer"
-          - "null"
-          format: "int64"
-          description: "文章ID"
-        role_scores:
-          type:
-          - "object"
-          - "null"
-          additionalProperties:
-            $ref: "#/components/schemas/CommentScoreDTO"
-          description: "按角色汇总的评分"
-    CommentScoreDTO:
-      description: "评论评分统计"
-      properties:
-        average_score:
-          type:
-          - "number"
-          - "null"
-          format: "double"
-          description: "平均评分"
-        count:
-          type:
-          - "integer"
-          - "null"
-          format: "int64"
-          description: "评论数量"
-    ResultListArticleCommentScoresVO:
-      description: "统一响应"
-      properties:
-        code:
-          type: "integer"
-          format: "int32"
-          description: "响应码"
-        msg:
-          type: "string"
-          description: "响应信息"
-        data:
-          type:
-          - "array"
-          - "null"
-          description: "返回数据"
-          items:
-            $ref: "#/components/schemas/ArticleCommentScoresVO"
-      required:
-      - "code"
-      - "msg"
     Comments:
       description: "评论"
       properties:
@@ -4822,7 +4626,110 @@ components:
       - "sub_category_id"
       - "title"
       - "username"
-    ResultListIdCountVO:
+    ArticleStatsBatchDTO:
+      description: "批量文章统计请求"
+      properties:
+        ids:
+          type: "array"
+          description: "文章ID列表"
+          items:
+            type: "integer"
+            format: "int64"
+        author_ids:
+          type:
+          - "array"
+          - "null"
+          description: "作者用户ID列表，用于查询粉丝数，可为空"
+          items:
+            type: "integer"
+            format: "int64"
+      required:
+      - "ids"
+    ArticleCommentScoresVO:
+      description: "文章评论评分"
+      properties:
+        article_id:
+          type:
+          - "integer"
+          - "null"
+          format: "int64"
+          description: "文章ID"
+        role_scores:
+          type:
+          - "object"
+          - "null"
+          additionalProperties:
+            $ref: "#/components/schemas/CommentScoreDTO"
+          description: "按角色汇总的评分"
+    ArticleStatsBatchVO:
+      description: "批量文章统计数据"
+      properties:
+        views:
+          type:
+          - "array"
+          - "null"
+          description: "文章阅读量列表"
+          items:
+            $ref: "#/components/schemas/IdCountVO"
+        likes:
+          type:
+          - "array"
+          - "null"
+          description: "文章点赞数列表"
+          items:
+            $ref: "#/components/schemas/IdCountVO"
+        collects:
+          type:
+          - "array"
+          - "null"
+          description: "文章收藏数列表"
+          items:
+            $ref: "#/components/schemas/IdCountVO"
+        follows:
+          type:
+          - "array"
+          - "null"
+          description: "作者粉丝数列表"
+          items:
+            $ref: "#/components/schemas/IdCountVO"
+        comment_scores:
+          type:
+          - "array"
+          - "null"
+          description: "文章评论评分列表"
+          items:
+            $ref: "#/components/schemas/ArticleCommentScoresVO"
+    CommentScoreDTO:
+      description: "评论评分统计"
+      properties:
+        average_score:
+          type:
+          - "number"
+          - "null"
+          format: "double"
+          description: "平均评分"
+        count:
+          type:
+          - "integer"
+          - "null"
+          format: "int64"
+          description: "评论数量"
+    IdCountVO:
+      description: "ID 与数量"
+      properties:
+        id:
+          type:
+          - "integer"
+          - "null"
+          format: "int64"
+          description: "ID"
+        count:
+          type:
+          - "integer"
+          - "null"
+          format: "int64"
+          description: "数量"
+    ResultArticleStatsBatchVO:
       description: "统一响应"
       properties:
         code:
@@ -4833,12 +4740,8 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type:
-          - "array"
-          - "null"
+          $ref: "#/components/schemas/ArticleStatsBatchVO"
           description: "返回数据"
-          items:
-            $ref: "#/components/schemas/IdCountVO"
       required:
       - "code"
       - "msg"

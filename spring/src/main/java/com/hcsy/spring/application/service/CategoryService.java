@@ -2,6 +2,7 @@ package com.hcsy.spring.application.service;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
@@ -81,6 +82,11 @@ public interface CategoryService {
      * 按ID批量流式查询子分类
      */
     Flux<SubCategory> listSubCategoriesByIds(Collection<Long> ids);
+
+    /**
+     * 读取子分类与父分类名称的快照映射，走多级缓存
+     */
+    Mono<Map<Long, SubCategoryWithParentVO>> getSubCategorySnapshot();
 
     // 新增：供内部接口使用的方法
     Flux<Category> listAllCategories();

@@ -19,6 +19,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.hcsy.spring.application.service.CategoryService;
+import com.hcsy.spring.application.service.UserService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
@@ -28,8 +30,6 @@ import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.infra.repository.ArticleRepository;
-import com.hcsy.spring.infra.repository.CategoryRepository;
-import com.hcsy.spring.infra.repository.SubCategoryRepository;
 import com.hcsy.spring.infra.repository.UserRepository;
 
 import reactor.core.publisher.Flux;
@@ -47,9 +47,9 @@ class ArticleServiceImplTest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private SubCategoryRepository subCategoryRepository;
+    private UserService userService;
     @Mock
-    private CategoryRepository categoryRepository;
+    private CategoryService categoryService;
     @Mock
     private TransactionalOperator transactionalOperator;
 
@@ -57,8 +57,8 @@ class ArticleServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        articleService = new ArticleServiceImpl(articleRepository, userRepository, subCategoryRepository,
-            categoryRepository, transactionalOperator);
+        articleService = new ArticleServiceImpl(articleRepository, userRepository, userService, categoryService,
+            transactionalOperator);
     }
 
     @Test
@@ -336,7 +336,7 @@ class ArticleServiceImplTest {
             })
             .verifyComplete();
 
-        verify(userRepository, never()).findAllById(anyIterable());
+        verify(userService, never()).getUserNamesByIds(any());
     }
 
     private void stubTransactional() {

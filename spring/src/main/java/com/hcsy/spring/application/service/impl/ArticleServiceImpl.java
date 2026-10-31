@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
@@ -15,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.hcsy.spring.application.service.ArticleService;
+import com.hcsy.spring.application.service.CategoryService;
+import com.hcsy.spring.application.service.UserService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
@@ -23,18 +24,14 @@ import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
-import com.hcsy.spring.entity.po.Category;
-import com.hcsy.spring.entity.po.SubCategory;
-import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.ArticleExportVO;
 import com.hcsy.spring.entity.vo.ArticleSyncVO;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 import com.hcsy.spring.entity.vo.CategoryArticleCountVO;
 import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MonthlyPublishCountVO;
+import com.hcsy.spring.entity.vo.SubCategoryWithParentVO;
 import com.hcsy.spring.infra.repository.ArticleRepository;
-import com.hcsy.spring.infra.repository.CategoryRepository;
-import com.hcsy.spring.infra.repository.SubCategoryRepository;
 import com.hcsy.spring.infra.repository.UserRepository;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -51,8 +48,8 @@ public class ArticleServiceImpl implements ArticleService {
 
     private final ArticleRepository articleRepository;
     private final UserRepository userRepository;
-    private final SubCategoryRepository subCategoryRepository;
-    private final CategoryRepository categoryRepository;
+    private final UserService userService;
+    private final CategoryService categoryService;
     private final TransactionalOperator transactionalOperator;
 
     /**
@@ -122,12 +119,14 @@ public class ArticleServiceImpl implements ArticleService {
                 vo.setUsername(Defaults.DEFAULT_USER);
                 return Mono.just(vo);
             }
-            return userRepository.findById(article.getUserId())
-                .map(user -> {
-                    vo.setUsername(user.getName());
+            return userService.getUserNamesByIds(List.of(article.getUserId()))
+                .map(names -> {
+                    String username = names.get(article.getUserId());
+                    if (username != null) {
+                        vo.setUsername(username);
+                    }
                     return vo;
-                })
-                .defaultIfEmpty(vo);
+                });
         });
     }
 
@@ -346,22 +345,8 @@ public class ArticleServiceImpl implements ArticleService {
 
         Set<Long> userIds = records.stream().map(Article::getUserId).filter(id -> id != null)
             .collect(Collectors.toSet());
-        Set<Long> subCategoryIds = records.stream().map(Article::getSubCategoryId).filter(id -> id != null)
-            .map(Integer::longValue).collect(Collectors.toSet());
-
-        Mono<Map<Long, User>> users = userRepository.findAllById(userIds)
-            .collectMap(User::getId, Function.identity());
-        Mono<Map<Long, SubCategory>> subCategories = subCategoryRepository.findAllById(subCategoryIds)
-            .collectMap(SubCategory::getId, Function.identity());
-
-        return Mono.zip(users, subCategories).flatMap(relations -> {
-            Map<Long, SubCategory> subCategoryMap = relations.getT2();
-            Set<Long> categoryIds = subCategoryMap.values().stream().map(SubCategory::getCategoryId)
-                .filter(id -> id != null).collect(Collectors.toSet());
-            return categoryRepository.findAllById(categoryIds)
-                .collectMap(Category::getId, Function.identity())
-                .map(categories -> mapArticlePage(source, relations.getT1(), subCategoryMap, categories));
-        });
+        return Mono.zip(userService.getUserNamesByIds(userIds), categoryService.getSubCategorySnapshot())
+            .map(relations -> mapArticlePage(source, relations.getT1(), relations.getT2()));
     }
 
     /**
@@ -369,21 +354,19 @@ public class ArticleServiceImpl implements ArticleService {
      */
     private PageDTO<ArticleWithCategoryVO> mapArticlePage(
         PageDTO<Article> source,
-        Map<Long, User> users,
-        Map<Long, SubCategory> subCategories,
-        Map<Long, Category> categories) {
+        Map<Long, String> userNames,
+        Map<Long, SubCategoryWithParentVO> subCategories) {
         List<ArticleWithCategoryVO> records = source.getRecords().stream().map(article -> {
             ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
-            User user = users.get(article.getUserId());
-            vo.setUsername(user == null ? Defaults.DEFAULT_USER : user.getName());
+            String username = userNames.get(article.getUserId());
+            vo.setUsername(username == null || username.isBlank() ? Defaults.DEFAULT_USER : username);
             if (article.getSubCategoryId() != null) {
-                SubCategory subCategory = subCategories.get(article.getSubCategoryId().longValue());
+                SubCategoryWithParentVO subCategory = subCategories.get(article.getSubCategoryId().longValue());
                 if (subCategory != null) {
                     vo.setSubCategoryName(subCategory.getName());
-                    Category category = categories.get(subCategory.getCategoryId());
-                    if (category != null) {
-                        vo.setCategoryId(category.getId());
-                        vo.setCategoryName(category.getName());
+                    if (subCategory.getCategoryName() != null) {
+                        vo.setCategoryId(subCategory.getCategoryId());
+                        vo.setCategoryName(subCategory.getCategoryName());
                     }
                 }
             }

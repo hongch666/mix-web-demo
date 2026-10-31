@@ -20,10 +20,8 @@ import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleCollectDTO;
-import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
 import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
-import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.CollectCheckVO;
 import com.hcsy.spring.entity.vo.CollectCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
@@ -134,18 +132,6 @@ public class ArticleCollectController {
         @Parameter(description = "文章ID", required = true) @PathVariable("article_id") Long articleId) {
         return articleCollectService.getCollectCountByArticleId(articleId)
             .map(count -> Result.success(new CollectCountVO(count)));
-    }
-
-    /**
-     * POST /collects/counts/batch 内部接口，按文章ID列表批量返回各文章的收藏数
-     */
-    @PostMapping("/counts/batch")
-    @Operation(summary = "批量查询收藏数（内部）", description = "根据文章ID列表批量查询收藏数，供内部服务远程调用")
-    @RequireInternalToken
-    @ApiLog("内部批量查询收藏数")
-    public Mono<Result<BatchCountVO>> getCollectCountsByArticleIds(@Valid @RequestBody BatchIdsDTO dto) {
-        return articleCollectService.getCollectCountsByArticleIds(dto.getIds())
-            .map(Result::success);
     }
 
     /**

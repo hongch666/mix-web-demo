@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.PageRequest;
@@ -46,6 +48,9 @@ public class CategoryServiceImpl implements CategoryService {
         RedisKeys.categoryByIdCacheName(), RedisKeys.categoryCacheInvalidationChannel(), 1_000);
     private static final CacheUtil.CacheOptions<PageDTO<CategoryVO>> CATEGORY_PAGE_CACHE = CacheUtil.CacheOptions.fixed(
         RedisKeys.categoryPageCacheName(), RedisKeys.categoryCacheInvalidationChannel(), 200);
+    private static final CacheUtil.CacheOptions<Map<Long, SubCategoryWithParentVO>> SUB_CATEGORY_SNAPSHOT_CACHE = CacheUtil.CacheOptions
+        .fixed(RedisKeys.categorySubSnapshotCacheName(),
+            RedisKeys.categoryCacheInvalidationChannel(), 1);
 
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
@@ -210,6 +215,17 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     /**
+     * 读取子分类与父分类名称的快照映射，走多级缓存，未命中时加载全量快照
+     */
+    @Override
+    public Mono<Map<Long, SubCategoryWithParentVO>> getSubCategorySnapshot() {
+        return cacheUtil.get(SUB_CATEGORY_SNAPSHOT_CACHE, RedisKeys.categorySubSnapshot(),
+            RedisKeys.categorySubSnapshot(), new TypeReference<Map<Long, SubCategoryWithParentVO>>() {
+            }, () -> listAllSubCategoriesWithParent()
+                .collectMap(SubCategoryWithParentVO::getId, Function.identity()));
+    }
+
+    /**
      * 缓存未命中时从数据库加载分类详情并组装子分类列表
      */
     private Mono<CategoryVO> loadCategory(Long id) {
@@ -253,7 +269,8 @@ public class CategoryServiceImpl implements CategoryService {
      * 清除分类详情与分类分页的全部本地与Redis缓存
      */
     private Mono<Void> evictAllCategoryCaches() {
-        return cacheUtil.evictAll(RedisKeys.categoryAllPattern(), CATEGORY_BY_ID_CACHE, CATEGORY_PAGE_CACHE);
+        return cacheUtil.evictAll(RedisKeys.categoryAllPattern(), CATEGORY_BY_ID_CACHE, CATEGORY_PAGE_CACHE,
+            SUB_CATEGORY_SNAPSHOT_CACHE);
     }
 
     /**

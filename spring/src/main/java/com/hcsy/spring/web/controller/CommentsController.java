@@ -29,7 +29,6 @@ import com.hcsy.spring.entity.dto.CommentUpdateDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.vo.AICommentsVO;
-import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
 import com.hcsy.spring.entity.vo.CommentSyncVO;
 import com.hcsy.spring.entity.vo.CommentsVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
@@ -193,19 +192,6 @@ public class CommentsController {
     @ApiLog("根据文章id获取AI评论")
     public Mono<Result<List<AICommentsVO>>> listAICommentsByArticleId(@PathVariable Long id) {
         return commentsService.listAICommentDetailsByArticleId(id).map(Result::success);
-    }
-
-    /**
-     * POST /comments/scores/batch 内部接口，按文章ID列表批量返回评论评分并按用户角色分组
-     */
-    @PostMapping("/scores/batch")
-    @Operation(summary = "批量查询评论评分（内部）", description = "根据文章ID列表批量查询评论评分，按角色分组，供内部服务远程调用")
-    @RequireInternalToken
-    @ApiLog("内部批量查询评论评分")
-    public Mono<Result<List<ArticleCommentScoresVO>>> getCommentScoresByArticleIds(
-        @Valid @RequestBody BatchIdsDTO dto) {
-        return commentsService.getCommentScoresByArticleIds(dto.getIds())
-            .map(Result::success);
     }
 
     /**

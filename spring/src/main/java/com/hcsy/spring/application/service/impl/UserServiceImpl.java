@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -44,6 +45,7 @@ import com.hcsy.spring.infra.repository.UserRepository;
 import com.hcsy.spring.observability.MetricsRecorder;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -58,6 +60,8 @@ import reactor.core.scheduler.Schedulers;
 public class UserServiceImpl implements UserService {
     private static final CacheUtil.CacheOptions<UserListVO> ALL_USERS_CACHE = CacheUtil.CacheOptions.fixed(
         RedisKeys.allUsersCacheName(), RedisKeys.userCacheInvalidationChannel(), 1);
+    private static final CacheUtil.CacheOptions<Map<Long, String>> USER_NAMES_CACHE = CacheUtil.CacheOptions.fixed(
+        RedisKeys.userNamesCacheName(), RedisKeys.userCacheInvalidationChannel(), 1);
 
     private final UserRepository userRepository;
     private final RedisUtil redisUtil;
@@ -187,8 +191,8 @@ public class UserServiceImpl implements UserService {
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
             .flatMap(userRepository::delete);
         return transactionalOperator.transactional(databaseOperation)
-            .then(Mono.when(evictAllUsersCache(), redisUtil.delete(RedisKeys.userStatus(id)),
-                evictUserRoleCache(id)));
+            .then(Mono.when(evictAllUsersCache(), evictUserNamesCache(),
+                redisUtil.delete(RedisKeys.userStatus(id)), evictUserRoleCache(id)));
     }
 
     /**
@@ -212,7 +216,7 @@ public class UserServiceImpl implements UserService {
             .flatMap(this::evictUserRoleCache, 8)
             .then();
         return transactionalOperator.transactional(databaseOperation)
-            .then(Mono.when(evictAllUsersCache(), clearStatuses, clearRoles));
+            .then(Mono.when(evictAllUsersCache(), evictUserNamesCache(), clearStatuses, clearRoles));
     }
 
     /**
@@ -401,6 +405,27 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * 按ID集合读取用户名称映射，走本地与Redis两级缓存，未命中时加载全量ID与名称快照
+     */
+    @Override
+    public Mono<Map<Long, String>> getUserNamesByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Mono.just(Map.of());
+        }
+        return cacheUtil.get(USER_NAMES_CACHE, RedisKeys.userNames(), RedisKeys.userNames(),
+            new TypeReference<Map<Long, String>>() {
+            }, this::loadUserNames);
+    }
+
+    /**
+     * 查询全部用户的ID与名称生成名称快照
+     */
+    private Mono<Map<Long, String>> loadUserNames() {
+        return userRepository.findAllIdAndName()
+            .collectMap(User::getId, user -> user.getName() == null ? "" : user.getName());
+    }
+
+    /**
      * 查询全部AI角色用户并转换为VO组装为列表结果
      */
     @Override
@@ -463,7 +488,7 @@ public class UserServiceImpl implements UserService {
             })
             .flatMap(saved -> Mono.when(
                 redisUtil.set(RedisKeys.userStatus(saved.getId()), "0"),
-                evictAllUsersCache()).thenReturn(saved));
+                evictAllUsersCache(), evictUserNamesCache()).thenReturn(saved));
     }
 
     /**
@@ -525,7 +550,8 @@ public class UserServiceImpl implements UserService {
                     return transactionalOperator.transactional(userRepository.save(user));
                 });
             })
-            .then(Mono.when(evictAllUsersCache(), evictUserRoleCache(dto.getId().longValue())));
+            .then(Mono.when(evictAllUsersCache(), evictUserNamesCache(),
+                evictUserRoleCache(dto.getId().longValue())));
     }
 
     /**
@@ -674,6 +700,13 @@ public class UserServiceImpl implements UserService {
      */
     private Mono<Void> evictAllUsersCache() {
         return cacheUtil.evict(RedisKeys.allUsersCache(), ALL_USERS_CACHE);
+    }
+
+    /**
+     * 失效用户名称快照的多级缓存
+     */
+    private Mono<Void> evictUserNamesCache() {
+        return cacheUtil.evict(RedisKeys.userNames(), USER_NAMES_CACHE);
     }
 
     /**

@@ -19,9 +19,7 @@ import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
-import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.FocusDTO;
-import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.CountVO;
 import com.hcsy.spring.entity.vo.FocusCheckVO;
 import com.hcsy.spring.entity.vo.FocusSyncVO;
@@ -155,18 +153,6 @@ public class FocusController {
         @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId) {
         return focusService.getFollowerCountByUserId(userId)
             .map(count -> Result.success(new CountVO(count)));
-    }
-
-    /**
-     * POST /focus/counts/batch 内部接口，按用户ID列表批量返回各用户的粉丝数
-     */
-    @PostMapping("/counts/batch")
-    @Operation(summary = "批量查询粉丝数（内部）", description = "根据用户ID列表批量查询粉丝数，供内部服务远程调用")
-    @RequireInternalToken
-    @ApiLog("内部批量查询粉丝数")
-    public Mono<Result<BatchCountVO>> getFollowCountsByUserIds(@Valid @RequestBody BatchIdsDTO dto) {
-        return focusService.getFollowCountsByUserIds(dto.getIds())
-            .map(Result::success);
     }
 
     /**

@@ -101,4 +101,10 @@ public interface UserRepository extends ReactiveCrudRepository<User, Long> {
      */
     @Query("SELECT * FROM user WHERE update_at > :after")
     Flux<User> findByUpdateAtAfter(@Param("after") LocalDateTime after);
+
+    /**
+     * 只查询全部用户的ID与名称，供名称快照缓存装载
+     */
+    @Query("SELECT id, name FROM user ORDER BY id")
+    Flux<User> findAllIdAndName();
 }
