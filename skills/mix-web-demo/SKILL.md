@@ -1,6 +1,6 @@
 ---
 name: mix-web-demo
-description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Spring WebFlux、NestJS、FastAPI、GoZero 四个服务与 APISIX 网关的分层组织、依赖注入、请求校验、实时链路、日志、测试、常量、并行化、SQL 参数化、远程调用、Swagger 生成与 Apifox 同步约定，并含仓库工程约束（行尾、goctl 生成流程）与容器镜像约定（多阶段构建、镜像推送与版本、本地优先/远程兜底的镜像名前缀配置、各服务 .dockerignore 边界）。在本仓库生成或修改任何服务代码时必须使用；与通用 skills 冲突时以本 skill 的项目实证约定为准。
+description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Spring WebFlux、NestJS、FastAPI、GoZero 四个服务与 APISIX 网关的分层组织、依赖注入、请求校验、实时链路、日志、测试、常量、并行化、SQL 参数化、数据库与索引设计（建表 DDL、索引登记位置、MySQL/MongoDB/ClickHouse/ES/pgvector 设计约束）、远程调用、Swagger 生成与 Apifox 同步约定，并含仓库工程约束（行尾、goctl 生成流程）与容器镜像约定（多阶段构建、镜像推送与版本、本地优先/远程兜底的镜像名前缀配置、各服务 .dockerignore 边界）。在本仓库生成或修改任何服务代码时必须使用；与通用 skills 冲突时以本 skill 的项目实证约定为准。
 ---
 
 # mix-web-demo 项目专属编码规范
@@ -125,6 +125,51 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
 18. **接口响应必须使用具名结构，禁止匿名 Map**：控制器/路由的返回类型要有明确的结构定义并携带字段说明，便于 Swagger 呈现与下游解析。各服务落地：Spring 用 `entity/vo/` 下的 VO（字段加 `@Schema`）、NestJS 用 `common/utils/swaggerResponse.ts` 的 `SchemaObject` 加响应 DTO、FastAPI 用 `internal/schemas/` 的 Pydantic 模型、GoZero 用 `.api" 里的具名 `type`。**Spring 额外硬性要求**：禁止 `Map<String, Object>`（含 `java.util.Map`）作为控制器返回类型，`./mix lint spring`会检测；用于替换匿名 Map 的 VO 必须保持原有下划线字段名（类上加`@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)`），否则下游 FastAPI/GoZero 会解析不到字段；确实只能使用 Map 的场景（如列由运行时决定的动态查询结果）必须显式豁免：方法或其注解上方写 `// vo-exempt: 原因`，整个控制器写 `// vo-exempt-class: 原因`
 
 19. **接口层只处理协议边界**：Controller、Handler、Router 负责参数绑定与校验、读取请求身份、调用面向用例的 Service/Logic、包装响应；可保留分页包装、简单 DTO/VO 转换、重定向和连接升级。关联查询、业务条件判断、多个业务服务的顺序编排、落库决策、缓存批量操作和异步任务执行放在应用服务、Logic 或任务组件。检查方法体内多个业务依赖调用、直接访问 Repository/Model/Cache、手工创建 DB 会话或自行维护聊天状态的情况
+
+## 数据库与索引设计（全部存储）
+
+**新增表、新增或修改查询时，必须在同一次改动里给出索引方案**：索引按真实的 `WHERE` / `JOIN` / `ORDER BY` / `GROUP BY` 设计，等值过滤列在前、范围与排序列在后，能覆盖查询时优先覆盖索引；没有查询依据的索引不建。已有复合索引左前缀能覆盖的单列索引要一并删除，避免重复写入开销。
+
+索引写在哪里取决于建表方式，两类存储的约定不同。
+
+### 手写 DDL（索引内联，服务启动不补索引）
+
+| 服务 | 建表与索引位置 |
+| --- | --- |
+| Spring | `spring/.../common/constants/Scripts.java` 的 `CREATE_*_TABLE`，同步 `db/mysql/spring/*.sql` |
+| GoZero | `gozero/app/common/constants/scripts.go` 的 `CREATE_CHAT_MESSAGES_TABLE_SQL`，同步 `db/mysql/gozero/*.sql` |
+| ClickHouse 兜底脚本 | `db/clickhouse/**/*.sql` 的 `ORDER BY` / `PARTITION BY` / 跳数 `INDEX` / `TTL` |
+
+- 索引直接写在 `CREATE TABLE` 里（`KEY` / `INDEX` / 跳数 `INDEX`），**不要再写启动期 `ALTER TABLE ADD INDEX` 逻辑**：项目已刻意移除该逻辑，表已存在时启动不会修改索引，索引不一致由运维处理
+- 改了索引必须同步 `db/mysql/**` / `db/clickhouse/**` 里对应的脚本，这是同一份 DDL 的第二处来源
+- 存量库补索引、删被覆盖的旧索引用 `scripts/index-optimize.sh`（默认预览，加 `--apply` 才执行）
+
+### 框架建表（索引单独登记与创建）
+
+| 存储 | 登记位置 | 说明 |
+| --- | --- | --- |
+| FastAPI MySQL | `fastapi/app/core/constants/indexes.py` → `MySQLIndexes` | SQLAlchemy `create_all` 不建业务索引，启动由 `create_mysql_indexes_async()` 按 `information_schema` 补齐 |
+| FastAPI ClickHouse | 同文件 → `ClickHouseIndexes` | 跳数索引与 TTL 只能 `ALTER`；改 `ORDER BY` / `PARTITION BY` 要同步 `warehouse/base.py` 的 `WAREHOUSE_ENGINE_CONFIG` |
+| FastAPI pgvector | 同文件 → `PostgreSQLIndexes` | 表由 LangChain 创建；ANN 索引要求 `embedding` 列声明维度 |
+| NestJS MongoDB | `*.schema.ts` 的 `Schema.index()` + service 的 `requiredIndexes` + `db/mongodb/*.js` | 三处必须同名同列，否则出现重复索引或 `IndexOptionsConflict` |
+| GoZero ES | `db/es/init.es` 与 `gozero/app/common/constants/scripts.go` 的 `ES_INDEX_MAPPING` | 两处保持一致；字段类型不可原地修改，变更需重建索引 |
+
+### 各存储的设计约束
+
+- **MySQL**：避免 `%LIKE%`（B-tree 结构性无效）；`ORDER BY` 列要进索引，否则 filesort；列表接口避免 `SELECT *` 带出 `LONGTEXT`
+- **MongoDB**：`sort` 字段必须进复合索引，否则退化为内存排序；`$regex` 只有前缀锚定 `^kw` 能用索引；深分页用 `_id` 游标而不是 `skip`
+- **ClickHouse**：`ReplacingMergeTree` 的 `ORDER BY` 就是去重键，**不能为了查询把 `event_id` 移出排序键**；查询侧写分区谓词（`action_date >= toDate(...)`，不要 `toString(toYYYYMM(...)) = ...` 这种函数包裹），再配合跳数索引；高频聚合考虑物化视图或预聚合表
+- **Elasticsearch**：过滤用 `keyword` + `term`，全文检索用 `text` 分词；`text` 不能聚合与排序；避免前后通配 `*kw*`
+- **pgvector**：检索算子必须与索引 ops 匹配（余弦 `<=>` 对应 `vector_cosine_ops`）
+
+### 改完索引的验证
+
+- MySQL：`EXPLAIN` 确认不再出现 `Using filesort` / `Using temporary`
+- MongoDB：`explain("executionStats")` 确认 `totalKeysExamined ≈ nReturned` 且无 `SORT` 阶段
+- ClickHouse：`EXPLAIN indexes = 1` 看 Granules 的裁剪比例
+- Elasticsearch / pgvector：`profile: true`、`EXPLAIN (ANALYZE, BUFFERS)` 确认命中索引
+
+完整清单与迁移步骤见根目录《索引优化执行手册.md》
 
 ## Spring 服务（spring/，WebFlux 响应式栈）
 
