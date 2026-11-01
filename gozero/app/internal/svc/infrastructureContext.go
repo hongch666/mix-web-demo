@@ -3,6 +3,7 @@ package svc
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -41,11 +42,15 @@ var nacosBackgroundRunner = func(logger *utils.ZeroLogger, taskName string, task
 func newInfrastructureContext(c config.Config, logger *utils.ZeroLogger) *InfrastructureContext {
 	mysqlConn := initSqlx(c, logger)
 	initChatMessagesTable(logger, mysqlConn)
+	initChatMessagesIndexes(logger, mysqlConn)
+
+	esClient := initES(c, logger)
+	ensureESIndexes(logger, esClient)
 
 	return &InfrastructureContext{
 		MySQLConn:         mysqlConn,
 		RawMySQL:          initRawMysql(c, logger),
-		ESClient:          initES(c, logger),
+		ESClient:          esClient,
 		RabbitMQPublisher: initRabbitMQ(c, logger),
 		RedisClient:       initRedis(c, logger),
 		NamingClient:      initNacos(c, logger),
@@ -121,6 +126,64 @@ func initChatMessagesTable(logger *utils.ZeroLogger, conn sqlx.SqlConn) {
 	}
 
 	logger.Info(constants.ENSURE_CHAT_MESSAGES_TABLE_SUCCESS)
+}
+
+// initChatMessagesIndexes 为已存在的 chat_messages 补齐索引
+// 建表语句里的索引只在首次建表时生效，已有库需要先查 information_schema 再 ALTER
+func initChatMessagesIndexes(logger *utils.ZeroLogger, conn sqlx.SqlConn) {
+	if conn == nil {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DDLOperationTimeout)
+	defer cancel()
+
+	for _, index := range constants.CHAT_MESSAGES_INDEXES {
+		var exists int
+		err := conn.QueryRowCtx(ctx, &exists, constants.INDEX_EXISTS_SQL, index.Table, index.Name)
+		if err == nil {
+			continue
+		}
+		if !errors.Is(err, sqlx.ErrNotFound) {
+			logger.Errorf(constants.ENSURE_CHAT_MESSAGES_INDEX_FAIL, index.Name, err)
+			continue
+		}
+
+		statement := fmt.Sprintf("ALTER TABLE %s ADD INDEX %s %s", index.Table, index.Name, index.Columns)
+		if _, execErr := conn.ExecCtx(ctx, statement); execErr != nil {
+			logger.Errorf(constants.ENSURE_CHAT_MESSAGES_INDEX_FAIL, index.Name, execErr)
+		}
+	}
+
+	logger.Info(constants.ENSURE_CHAT_MESSAGES_INDEX_SUCCESS)
+}
+
+// ensureESIndexes 在启动期确保文章索引存在
+// 索引名与 mapping 均来自常量，与数仓同步任务里的创建逻辑保持一致，重复创建前先判存在
+func ensureESIndexes(logger *utils.ZeroLogger, client *elastic.Client) {
+	if client == nil {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DDLOperationTimeout)
+	defer cancel()
+
+	exists, err := client.IndexExists(constants.ES_ARTICLES_INDEX_NAME).Do(ctx)
+	if err != nil {
+		logger.Errorf(constants.ENSURE_ES_INDEX_FAIL, err)
+		return
+	}
+	if exists {
+		return
+	}
+
+	if _, createErr := client.CreateIndex(constants.ES_ARTICLES_INDEX_NAME).
+		BodyString(constants.ES_INDEX_MAPPING).Do(ctx); createErr != nil {
+		logger.Errorf(constants.ENSURE_ES_INDEX_FAIL, createErr)
+		return
+	}
+
+	logger.Info(constants.ENSURE_ES_INDEX_SUCCESS)
 }
 
 // 构建 MySQL DSN

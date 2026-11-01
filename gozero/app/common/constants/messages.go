@@ -238,6 +238,14 @@ const (
 	ENSURE_CHAT_MESSAGES_TABLE_FAIL = "确保 chat_messages 表存在失败: %v"
 	// 确认 chat_messages 表就绪的日志消息
 	ENSURE_CHAT_MESSAGES_TABLE_SUCCESS = "已确保 chat_messages 表存在"
+	// 确保 chat_messages 索引存在失败的错误消息
+	ENSURE_CHAT_MESSAGES_INDEX_FAIL = "确保 chat_messages 索引 %s 存在失败: %v"
+	// 确认 chat_messages 索引就绪的日志消息
+	ENSURE_CHAT_MESSAGES_INDEX_SUCCESS = "已确保 chat_messages 索引存在"
+	// 确保 ES 文章索引存在失败的错误消息
+	ENSURE_ES_INDEX_FAIL = "确保 ES 文章索引存在失败: %v"
+	// 确认 ES 文章索引就绪的日志消息
+	ENSURE_ES_INDEX_SUCCESS = "已确保 ES 文章索引存在"
 
 	// ===== 日志文件 =====
 
