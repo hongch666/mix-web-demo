@@ -3,7 +3,6 @@ package svc
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -129,7 +128,8 @@ func initChatMessagesTable(logger *utils.ZeroLogger, conn sqlx.SqlConn) {
 }
 
 // initChatMessagesIndexes 为已存在的 chat_messages 补齐索引
-// 建表语句里的索引只在首次建表时生效，已有库需要先查 information_schema 再 ALTER
+// 建表语句里的索引只在首次建表时生效，已有库需要先查 information_schema 再 ALTER；
+// 按「同名或同列组合」判断是否已覆盖，避免与历史索引（如 goctl 生成的 idx_chat_messages_*）重复建同列索引
 func initChatMessagesIndexes(logger *utils.ZeroLogger, conn sqlx.SqlConn) {
 	if conn == nil {
 		return
@@ -138,14 +138,15 @@ func initChatMessagesIndexes(logger *utils.ZeroLogger, conn sqlx.SqlConn) {
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DDLOperationTimeout)
 	defer cancel()
 
+	rows := make([]chatMessagesIndexRow, 0)
+	if err := conn.QueryRowsCtx(ctx, &rows, constants.INDEX_LIST_SQL, "chat_messages"); err != nil {
+		logger.Errorf(constants.ENSURE_CHAT_MESSAGES_INDEX_FAIL, "chat_messages", err)
+		return
+	}
+
 	for _, index := range constants.CHAT_MESSAGES_INDEXES {
-		var exists int
-		err := conn.QueryRowCtx(ctx, &exists, constants.INDEX_EXISTS_SQL, index.Table, index.Name)
-		if err == nil {
-			continue
-		}
-		if !errors.Is(err, sqlx.ErrNotFound) {
-			logger.Errorf(constants.ENSURE_CHAT_MESSAGES_INDEX_FAIL, index.Name, err)
+		if chatMessagesIndexCovered(rows, index) {
+			logger.Debugf(constants.ENSURE_CHAT_MESSAGES_INDEX_SKIP, index.Name)
 			continue
 		}
 
@@ -156,6 +157,31 @@ func initChatMessagesIndexes(logger *utils.ZeroLogger, conn sqlx.SqlConn) {
 	}
 
 	logger.Info(constants.ENSURE_CHAT_MESSAGES_INDEX_SUCCESS)
+}
+
+// chatMessagesIndexRow information_schema.statistics 中的一条索引记录
+type chatMessagesIndexRow struct {
+	Name        string `db:"name"`
+	ColumnsList string `db:"columns_list"`
+}
+
+// chatMessagesIndexCovered 同名索引或同列组合索引都视为已覆盖，前者避免报错、后者避免重复
+func chatMessagesIndexCovered(rows []chatMessagesIndexRow, index constants.MySQLIndexDefinition) bool {
+	targetColumns := normalizeIndexColumns(index.Columns)
+	for _, row := range rows {
+		if strings.EqualFold(row.Name, index.Name) {
+			return true
+		}
+		if normalizeIndexColumns(row.ColumnsList) == targetColumns {
+			return true
+		}
+	}
+	return false
+}
+
+// normalizeIndexColumns 去掉括号、反引号与空格，便于比较列组合
+func normalizeIndexColumns(columns string) string {
+	return strings.NewReplacer("(", "", ")", "", "`", "", " ", "").Replace(columns)
 }
 
 // ensureESIndexes 在启动期确保文章索引存在

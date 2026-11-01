@@ -23,11 +23,14 @@ const (
 	// ES_ARTICLES_INDEX_NAME 文章检索使用的 ES 索引名
 	ES_ARTICLES_INDEX_NAME = "articles"
 
-	// INDEX_EXISTS_SQL 检查索引是否已存在，MySQL 没有 CREATE INDEX IF NOT EXISTS，只能先查后建
-	INDEX_EXISTS_SQL = `
-		SELECT 1 FROM information_schema.statistics
-		WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?
-		LIMIT 1
+	// INDEX_LIST_SQL 列出表上所有索引及其列组合，用于按列判断是否已存在等价索引
+	// 同名不同 spec 会冲突，同 spec 不同名则是重复索引，二者都只能靠列组合识别
+	INDEX_LIST_SQL = `
+		SELECT index_name AS name,
+		       GROUP_CONCAT(column_name ORDER BY seq_in_index) AS columns_list
+		FROM information_schema.statistics
+		WHERE table_schema = DATABASE() AND table_name = ?
+		GROUP BY index_name
 	`
 
 	// ES 索引 Mapping 定义
