@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.internal.models import AiHistory
@@ -86,12 +86,16 @@ class AiHistoryMapper:
     ) -> None:
         """按用户删除历史记录
 
-        只提交到会话，事务由调用方统一提交，便于与记忆摘要删除保持原子
+        单条 DELETE 语句交由会话执行，不逐行加载实体再删除：该表没有 ORM 级联与
+        删除事件依赖，批量删除可避免把整批历史读进 session 并逐条往返数据库；
+        synchronize_session=False 表示不同步已加载实体，删除后调用方直接提交事务。
+        这里只落到会话，事务由调用方统一提交，便于与记忆摘要删除保持原子
         """
-        statement = select(AiHistory).where(AiHistory.user_id == user_id)
-        histories = (await db.execute(statement)).scalars().all()
-        for history in histories:
-            await db.delete(history)
+        await db.execute(
+            delete(AiHistory)
+            .where(AiHistory.user_id == user_id)
+            .execution_options(synchronize_session=False)
+        )
         await db.flush()
 
 

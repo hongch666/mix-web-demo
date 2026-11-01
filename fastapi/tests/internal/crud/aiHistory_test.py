@@ -45,16 +45,12 @@ class _FakeSession:
 
 
 class _FakeDeleteSession(_FakeSession):
-    """覆盖删除路径的会话边界，记录删除、flush 与 commit 次数"""
+    """覆盖删除路径的会话边界，记录删除语句、flush 与 commit 次数"""
 
-    def __init__(self, rows: list[Any]) -> None:
-        super().__init__(rows)
-        self.deleted: list[Any] = []
+    def __init__(self) -> None:
+        super().__init__([])
         self.flushes = 0
         self.commits = 0
-
-    async def delete(self, row: Any) -> None:
-        self.deleted.append(row)
 
     async def flush(self) -> None:
         self.flushes += 1
@@ -117,14 +113,19 @@ async def test_oldest_history_after_watermark_uses_ascending_order() -> None:
     assert "LIMIT" in sql
 
 
-# 按用户删除只落到会话并 flush，事务由调用方提交以保证与摘要删除原子
+# 按用户删除用单条 DELETE 语句落到会话并 flush，事务由调用方提交以保证与摘要删除原子
 @pytest.mark.anyio
-async def test_delete_by_userid_defers_commit_to_caller() -> None:
+async def test_delete_by_userid_uses_single_statement_and_defers_commit() -> None:
     mapper = AiHistoryMapper()
-    session = _FakeDeleteSession([_FakeHistory(1), _FakeHistory(2)])
+    session = _FakeDeleteSession()
 
     await mapper.delete_ai_history_by_userid_async(session, 7)
 
-    assert [row.id for row in session.deleted] == [1, 2]
+    assert len(session.statements) == 1
+    sql = str(session.statements[0])
+    assert "DELETE" in sql
+    assert "ai_history" in sql
+    assert "WHERE" in sql
+    assert session.statements[0].compile().params["user_id_1"] == 7
     assert session.flushes == 1
     assert session.commits == 0
