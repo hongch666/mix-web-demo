@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS `focus` (
     `created_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_user_focus` (`user_id`, `focus_id`),
-    KEY `idx_user_id` (`user_id`),
+    KEY `idx_focus_created` (`focus_id`, `created_time`),
+    KEY `idx_user_created` (`user_id`, `created_time`),
     KEY `idx_created_time` (`created_time`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '关注表';

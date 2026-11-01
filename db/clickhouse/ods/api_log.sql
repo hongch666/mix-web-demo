@@ -7,6 +7,10 @@ CREATE TABLE IF NOT EXISTS ods_api_log (
     api_path String,
     api_method String,
     response_time Float64,
-    created_at DateTime
+    created_at DateTime,
+    INDEX idx_created_at created_at TYPE minmax GRANULARITY 4
 ) ENGINE = ReplacingMergeTree (created_at)
-ORDER BY event_id;
+PARTITION BY
+    toYYYYMM (created_at)
+ORDER BY (created_at, event_id)
+TTL created_at + INTERVAL 24 MONTH;

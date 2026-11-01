@@ -2,11 +2,19 @@ PUT /articles
 {
   "settings": {
     "number_of_shards": 1,
-    "number_of_replicas": 0
+    "number_of_replicas": 0,
+    "analysis": {
+      "normalizer": {
+        "lowercase_normalizer": {
+          "type": "custom",
+          "filter": ["lowercase"]
+        }
+      }
+    }
   },
   "mappings": {
     "properties": {
-      "id": { "type": "integer" },
+      "id": { "type": "long" },
       "title": {
         "type": "text",
         "analyzer": "ik_smart",
@@ -17,8 +25,8 @@ PUT /articles
         "analyzer": "ik_smart",
         "search_analyzer": "ik_smart"
       },
-      "user_id": { "type": "integer" },
-      "username": { "type": "keyword" },
+      "user_id": { "type": "long" },
+      "username": { "type": "keyword", "normalizer": "lowercase_normalizer" },
       "category_name": { "type": "keyword" },
       "sub_category_name": { "type": "keyword" },
       "tags": {

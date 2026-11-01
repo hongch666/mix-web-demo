@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS `user` (
     UNIQUE KEY `uk_name` (`name`),
     UNIQUE KEY `uk_email` (`email`),
     UNIQUE KEY `uk_user_github_id` (`github_id`),
-    INDEX `idx_user_auth_provider` (`auth_provider`)
+    INDEX `idx_user_auth_provider` (`auth_provider`),
+    INDEX `idx_update_at` (`update_at`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户表';
 
 -- AI 用户初始化数据

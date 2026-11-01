@@ -14,7 +14,11 @@ CREATE TABLE IF NOT EXISTS `articles` (
     `create_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
-    KEY `idx_user_id` (`user_id`),
+    KEY `idx_status_create_at` (`status`, `create_at`),
+    KEY `idx_user_status_create_at` (`user_id`, `status`, `create_at`),
+    KEY `idx_status_views` (`status`, `views`),
+    KEY `idx_status_sub_category` (`status`, `sub_category_id`),
     KEY `idx_sub_category_id` (`sub_category_id`),
-    KEY `idx_status` (`status`)
+    KEY `idx_title` (`title`),
+    KEY `idx_update_at` (`update_at`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章表';

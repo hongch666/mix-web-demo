@@ -10,5 +10,7 @@ CREATE TABLE IF NOT EXISTS `chat_messages` (
     `is_read` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已读，0未读，1已读',
     `created_at` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     PRIMARY KEY (`id`),
-    KEY `idx_sender_receiver` (`sender_id`, `receiver_id`)
+    KEY `idx_receiver_unread` (`receiver_id`, `is_read`, `sender_id`),
+    KEY `idx_sender_receiver_created` (`sender_id`, `receiver_id`, `created_at`),
+    KEY `idx_receiver_sender_created` (`receiver_id`, `sender_id`, `created_at`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '聊天消息表';
