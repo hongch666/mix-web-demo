@@ -2058,7 +2058,7 @@ docker system prune -af
   - `gozero/`：chat_messages
   - `nestjs/`：user_table_settings
   - `fastapi/`：ai_history
-- `db/postgresql/`：PostgreSQL 扩展启用脚本，目前只有 `extensions.sql`（启用 `pgvector`），不含建库语句
+- `db/postgresql/`：PostgreSQL 扩展与向量索引脚本，`extensions.sql` 启用 `pgvector`，`vector_index.sql` 建向量 ANN 索引与 `cmetadata ->> 'article_id'` 表达式索引，不含建库语句
 - `db/clickhouse/`：ClickHouse 初始化脚本，按数仓分层拆分为子目录（ods/dwd/dws/dim/ads），每个表独立一个 SQL 文件
 - `db/mongodb/`：MongoDB 初始化脚本，主要用于集合和索引创建
 - `db/es/`：Elasticsearch 初始化脚本，主要用于索引和映射创建
@@ -2077,7 +2077,7 @@ LangChain 会自动创建，但需要先在目标库里执行 `db/postgresql/ext
 
 ### MongoDB 表创建
 
-集合为 `articlelogs` 和 `apilogs`，系统会自动创建，库名以 `DB_MONGODB_DATABASE` 配置项为准（默认 `demo`）；如需手动初始化，可执行 `db/mongodb/init.js`
+集合为 `articlelogs` 和 `apilogs`，系统会自动创建，库名以 `DB_MONGODB_DATABASE` 配置项为准（默认 `demo`）；如需手动初始化索引，可执行 `db/mongodb/articlelogs.js` 与 `db/mongodb/apilogs.js`
 
 ### ElasticSearch 索引创建
 
