@@ -2412,6 +2412,14 @@ class Messages:
     PGVECTOR_HNSW_UNSUPPORTED: str = "pgvector 不支持 HNSW，降级使用 IVFFlat 索引"
     """pgvector 版本低于 0.5 时的降级提示消息"""
 
+    PGVECTOR_EMBEDDING_EMPTY: str = "pgvector 向量表为空，跳过向量索引初始化"
+    """向量表尚无数据、无法推断维度时的提示消息"""
+
+    @staticmethod
+    def PGVECTOR_DIMENSIONS_ASSIGNED(dims: int) -> str:
+        """构造向量列维度补齐的日志消息"""
+        return f"pgvector 向量列已指定维度: {dims}，正在重建索引"
+
     WAREHOUSE_REFRESH_SUCCESS: str = "ClickHouse 数仓同步与汇总刷新完成"
     """ClickHouse 数仓同步与刷新成功的日志消息"""
 

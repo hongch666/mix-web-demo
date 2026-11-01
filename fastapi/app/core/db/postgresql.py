@@ -82,6 +82,21 @@ def _ensure_pgvector_indexes_sync() -> None:
                 Logger.info(Messages.PGVECTOR_EMBEDDING_TABLE_MISSING)
                 return
 
+            # LangChain 建表时 embedding 是无限定的 vector，而 pgvector 的 ANN 索引要求固定维度，
+            # 因此先按已有数据的实际维度补齐列类型，否则建索引会报 column does not have dimensions
+            cursor.execute(PostgreSQLIndexes.COLUMN_TYPE)
+            column_type_row = cursor.fetchone()
+            column_type: str = (column_type_row[0] if column_type_row else "") or ""
+            if "(" not in column_type:
+                cursor.execute(PostgreSQLIndexes.VECTOR_DIMS)
+                dims_row = cursor.fetchone()
+                if not dims_row or not dims_row[0]:
+                    Logger.info(Messages.PGVECTOR_EMBEDDING_EMPTY)
+                    return
+                dims = int(dims_row[0])
+                cursor.execute(PostgreSQLIndexes.SET_DIMENSIONS.format(dims=dims))
+                Logger.info(Messages.PGVECTOR_DIMENSIONS_ASSIGNED(dims))
+
             try:
                 cursor.execute(PostgreSQLIndexes.HNSW)
             except Exception:

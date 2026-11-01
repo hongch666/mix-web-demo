@@ -24,6 +24,23 @@ class PostgreSQLIndexes:
     EMBEDDING_TABLE: str = "langchain_pg_embedding"
     """LangChain PGVector 默认向量表名"""
 
+    COLUMN_TYPE: str = (
+        "SELECT format_type(atttypid, atttypmod) FROM pg_attribute "
+        "WHERE attrelid = 'langchain_pg_embedding'::regclass AND attname = 'embedding'"
+    )
+    """查询 embedding 列的类型声明，返回 vector 表示未指定维度"""
+
+    VECTOR_DIMS: str = (
+        "SELECT vector_dims(embedding) FROM langchain_pg_embedding "
+        "WHERE embedding IS NOT NULL LIMIT 1"
+    )
+    """取任意一行的向量维度，用于给未声明维度的列补上长度"""
+
+    SET_DIMENSIONS: str = (
+        "ALTER TABLE langchain_pg_embedding ALTER COLUMN embedding TYPE vector({dims})"
+    )
+    """pgvector 的 ANN 索引要求列有固定维度，LangChain 建表时默认是无限定的 vector"""
+
     HNSW: str = (
         "CREATE INDEX IF NOT EXISTS idx_langchain_pg_embedding_hnsw "
         "ON langchain_pg_embedding USING hnsw (embedding vector_cosine_ops)"
