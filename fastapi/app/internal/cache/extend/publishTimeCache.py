@@ -21,7 +21,6 @@ class PublishTimeCache(VersionedCache[list[dict[str, Any]]]):
     # Redis 键前缀
     REDIS_KEY_PREFIX: str = RedisKeys.PUBLISH_MONTHLY_COUNT
     REDIS_VERSION_KEY: str = RedisKeys.PUBLISH_MONTHLY_COUNT_VERSION
-    L1_CACHE_TTL: int = 300  # 5分钟
 
     # 版本号校验依据：月度发布数数仓表
     VERSION_MODEL: ClassVar[type[AdsMonthlyPublish]] = AdsMonthlyPublish

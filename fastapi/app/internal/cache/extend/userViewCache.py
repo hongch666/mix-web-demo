@@ -20,8 +20,6 @@ class UserViewCache(KeyedVersionedCache):
 
     REDIS_KEY_PREFIX: str = RedisKeys.USER_VIEW_DISTRIBUTION_PREFIX
     REDIS_VERSION_KEY: str = RedisKeys.USER_VIEW_DISTRIBUTION_VERSION
-    L1_CACHE_TTL: int = 300
-
     # 版本号校验依据：用户文章阅读分布数仓表
     VERSION_MODEL: ClassVar[type[AdsUserViewArticle]] = AdsUserViewArticle
 

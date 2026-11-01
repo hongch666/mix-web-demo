@@ -21,7 +21,6 @@ class ArticleCache(VersionedCache[list[dict[str, Any]]]):
     # Redis 键前缀
     REDIS_KEY_PREFIX: str = RedisKeys.ARTICLE_TOP10
     REDIS_VERSION_KEY: str = RedisKeys.ARTICLE_TOP10_VERSION
-    L1_CACHE_TTL: int = 300  # 5分钟
 
     # 版本号校验依据：文章 Top10 数仓表
     VERSION_MODEL: ClassVar[type[AdsTop10Article]] = AdsTop10Article

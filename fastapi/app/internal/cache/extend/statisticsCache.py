@@ -13,7 +13,7 @@ class StatisticsCache(VersionedCache[dict[str, Any]]):
     文章统计信息缓存 - 二级缓存架构（带版本控制）
 
     缓存策略：
-    1. L1 缓存（本地内存）- 10分钟 TTL
+    1. L1 缓存（本地内存）- 5分钟 TTL
     2. L2 缓存（Redis）- 1天 TTL
     3. 版本号检测 - ClickHouse 平台统计表变化时自动失效
     """
@@ -21,8 +21,6 @@ class StatisticsCache(VersionedCache[dict[str, Any]]):
     # Redis 键前缀
     REDIS_KEY_PREFIX: str = RedisKeys.ARTICLE_STATISTICS
     REDIS_VERSION_KEY: str = RedisKeys.ARTICLE_STATISTICS_VERSION
-    L1_CACHE_TTL: int = 600  # 10分钟
-
     # 版本号校验依据：平台统计数仓表
     VERSION_MODEL: ClassVar[type[AdsPlatformStats]] = AdsPlatformStats
 

@@ -20,8 +20,6 @@ class ApiLogCalledCountCache(VersionedCache[list[dict[str, Any]]]):
 
     REDIS_KEY_PREFIX: str = RedisKeys.APILOG_CALLED_COUNT
     REDIS_VERSION_KEY: str = RedisKeys.APILOG_CALLED_COUNT_VERSION
-    L1_CACHE_TTL: int = 300
-
     # 版本号校验依据：接口调用次数数仓表
     VERSION_MODEL: ClassVar[type[AdsApiCalledCount]] = AdsApiCalledCount
 

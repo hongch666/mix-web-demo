@@ -27,7 +27,7 @@ def cache(
     return module.StatisticsCache(), fake_redis
 
 
-# StatisticsCache 常量指向平台统计数仓表，L1 TTL 为 600 秒
+# StatisticsCache 常量指向平台统计数仓表，L1 TTL 继承基类的 300 秒
 def test_cache_constants_target_platform_stats_warehouse_table(
     cache: tuple[module.StatisticsCache, _FakeRedis],
 ) -> None:
@@ -35,7 +35,7 @@ def test_cache_constants_target_platform_stats_warehouse_table(
 
     assert instance.REDIS_KEY_PREFIX == RedisKeys.ARTICLE_STATISTICS
     assert instance.REDIS_VERSION_KEY == RedisKeys.ARTICLE_STATISTICS_VERSION
-    assert instance.L1_CACHE_TTL == 600
+    assert instance.L1_CACHE_TTL == 300
     assert instance.VERSION_MODEL is AdsPlatformStats
 
 

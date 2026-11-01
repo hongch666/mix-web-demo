@@ -21,7 +21,6 @@ class WordcloudCache(VersionedCache[str]):
     # Redis 键前缀
     REDIS_KEY_PREFIX: str = RedisKeys.WORDCLOUD_URL
     REDIS_VERSION_KEY: str = RedisKeys.WORDCLOUD_URL_VERSION
-    L1_CACHE_TTL: int = 300  # 5分钟
 
     # 版本号校验依据：搜索关键词数仓表
     VERSION_MODEL: ClassVar[type[AdsSearchKeyword]] = AdsSearchKeyword

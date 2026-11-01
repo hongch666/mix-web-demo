@@ -20,8 +20,6 @@ class UserDayCache(KeyedVersionedCache):
 
     REDIS_KEY_PREFIX: str = RedisKeys.USER_DAY_TREND_PREFIX
     REDIS_VERSION_KEY: str = RedisKeys.USER_DAY_TREND_VERSION
-    L1_CACHE_TTL: int = 300
-
     # 版本号校验依据：用户日聚合数仓表
     VERSION_MODEL: ClassVar[type[AdsUserDay]] = AdsUserDay
 

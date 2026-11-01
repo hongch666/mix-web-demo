@@ -20,8 +20,6 @@ class ApiLogSpeedCache(VersionedCache[list[dict[str, Any]]]):
 
     REDIS_KEY_PREFIX: str = RedisKeys.APILOG_AVERAGE_SPEED
     REDIS_VERSION_KEY: str = RedisKeys.APILOG_AVERAGE_SPEED_VERSION
-    L1_CACHE_TTL: int = 300
-
     # 版本号校验依据：接口平均响应时间数仓表
     VERSION_MODEL: ClassVar[type[AdsApiAverageSpeed]] = AdsApiAverageSpeed
 

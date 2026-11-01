@@ -9,6 +9,8 @@ class Defaults:
     """L1 本地内存缓存的默认 TTL（秒），即 5 分钟，子类可覆盖"""
     L2_CACHE_TTL: int = 86400
     """L2 Redis 缓存的 TTL（秒），即 1 天"""
+    L1_CACHE_MAX_ENTRIES: int = 512
+    """L1 本地缓存的最大条目数，键分片缓存按此上限淘汰最旧条目"""
 
     # ===== 分布式锁 =====
 

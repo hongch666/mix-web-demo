@@ -2,7 +2,7 @@ import time
 from typing import Any, Optional
 
 from app.core.base import LoggerProtocol
-from app.core.constants import Messages
+from app.core.constants import Defaults, Messages
 
 from .versionedCache import VersionedCache
 
@@ -14,7 +14,8 @@ class KeyedVersionedCache(VersionedCache[Any]):
     版本号仍按数仓表统一校验，版本变化时清空该缓存下的全部键
     """
 
-    L1_MAX_ENTRIES: int = 512
+    L1_MAX_ENTRIES: int = Defaults.L1_CACHE_MAX_ENTRIES
+    """L1 本地缓存的最大条目数，子类可按需覆盖"""
 
     def __init__(self, logger: LoggerProtocol | None = None) -> None:
         """调用父类完成版本控制与 Redis 依赖初始化，并建立键分片的本地缓存容器"""

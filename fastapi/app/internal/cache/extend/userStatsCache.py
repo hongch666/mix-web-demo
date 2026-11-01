@@ -13,15 +13,13 @@ class UserStatsCache(KeyedVersionedCache):
     用户统计总览缓存 - 按键分片的二级缓存（带版本控制）
 
     缓存策略：
-    1. L1 缓存（本地内存，多键）- 10分钟 TTL
+    1. L1 缓存（本地内存，多键）- 5分钟 TTL
     2. L2 缓存（Redis，每键一个 key）- 1天 TTL
     3. 版本号检测 - 用户统计快照表变化时清空全部键
     """
 
     REDIS_KEY_PREFIX: str = RedisKeys.USER_STATS_PREFIX
     REDIS_VERSION_KEY: str = RedisKeys.USER_STATS_VERSION
-    L1_CACHE_TTL: int = 600
-
     # 版本号校验依据：用户统计快照数仓表
     VERSION_MODEL: ClassVar[type[AdsUserStats]] = AdsUserStats
 

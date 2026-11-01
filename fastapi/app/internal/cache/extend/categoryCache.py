@@ -21,7 +21,6 @@ class CategoryCache(VersionedCache[list[dict[str, Any]]]):
     # Redis 键前缀
     REDIS_KEY_PREFIX: str = RedisKeys.CATEGORY_ARTICLE_COUNT
     REDIS_VERSION_KEY: str = RedisKeys.CATEGORY_ARTICLE_COUNT_VERSION
-    L1_CACHE_TTL: int = 300  # 5分钟
 
     # 版本号校验依据：分类文章数数仓表
     VERSION_MODEL: ClassVar[type[AdsCategoryStats]] = AdsCategoryStats
