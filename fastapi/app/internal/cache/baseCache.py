@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from app.core.base import Logger, LoggerProtocol
-from app.core.constants import Messages
+from app.core.constants import Defaults, Messages
 from app.core.db import get_redis_client
 
 
@@ -17,8 +17,13 @@ class BaseCache[T](ABC):
     """
 
     # 子类需要定义这些常量
+
     REDIS_KEY_PREFIX: str = ""
-    L1_CACHE_TTL: int = 300  # 默认5分钟
+    """Redis 缓存键前缀，子类必须覆盖"""
+    L1_CACHE_TTL: int = Defaults.L1_CACHE_TTL
+    """L1 本地缓存 TTL（秒），子类可按需覆盖"""
+    L2_CACHE_TTL: int = Defaults.L2_CACHE_TTL
+    """L2 Redis 缓存 TTL（秒），子类可按需覆盖"""
 
     def __init__(self, logger: LoggerProtocol | None = None) -> None:
         # L1 本地缓存
@@ -30,8 +35,8 @@ class BaseCache[T](ABC):
         # Redis 客户端
         self._redis = get_redis_client()
 
-        # Redis TTL（1天）
-        self._redis_ttl: int = 86400
+        # Redis TTL（默认 1 天）
+        self._redis_ttl: int = self.L2_CACHE_TTL
 
         # 日志器可注入，缺省回退全局单例
         self._logger: LoggerProtocol = logger or Logger
