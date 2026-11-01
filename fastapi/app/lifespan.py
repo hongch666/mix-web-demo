@@ -21,9 +21,12 @@ from app.core.db import (
     AsyncSessionLocal,
     RabbitMQClient,
     async_engine,
+    create_mysql_indexes_async,
     create_tables_async,
+    create_warehouse_indexes_async,
     create_warehouse_tables_async,
     dispose_clickhouse_async_engine,
+    ensure_pgvector_indexes_async,
     get_neo4j_client,
     get_rabbitmq_client,
 )
@@ -63,7 +66,10 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     init_langsmith(langsmith_config)
 
     await create_tables_async()
+    await create_mysql_indexes_async()
     await create_warehouse_tables_async()
+    await create_warehouse_indexes_async()
+    await ensure_pgvector_indexes_async()
     start_nacos(ip=IP, port=PORT)
     Logger.info(Messages.NACOS_REGISTER_SUCCESS)
 

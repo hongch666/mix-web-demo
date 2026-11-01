@@ -7,6 +7,7 @@ from .clickhouse import (
     ClickhouseBase,
     clickhouse_async_engine,
     clickhouse_session,
+    create_warehouse_indexes_async,
     create_warehouse_tables_async,
     dispose_clickhouse_async_engine,
     execute_clickhouse_query,
@@ -20,6 +21,7 @@ from .mysql import (
     AsyncSessionLocal,
     Base,
     async_engine,
+    create_mysql_indexes_async,
     create_tables_async,
     get_db,
 )
@@ -31,7 +33,11 @@ from .neo4j import (
     get_neo4j_client,
     resolve_cypher_debug_config,
 )
-from .postgresql import get_pgvector_connection_string, get_postgres_config
+from .postgresql import (
+    ensure_pgvector_indexes_async,
+    get_pgvector_connection_string,
+    get_postgres_config,
+)
 from .rabbitmq import (
     RabbitMQClient,
     _rabbitmq_client,
@@ -43,6 +49,7 @@ from .redis import RedisClient, get_redis_client
 __all__: list[str] = [
     "get_db",
     "create_tables_async",
+    "create_mysql_indexes_async",
     "async_engine",
     "Base",
     "AsyncSessionLocal",
@@ -56,6 +63,7 @@ __all__: list[str] = [
     "ClickHouseSessionFactory",
     "clickhouse_async_engine",
     "create_warehouse_tables_async",
+    "create_warehouse_indexes_async",
     "execute_clickhouse_query",
     "execute_clickhouse_sql",
     "ClickHouseBase",
@@ -67,6 +75,7 @@ __all__: list[str] = [
     "RedisClient",
     "get_redis_client",
     "get_pgvector_connection_string",
+    "ensure_pgvector_indexes_async",
     "get_postgres_config",
     "Neo4jClient",
     "get_neo4j_client",

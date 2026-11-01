@@ -69,13 +69,24 @@ WAREHOUSE_ENGINE_CONFIG: Mapping[str, tuple[type[Any], dict[str, Any]]] = {
         engines.ReplacingMergeTree,
         {"version": "created_time", "order_by": "id"},
     ),
+    # 事件流表按月份分区才能让月度增量刷新只扫当月；
+    # 排序键把 created_at 放在 event_id 前，保证时间范围裁剪生效，
+    # event_id 仍是唯一键的一部分，ReplacingMergeTree 的去重语义不变
     "ods_article_log": (
         engines.ReplacingMergeTree,
-        {"version": "created_at", "order_by": "event_id"},
+        {
+            "version": "created_at",
+            "order_by": ("created_at", "event_id"),
+            "partition_by": _monthly_partition("created_at"),
+        },
     ),
     "ods_api_log": (
         engines.ReplacingMergeTree,
-        {"version": "created_at", "order_by": "event_id"},
+        {
+            "version": "created_at",
+            "order_by": ("created_at", "event_id"),
+            "partition_by": _monthly_partition("created_at"),
+        },
     ),
     "dim_user": (
         engines.ReplacingMergeTree,
@@ -130,11 +141,13 @@ WAREHOUSE_ENGINE_CONFIG: Mapping[str, tuple[type[Any], dict[str, Any]]] = {
             "partition_by": _monthly_partition("action_date"),
         },
     ),
+    # 查询以 user_id 等值过滤 + stat_date 范围为主，(user_id, stat_date) 既保持组合唯一，
+    # 又能让单用户趋势查询走主键前缀
     "ads_user_day": (
         engines.ReplacingMergeTree,
         {
             "version": "stat_time",
-            "order_by": ("stat_date", "user_id"),
+            "order_by": ("user_id", "stat_date"),
             "partition_by": _monthly_partition("stat_date"),
         },
     ),

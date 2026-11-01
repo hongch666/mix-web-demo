@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 from urllib.parse import quote_plus
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -13,7 +14,7 @@ from sqlalchemy.orm import declarative_base
 
 from app.core.base import Logger
 from app.core.config import load_config
-from app.core.constants import Messages
+from app.core.constants import Messages, MySQLIndexes
 
 Base = declarative_base()
 
@@ -35,6 +36,8 @@ POOL_RECYCLE: int = int(mysql_config["pool_recycle"])
 POOL_PRE_PING: bool = mysql_config["pool_pre_ping"]
 POOL_TIMEOUT: int = int(mysql_config["pool_timeout"])
 AUTOCOMMIT: bool = mysql_config["autocommit"]
+# 启动期索引补齐开关：大表手动做 DDL 时可在配置中关闭，避免拖慢启动
+ENSURE_INDEXES: bool = bool(mysql_config.get("ensure_indexes", True))
 # SQL 日志回显开关：优先使用显式配置，未配置时根据 SERVER_MODE 自动判断
 _echo_val = mysql_config.get("echo")
 ECHO: bool = _echo_val if _echo_val is not None else SERVER_MODE == "dev"
@@ -83,4 +86,44 @@ async def create_tables_async() -> None:
         Logger.info(Messages.DATABASE_TABLE_INITIALIZATION_SUCCESS)
     except Exception as e:
         Logger.error(Messages.DATABASE_TABLE_CREATION_FAILED(e))
+        Logger.error(traceback.format_exc())
+
+
+async def create_mysql_indexes_async() -> None:
+    """为已存在的业务表补齐缺失索引
+
+    MySQL 不支持 CREATE INDEX IF NOT EXISTS，且 create_all 不会修改已存在表的结构，
+    所以这里先查 information_schema.statistics，缺失时才执行 ALTER TABLE；
+    表不存在时查无记录直接跳过，兼容只启动单个服务的部署方式
+    """
+
+    if not ENSURE_INDEXES:
+        Logger.info(Messages.MYSQL_INDEX_INITIALIZATION_SUCCESS)
+        return
+
+    statement = (
+        "SELECT 1 FROM information_schema.statistics "
+        "WHERE table_schema = DATABASE() "
+        "AND table_name = :table_name "
+        "AND index_name = :index_name "
+        "LIMIT 1"
+    )
+
+    try:
+        async with async_engine.begin() as connection:
+            for table, index_name, columns in MySQLIndexes.ALL:
+                exists = (
+                    await connection.execute(
+                        text(statement),
+                        {"table_name": table, "index_name": index_name},
+                    )
+                ).first()
+                if exists:
+                    continue
+                await connection.execute(
+                    text(f"ALTER TABLE `{table}` ADD INDEX `{index_name}` {columns}")
+                )
+        Logger.info(Messages.MYSQL_INDEX_INITIALIZATION_SUCCESS)
+    except Exception as e:
+        Logger.error(Messages.MYSQL_INDEX_INITIALIZATION_FAILED(e))
         Logger.error(traceback.format_exc())

@@ -3,6 +3,7 @@ from .algorithm import AlgorithmConstants
 from .defaults import Defaults
 from .errorCodes import ErrorCodes
 from .httpCode import HttpCode
+from .indexes import ClickHouseIndexes, MySQLIndexes, PostgreSQLIndexes
 from .intent import IntentConstants, IntentExpression, IntentResolution, IntentType
 from .messages import Messages
 from .metricNames import MetricNames
@@ -26,6 +27,9 @@ __all__ = [
     "RedisKeys",
     "SwaggerConfig",
     "HttpCode",
+    "MySQLIndexes",
+    "PostgreSQLIndexes",
+    "ClickHouseIndexes",
     "TelemetryConstants",
     "WarehouseScripts",
     "VectorConstants",

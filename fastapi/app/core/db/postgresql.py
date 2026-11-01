@@ -1,9 +1,10 @@
+import asyncio
 from functools import lru_cache
 from typing import Any
 
 from app.core.base import Logger
 from app.core.config import load_config
-from app.core.constants import Messages
+from app.core.constants import Messages, PostgreSQLIndexes
 
 
 def get_postgres_config() -> dict[str, Any]:
@@ -34,3 +35,63 @@ def get_pgvector_connection_string() -> str:
     except Exception as e:
         Logger.error(Messages.POSTGRES_CONNECTION_STRING_CREATE_FAILED(e))
         raise
+
+
+async def ensure_pgvector_indexes_async() -> None:
+    """启用 pgvector 扩展并为向量表补齐 ANN 与表达式索引
+
+    向量表由 LangChain PGVector 在首次写入时创建，首次启动时可能还不存在，
+    此时只启用扩展并跳过索引，等下次启动或表建好后自动补齐
+    """
+
+    await asyncio.to_thread(_ensure_pgvector_indexes_sync)
+
+
+def _ensure_pgvector_indexes_sync() -> None:
+    """同步执行 pgvector 的扩展与索引 DDL，由异步入口放入线程池调用"""
+
+    import psycopg2
+
+    cfg: dict[str, Any] = get_postgres_config()
+    try:
+        connection = psycopg2.connect(
+            host=cfg["host"],
+            port=cfg["port"],
+            dbname=cfg["database"],
+            user=cfg["user"],
+            password=cfg["password"],
+            connect_timeout=5,
+        )
+    except Exception as e:
+        Logger.error(Messages.PGVECTOR_INDEX_INITIALIZATION_FAILED(e))
+        return
+
+    try:
+        # DDL 自带 IF NOT EXISTS，autocommit 避免长事务持有锁
+        connection.autocommit = True
+        with connection.cursor() as cursor:
+            try:
+                cursor.execute(PostgreSQLIndexes.EXTENSION)
+            except Exception as e:
+                Logger.warning(Messages.PGVECTOR_INDEX_INITIALIZATION_FAILED(e))
+
+            cursor.execute(
+                "SELECT to_regclass(%s)", (PostgreSQLIndexes.EMBEDDING_TABLE,)
+            )
+            if cursor.fetchone()[0] is None:
+                Logger.info(Messages.PGVECTOR_EMBEDDING_TABLE_MISSING)
+                return
+
+            try:
+                cursor.execute(PostgreSQLIndexes.HNSW)
+            except Exception:
+                # pgvector < 0.5 不支持 HNSW，降级到 IVFFlat
+                Logger.warning(Messages.PGVECTOR_HNSW_UNSUPPORTED)
+                cursor.execute(PostgreSQLIndexes.IVFFLAT)
+
+            cursor.execute(PostgreSQLIndexes.ARTICLE_ID)
+        Logger.info(Messages.PGVECTOR_INDEX_INITIALIZATION_SUCCESS)
+    except Exception as e:
+        Logger.error(Messages.PGVECTOR_INDEX_INITIALIZATION_FAILED(e))
+    finally:
+        connection.close()

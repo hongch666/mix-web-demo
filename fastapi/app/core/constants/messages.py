@@ -621,6 +621,21 @@ class Messages:
         return f"数据库表创建失败: {error}"
 
     @staticmethod
+    def MYSQL_INDEX_INITIALIZATION_FAILED(error: Exception) -> str:
+        """构造 MySQL 索引补齐失败的错误消息"""
+        return f"MySQL 索引补齐失败: {error}"
+
+    @staticmethod
+    def CLICKHOUSE_INDEX_INITIALIZATION_FAILED(table: str, error: Exception) -> str:
+        """构造 ClickHouse 索引或 TTL 补齐失败的错误消息"""
+        return f"ClickHouse 索引补齐失败({table}): {error}"
+
+    @staticmethod
+    def PGVECTOR_INDEX_INITIALIZATION_FAILED(error: Exception) -> str:
+        """构造 pgvector 索引初始化失败的错误消息"""
+        return f"pgvector 索引初始化失败: {error}"
+
+    @staticmethod
     def NEO4J_CONFIG_INITIALIZED(uri: str) -> str:
         """构造 Neo4j 连接参数初始化成功的日志消息"""
         return f"Neo4j 连接参数初始化成功: {uri}"
@@ -2381,6 +2396,21 @@ class Messages:
 
     DATABASE_TABLE_INITIALIZATION_SUCCESS: str = "数据库表结构初始化完成"
     """数据库表结构初始化完成的日志消息"""
+
+    MYSQL_INDEX_INITIALIZATION_SUCCESS: str = "MySQL 索引检查完成"
+    """MySQL 索引补齐完成的日志消息"""
+
+    CLICKHOUSE_INDEX_INITIALIZATION_SUCCESS: str = "ClickHouse 索引与 TTL 检查完成"
+    """ClickHouse 跳数索引与 TTL 补齐完成的日志消息"""
+
+    PGVECTOR_INDEX_INITIALIZATION_SUCCESS: str = "pgvector 索引检查完成"
+    """pgvector 向量索引初始化完成的日志消息"""
+
+    PGVECTOR_EMBEDDING_TABLE_MISSING: str = "pgvector 向量表尚未创建，跳过索引初始化"
+    """向量表在首次写入前不存在时的提示消息"""
+
+    PGVECTOR_HNSW_UNSUPPORTED: str = "pgvector 不支持 HNSW，降级使用 IVFFlat 索引"
+    """pgvector 版本低于 0.5 时的降级提示消息"""
 
     WAREHOUSE_REFRESH_SUCCESS: str = "ClickHouse 数仓同步与汇总刷新完成"
     """ClickHouse 数仓同步与刷新成功的日志消息"""

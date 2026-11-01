@@ -13,7 +13,7 @@ from sqlalchemy.orm import declarative_base
 
 from app.core.base import Logger
 from app.core.config import load_config
-from app.core.constants import Messages
+from app.core.constants import ClickHouseIndexes, Messages
 
 ClickHouseBase = declarative_base()
 
@@ -161,6 +161,35 @@ async def create_warehouse_tables_async() -> None:
         Logger.info(Messages.WAREHOUSE_SCHEMA_READY)
     except Exception as error:
         Logger.error(Messages.WAREHOUSE_SCHEMA_CREATION_FAILED(error))
+
+
+async def create_warehouse_indexes_async() -> None:
+    """为已存在的数仓表补齐跳数索引与 TTL
+
+    建表仍由 ORM 元数据负责，这里只做增量维护：
+    跳数索引用 ADD INDEX IF NOT EXISTS、TTL 用 MODIFY TTL，均可重复执行；
+    单表失败只记警告，不影响其他表的补建
+    """
+
+    for table, index_name, expression, index_type in ClickHouseIndexes.DATA_SKIPPING:
+        try:
+            await execute_clickhouse_sql(
+                f"ALTER TABLE warehouse.{table} "
+                f"ADD INDEX IF NOT EXISTS {index_name} {expression} "
+                f"TYPE {index_type} GRANULARITY 4"
+            )
+        except Exception as error:
+            Logger.warning(Messages.CLICKHOUSE_INDEX_INITIALIZATION_FAILED(table, error))
+
+    for table, ttl_expression in ClickHouseIndexes.TTL:
+        try:
+            await execute_clickhouse_sql(
+                f"ALTER TABLE warehouse.{table} MODIFY TTL {ttl_expression}"
+            )
+        except Exception as error:
+            Logger.warning(Messages.CLICKHOUSE_INDEX_INITIALIZATION_FAILED(table, error))
+
+    Logger.info(Messages.CLICKHOUSE_INDEX_INITIALIZATION_SUCCESS)
 
 
 # 与项目现有 Clickhouse 命名风格保持兼容
