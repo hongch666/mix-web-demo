@@ -1,5 +1,7 @@
 package com.hcsy.spring.common.constants;
 
+import java.util.List;
+
 /**
  * 脚本类，统一管理数据库初始化 SQL
  */
@@ -47,7 +49,8 @@ public final class Scripts {
             create_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             update_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
             UNIQUE KEY uk_user_github_id (github_id),
-            INDEX idx_user_auth_provider (auth_provider)
+            INDEX idx_user_auth_provider (auth_provider),
+            INDEX idx_update_at (update_at)
         ) COMMENT='用户表'
         """;
 
@@ -64,9 +67,13 @@ public final class Scripts {
             views INT NOT NULL COMMENT '文章浏览量',
             create_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             update_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-            INDEX idx_user_id (user_id),
+            INDEX idx_status_create_at (status, create_at),
+            INDEX idx_user_status_create_at (user_id, status, create_at),
+            INDEX idx_status_views (status, views),
+            INDEX idx_status_sub_category (status, sub_category_id),
             INDEX idx_sub_category_id (sub_category_id),
-            INDEX idx_status (status)
+            INDEX idx_title (title),
+            INDEX idx_update_at (update_at)
         ) COMMENT='文章表'
         """;
 
@@ -116,8 +123,9 @@ public final class Scripts {
             article_id BIGINT NOT NULL COMMENT '文章ID',
             create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-            INDEX idx_user_id (user_id),
-            INDEX idx_article_id (article_id)
+            INDEX idx_user_create_time (user_id, create_time),
+            INDEX idx_article_star (article_id, star),
+            INDEX idx_update_time_id (update_time, id)
         ) COMMENT='文章评论表'
         """;
 
@@ -129,7 +137,7 @@ public final class Scripts {
             user_id BIGINT NOT NULL COMMENT '用户ID',
             created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             UNIQUE KEY uk_article_user (article_id, user_id),
-            KEY idx_user_id (user_id),
+            KEY idx_user_created (user_id, created_time),
             KEY idx_created_time (created_time)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户点赞表'
         """;
@@ -142,7 +150,7 @@ public final class Scripts {
             user_id BIGINT NOT NULL COMMENT '用户ID',
             created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             UNIQUE KEY uk_article_user (article_id, user_id),
-            KEY idx_user_id (user_id),
+            KEY idx_user_created (user_id, created_time),
             KEY idx_created_time (created_time)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户收藏表'
         """;
@@ -155,8 +163,39 @@ public final class Scripts {
             focus_id BIGINT NOT NULL COMMENT '关注的用户ID',
             created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             UNIQUE KEY uk_user_focus (user_id, focus_id),
-            KEY idx_user_id (user_id),
+            KEY idx_focus_created (focus_id, created_time),
+            KEY idx_user_created (user_id, created_time),
             KEY idx_created_time (created_time)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '关注表'
         """;
+
+    // ===== 索引补齐 SQL =====
+
+    /**
+     * 单条索引定义：表名、索引名、索引列定义
+     *
+     * 建表语句只覆盖“从零创建”的场景，已有表的索引通过 ALTER TABLE 补齐，
+     * 因此这里单独声明期望存在的索引，供启动期逐条检查
+     */
+    public record IndexDefinition(String table, String name, String columns) {
+    }
+
+    /**
+     * 启动期需要补齐的索引，覆盖等值过滤 + 排序、范围裁剪与增量同步三类热点查询
+     */
+    public static final List<IndexDefinition> CREATE_INDEXES = List.of(
+        new IndexDefinition("articles", "idx_status_create_at", "(status, create_at)"),
+        new IndexDefinition("articles", "idx_user_status_create_at", "(user_id, status, create_at)"),
+        new IndexDefinition("articles", "idx_status_views", "(status, views)"),
+        new IndexDefinition("articles", "idx_status_sub_category", "(status, sub_category_id)"),
+        new IndexDefinition("articles", "idx_title", "(title)"),
+        new IndexDefinition("articles", "idx_update_at", "(update_at)"),
+        new IndexDefinition("comments", "idx_user_create_time", "(user_id, create_time)"),
+        new IndexDefinition("comments", "idx_article_star", "(article_id, star)"),
+        new IndexDefinition("comments", "idx_update_time_id", "(update_time, id)"),
+        new IndexDefinition("likes", "idx_user_created", "(user_id, created_time)"),
+        new IndexDefinition("collects", "idx_user_created", "(user_id, created_time)"),
+        new IndexDefinition("focus", "idx_focus_created", "(focus_id, created_time)"),
+        new IndexDefinition("focus", "idx_user_created", "(user_id, created_time)"),
+        new IndexDefinition("user", "idx_update_at", "(update_at)"));
 }

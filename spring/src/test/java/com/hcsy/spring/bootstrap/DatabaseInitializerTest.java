@@ -92,11 +92,11 @@ class DatabaseInitializerTest {
     }
 
     @Test
-    @DisplayName("按基础表 → 子分类表 → 分类引用表 → AI 用户的顺序编排，共 15 条语句")
-    void should_execute_statements_in_declared_order_and_total_15() {
+    @DisplayName("按基础表 → 子分类表 → 分类引用表 → 索引补齐 → AI 用户的顺序编排")
+    void should_execute_statements_in_declared_order() {
         StepVerifier.create(initializer.initializeDatabase()).verifyComplete();
 
-        assertThat(executedSql).hasSize(15);
+        assertThat(executedSql).hasSize(15 + Scripts.CREATE_INDEXES.size());
         int subCategoryIndex = executedSql.indexOf(Scripts.CREATE_SUBCATEGORY_TABLE);
         assertThat(subCategoryIndex).isGreaterThan(-1);
         for (String script : BASE_TABLE_SCRIPTS) {
@@ -107,6 +107,25 @@ class DatabaseInitializerTest {
         assertThat(executedSql.indexOf(Scripts.INSERT_AI_USER))
             .isGreaterThan(executedSql.indexOf(Scripts.CREATE_CATEGORY_REFERENCE_TABLE));
         assertThat(executedSql).filteredOn(Scripts.INSERT_AI_USER::equals).hasSize(6);
+    }
+
+    @Test
+    @DisplayName("索引补齐语句位于建表之后、AI 用户插入之前，且每条索引定义对应一条 ALTER")
+    void should_create_indexes_after_tables_and_before_ai_users() {
+        StepVerifier.create(initializer.initializeDatabase()).verifyComplete();
+
+        int referenceIndex = executedSql.indexOf(Scripts.CREATE_CATEGORY_REFERENCE_TABLE);
+        int aiUserIndex = executedSql.indexOf(Scripts.INSERT_AI_USER);
+        List<String> alterStatements = executedSql.stream()
+            .filter(sql -> sql.startsWith("ALTER TABLE"))
+            .toList();
+
+        assertThat(alterStatements).hasSize(Scripts.CREATE_INDEXES.size());
+        for (String alterStatement : alterStatements) {
+            int alterIndex = executedSql.indexOf(alterStatement);
+            assertThat(alterIndex).isGreaterThan(referenceIndex);
+            assertThat(alterIndex).isLessThan(aiUserIndex);
+        }
     }
 
     @Test
