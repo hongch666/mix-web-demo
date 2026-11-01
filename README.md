@@ -2636,6 +2636,7 @@ skills/
 
 - **通用规则**：格式化与 lint 门禁、常量抽取、接口响应具名结构（禁止匿名 Map）、参数校验、并行化、SQL 参数化、远程调用与连接池释放、日志脱敏、注释与行尾规范
 - **各服务专项约定**：Spring 响应式切面写法与 WebFlux 校验异常陷阱、GoZero 的 API-First 生成流程与 `httpc` 远程调用、NestJS 模块边界与 CLS 未登录语义、FastAPI 依赖注入三层结构与 Agent 工具权限
+- **数据库与索引设计**：新增表与查询必须同时给出索引方案；手写 DDL（Spring/GoZero/ClickHouse 脚本）的索引内联在建表语句，框架建表（SQLAlchemy/LangChain/Mongoose/ES）的索引集中登记；MySQL、MongoDB、ClickHouse、ES 与 pgvector 的设计约束与验证方式
 - **接口文档收尾流程**：新增、修改或删除接口后重新生成静态 OpenAPI 文档并同步 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)与 [Swagger 说明](#swagger-说明)
 - **仓库工程约束与验证命令**：行尾约定、goctl 生成流程、`mix` 子命令清单、各服务的验证与格式检查命令
 
