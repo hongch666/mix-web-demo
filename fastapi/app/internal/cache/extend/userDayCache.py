@@ -7,9 +7,6 @@ from app.internal.models import AdsUserDay
 
 from ..keyedVersionedCache import KeyedVersionedCache
 
-# 全局单例实例
-_user_day_cache_instance = None
-
 
 class UserDayCache(KeyedVersionedCache):
     """
@@ -32,7 +29,4 @@ class UserDayCache(KeyedVersionedCache):
 @lru_cache
 def get_user_day_cache(logger: LoggerProtocol | None = None) -> UserDayCache:
     """获取 UserDayCache 单例实例"""
-    global _user_day_cache_instance
-    if _user_day_cache_instance is None:
-        _user_day_cache_instance = UserDayCache(logger)
-    return _user_day_cache_instance
+    return UserDayCache(logger)

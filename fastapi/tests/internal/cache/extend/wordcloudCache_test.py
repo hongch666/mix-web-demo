@@ -83,18 +83,17 @@ async def test_get_reads_redis_and_warms_local_on_l1_miss(
     assert instance._local_cache == "https://oss.local/wordcloud.png"
 
 
-# L2 读到的 bytes 经 str 转换保留 b 前缀而非解码为文本
+# L2 读到的地址原样返回并回填 L1，Redis 客户端已按 decode_responses 解码
 @pytest.mark.anyio
-async def test_get_from_redis_converts_non_str_payload_to_str(
+async def test_get_from_redis_returns_url_as_is(
     cache: tuple[module.WordcloudCache, _FakeRedis],
 ) -> None:
     instance, fake_redis = cache
-    raw_value = b"https://oss.local/wordcloud.png"
-    fake_redis.get.return_value = raw_value
+    url = "https://oss.local/wordcloud.png"
+    fake_redis.get.return_value = url
 
-    # 实现用 str(data) 而非 decode：bytes 会被转成带 b 前缀的字符串
-    assert await instance.get_from_redis() == str(raw_value)
-    assert instance._local_cache == str(raw_value)
+    assert await instance.get_from_redis() == url
+    assert instance._local_cache == url
 
 
 # L1 与 L2 均未命中时返回 None
@@ -137,7 +136,6 @@ def test_factory_returns_lru_cached_singleton(
 ) -> None:
     fake_redis = _FakeRedis()
     monkeypatch.setattr(base_cache, "get_redis_client", lambda: fake_redis)
-    monkeypatch.setattr(module, "_wordcloud_cache_instance", None)
     module.get_wordcloud_cache.cache_clear()
     try:
         first = module.get_wordcloud_cache()

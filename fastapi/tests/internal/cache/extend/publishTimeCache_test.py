@@ -123,7 +123,6 @@ def test_factory_returns_lru_cached_singleton(
 ) -> None:
     fake_redis = _FakeRedis()
     monkeypatch.setattr(base_cache, "get_redis_client", lambda: fake_redis)
-    monkeypatch.setattr(module, "_publish_time_cache_instance", None)
     module.get_publish_time_cache.cache_clear()
     try:
         first = module.get_publish_time_cache()

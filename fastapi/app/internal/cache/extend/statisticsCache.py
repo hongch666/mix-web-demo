@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 from app.core.base import LoggerProtocol
 from app.core.constants import Messages, RedisKeys
@@ -7,11 +7,8 @@ from app.internal.models import AdsPlatformStats
 
 from ..versionedCache import VersionedCache
 
-# 全局单例实例
-_statistics_cache_instance = None
 
-
-class StatisticsCache(VersionedCache):
+class StatisticsCache(VersionedCache[dict[str, Any]]):
     """
     文章统计信息缓存 - 二级缓存架构（带版本控制）
 
@@ -29,57 +26,11 @@ class StatisticsCache(VersionedCache):
     # 版本号校验依据：平台统计数仓表
     VERSION_MODEL: ClassVar[type[AdsPlatformStats]] = AdsPlatformStats
 
-    async def get(self) -> Optional[dict[str, Any]]:
-        """
-        获取缓存（二级缓存）
-
-        查找顺序：
-        1. 版本号校验，数仓平台统计表变化时缓存失效
-        2. 本地内存缓存（L1）
-        3. Redis 缓存（L2）
-        4. 返回 None（需要查询 DB）
-        """
-        # 检查版本号是否变化
-        if await self.is_version_changed():
-            self._logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
-            await self.clear_all()
-            return None
-
-        # 1. 先查本地缓存
-        local_data = await self.get_from_local()
-        if local_data:
-            return local_data
-
-        # 2. 本地缓存失效，查 Redis
-        redis_data = await self.get_from_redis()
-        if redis_data:
-            return redis_data
-
-        # 3. 两级缓存都没有
-        self._logger.info(Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE)
-        return None
-
-    async def set(self, data: dict[str, Any]) -> None:
-        """
-        设置缓存（二级缓存）
-
-        同时更新：
-        1. 本地内存缓存（L1）
-        2. Redis 缓存（L2）
-        3. 版本号
-        """
-        # 更新两级缓存
-        await self.update_local_cache(data)
-        await self.update_redis_cache(data)
-
-        # 更新版本号
-        await self.update_version()
+    MISS_LOG_MESSAGE: str = Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE
+    """未命中后回源查询 PostgreSQL 统计结果的日志消息"""
 
 
 @lru_cache
 def get_statistics_cache(logger: LoggerProtocol | None = None) -> StatisticsCache:
     """获取 StatisticsCache 单例实例"""
-    global _statistics_cache_instance
-    if _statistics_cache_instance is None:
-        _statistics_cache_instance = StatisticsCache(logger)
-    return _statistics_cache_instance
+    return StatisticsCache(logger)

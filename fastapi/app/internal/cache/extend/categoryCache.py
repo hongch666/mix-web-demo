@@ -1,17 +1,14 @@
 from functools import lru_cache
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 from app.core.base import LoggerProtocol
-from app.core.constants import Messages, RedisKeys
+from app.core.constants import RedisKeys
 from app.internal.models import AdsCategoryStats
 
 from ..versionedCache import VersionedCache
 
-# 全局单例实例
-_category_cache_instance = None
 
-
-class CategoryCache(VersionedCache):
+class CategoryCache(VersionedCache[list[dict[str, Any]]]):
     """
     分类文章数缓存管理 - 二级缓存架构（带版本控制）
 
@@ -29,56 +26,8 @@ class CategoryCache(VersionedCache):
     # 版本号校验依据：分类文章数数仓表
     VERSION_MODEL: ClassVar[type[AdsCategoryStats]] = AdsCategoryStats
 
-    async def get(self) -> Optional[list[dict[str, Any]]]:
-        """
-        获取缓存（二级缓存）
-
-        查找顺序：
-        1. 本地内存缓存（L1）
-        2. Redis 缓存（L2）
-        3. 返回 None（需要查询 ClickHouse）
-        """
-        # 检查版本号是否变化
-        if await self.is_version_changed():
-            self._logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
-            await self.clear_all()
-            return None
-
-        # 1. 先查本地缓存
-        local_data = await self.get_from_local()
-        if local_data:
-            return local_data
-
-        # 2. 本地缓存失效，查 Redis
-        redis_data = await self.get_from_redis()
-        if redis_data:
-            return redis_data
-
-        # 3. 两级缓存都没有
-        self._logger.info(Messages.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
-        return None
-
-    async def set(self, data: list[dict[str, Any]]) -> None:
-        """
-        设置缓存（二级缓存）
-
-        同时更新：
-        1. 本地内存缓存（L1）
-        2. Redis 缓存（L2）
-        3. 版本号
-        """
-        # 更新两级缓存
-        await self.update_local_cache(data)
-        await self.update_redis_cache(data)
-
-        # 更新版本号
-        await self.update_version()
-
 
 @lru_cache
 def get_category_cache(logger: LoggerProtocol | None = None) -> CategoryCache:
     """获取 CategoryCache 单例实例"""
-    global _category_cache_instance
-    if _category_cache_instance is None:
-        _category_cache_instance = CategoryCache(logger)
-    return _category_cache_instance
+    return CategoryCache(logger)

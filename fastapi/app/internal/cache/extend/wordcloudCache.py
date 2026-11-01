@@ -1,6 +1,5 @@
-import time
 from functools import lru_cache
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from app.core.base import LoggerProtocol
 from app.core.constants import Messages, RedisKeys
@@ -8,11 +7,8 @@ from app.internal.models import AdsSearchKeyword
 
 from ..versionedCache import VersionedCache
 
-# 全局单例实例
-_wordcloud_cache_instance = None
 
-
-class WordcloudCache(VersionedCache):
+class WordcloudCache(VersionedCache[str]):
     """
     词云图缓存管理 - 二级缓存架构（带版本控制）
 
@@ -30,79 +26,11 @@ class WordcloudCache(VersionedCache):
     # 版本号校验依据：搜索关键词数仓表
     VERSION_MODEL: ClassVar[type[AdsSearchKeyword]] = AdsSearchKeyword
 
-    async def get_from_redis(self) -> Optional[str]:
-        """从 Redis 缓存获取"""
-        try:
-            data = await self._redis.get(self.REDIS_KEY_PREFIX)
-            if data:
-                self._logger.info(Messages.L2_CACHE_HIT)
-                # 统一转换为字符串类型
-                url = data if isinstance(data, str) else str(data)
-                # 同时更新本地缓存
-                self._local_cache = url
-                self._local_cache_time = time.time()
-                return url
-
-            self._logger.info(Messages.L2_CACHE_MISS)
-            return None
-        except Exception as e:
-            self._logger.error(Messages.CACHE_L2_READ_FAILED(e))
-            return None
-
-    async def get(self) -> Optional[str]:
-        """
-        获取词云图OSS URL缓存（二级缓存）
-
-        查找顺序：
-        1. 版本号校验，数仓搜索关键词表变化时缓存失效
-        2. 本地内存缓存（L1）
-        3. Redis 缓存（L2）
-        4. 返回 None（需要重新生成）
-        """
-        # 检查版本号是否变化
-        if await self.is_version_changed():
-            self._logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
-            await self.clear_all()
-            return None
-
-        # 1. 先查本地缓存
-        local_data = await self.get_from_local()
-        if local_data:
-            return local_data
-
-        # 2. 本地缓存失效，查 Redis
-        redis_data = await self.get_from_redis()
-        if redis_data:
-            return redis_data
-
-        # 3. 两级缓存都没有
-        self._logger.info(Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE)
-        return None
-
-    async def set(self, data: str) -> None:
-        """
-        设置词云图OSS URL缓存（二级缓存）
-
-        同时更新：
-        1. 本地内存缓存（L1）
-        2. Redis 缓存（L2）
-        3. 版本号
-
-        参数:
-            data: OSS中词云图的URL
-        """
-        # 更新两级缓存
-        await self.update_local_cache(data)
-        await self.update_redis_cache(data)
-
-        # 更新版本号
-        await self.update_version()
+    MISS_LOG_MESSAGE: str = Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE
+    """未命中后需要重新生成词云图的日志消息"""
 
 
 @lru_cache
 def get_wordcloud_cache(logger: LoggerProtocol | None = None) -> WordcloudCache:
     """依赖注入 - 获取词云图缓存单例"""
-    global _wordcloud_cache_instance
-    if _wordcloud_cache_instance is None:
-        _wordcloud_cache_instance = WordcloudCache(logger)
-    return _wordcloud_cache_instance
+    return WordcloudCache(logger)

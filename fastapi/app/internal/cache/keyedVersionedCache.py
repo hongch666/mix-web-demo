@@ -7,7 +7,7 @@ from app.core.constants import Messages
 from .versionedCache import VersionedCache
 
 
-class KeyedVersionedCache(VersionedCache):
+class KeyedVersionedCache(VersionedCache[Any]):
     """按业务键分片的带版本控制缓存模板
 
     L1 用字典保存多份键值并按写入时间做 TTL 淘汰与容量上限控制，L2 每个键一个 Redis key；

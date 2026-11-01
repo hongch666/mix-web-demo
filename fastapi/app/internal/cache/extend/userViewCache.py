@@ -7,9 +7,6 @@ from app.internal.models import AdsUserViewArticle
 
 from ..keyedVersionedCache import KeyedVersionedCache
 
-# 全局单例实例
-_user_view_cache_instance = None
-
 
 class UserViewCache(KeyedVersionedCache):
     """
@@ -32,7 +29,4 @@ class UserViewCache(KeyedVersionedCache):
 @lru_cache
 def get_user_view_cache(logger: LoggerProtocol | None = None) -> UserViewCache:
     """获取 UserViewCache 单例实例"""
-    global _user_view_cache_instance
-    if _user_view_cache_instance is None:
-        _user_view_cache_instance = UserViewCache(logger)
-    return _user_view_cache_instance
+    return UserViewCache(logger)

@@ -7,9 +7,6 @@ from app.internal.models import AdsUserStats
 
 from ..keyedVersionedCache import KeyedVersionedCache
 
-# 全局单例实例
-_user_stats_cache_instance = None
-
 
 class UserStatsCache(KeyedVersionedCache):
     """
@@ -32,7 +29,4 @@ class UserStatsCache(KeyedVersionedCache):
 @lru_cache
 def get_user_stats_cache(logger: LoggerProtocol | None = None) -> UserStatsCache:
     """获取 UserStatsCache 单例实例"""
-    global _user_stats_cache_instance
-    if _user_stats_cache_instance is None:
-        _user_stats_cache_instance = UserStatsCache(logger)
-    return _user_stats_cache_instance
+    return UserStatsCache(logger)

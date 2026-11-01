@@ -14,11 +14,11 @@ _READ_VERSIONS: ContextVar[Optional[dict[str, str]]] = ContextVar(
 )
 
 
-class VersionedCache(BaseCache):
+class VersionedCache[T](BaseCache[T]):
     """
     带版本控制的缓存模板类
 
-    在基础缓存上增加版本号检测，数仓表变化时自动失效
+    在基础缓存上增加版本号检测与两级缓存读写模板，子类只声明键前缀、TTL 与校验模型
     """
 
     # 子类需要定义这两个常量
@@ -26,6 +26,9 @@ class VersionedCache(BaseCache):
 
     # 版本号校验依据的数仓模型，直接取模型对应表（如 AdsTop10Article 对应 warehouse.ads_top10_articles），声明为 ClassVar[Any]：子类用具体模型类型收窄，可变属性的覆盖类型是固定的，基类不能用 Optional[type[Any]] 卡住
     VERSION_MODEL: ClassVar[Any] = None
+
+    MISS_LOG_MESSAGE: str = Messages.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE
+    """两级缓存都未命中时的回源日志消息，回源查 DB 的子类覆盖为 DB 版文案"""
 
     def __init__(self, logger: LoggerProtocol | None = None) -> None:
         """调用父类完成两级缓存依赖初始化，并将数仓版本号置为未加载状态"""
@@ -140,6 +143,30 @@ class VersionedCache(BaseCache):
                 self._logger.info(Messages.CACHE_VERSION_UPDATED(version))
         except Exception as e:
             self._logger.warning(Messages.CACHE_VERSION_SET_FAILED(e))
+
+    async def get(self) -> Optional[T]:
+        """获取缓存：先校验版本号，未命中时逐级回退，最终返回 None 交由调用方回源"""
+        if await self.is_version_changed():
+            self._logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
+            await self.clear_all()
+            return None
+
+        local_data: Optional[T] = await self.get_from_local()
+        if local_data:
+            return local_data
+
+        redis_data: Optional[T] = await self.get_from_redis()
+        if redis_data:
+            return redis_data
+
+        self._logger.info(self.MISS_LOG_MESSAGE)
+        return None
+
+    async def set(self, data: T) -> None:
+        """同时写入两级缓存并提交版本号"""
+        await self.update_local_cache(data)
+        await self.update_redis_cache(data)
+        await self.update_version()
 
     async def clear_all(self) -> None:
         """清除所有缓存，包括版本号"""

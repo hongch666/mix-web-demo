@@ -1,13 +1,13 @@
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Optional
 
 from app.core.base import Logger, LoggerProtocol
 from app.core.constants import Messages
 from app.core.db import get_redis_client
 
 
-class BaseCache(ABC):
+class BaseCache[T](ABC):
     """
     缓存基础模板类 - 二级缓存架构
 
@@ -23,7 +23,7 @@ class BaseCache(ABC):
     def __init__(self, logger: LoggerProtocol | None = None) -> None:
         # L1 本地缓存
         """初始化 L1 本地缓存槽、Redis 客户端、两级缓存 TTL 与可注入的日志器"""
-        self._local_cache: Optional[Any] = None
+        self._local_cache: Optional[T] = None
         self._local_cache_time: float = 0
         self._local_cache_ttl: int = self.L1_CACHE_TTL
 
@@ -56,7 +56,7 @@ class BaseCache(ABC):
 
         return True
 
-    async def get_from_local(self) -> Optional[Any]:
+    async def get_from_local(self) -> Optional[T]:
         """从本地缓存获取"""
         if await self.is_local_cache_valid():
             cache_age = time.time() - self._local_cache_time
@@ -64,10 +64,10 @@ class BaseCache(ABC):
             return self._local_cache
         return None
 
-    async def get_from_redis(self) -> Optional[Any]:
+    async def get_from_redis(self) -> Optional[T]:
         """从 Redis 缓存获取"""
         try:
-            data = await self._redis.get(self.REDIS_KEY_PREFIX)
+            data: Optional[T] = await self._redis.get(self.REDIS_KEY_PREFIX)
             if data:
                 self._logger.info(Messages.L2_CACHE_HIT)
                 # 同时更新本地缓存
@@ -81,13 +81,13 @@ class BaseCache(ABC):
             self._logger.error(Messages.CACHE_L2_READ_FAILED(e))
             return None
 
-    async def update_local_cache(self, data: Any) -> None:
+    async def update_local_cache(self, data: T) -> None:
         """更新本地缓存"""
         self._local_cache = data
         self._local_cache_time = time.time()
         self._logger.info(Messages.L1_CACHE_UPDATED)
 
-    async def update_redis_cache(self, data: Any) -> None:
+    async def update_redis_cache(self, data: T) -> None:
         """更新 Redis 缓存"""
         try:
             await self._redis.set(self.REDIS_KEY_PREFIX, data, ex=self._redis_ttl)
@@ -115,11 +115,11 @@ class BaseCache(ABC):
         await self.clear_redis_cache()
 
     @abstractmethod
-    async def get(self) -> Optional[Any]:
+    async def get(self) -> Optional[T]:
         """获取缓存（需要子类实现）"""
         pass
 
     @abstractmethod
-    async def set(self, data: Any) -> None:
+    async def set(self, data: T) -> None:
         """设置缓存（需要子类实现）"""
         pass
