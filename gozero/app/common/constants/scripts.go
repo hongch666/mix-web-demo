@@ -23,16 +23,6 @@ const (
 	// ES_ARTICLES_INDEX_NAME 文章检索使用的 ES 索引名
 	ES_ARTICLES_INDEX_NAME = "articles"
 
-	// INDEX_LIST_SQL 列出表上所有索引及其列组合，用于按列判断是否已存在等价索引
-	// 同名不同 spec 会冲突，同 spec 不同名则是重复索引，二者都只能靠列组合识别
-	INDEX_LIST_SQL = `
-		SELECT index_name AS name,
-		       GROUP_CONCAT(column_name ORDER BY seq_in_index) AS columns_list
-		FROM information_schema.statistics
-		WHERE table_schema = DATABASE() AND table_name = ?
-		GROUP BY index_name
-	`
-
 	// ES 索引 Mapping 定义
 	// settings 必须与 mapping 同时下发：索引建成后分片数与副本数无法修改
 	// id 用 long 对应 Go 侧 int64，username 用 lowercase normalizer 让前缀匹配与大小写解耦
@@ -74,21 +64,3 @@ const (
 		}
 	}`
 )
-
-// MySQLIndexDefinition 描述一条需要补齐的 MySQL 索引
-type MySQLIndexDefinition struct {
-	// Table 目标表名
-	Table string
-	// Name 索引名
-	Name string
-	// Columns 索引列定义，含括号
-	Columns string
-}
-
-// CHAT_MESSAGES_INDEXES 启动期需要补齐的 chat_messages 索引
-// 与 db/mysql/gozero/chat_messages.sql 以及建表 SQL 中的索引保持一致
-var CHAT_MESSAGES_INDEXES = []MySQLIndexDefinition{
-	{Table: "chat_messages", Name: "idx_receiver_unread", Columns: "(receiver_id, is_read, sender_id)"},
-	{Table: "chat_messages", Name: "idx_sender_receiver_created", Columns: "(sender_id, receiver_id, created_at)"},
-	{Table: "chat_messages", Name: "idx_receiver_sender_created", Columns: "(receiver_id, sender_id, created_at)"},
-}
