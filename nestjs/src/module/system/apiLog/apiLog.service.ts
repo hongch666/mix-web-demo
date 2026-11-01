@@ -111,6 +111,10 @@ export class ApiLogService {
         spec: { userId: 1, apiMethod: 1, createdAt: -1 },
         options: { name: "userId_1_apiMethod_1_createdAt_-1" },
       },
+      {
+        spec: { apiMethod: 1, createdAt: -1 },
+        options: { name: "apiMethod_1_createdAt_-1" },
+      },
     ];
 
     // 检查并创建缺失的索引（并行批量创建，避免启动期串行等待）

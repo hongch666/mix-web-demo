@@ -44,3 +44,7 @@ ArticleLogSchema.index({ userId: 1, createdAt: -1 });
 ArticleLogSchema.index({ articleId: 1, createdAt: -1 });
 ArticleLogSchema.index({ action: 1, createdAt: -1 });
 ArticleLogSchema.index({ userId: 1, action: 1, articleId: 1 });
+// 搜索历史/浏览分布按 userId + action 过滤后按时间倒序聚合，需要 createdAt 参与复合索引才能免内存排序
+ArticleLogSchema.index({ userId: 1, action: 1, createdAt: -1 });
+// userId 与 articleId 同时过滤（$in）时按时间倒序取最近记录
+ArticleLogSchema.index({ userId: 1, articleId: 1, createdAt: -1 });

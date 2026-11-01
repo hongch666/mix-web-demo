@@ -60,3 +60,5 @@ ApiLogSchema.index({ userId: 1, createdAt: -1 });
 ApiLogSchema.index({ createdAt: -1 });
 ApiLogSchema.index({ apiPath: 1, createdAt: -1 });
 ApiLogSchema.index({ userId: 1, apiMethod: 1, createdAt: -1 });
+// 只按 apiMethod 过滤时上面的复合索引以 userId 打头用不上，单独补一条
+ApiLogSchema.index({ apiMethod: 1, createdAt: -1 });
