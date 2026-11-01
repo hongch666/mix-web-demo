@@ -10,7 +10,6 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.Scripts;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
-import io.r2dbc.spi.R2dbcException;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -21,9 +20,6 @@ import reactor.core.publisher.Mono;
 @Component
 @RequiredArgsConstructor
 public class DatabaseInitializer {
-
-    /** MySQL 重复索引名错误码，表示索引已存在，可安全跳过 */
-    private static final String MYSQL_DUPLICATE_INDEX_ERROR = "1061";
 
     private final DatabaseClient databaseClient;
     private final SimpleLogger logger;
@@ -57,7 +53,6 @@ public class DatabaseInitializer {
         return baseTables
             .then(execute(Scripts.CREATE_SUBCATEGORY_TABLE))
             .then(execute(Scripts.CREATE_CATEGORY_REFERENCE_TABLE))
-            .then(ensureIndexes())
             .thenMany(Flux.concat(
                 insertAIUserIfNotExists(Defaults.GLM_ID, Defaults.GLM_NAME,
                     Defaults.GLM_EMAIL, Defaults.GLM_IMG),
@@ -72,41 +67,6 @@ public class DatabaseInitializer {
                 insertAIUserIfNotExists(Defaults.QWEN_ID, Defaults.QWEN_NAME,
                     Defaults.QWEN_EMAIL, Defaults.QWEN_IMG)))
             .then();
-    }
-
-    /**
-     * 逐条补齐建表语句未覆盖的索引
-     *
-     * ADD INDEX 在索引已存在时抛 1061，视为已存在跳过；其他失败只记日志不中断，
-     * 避免个别索引问题拖垮整体初始化
-     */
-    private Mono<Void> ensureIndexes() {
-        return Flux.fromIterable(Scripts.CREATE_INDEXES)
-            .concatMap(index -> execute(createIndexSql(index))
-                .doOnError(error -> logIndexError(index, error))
-                .onErrorResume(error -> Mono.empty()))
-            .then()
-            .doOnSuccess(ignored -> logger.info(Messages.INDEX_INIT_SUCCESS));
-    }
-
-    /**
-     * 拼装建索引语句，表名、索引名与列定义均来自常量，不接受外部输入
-     */
-    private String createIndexSql(Scripts.IndexDefinition index) {
-        return "ALTER TABLE " + index.table() + " ADD INDEX " + index.name() + " " + index.columns();
-    }
-
-    /**
-     * 区分“索引已存在”与其他建索引失败，分别降级为调试与错误日志
-     */
-    @SuppressWarnings("unlikely-arg-type")
-    private void logIndexError(Scripts.IndexDefinition index, Throwable error) {
-        if (error instanceof R2dbcException r2dbcError
-            && MYSQL_DUPLICATE_INDEX_ERROR.equals(r2dbcError.getErrorCode())) {
-            logger.debug(String.format(Messages.INDEX_EXIST, index.name()));
-            return;
-        }
-        logger.error(String.format(Messages.INDEX_CREATE, index.name()), error);
     }
 
     /**

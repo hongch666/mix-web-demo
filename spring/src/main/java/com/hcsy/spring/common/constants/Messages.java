@@ -295,12 +295,6 @@ public class Messages {
 
     /** 检查或创建表失败的日志消息 */
     public static final String CREATE_TABLE = "检查/创建表失败";
-    /** 索引补齐完成的日志消息 */
-    public static final String INDEX_INIT_SUCCESS = "数据库索引检查完成";
-    /** 索引已存在的调试消息 */
-    public static final String INDEX_EXIST = "索引 %s 已存在，跳过创建";
-    /** 创建索引失败的日志消息 */
-    public static final String INDEX_CREATE = "创建索引 %s 失败";
     /** 日志配置初始化完成的日志消息 */
     public static final String LOG_INIT = "日志配置初始化完成，路径: {}";
     /** 写入日志失败的日志消息 */
