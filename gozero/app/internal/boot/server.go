@@ -28,7 +28,10 @@ func CreateServer(c config.Config, ctx *svc.ServiceContext) *rest.Server {
 		panic(fmt.Sprintf(constants.VALIDATOR_INIT_FAIL, err))
 	}
 
+	// 创建 REST 服务器实例
 	server := rest.MustNewServer(c.RestConf)
+
+	// 初始化 Prometheus 监控指标
 	metrics.Init()
 
 	// 优先注册 Swagger 路由（在业务处理器之前）
