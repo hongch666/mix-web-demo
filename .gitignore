@@ -161,6 +161,8 @@ fastapi/.env.docker
 
 fastapi/.python-version
 
+**/*.pyc
+
 .vscode/
 bfg-1.14.0.jar
 
