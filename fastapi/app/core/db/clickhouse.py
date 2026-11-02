@@ -179,7 +179,9 @@ async def create_warehouse_indexes_async() -> None:
                 f"TYPE {index_type} GRANULARITY 4"
             )
         except Exception as error:
-            Logger.warning(Messages.CLICKHOUSE_INDEX_INITIALIZATION_FAILED(table, error))
+            Logger.warning(
+                Messages.CLICKHOUSE_INDEX_INITIALIZATION_FAILED(table, error)
+            )
 
     for table, ttl_expression in ClickHouseIndexes.TTL:
         try:
@@ -187,7 +189,9 @@ async def create_warehouse_indexes_async() -> None:
                 f"ALTER TABLE warehouse.{table} MODIFY TTL {ttl_expression}"
             )
         except Exception as error:
-            Logger.warning(Messages.CLICKHOUSE_INDEX_INITIALIZATION_FAILED(table, error))
+            Logger.warning(
+                Messages.CLICKHOUSE_INDEX_INITIALIZATION_FAILED(table, error)
+            )
 
     Logger.info(Messages.CLICKHOUSE_INDEX_INITIALIZATION_SUCCESS)
 

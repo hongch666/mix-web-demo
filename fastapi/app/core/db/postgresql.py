@@ -78,7 +78,8 @@ def _ensure_pgvector_indexes_sync() -> None:
             cursor.execute(
                 "SELECT to_regclass(%s)", (PostgreSQLIndexes.EMBEDDING_TABLE,)
             )
-            if cursor.fetchone()[0] is None:
+            table_row = cursor.fetchone()
+            if not table_row or table_row[0] is None:
                 Logger.info(Messages.PGVECTOR_EMBEDDING_TABLE_MISSING)
                 return
 
