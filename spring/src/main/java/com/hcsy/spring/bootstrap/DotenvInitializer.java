@@ -35,7 +35,6 @@ public class DotenvInitializer {
         try {
             // 按候选路径顺序查找.env文件
             File envFile = findEnvFile();
-
             if (envFile == null) {
                 log.info(Messages.DOTENV_FILE_NOT_EXIST);
                 return;
