@@ -2,13 +2,13 @@ import "src/module/common/telemetry/instrumentation";
 
 import multipart from "@fastify/multipart";
 import { ValidationPipe } from "@nestjs/common";
-import type { ValidationError } from "class-validator";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
 import type { OpenAPIObject } from "@nestjs/swagger";
 import { SwaggerModule } from "@nestjs/swagger";
+import type { ValidationError } from "class-validator";
 import {
   ErrorIds,
   HttpCode,
@@ -56,8 +56,8 @@ function extractValidationMessage(errors: unknown[]): string {
  * 创建并初始化基于 Fastify 的 Nest 应用，依次注册文件上传插件、Swagger 文档、全局过滤器、拦截器与校验管道
  */
 export async function createApp(): Promise<NestFastifyApplication> {
+  // 创建 Fastify 适配器和 Nest 应用实例
   const fastifyAdapter: FastifyAdapter = new FastifyAdapter();
-
   const app: NestFastifyApplication =
     await NestFactory.create<NestFastifyApplication>(AppModule, fastifyAdapter);
   app.enableShutdownHooks();
@@ -86,11 +86,13 @@ export async function createApp(): Promise<NestFastifyApplication> {
 
   // 注册全局异常过滤器（从容器获取以支持依赖注入）
   app.useGlobalFilters(app.get(AllExceptionsFilter));
+
   // 全局转换对外字段命名：请求下划线转内部驼峰，响应内部驼峰转下划线
   app.useGlobalInterceptors(
     new FieldNamingInterceptor(),
     new MetricsInterceptor(),
   );
+
   // 全局启用校验管道
   app.useGlobalPipes(
     new ValidationPipe({
@@ -106,17 +108,20 @@ export async function createApp(): Promise<NestFastifyApplication> {
       },
     }),
   );
+
   // 读取yaml文件中的端口和IP
   const configService: ConfigService<unknown, boolean> = app.get(ConfigService);
   const port: number = configService.get<number>("server.port")!;
   const mode: string = configService.get<string>("server.mode")!;
   const ip: string = configService.get<string>("server.ip")!;
+
   // 输出启动信息和Swagger地址（从容器获取日志服务）
   const logger: LoggerService = app.get(LoggerService);
   logger.info(Messages.START_WELCOME);
   logger.info(Messages.STARTUP_SERVER_MODE(mode));
   logger.info(Messages.STARTUP_SERVICE_ADDRESS(ip, port));
   logger.info(Messages.STARTUP_SWAGGER_ADDRESS(ip, port));
+
   // 返回 app
   return app;
 }

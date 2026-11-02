@@ -391,12 +391,16 @@ export function buildSwaggerDocument(app: INestApplication): OpenAPIObject {
   });
 
   const config: Omit<OpenAPIObject, "paths"> = swaggerBuilder.build();
+
   const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
+
   applyCommonUnauthorizedResponses(document);
-  // 先提升再统一命名：提升后的模型内容与接口响应共用同一份结构，避免两处转换不一致
+
   hoistInlineSchemas(document);
+
   const named: OpenAPIObject = applySwaggerSnakeCase(document);
-  // 命名统一之后再补可空类型：required 与 properties 的键此时都是下划线命名，比较才对得上
+
   markNullableProperties(named);
+
   return named;
 }
