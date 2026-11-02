@@ -1,3 +1,4 @@
+from .bootstrap import init_databases_async
 from .clickhouse import (
     CLICKHOUSE_ASYNC_DATABASE_URL,
     ClickHouseAsyncSessionLocal,
@@ -50,6 +51,7 @@ __all__: list[str] = [
     "get_db",
     "create_tables_async",
     "create_mysql_indexes_async",
+    "init_databases_async",
     "async_engine",
     "Base",
     "AsyncSessionLocal",

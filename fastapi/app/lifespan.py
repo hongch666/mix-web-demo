@@ -16,27 +16,23 @@ from app.core.client import (
 )
 from app.core.config import load_config
 from app.core.constants import Messages
-from app.core.telemetry import shutdown_telemetry
 from app.core.db import (
     AsyncSessionLocal,
     RabbitMQClient,
     async_engine,
-    create_mysql_indexes_async,
-    create_tables_async,
-    create_warehouse_indexes_async,
-    create_warehouse_tables_async,
     dispose_clickhouse_async_engine,
-    ensure_pgvector_indexes_async,
     get_neo4j_client,
     get_rabbitmq_client,
+    init_databases_async,
 )
+from app.core.telemetry import shutdown_telemetry
+from app.dependencies import resolve_analyze_service
 from app.internal.agents import (
     init_langsmith,
     load_langsmith_config,
     shutdown_langsmith,
 )
 from app.internal.clients import get_nestjs_client, get_spring_client
-from app.dependencies import resolve_analyze_service
 from app.internal.models import AiHistory, AiUserSummary, McpServerConfig
 from app.internal.services import AnalyzeService
 from app.internal.tasks import resolve_task_enabled, start_scheduler
@@ -60,16 +56,18 @@ SQLALCHEMY_MODELS: tuple[
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     """应用生命周期管理：启动时初始化 LangSmith、创建业务与数仓表、注册 Nacos、连接 Neo4j 与 RabbitMQ、启动定时任务调度器和内外网 httpx 连接池，关闭时按序释放全部资源"""
+
+    # 定时任务调度器
     scheduler: Optional[AsyncIOScheduler] = None
+
     # LangSmith 初始化（追踪关闭或失败时均不阻断业务启动）
     langsmith_config = load_langsmith_config()
     init_langsmith(langsmith_config)
 
-    await create_tables_async()
-    await create_mysql_indexes_async()
-    await create_warehouse_tables_async()
-    await create_warehouse_indexes_async()
-    await ensure_pgvector_indexes_async()
+    # 初始化数据库：业务表、数仓表、向量索引
+    await init_databases_async()
+
+    # 注册 Nacos 服务
     start_nacos(ip=IP, port=PORT)
     Logger.info(Messages.NACOS_REGISTER_SUCCESS)
 
@@ -120,6 +118,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     set_shared_http_client(shared_http_client)
     Logger.info(Messages.HTTP_CLIENT_POOL_INITIALIZED)
 
+    # 应用启动日志
     Logger.info(Messages.STARTUP_MESSAGE)
     Logger.info(Messages.STARTUP_SERVER_MODE(SERVER_MODE))
     Logger.info(Messages.STARTUP_SERVICE_ADDRESS(IP, PORT))
@@ -128,10 +127,12 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
 
     yield
 
+    # 定时任务调度器关闭
     if scheduler:
         scheduler.shutdown(wait=False)
         Logger.info(Messages.SCHEDULER_STOPPED)
 
+    # 应用关闭时清理数据库连接池
     await get_neo4j_client().close()
     await dispose_clickhouse_async_engine()
     await async_engine.dispose()

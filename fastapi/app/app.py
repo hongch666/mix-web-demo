@@ -24,6 +24,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # ASGI 服务器监控与追踪
     instrument_fastapi(app)
 
     # 覆写 openapi 方法以设置 OpenAPI 版本
