@@ -265,6 +265,69 @@ class KnowledgeGraphSyncService:
             self.logger.info(Messages.NEO4J_SYNC_PROGRESS(label, total, len(rows)))
         return total
 
+    async def _prune_write(
+        self, rows: list[dict[str, Any]], cypher: str, label: str
+    ) -> None:
+        """按主键分批删除与当前快照不一致的关系，空集合直接跳过"""
+        if not rows:
+            return
+        await self._batch_write(rows, cypher, label)
+
+    async def _prune_article_relations(self, articles: list[dict[str, Any]]) -> None:
+        """写入前删除与当前快照不一致的文章关系，避免改子分类、作者或标签后残留旧关系"""
+        sub_category_rows = [
+            {"articleId": item["id"], "subCategoryId": item["subCategoryId"]}
+            for item in articles
+            if item.get("subCategoryId") is not None
+        ]
+        author_rows = [
+            {"articleId": item["id"], "userId": item["userId"]}
+            for item in articles
+            if item.get("userId") is not None
+        ]
+        # 标签是集合语义：不在本次标签列表中的旧标签关系全部删除，标签被清空时 tagNames 为空即删除全部
+        tag_rows = [
+            {
+                "articleId": item["id"],
+                "tagNames": [
+                    name.strip()
+                    for name in str(item.get("tags") or "").split(",")
+                    if name.strip()
+                ],
+            }
+            for item in articles
+        ]
+        await self._prune_write(
+            sub_category_rows,
+            Scripts.NEO4J_PRUNE_ARTICLE_SUB_CATEGORY_CYPHER,
+            Messages.NEO4J_LABEL_ARTICLE_SUB_CATEGORY_RELATION,
+        )
+        await self._prune_write(
+            author_rows,
+            Scripts.NEO4J_PRUNE_ARTICLE_AUTHOR_CYPHER,
+            Messages.NEO4J_LABEL_ARTICLE_AUTHOR_RELATION,
+        )
+        await self._prune_write(
+            tag_rows,
+            Scripts.NEO4J_PRUNE_ARTICLE_TAG_CYPHER,
+            Messages.NEO4J_LABEL_ARTICLE_TAG_RELATION,
+        )
+
+    async def _prune_sub_category_relations(
+        self, sub_categories: list[dict[str, Any]]
+    ) -> None:
+        """写入前删除与当前快照不一致的子分类与父分类关系"""
+        rows = [
+            {"subCategoryId": item["id"], "categoryId": item["categoryId"]}
+            for item in sub_categories
+            if item.get("categoryId") is not None
+        ]
+        await self._prune_write(
+            rows,
+            Scripts.NEO4J_PRUNE_SUB_CATEGORY_CATEGORY_CYPHER,
+            Messages.NEO4J_LABEL_SUB_CATEGORY_RELATION,
+        )
+
     async def _cleanup_write(
         self, cypher: str, params: dict[str, Any], label: str
     ) -> int:
@@ -488,6 +551,9 @@ class KnowledgeGraphSyncService:
         collects = self._normalize_collects(snapshot.get("collects", []))
         comments = self._normalize_comments(snapshot.get("comments", []))
         focus = self._normalize_focus(snapshot.get("focus", []))
+        # 写入前先收敛关系：MERGE 只加不删，改子分类/作者/标签后必须清掉旧关系
+        await self._prune_article_relations(articles)
+        await self._prune_sub_category_relations(sub_categories)
         result["users"] = await self._batch_write(
             users, Scripts.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
         )
@@ -623,6 +689,9 @@ class KnowledgeGraphSyncService:
         collects = self._normalize_collects(snapshot.get("collects", []))
         comments = self._normalize_comments(snapshot.get("comments", []))
         focus = self._normalize_focus(snapshot.get("focus", []))
+        # 写入前先收敛关系：增量的文章是水位线之后变更过的行，改子分类/作者/标签后必须清掉旧关系
+        await self._prune_article_relations(articles)
+        await self._prune_sub_category_relations(sub_categories)
         result["users"] = await self._batch_write(
             users, Scripts.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
         )
@@ -797,6 +866,8 @@ class KnowledgeGraphSyncService:
         if upsert_ids:
             rows = await self.spring_client.get_articles_by_ids(upsert_ids)
             articles = self._normalize_articles(rows)
+            # 写入前先收敛关系，避免改子分类、作者或标签后旧关系残留
+            await self._prune_article_relations(articles)
             result["articles"] = await self._batch_write(
                 articles,
                 Scripts.NEO4J_MERGE_ARTICLES_CYPHER,
@@ -882,6 +953,8 @@ class KnowledgeGraphSyncService:
         if upsert_ids:
             rows = await self.spring_client.get_sub_categories_by_ids(upsert_ids)
             sub_categories = self._normalize_sub_categories(rows)
+            # 写入前先收敛关系，避免改父分类后旧关系残留
+            await self._prune_sub_category_relations(sub_categories)
             result["sub_categories"] = await self._batch_write(
                 sub_categories,
                 Scripts.NEO4J_MERGE_SUB_CATEGORIES_CYPHER,

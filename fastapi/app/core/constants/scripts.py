@@ -312,6 +312,37 @@ class Scripts:
     """
     """按 ID 删除关注关系的 Cypher"""
 
+    # ===== Neo4j 关系收敛 Cypher（写入前清理与当前快照不一致的关系） =====
+
+    NEO4J_PRUNE_ARTICLE_SUB_CATEGORY_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (a:Article {id: row.articleId})-[r:BELONGS_TO]->(s:SubCategory)
+        WHERE s.id <> row.subCategoryId
+        DELETE r
+    """
+    """删除文章改子分类后指向旧子分类的关系，MERGE 只保证新关系存在，旧关系必须显式收敛"""
+    NEO4J_PRUNE_ARTICLE_AUTHOR_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (a:Article {id: row.articleId})-[r:PUBLISHED_BY]->(u:User)
+        WHERE u.id <> row.userId
+        DELETE r
+    """
+    """删除文章改作者后指向旧用户的关系"""
+    NEO4J_PRUNE_ARTICLE_TAG_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (a:Article {id: row.articleId})-[r:TAGGED_AS]->(t:Tag)
+        WHERE NOT t.name IN row.tagNames
+        DELETE r
+    """
+    """删除文章改标签后指向已不在标签集合中的关系"""
+    NEO4J_PRUNE_SUB_CATEGORY_CATEGORY_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (s:SubCategory {id: row.subCategoryId})-[r:BELONGS_TO]->(c:Category)
+        WHERE c.id <> row.categoryId
+        DELETE r
+    """
+    """删除子分类改父分类后指向旧分类的关系"""
+
     # ===== Neo4j 清理 Cypher（同步任务 _cleanup_write 调用） =====
 
     # 关系清理用 keys 参数（"id1:id2" 格式的字符串列表）

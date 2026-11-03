@@ -358,6 +358,45 @@ async def test_sync_incremental_uses_watermark_window_and_skips_cleanup(
     assert all(value == 0 for value in result.values())
 
 
+# 增量同步对水位线之后的文章同样先收敛旧关系，再写入新关系
+@pytest.mark.anyio
+async def test_sync_incremental_prunes_stale_relations_before_merge(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _build_neo4j_client(
+        run_query=AsyncMock(return_value=[{"total": 1}]), run_write_query=AsyncMock()
+    )
+    service = _build_service(monkeypatch, client)
+    monkeypatch.setattr(
+        service,
+        "_fetch_snapshot",
+        AsyncMock(
+            return_value={
+                "articles": [
+                    {
+                        "id": 7,
+                        "title": "标题",
+                        "tags": "go",
+                        "status": 1,
+                        "views": 3,
+                        "user_id": 1,
+                        "sub_category_id": 2,
+                        "create_at": "2026-01-01T00:00:00",
+                        "update_at": "2026-01-02T00:00:00",
+                    }
+                ],
+                "sub_categories": [{"id": 19, "name": "sql", "category_id": 2}],
+            }
+        ),
+    )
+
+    await service.sync_incremental(datetime(2026, 9, 1, 8, 0, 0))
+
+    executed = [call.args[0] for call in client.run_write_query.await_args_list]
+    assert task.Scripts.NEO4J_PRUNE_ARTICLE_SUB_CATEGORY_CYPHER in executed
+    assert task.Scripts.NEO4J_PRUNE_SUB_CATEGORY_CATEGORY_CYPHER in executed
+
+
 # 全量同步汇总快照各类型节点与关系计数且不执行删除清理
 @pytest.mark.anyio
 async def test_sync_all_merges_snapshot_without_cleanup(
@@ -638,6 +677,58 @@ async def test_sync_changes_upserts_articles_by_ids() -> None:
     executed = [call.args[0] for call in neo4j_client.run_write_query.await_args_list]
     assert task.Scripts.NEO4J_MERGE_ARTICLES_CYPHER in executed
     assert task.Scripts.NEO4J_MERGE_TAGGED_AS_CYPHER in executed
+
+
+# 精确同步改子分类、作者或标签时先删旧关系再 MERGE，避免图上残留两条归属关系
+@pytest.mark.anyio
+async def test_sync_changes_prunes_stale_article_relations_before_merge() -> None:
+    service, neo4j_client, spring_client = _build_sync_service()
+    spring_client.get_articles_by_ids = AsyncMock(
+        return_value=[
+            {
+                "id": 7,
+                "title": "标题",
+                "tags": "go,redis",
+                "status": 1,
+                "views": 3,
+                "user_id": 1,
+                "sub_category_id": 2,
+                "create_at": "2026-01-01T00:00:00",
+                "update_at": "2026-01-02T00:00:00",
+            }
+        ]
+    )
+
+    await service.sync_changes(
+        [{"resource": "articles", "change_type": "update", "ids": [7]}]
+    )
+
+    executed = [call.args[0] for call in neo4j_client.run_write_query.await_args_list]
+    assert task.Scripts.NEO4J_PRUNE_ARTICLE_SUB_CATEGORY_CYPHER in executed
+    assert task.Scripts.NEO4J_PRUNE_ARTICLE_AUTHOR_CYPHER in executed
+    assert task.Scripts.NEO4J_PRUNE_ARTICLE_TAG_CYPHER in executed
+    # 收敛必须先于写入，否则同一轮里会短暂出现新旧两条关系
+    assert executed.index(
+        task.Scripts.NEO4J_PRUNE_ARTICLE_SUB_CATEGORY_CYPHER
+    ) < executed.index(task.Scripts.NEO4J_MERGE_ARTICLE_TO_SUB_CATEGORY_CYPHER)
+
+
+# 精确同步改子分类的父分类时先删旧的从属关系
+@pytest.mark.anyio
+async def test_sync_changes_prunes_stale_sub_category_relation() -> None:
+    service, neo4j_client, spring_client = _build_sync_service()
+    spring_client.get_sub_categories_by_ids = AsyncMock(
+        return_value=[{"id": 19, "name": "sql", "category_id": 2}]
+    )
+
+    await service.sync_changes(
+        [{"resource": "sub_category", "change_type": "update", "ids": [19]}]
+    )
+
+    executed = [call.args[0] for call in neo4j_client.run_write_query.await_args_list]
+    assert executed.index(
+        task.Scripts.NEO4J_PRUNE_SUB_CATEGORY_CATEGORY_CYPHER
+    ) < executed.index(task.Scripts.NEO4J_MERGE_SUB_CATEGORY_TO_CATEGORY_CYPHER)
 
 
 # 点赞关系按触发用户与目标文章精确写入
