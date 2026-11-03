@@ -86,9 +86,10 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		return err
 	}
 
-	// 这些 map 是本次同步过程中的简单本地缓存
+	// 这些 map 是本次同步过程中的简单本地缓存：categoryMap 只按子分类ID存一级分类名，分类ID到分类名另用 categoryNameByID
 	userMap := make(map[int64]string)
 	categoryMap := make(map[int64]string)
+	categoryNameByID := make(map[int64]string)
 	subCategoryMap := make(map[int64]string)
 	stats := esSyncStats{}
 	batchIdx := 0
@@ -110,7 +111,7 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		}
 
 		batchIdx++
-		docs, err := buildArticleESBatchFromRemote(ctx, svcCtx, articles, userMap, categoryMap, subCategoryMap)
+		docs, err := buildArticleESBatchFromRemote(ctx, svcCtx, articles, userMap, categoryMap, categoryNameByID, subCategoryMap)
 		if err != nil {
 			return err
 		}
@@ -193,6 +194,7 @@ func buildArticleESBatchFromRemote(
 	articleBatch []springClient.ArticleVO,
 	userMap map[int64]string,
 	categoryMap map[int64]string,
+	categoryNameByID map[int64]string,
 	subCategoryMap map[int64]string,
 ) ([]search.ArticleES, error) {
 	// 从执行上下文派生 logger，保证日志带上当前请求或任务的 trace_id，Logger 未注入时保持 nil，由各日志点自行判空跳过
@@ -274,26 +276,35 @@ func buildArticleESBatchFromRemote(
 				subCategoryMap[sc.ID] = sc.Name
 			}
 			// 收集需要查询的分类ID（依赖子分类结果，必须串行）
+			// 判定必须看 categoryNameByID：分类ID与子分类ID取值范围重叠，用 categoryMap 判断会把子分类键当成已缓存的分类
 			categoryIDs := make([]int64, 0, len(subCategories))
 			for _, sc := range subCategories {
-				if _, ok := categoryMap[sc.CategoryID]; !ok {
+				if _, ok := categoryNameByID[sc.CategoryID]; !ok {
 					categoryIDs = append(categoryIDs, sc.CategoryID)
 				}
 			}
 			if len(categoryIDs) > 0 {
 				catResult, catErr := springCli.GetCategoriesByIDs(ctx, categoryIDs)
-				if catErr == nil {
+				if catErr != nil {
+					if svcCtx.Logger != nil {
+						logger.Error(fmt.Sprintf(constants.BATCH_QUERY_CATEGORY_FAIL, catErr))
+					}
+				} else {
 					categories, parseErr := springClient.ParseCategoryVOs(catResult)
-					if parseErr == nil {
+					if parseErr != nil {
+						if svcCtx.Logger != nil {
+							logger.Error(fmt.Sprintf(constants.PARSE_CATEGORY_FAIL, parseErr))
+						}
+					} else {
 						for _, c := range categories {
-							categoryMap[c.ID] = c.Name
+							categoryNameByID[c.ID] = c.Name
 						}
 					}
 				}
 			}
-			// 建立子分类ID到分类ID的映射，用于后续填充categoryMap
+			// categoryMap 只按子分类ID写入一级分类名，与 categoryNameByID 的键空间严格分开
 			for _, sc := range subCategories {
-				if catName, ok := categoryMap[sc.CategoryID]; ok {
+				if catName, ok := categoryNameByID[sc.CategoryID]; ok {
 					categoryMap[sc.ID] = catName
 				}
 			}
@@ -519,8 +530,9 @@ func upsertESArticlesByIDs(ctx context.Context, svcCtx *svc.ServiceContext, ids 
 
 	userMap := make(map[int64]string)
 	categoryMap := make(map[int64]string)
+	categoryNameByID := make(map[int64]string)
 	subCategoryMap := make(map[int64]string)
-	docs, err := buildArticleESBatchFromRemote(ctx, svcCtx, articles, userMap, categoryMap, subCategoryMap)
+	docs, err := buildArticleESBatchFromRemote(ctx, svcCtx, articles, userMap, categoryMap, categoryNameByID, subCategoryMap)
 	if err != nil {
 		return err
 	}

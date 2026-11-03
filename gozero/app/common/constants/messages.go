@@ -450,6 +450,10 @@ const (
 	BATCH_QUERY_USER_FAIL = "批量查询用户失败: %v"
 	// 批量查询子分类失败的日志消息
 	BATCH_QUERY_SUBCATEGORY_FAIL = "批量查询子分类失败: %v"
+	// 批量查询分类失败的日志消息
+	BATCH_QUERY_CATEGORY_FAIL = "批量查询分类失败: %v"
+	// 解析分类响应失败的日志消息
+	PARSE_CATEGORY_FAIL = "解析分类响应失败: %v"
 
 	// Redis 分布式锁
 	// 获取分布式锁异常的错误消息
