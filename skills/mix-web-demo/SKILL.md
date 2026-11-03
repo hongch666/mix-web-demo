@@ -134,25 +134,24 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
 
 ### 手写 DDL（索引内联，服务启动不补索引）
 
-| 服务 | 建表与索引位置 |
-| --- | --- |
-| Spring | `spring/.../common/constants/Scripts.java` 的 `CREATE_*_TABLE`，同步 `db/mysql/spring/*.sql` |
-| GoZero | `gozero/app/common/constants/scripts.go` 的 `CREATE_CHAT_MESSAGES_TABLE_SQL`，同步 `db/mysql/gozero/*.sql` |
-| ClickHouse 兜底脚本 | `db/clickhouse/**/*.sql` 的 `ORDER BY` / `PARTITION BY` / 跳数 `INDEX` / `TTL` |
+| 服务                | 建表与索引位置                                                                                             |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Spring              | `spring/.../common/constants/Scripts.java` 的 `CREATE_*_TABLE`，同步 `db/mysql/spring/*.sql`               |
+| GoZero              | `gozero/app/common/constants/scripts.go` 的 `CREATE_CHAT_MESSAGES_TABLE_SQL`，同步 `db/mysql/gozero/*.sql` |
+| ClickHouse 兜底脚本 | `db/clickhouse/**/*.sql` 的 `ORDER BY` / `PARTITION BY` / 跳数 `INDEX` / `TTL`                             |
 
 - 索引直接写在 `CREATE TABLE` 里（`KEY` / `INDEX` / 跳数 `INDEX`），**不要再写启动期 `ALTER TABLE ADD INDEX` 逻辑**：项目已刻意移除该逻辑，表已存在时启动不会修改索引，索引不一致由运维处理
 - 改了索引必须同步 `db/mysql/**` / `db/clickhouse/**` 里对应的脚本，这是同一份 DDL 的第二处来源
-- 存量库补索引、删被覆盖的旧索引用 `scripts/index-optimize.sh`（默认预览，加 `--apply` 才执行）
 
 ### 框架建表（索引单独登记与创建）
 
-| 存储 | 登记位置 | 说明 |
-| --- | --- | --- |
-| FastAPI MySQL | `fastapi/app/core/constants/indexes.py` → `MySQLIndexes` | SQLAlchemy `create_all` 不建业务索引，启动由 `create_mysql_indexes_async()` 按 `information_schema` 补齐 |
-| FastAPI ClickHouse | 同文件 → `ClickHouseIndexes` | 跳数索引与 TTL 只能 `ALTER`；改 `ORDER BY` / `PARTITION BY` 要同步 `warehouse/base.py` 的 `WAREHOUSE_ENGINE_CONFIG` |
-| FastAPI pgvector | 同文件 → `PostgreSQLIndexes` | 表由 LangChain 创建；ANN 索引要求 `embedding` 列声明维度 |
-| NestJS MongoDB | `*.schema.ts` 的 `Schema.index()` + service 的 `requiredIndexes` + `db/mongodb/*.js` | 三处必须同名同列，否则出现重复索引或 `IndexOptionsConflict` |
-| GoZero ES | `db/es/init.es` 与 `gozero/app/common/constants/scripts.go` 的 `ES_INDEX_MAPPING` | 两处保持一致；字段类型不可原地修改，变更需重建索引 |
+| 存储               | 登记位置                                                                             | 说明                                                                                                                |
+| ------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| FastAPI MySQL      | `fastapi/app/core/constants/indexes.py` → `MySQLIndexes`                             | SQLAlchemy `create_all` 不建业务索引，启动由 `create_mysql_indexes_async()` 按 `information_schema` 补齐            |
+| FastAPI ClickHouse | 同文件 → `ClickHouseIndexes`                                                         | 跳数索引与 TTL 只能 `ALTER`；改 `ORDER BY` / `PARTITION BY` 要同步 `warehouse/base.py` 的 `WAREHOUSE_ENGINE_CONFIG` |
+| FastAPI pgvector   | 同文件 → `PostgreSQLIndexes`                                                         | 表由 LangChain 创建；ANN 索引要求 `embedding` 列声明维度                                                            |
+| NestJS MongoDB     | `*.schema.ts` 的 `Schema.index()` + service 的 `requiredIndexes` + `db/mongodb/*.js` | 三处必须同名同列，否则出现重复索引或 `IndexOptionsConflict`                                                         |
+| GoZero ES          | `db/es/init.es` 与 `gozero/app/common/constants/scripts.go` 的 `ES_INDEX_MAPPING`    | 两处保持一致；字段类型不可原地修改，变更需重建索引                                                                  |
 
 ### 各存储的设计约束
 
@@ -584,7 +583,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 - 公共项：`.env` / `.env.docker`（运行期由 `--env-file` / `env_file` 传入）、IDE 与 OS 文件、`.git`、日志目录、本地构建产物
 - `spring/`：`src/test/`（`mvn package -DskipTests` 不需要测试源码，排除后不再编译测试类）、`docs/`、`logs/`、`*.md`
-- `gozero/`：`api/`、`template/`、`script/`、`**/*_test.go`、`.golangci.yml`。**禁止改成 `**/docs`**：`gozero/app/docs` 的 swagger 资源由 `go:embed` 嵌入二进制，缺失会直接构建失败；现有根级 `docs/` 只匹配上下文根目录，安全
+- `gozero/`：`api/`、`template/`、`script/`、`**/*_test.go`、`.golangci.yml`。**禁止改成 `**/docs`**：`gozero/app/docs`的 swagger 资源由`go:embed`嵌入二进制，缺失会直接构建失败；现有根级`docs/` 只匹配上下文根目录，安全
 - `nestjs/`：单测与源码同目录，必须用 `**/*.spec.ts` 覆盖 `src/**`，并用 `**/*-spec.ts` 覆盖 `*.e2e-spec.ts` / `*.integration-spec.ts`。**只写 `test/` 等于没写**（当前仓库没有该目录），`test/` 仅作后续 e2e 目录的预留；`tsconfig.build.json` 本来就 exclude `**/*spec.ts`，因此排除后不影响 `nest build`
 - `fastapi/`：`tests/`、`docs/`、`script/`、`*.md`
 - 匹配语义是 Go 的 `filepath.Match`：`*` 不跨 `/`，所以 `*.md` 只排除上下文根目录那一层；要按任意层级排除必须写 `**/xxx`，写之前先确认目标不是编译期或运行期依赖（gozero 的 `app/docs` 就是反例）
@@ -698,13 +697,13 @@ FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大�
 
 各服务的测试工具与运行入口固定，不要引入第二套测试框架；测试分层、必测矩阵与编写规则见 `references/unit-testing.md`：
 
-| 服务    | 测试工具                                                                                        | 命令                                                             |
-| ------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| spring  | JUnit 5（Jupiter）+ Mockito + AssertJ；响应式链用 `StepVerifier`，Controller 用 `WebTestClient` | `./mix test spring`（`cd spring && mvn test`）                   |
-| nestjs  | Jest + ts-jest（配置在 `nestjs/package.json` 的 `jest` 段）                                     | `./mix test nestjs`（`bun run test -- --runInBand`）             |
-| fastapi | pytest，异步用例用 anyio 插件的 `@pytest.mark.anyio`                                            | `./mix test fastapi`（`cd fastapi && uv run pytest -q`）         |
+| 服务    | 测试工具                                                                                              | 命令                                                             |
+| ------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| spring  | JUnit 5（Jupiter）+ Mockito + AssertJ；响应式链用 `StepVerifier`，Controller 用 `WebTestClient`       | `./mix test spring`（`cd spring && mvn test`）                   |
+| nestjs  | Jest + ts-jest（配置在 `nestjs/package.json` 的 `jest` 段）                                           | `./mix test nestjs`（`bun run test -- --runInBand`）             |
+| fastapi | pytest，异步用例用 anyio 插件的 `@pytest.mark.anyio`                                                  | `./mix test fastapi`（`cd fastapi && uv run pytest -q`）         |
 | gozero  | Go 标准库 `testing` + `net/http/httptest`，断言可用 testify `assert`（未引入 mock / suite / sqlmock） | `./mix test gozero`（`cd gozero/app && go test ./... -count=1`） |
-| gateway | 无单元测试（配置驱动，不参与）                                                                  | `./mix test gateway` 直接跳过                                    |
+| gateway | 无单元测试（配置驱动，不参与）                                                                        | `./mix test gateway` 直接跳过                                    |
 
 工具未安装时该服务返回码 2 并跳过，「跳过」不能当成「通过」；只要改动了服务代码或测试，`./mix test <service>` 就是交付前必跑项（顺序见下一节）。
 
