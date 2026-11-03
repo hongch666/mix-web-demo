@@ -345,7 +345,7 @@ async def test_generate_ai_comments_with_reference_summarizes_reference(
 
         async def extract_reference_content(
             self, ref_type, ref_value, max_length, summarizer
-        ):  # noqa: ANN001
+        ):
             self.calls.append((ref_type, ref_value, max_length))
             return await summarizer(ref_value)
 
@@ -440,7 +440,7 @@ async def test_generate_ai_comments_with_reference_falls_back_when_extraction_em
     class _FakeExtractor:
         async def extract_reference_content(
             self, ref_type, ref_value, max_length, summarizer
-        ):  # noqa: ANN001
+        ):
             return ""
 
     monkeypatch.setattr(
@@ -486,7 +486,7 @@ async def test_generate_authority_article_link_success(
         def __init__(self) -> None:
             self.link_calls: list[tuple] = []
 
-        async def extract_link_content(self, value, max_length=3000):  # noqa: ANN001
+        async def extract_link_content(self, value, max_length=3000):
             self.link_calls.append((value, max_length))
             return "raw content"
 
@@ -521,7 +521,7 @@ async def test_generate_authority_article_pdf_empty_returns_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeExtractor:
-        async def extract_pdf_content(self, value, max_length=3000):  # noqa: ANN001
+        async def extract_pdf_content(self, value, max_length=3000):
             return None
 
     monkeypatch.setattr(
@@ -545,7 +545,7 @@ async def test_generate_authority_article_partial_summary_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeExtractor:
-        async def extract_link_content(self, value, max_length=3000):  # noqa: ANN001
+        async def extract_link_content(self, value, max_length=3000):
             return "raw"
 
     monkeypatch.setattr(
@@ -572,7 +572,7 @@ async def test_generate_authority_article_wraps_extraction_exception(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeExtractor:
-        async def extract_link_content(self, value, max_length=3000):  # noqa: ANN001
+        async def extract_link_content(self, value, max_length=3000):
             raise RuntimeError("extract boom")
 
     monkeypatch.setattr(

@@ -10,7 +10,7 @@ base_module = importlib.import_module("app.internal.services.llm.baseAIService")
 def _patch_llm_stack(monkeypatch: pytest.MonkeyPatch, service_cfg: dict) -> MagicMock:
     """替换配置读取、ChatOpenAI 与 agent 初始化，隔离外部依赖"""
 
-    def fake_load_config(section=None, key=None):  # noqa: ANN001
+    def fake_load_config(section=None, key=None):
         if section == "agent":
             return {"closeai": service_cfg}
         return {}

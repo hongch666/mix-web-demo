@@ -1,5 +1,3 @@
-from typing import Annotated, Optional
-
 from fastapi import APIRouter, BackgroundTasks, Body, Query, Request
 
 from app.core.base import ApiResponse, success
@@ -46,7 +44,7 @@ async def task_export_vector(
     request: Request,
     background_tasks: BackgroundTasks,
     task_service: TaskServiceDep,
-    payload: Annotated[Optional[VectorSyncDTO], Body()] = None,
+    payload: VectorSyncDTO = Body(default_factory=VectorSyncDTO),
 ) -> ApiResponse:
     """手动触发向量数据库同步任务接口
 
@@ -55,8 +53,8 @@ async def task_export_vector(
 
     task_service.trigger_vector_sync(
         background_tasks,
-        payload.change_type if payload else "",
-        payload.ids if payload else [],
+        payload.change_type,
+        payload.ids,
     )
     return success()
 
@@ -117,15 +115,15 @@ async def task_sync_neo4j(
     force_full: bool = Query(
         default=False, description="是否全量同步（含清理），默认增量同步"
     ),
-    payload: Annotated[Optional[Neo4jSyncDTO], Body()] = None,
+    payload: Neo4jSyncDTO = Body(default_factory=Neo4jSyncDTO),
 ) -> ApiResponse:
     """手动触发同步 MySQL 到 Neo4j 知识图谱任务接口
 
     携带变更事件时按主键精确同步，否则执行全量或增量同步
     """
 
-    events = [event.model_dump() for event in (payload.events if payload else [])]
-    full_sync = force_full or bool(payload and payload.force_full)
+    events = [event.model_dump() for event in payload.events]
+    full_sync = force_full or payload.force_full
     task_service.trigger_neo4j_sync(background_tasks, events, full_sync)
     return success()
 
@@ -143,14 +141,12 @@ async def task_sync_warehouse(
     request: Request,
     background_tasks: BackgroundTasks,
     task_service: TaskServiceDep,
-    payload: Annotated[Optional[WarehouseSyncDTO], Body()] = None,
+    payload: WarehouseSyncDTO = Body(default_factory=WarehouseSyncDTO),
 ) -> ApiResponse:
     """手动触发 ClickHouse 数仓同步任务接口
 
     携带资源名时只同步对应源表，否则全表同步
     """
 
-    task_service.trigger_warehouse_sync(
-        background_tasks, resources=payload.resources if payload else None
-    )
+    task_service.trigger_warehouse_sync(background_tasks, resources=payload.resources)
     return success()

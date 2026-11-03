@@ -63,7 +63,7 @@ class _FakeStreamingLLM:
         self.invoke_calls: list[dict[str, object]] = []
         self.stream_calls: list[dict[str, object]] = []
 
-    async def ainvoke(self, messages, config=None, **kwargs):  # noqa: ANN001
+    async def ainvoke(self, messages, config=None, **kwargs):
         self.invoke_calls.append(
             {"messages": messages, "config": config, "kwargs": kwargs}
         )
@@ -71,7 +71,7 @@ class _FakeStreamingLLM:
             raise self._invoke_error
         return self._invoke_result
 
-    async def astream(self, messages, config=None, **kwargs):  # noqa: ANN001
+    async def astream(self, messages, config=None, **kwargs):
         self.stream_calls.append(
             {"messages": messages, "config": config, "kwargs": kwargs}
         )
@@ -93,7 +93,7 @@ class _FakeAgentExecutor:
         self._invoke_result = invoke_result
         self.astream_events_calls: list[dict[str, object]] = []
 
-    async def astream_events(self, payload, config=None, version="v2"):  # noqa: ANN001
+    async def astream_events(self, payload, config=None, version="v2"):
         self.astream_events_calls.append(
             {"payload": payload, "config": config, "version": version}
         )
@@ -102,7 +102,7 @@ class _FakeAgentExecutor:
         for event in self._events:
             yield event
 
-    async def ainvoke(self, payload, config=None):  # noqa: ANN001
+    async def ainvoke(self, payload, config=None):
         return self._invoke_result
 
 
@@ -158,7 +158,7 @@ async def _collect_frames(stream: AsyncGenerator[dict, None]) -> list[dict]:
 def _patch_llm_stack(monkeypatch: pytest.MonkeyPatch, service_cfg: dict) -> MagicMock:
     """替换配置读取、ChatOpenAI 与 agent 初始化，隔离外部依赖"""
 
-    def fake_load_config(section=None, key=None):  # noqa: ANN001
+    def fake_load_config(section=None, key=None):
         if section == "agent":
             return {"closeai": service_cfg}
         return {}

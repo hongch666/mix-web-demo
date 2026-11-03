@@ -102,7 +102,7 @@ async def test_singleflight_rechecks_cache_inside_lock() -> None:
     service = _make_service()
     values = iter([None, [{"id": 9}]])
 
-    async def cache_getter():  # noqa: ANN202
+    async def cache_getter():
         return next(values)
 
     loader = AsyncMock()
@@ -351,7 +351,7 @@ def test_generate_wordcloud_writes_file_from_config(
             self.frequencies = None
             self.saved_path = None
 
-        def generate_from_frequencies(self, frequencies) -> None:  # noqa: ANN001
+        def generate_from_frequencies(self, frequencies) -> None:
             self.frequencies = frequencies
 
         def to_file(self, path: str) -> None:
@@ -362,7 +362,7 @@ def test_generate_wordcloud_writes_file_from_config(
         created.append(instance)
         return instance
 
-    def fake_load_config(section=None, key=None):  # noqa: ANN001
+    def fake_load_config(section=None, key=None):
         if section == "wordcloud":
             return {
                 "font_path": "font.ttf",
@@ -438,7 +438,7 @@ async def test_export_articles_to_excel_appends_rows(
             self.sheet_title = title
             return self
 
-        def append(self, row) -> None:  # noqa: ANN001
+        def append(self, row) -> None:
             self.rows.append(row)
 
         def save(self, path: str) -> None:

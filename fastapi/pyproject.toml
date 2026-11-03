@@ -83,6 +83,11 @@ ignore = [
   "ASYNC109",  # 异步函数超时由调用方统一控制，不要求内置 timeout 参数
 ]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI 的 Body 与 Query/Path/Header/Cookie/Depends 一样是声明式标记，只在导入期求值一次，不属于可变默认值风险
+# 不加这条时 requestBody 只能写成 Optional[模型] = None，生成出来的请求体会带上 null 分支，Apifox 自动生成会变成 null
+extend-immutable-calls = ["fastapi.Body"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
