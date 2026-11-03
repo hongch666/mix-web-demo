@@ -82,9 +82,9 @@ class ClickHouseIndexes:
         ("dwd_user_action", "idx_user_id", "user_id", "minmax"),
         ("dwd_user_action", "idx_article_id", "article_id", "minmax"),
         ("dwd_api_call", "idx_api_path", "api_path", "bloom_filter(0.01)"),
+        ("ods_api_log", "idx_api_path", "api_path", "bloom_filter(0.01)"),
         ("ods_article_log", "idx_action", "action", "set(64)"),
         ("ods_article_log", "idx_created_at", "created_at", "minmax"),
-        ("ods_api_log", "idx_created_at", "created_at", "minmax"),
     )
     """按查询过滤列补建跳数索引，排序键保持 event_id 以维持 ReplacingMergeTree 去重"""
 
