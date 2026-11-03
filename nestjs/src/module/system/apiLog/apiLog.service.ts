@@ -18,6 +18,12 @@ dayjs.extend(isLeapYear);
 const TIMEZONE = "Asia/Shanghai";
 
 /**
+ * 转义正则元字符，保证用户输入的路径片段按字面量参与前缀匹配
+ */
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
  * MongoDB 索引信息结构，仅包含索引名
  */
 interface MongoIndexInfo {
@@ -104,8 +110,8 @@ export class ApiLogService {
       },
       { spec: { createdAt: -1 }, options: { name: "createdAt_-1" } },
       {
-        spec: { apiPath: 1, createdAt: -1 },
-        options: { name: "apiPath_1_createdAt_-1" },
+        spec: { apiPathLower: 1, createdAt: -1 },
+        options: { name: "apiPathLower_1_createdAt_-1" },
       },
       {
         spec: { userId: 1, apiMethod: 1, createdAt: -1 },
@@ -140,12 +146,16 @@ export class ApiLogService {
 
   /**
    * 批量创建API日志（攒批写入）
-   * 使用 ordered:false 让单条错误文档不影响整批写入
+   * 写入前补齐 apiPathLower，保证前缀检索与原始路径同步落库；使用 ordered:false 让单条错误文档不影响整批写入
    * @param dtos 日志DTO数组
    */
   async insertMany(dtos: CreateApiLogDto[]): Promise<void> {
     if (dtos.length === 0) return;
-    await this.apiLogModel.insertMany(dtos, { ordered: false });
+    const documents = dtos.map((dto) => ({
+      ...dto,
+      apiPathLower: dto.apiPath.toLowerCase(),
+    }));
+    await this.apiLogModel.insertMany(documents, { ordered: false });
   }
 
   /**
@@ -203,7 +213,11 @@ export class ApiLogService {
     if (username) filters.username = { $regex: username, $options: "i" };
     if (apiDescription)
       filters.apiDescription = { $regex: apiDescription, $options: "i" };
-    if (apiPath) filters.apiPath = { $regex: apiPath, $options: "i" };
+    // 只有小写副本上的锚定前缀正则能用到 apiPathLower_1_createdAt_-1，忽略大小写的非锚定正则永远全表扫描
+    if (apiPath)
+      filters.apiPathLower = {
+        $regex: `^${escapeRegExp(apiPath.toLowerCase())}`,
+      };
     if (apiMethod) filters.apiMethod = apiMethod;
 
     if (startTime || endTime) {

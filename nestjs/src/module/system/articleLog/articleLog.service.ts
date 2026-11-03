@@ -114,10 +114,6 @@ export class ArticleLogService {
         options: { name: "action_1_createdAt_-1" },
       },
       {
-        spec: { userId: 1, action: 1, articleId: 1 },
-        options: { name: "userId_1_action_1_articleId_1" },
-      },
-      {
         spec: { userId: 1, action: 1, createdAt: -1 },
         options: { name: "userId_1_action_1_createdAt_-1" },
       },

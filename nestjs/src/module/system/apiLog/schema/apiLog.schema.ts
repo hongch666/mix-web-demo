@@ -24,6 +24,10 @@ export class ApiLog {
   @Prop({ required: true })
   apiPath!: string;
 
+  // API 路径小写副本，用于大小写无关的前缀检索
+  @Prop({ required: true })
+  apiPathLower!: string;
+
   // API 方法（GET、POST 等）
   @Prop({ required: true })
   apiMethod!: string;
@@ -58,7 +62,8 @@ export const ApiLogSchema = SchemaFactory.createForClass(ApiLog);
 // 添加关键索引以提高查询性能
 ApiLogSchema.index({ userId: 1, createdAt: -1 });
 ApiLogSchema.index({ createdAt: -1 });
-ApiLogSchema.index({ apiPath: 1, createdAt: -1 });
+// 路径模糊搜索改用小写副本的前缀匹配，原始 apiPath 上的复合索引永远走不到
+ApiLogSchema.index({ apiPathLower: 1, createdAt: -1 });
 ApiLogSchema.index({ userId: 1, apiMethod: 1, createdAt: -1 });
 // 只按 apiMethod 过滤时上面的复合索引以 userId 打头用不上，单独补一条
 ApiLogSchema.index({ apiMethod: 1, createdAt: -1 });
