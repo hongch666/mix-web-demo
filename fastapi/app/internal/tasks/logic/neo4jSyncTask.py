@@ -331,8 +331,9 @@ class KnowledgeGraphSyncService:
     async def _cleanup_write(
         self, cypher: str, params: dict[str, Any], label: str
     ) -> int:
-        # 防御性保护：当待保留的键集合为空时，Cypher 的 `WHERE NOT key IN []`，会等价于 `WHERE true`，从而误删图中全部对应关系/节点，这通常意味着上游快照抓取失败（返回空），属于异常情况，必须跳过而非执行全量删除
         """按保留键分批清理图谱中已不存在的节点或关系，保留键为空时跳过防误删"""
+
+        # 防御性保护：当待保留的键集合为空时，Cypher 的 `WHERE NOT key IN []`，会等价于 `WHERE true`，从而误删图中全部对应关系/节点，这通常意味着上游快照抓取失败（返回空），属于异常情况，必须跳过而非执行全量删除
         keep_keys = params.get("keys") or params.get("ids") or params.get("names")
         if not keep_keys:
             self.logger.warning(Messages.NEO4J_CLEANUP_SKIP_EMPTY(label))

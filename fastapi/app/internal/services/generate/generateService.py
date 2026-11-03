@@ -49,8 +49,9 @@ class GenerateService:
         spring_client: Optional[SpringClient] = None,
         logger: Optional[LoggerProtocol] = None,
     ) -> None:
-        # 各模型服务允许缺省，调用失败由各调用点按异常兜底降级，因此按 Any 持有
         """注入六个大模型服务、Spring 客户端与日志器，模型服务允许缺省由调用点降级"""
+
+        # 各模型服务允许缺省，调用失败由各调用点按异常兜底降级，因此按 Any 持有
         self.glm_service: Any = glm_service
         self.gpt_service: Any = gpt_service
         self.gemini_service: Any = gemini_service
@@ -205,8 +206,9 @@ class GenerateService:
         return list(responses)
 
     async def generate_ai_comments(self, article_id: int) -> None:
-        # 1. 判断是否需要生成AI评论
         """为文章生成 AI 评论：清理已有 AI 评论后构建评价提示词，并发调用各模型生成评论，最后并行写入 Spring 评论接口"""
+
+        # 1. 判断是否需要生成AI评论
         ai_comments_count = await self._spring_client.get_ai_comments_num_by_article_id(
             article_id
         )

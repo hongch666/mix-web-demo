@@ -96,8 +96,9 @@ def _get_registration_ip(ip: str) -> str:
 
 
 def register_instance(ip: str = IP, port: int = PORT) -> None:
-    # 获取实际用于注册的 IP 地址
     """向 Nacos 注册服务实例，失败时按配置次数与间隔重试直至抛出异常"""
+
+    # 获取实际用于注册的 IP 地址
     registration_ip: str = _get_registration_ip(ip)
 
     last_error: Exception | None = None

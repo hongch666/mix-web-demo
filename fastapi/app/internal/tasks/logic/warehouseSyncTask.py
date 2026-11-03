@@ -92,8 +92,9 @@ async def _read_watermark(table_name: str) -> datetime:
 
 
 async def _read_watermark_value(table_name: str) -> str:
-    # ReplacingMergeTree 后台合并前可能同时存在新旧水位，按更新时间取最新一行
     """读取源表最新一条水位原始字符串，按更新时间取最新行"""
+
+    # ReplacingMergeTree 后台合并前可能同时存在新旧水位，按更新时间取最新一行
     statement = (
         select(SyncWatermark.last_watermark)
         .where(SyncWatermark.table_name == table_name)
@@ -112,8 +113,9 @@ async def _write_watermark(table_name: str, value: datetime) -> None:
 
 
 async def _write_watermark_value(table_name: str, value: str) -> None:
-    # ClickHouse 没有行级 UPSERT，先清理同一张源表的旧水位，再插入唯一新水位
     """先删除同源表旧水位再插入唯一新水位完成 ClickHouse 水位更新"""
+
+    # ClickHouse 没有行级 UPSERT，先清理同一张源表的旧水位，再插入唯一新水位
     await execute_clickhouse_sql(
         WarehouseScripts.WATERMARK_DELETE_BY_TABLE,
         {"table_name": table_name},

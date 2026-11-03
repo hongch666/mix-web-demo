@@ -40,8 +40,9 @@ class MCPServerTools:
         return asyncio.run(self._load_tools_async())
 
     async def _load_tools_async(self) -> list[StructuredTool]:
-        # 本方法运行在线程池的临时事件循环中，禁止使用共享的
         """用独立临时引擎读取启用的 MCP 服务配置并并发发现各服务的工具列表"""
+
+        # 本方法运行在线程池的临时事件循环中，禁止使用共享的引擎与会话
         engine = create_async_engine(
             ASYNC_DATABASE_URL,
             pool_pre_ping=True,

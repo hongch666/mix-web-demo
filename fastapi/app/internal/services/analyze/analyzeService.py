@@ -52,8 +52,9 @@ class AnalyzeService:
         nestjs_client: Optional[NestjsClient] = None,
         logger: Optional[LoggerProtocol] = None,
     ) -> None:
-        # 依赖由工厂显式传入，缺省时回退进程内单例，字段本身不再需要允许 None
         """注入文章 Mapper、五类分析缓存、Spring 与 NestJS 客户端，并初始化单飞锁表与日志器"""
+
+        # 依赖由工厂显式传入，缺省时回退进程内单例，字段本身不再需要允许 None
         self.articleMapper: ArticleMapper = articleMapper or get_article_mapper()
         # 注入缓存对象
         self._article_cache: ArticleCache = article_cache or get_article_cache()

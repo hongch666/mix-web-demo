@@ -26,8 +26,9 @@ class BaseCache[T](ABC):
     """L2 Redis 缓存 TTL（秒），子类可按需覆盖"""
 
     def __init__(self, logger: LoggerProtocol | None = None) -> None:
-        # L1 本地缓存
         """初始化 L1 本地缓存槽、Redis 客户端、两级缓存 TTL 与可注入的日志器"""
+
+        # L1 本地缓存
         self._local_cache: Optional[T] = None
         self._local_cache_time: float = 0
         self._local_cache_ttl: int = self.L1_CACHE_TTL

@@ -60,8 +60,9 @@ class AiHistoryService:
         return [self._serialize_ai_history(item) for item in histories]
 
     async def delete_ai_history_by_userid(self, user_id: int, db: Any) -> None:
-        # 检查用户是否存在（通过SpringClient远程查询）
         """校验用户存在后在同一事务内删除其 AI 历史与记忆摘要，失败整体回滚"""
+
+        # 检查用户是否存在（通过SpringClient远程查询）
         users = await self._spring_client.get_users_by_ids([user_id])
         if not users:
             raise BusinessException(
