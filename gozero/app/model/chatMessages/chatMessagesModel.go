@@ -78,16 +78,22 @@ func (m *customChatMessagesModel) CreateChatMessage(ctx context.Context, message
 }
 
 // GetChatHistory 分页查询两人之间的聊天记录并返回消息总数，按创建时间升序排列
+// 会话键用虚拟生成列 conversation_low/conversation_high 表达，等值命中 idx_conversation_created 并免排序
 func (m *customChatMessagesModel) GetChatHistory(ctx context.Context, userID, otherID int64, offset, limit int) ([]*ChatMessages, int64, error) {
+	low, high := userID, otherID
+	if low > high {
+		low, high = high, low
+	}
+	where := "conversation_low = ? and conversation_high = ?"
+
 	var total int64
-	where := "(sender_id = ? and receiver_id = ?) or (sender_id = ? and receiver_id = ?)"
 	countQuery := fmt.Sprintf("select count(*) from %s where %s", m.baseModel.table, where)
-	if err := m.conn.QueryRowCtx(ctx, &total, countQuery, userID, otherID, otherID, userID); err != nil {
+	if err := m.conn.QueryRowCtx(ctx, &total, countQuery, low, high); err != nil {
 		return nil, 0, err
 	}
 	var messages []ChatMessages
-	dataQuery := fmt.Sprintf("select %s from %s where %s order by created_at asc limit ? offset ?", chatMessagesRows, m.baseModel.table, where)
-	if err := m.conn.QueryRowsCtx(ctx, &messages, dataQuery, userID, otherID, otherID, userID, limit, offset); err != nil {
+	dataQuery := fmt.Sprintf("select %s from %s where %s order by created_at asc, id asc limit ? offset ?", chatMessagesRows, m.baseModel.table, where)
+	if err := m.conn.QueryRowsCtx(ctx, &messages, dataQuery, low, high, limit, offset); err != nil {
 		return nil, 0, err
 	}
 	result := make([]*ChatMessages, 0, len(messages))

@@ -12,11 +12,12 @@ const (
 			content text NOT NULL COMMENT '消息内容',
 			is_read tinyint NOT NULL DEFAULT 0 COMMENT '是否已读，0未读，1已读',
 			created_at datetime(3) DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+			conversation_low bigint GENERATED ALWAYS AS (LEAST(sender_id, receiver_id)) VIRTUAL COMMENT '会话对端较小ID',
+			conversation_high bigint GENERATED ALWAYS AS (GREATEST(sender_id, receiver_id)) VIRTUAL COMMENT '会话对端较大ID',
 			PRIMARY KEY (id),
-			KEY idx_sender_receiver (sender_id, receiver_id),
+			KEY idx_conversation_created (conversation_low, conversation_high, created_at, id),
 			KEY idx_receiver_unread (receiver_id, is_read, sender_id),
-			KEY idx_sender_receiver_created (sender_id, receiver_id, created_at),
-			KEY idx_receiver_sender_created (receiver_id, sender_id, created_at)
+			KEY idx_receiver_sender_read (receiver_id, sender_id, is_read)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';
 	`
 
@@ -48,7 +49,14 @@ const (
 				"username": { "type": "keyword", "normalizer": "lowercase_normalizer" },
 				"category_name": { "type": "keyword" },
 				"sub_category_name": { "type": "keyword" },
-				"tags": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
+				"tags": {
+					"type": "text",
+					"analyzer": "ik_smart",
+					"search_analyzer": "ik_smart",
+					"fields": {
+						"keyword": { "type": "keyword", "ignore_above": 256 }
+					}
+				},
 				"status": { "type": "integer" },
 				"views": { "type": "integer" },
 				"like_count": { "type": "integer" },
