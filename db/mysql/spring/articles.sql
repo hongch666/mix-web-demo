@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS `articles` (
     PRIMARY KEY (`id`),
     KEY `idx_status_create_at` (`status`, `create_at`),
     KEY `idx_user_status_create_at` (`user_id`, `status`, `create_at`),
+    KEY `idx_user_create_at` (`user_id`, `create_at`),
     KEY `idx_status_views` (`status`, `views`),
     KEY `idx_status_sub_category` (`status`, `sub_category_id`),
     KEY `idx_sub_category_id` (`sub_category_id`),

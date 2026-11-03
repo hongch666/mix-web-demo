@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS `collects` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_article_user` (`article_id`, `user_id`),
     KEY `idx_user_created` (`user_id`, `created_time`),
-    KEY `idx_created_time` (`created_time`)
+    KEY `idx_created_time_id` (`created_time`, `id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户收藏表';

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS ods_api_log (
     api_method String,
     response_time Float64,
     created_at DateTime,
-    INDEX idx_created_at created_at TYPE minmax GRANULARITY 4
+    INDEX idx_api_path api_path TYPE bloom_filter(0.01) GRANULARITY 4
 ) ENGINE = ReplacingMergeTree (created_at)
 PARTITION BY
     toYYYYMM (created_at)

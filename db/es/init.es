@@ -32,7 +32,10 @@ PUT /articles
       "tags": {
         "type": "text",
         "analyzer": "ik_smart",
-        "search_analyzer": "ik_smart"
+        "search_analyzer": "ik_smart",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 256 }
+        }
       },
       "status": { "type": "integer" },
       "views": { "type": "integer" },
