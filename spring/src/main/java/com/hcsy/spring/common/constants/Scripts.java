@@ -66,6 +66,7 @@ public final class Scripts {
             update_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
             INDEX idx_status_create_at (status, create_at),
             INDEX idx_user_status_create_at (user_id, status, create_at),
+            INDEX idx_user_create_at (user_id, create_at),
             INDEX idx_status_views (status, views),
             INDEX idx_status_sub_category (status, sub_category_id),
             INDEX idx_sub_category_id (sub_category_id),
@@ -135,7 +136,7 @@ public final class Scripts {
             created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             UNIQUE KEY uk_article_user (article_id, user_id),
             KEY idx_user_created (user_id, created_time),
-            KEY idx_created_time (created_time)
+            KEY idx_created_time_id (created_time, id)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户点赞表'
         """;
 
@@ -148,7 +149,7 @@ public final class Scripts {
             created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             UNIQUE KEY uk_article_user (article_id, user_id),
             KEY idx_user_created (user_id, created_time),
-            KEY idx_created_time (created_time)
+            KEY idx_created_time_id (created_time, id)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户收藏表'
         """;
 
@@ -162,7 +163,7 @@ public final class Scripts {
             UNIQUE KEY uk_user_focus (user_id, focus_id),
             KEY idx_focus_created (focus_id, created_time),
             KEY idx_user_created (user_id, created_time),
-            KEY idx_created_time (created_time)
+            KEY idx_created_time_id (created_time, id)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '关注表'
         """;
 }

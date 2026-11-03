@@ -79,8 +79,9 @@ public interface ArticleCollectRepository extends ReactiveCrudRepository<Article
 
     /**
      * 查询 created_time > :after 且不超过 :limit 条的收藏记录，用于Neo4j增量同步
+     * 排序键与 idx_created_time_id (created_time, id) 一致，避免排序回退到 filesort
      */
-    @Query("SELECT * FROM collects WHERE created_time > :after ORDER BY id DESC LIMIT :limit")
+    @Query("SELECT * FROM collects WHERE created_time > :after ORDER BY created_time DESC, id DESC LIMIT :limit")
     Flux<ArticleCollect> findLatestAfterForSync(
         @Param("after") LocalDateTime after, @Param("limit") int limit);
 }

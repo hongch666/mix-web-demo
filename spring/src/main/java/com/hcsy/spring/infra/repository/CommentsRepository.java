@@ -70,8 +70,9 @@ public interface CommentsRepository extends ReactiveCrudRepository<Comments, Lon
 
     /**
      * 查询 update_time > :after 且不超过 :limit 条的评论，用于Neo4j增量同步
+     * 排序键与 idx_update_time_id (update_time, id) 一致，避免排序回退到 filesort
      */
-    @Query("SELECT * FROM comments WHERE update_time > :after ORDER BY id DESC LIMIT :limit")
+    @Query("SELECT * FROM comments WHERE update_time > :after ORDER BY update_time DESC, id DESC LIMIT :limit")
     Flux<Comments> findLatestAfterForSync(
         @Param("after") LocalDateTime after, @Param("limit") int limit);
 }
