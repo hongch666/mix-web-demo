@@ -269,14 +269,14 @@ class UserService:
         )
 
     async def _load_author_follow_statistics(self, user_id: int) -> dict[str, Any]:
-        """回源获取用户关注作者的统计"""
+        """回源获取用户关注作者的统计，作者总数以关注关系表为准，日趋势取数仓日汇总"""
         try:
             now = datetime.now()
             start = (now - timedelta(days=6)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
             end = now + timedelta(days=1)
-            return await self._user_mapper.get_author_follow_statistics(
+            statistics = await self._user_mapper.get_author_follow_statistics(
                 user_id, start, end
             )
         except Exception as ch_error:
@@ -285,6 +285,23 @@ class UserService:
                     "get_author_follow_statistics_service", ch_error
                 )
             )
+            return await self._load_author_follow_statistics_from_remote(user_id)
+
+        # 数仓 ods_focus 不做删除传播，取消关注后旧关系仍留在 ODS，作者总数必须回关注关系表取权威值
+        try:
+            statistics["total_authors"] = await self._spring_client.get_total_follows(
+                user_id
+            )
+        except Exception as remote_error:
+            self._logger.warning(
+                Messages.USER_AUTHOR_FOLLOW_TOTAL_DEGRADE(remote_error)
+            )
+        return statistics
+
+    async def _load_author_follow_statistics_from_remote(
+        self, user_id: int
+    ) -> dict[str, Any]:
+        """数仓不可用时改用远端总数与逐日关注窗口统计"""
         try:
             # 总数查询与7天循环查询相互独立，gather 并行降低延迟
             async def _one_day_follow(days_ago: int) -> dict[str, Any]:

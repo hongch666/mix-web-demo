@@ -1076,6 +1076,11 @@ class Messages:
         return f"获取关注作者统计失败: {error}"
 
     @staticmethod
+    def USER_AUTHOR_FOLLOW_TOTAL_DEGRADE(error: Exception) -> str:
+        """构造关注作者总数远程查询失败、保留数仓快照值的警告消息"""
+        return f"关注作者总数远程查询失败，保留数仓快照值: {error}"
+
+    @staticmethod
     def USER_COMMENT_TREND_FAILED(error: Exception) -> str:
         """构造获取评论趋势失败的错误消息"""
         return f"获取评论趋势失败: {error}"

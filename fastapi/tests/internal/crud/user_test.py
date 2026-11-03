@@ -95,7 +95,7 @@ async def test_author_follow_statistics_formats_dates_as_text() -> None:
     mapper = _build_mapper(
         [
             {
-                "total_followers": 5,
+                "total_focus": 5,
                 "date": date(2026, 9, 21),
                 "count": 2,
             }
@@ -107,6 +107,8 @@ async def test_author_follow_statistics_formats_dates_as_text() -> None:
     )
 
     statistics = AuthorFollowStatisticsResponse.model_validate(result)
+    # 总数取关注他人数（total_focus），不是粉丝数
+    assert statistics.total_authors == 5
     assert statistics.daily_follows[0].date == "2026-09-21"
     assert statistics.daily_follows[0].count == 2
 

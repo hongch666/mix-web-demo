@@ -254,15 +254,37 @@ async def test_article_view_distribution_returns_zero_when_all_fail(
     }
 
 
-# ClickHouse 有数据时直接采用且不调远端关注统计
+# ClickHouse 提供日趋势，关注作者总数改用关注关系表的权威值
 @pytest.mark.anyio
-async def test_author_follow_statistics_prefers_clickhouse(service_deps) -> None:
+async def test_author_follow_statistics_takes_total_from_relation_table(
+    service_deps,
+) -> None:
     service, spring, _nestjs, mapper = service_deps
     rows = {"total_authors": 3, "daily_follows": [{"date": "2026-09-01", "count": 1}]}
     mapper.get_author_follow_statistics.return_value = rows
+    spring.get_total_follows.return_value = 8
 
-    assert await service.get_author_follow_statistics_service(7) is rows
-    spring.get_total_follows.assert_not_awaited()
+    result = await service.get_author_follow_statistics_service(7)
+
+    assert result["total_authors"] == 8
+    assert result["daily_follows"] == rows["daily_follows"]
+    spring.get_total_follows.assert_awaited_once_with(7)
+
+
+# 远端总数查询失败时保留数仓快照值，日趋势不受影响
+@pytest.mark.anyio
+async def test_author_follow_statistics_keeps_snapshot_when_remote_total_fails(
+    service_deps,
+) -> None:
+    service, spring, _nestjs, mapper = service_deps
+    rows = {"total_authors": 3, "daily_follows": [{"date": "2026-09-01", "count": 1}]}
+    mapper.get_author_follow_statistics.return_value = rows
+    spring.get_total_follows.side_effect = RuntimeError("spring down")
+
+    result = await service.get_author_follow_statistics_service(7)
+
+    assert result["total_authors"] == 3
+    assert result["daily_follows"] == rows["daily_follows"]
 
 
 # ClickHouse 失败时降级为远端总数与逐日关注窗口

@@ -107,9 +107,10 @@ class UserMapper:
         self, user_id: int, start_date: datetime, end_date: datetime
     ) -> dict[str, Any]:
         """并发查询指定用户的关注作者总数与区间内每日关注趋势"""
-        total_statement = select(
-            AdsUserStats.total_followers.label("total_followers")
-        ).where(AdsUserStats.user_id == user_id)
+        # 关注作者数取 total_focus（关注他人），total_followers 是粉丝数，两者口径不同
+        total_statement = select(AdsUserStats.total_focus.label("total_focus")).where(
+            AdsUserStats.user_id == user_id
+        )
         daily_statement = (
             select(
                 AdsUserDay.stat_date.label("date"),
@@ -127,7 +128,7 @@ class UserMapper:
             self._execute_mappings(daily_statement),
         )
         return {
-            "total_authors": int(total_rows[0].get("total_followers") or 0)
+            "total_authors": int(total_rows[0].get("total_focus") or 0)
             if total_rows
             else 0,
             "daily_follows": [
