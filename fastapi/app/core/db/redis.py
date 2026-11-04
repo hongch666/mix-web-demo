@@ -214,6 +214,48 @@ class RedisClient:
             Logger.error(Messages.REDIS_FLUSHDB_FAILED(e))
             return False
 
+    # 发布订阅相关方法
+
+    async def publish(self, channel: str, message: str) -> bool:
+        """向指定频道发布一条消息"""
+        try:
+            client: Optional[Any] = await self._ensure_client()
+            if not client:
+                return False
+            await client.publish(channel, message)
+            return True
+        except Exception as e:
+            Logger.error(Messages.REDIS_PUBLISH_FAILED(channel, e))
+            return False
+
+    async def get_pubsub(self) -> Optional[Any]:
+        """获取 Pub/Sub 订阅对象，Redis 不可用时返回 None"""
+        try:
+            client: Optional[Any] = await self._ensure_client()
+            if not client:
+                return None
+            return client.pubsub()
+        except Exception as e:
+            Logger.error(Messages.REDIS_PUBSUB_FAILED(e))
+            return None
+
+    async def delete_by_patterns(self, *patterns: str) -> int:
+        """按通配模式扫描并删除匹配的键，返回删除数量"""
+        try:
+            client: Optional[Any] = await self._ensure_client()
+            if not client:
+                return 0
+            keys: list[str] = []
+            for pattern in patterns:
+                async for key in client.scan_iter(match=pattern):
+                    keys.append(key)
+            if keys:
+                await client.delete(*keys)
+            return len(keys)
+        except Exception as e:
+            Logger.error(Messages.REDIS_SCAN_DELETE_FAILED(patterns, e))
+            return 0
+
     # 分布式锁相关方法
 
     async def try_lock(self, lock_key: str, expire_seconds: int) -> Optional[str]:

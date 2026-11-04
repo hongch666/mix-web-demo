@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+from collections.abc import Callable
 from functools import lru_cache
 from typing import Any
 
 from app.core.base import Logger, LoggerProtocol
 from app.core.constants import Defaults, Messages, Scripts
 from app.core.db import get_neo4j_client
+from app.internal.cache import (
+    GraphCandidateCache,
+    GraphSignalCache,
+)
 from app.internal.schemas import (
     GraphRelationDTO,
     GraphSearchEnhanceItemDTO,
@@ -27,14 +33,19 @@ class GraphSearchService:
         keyword_tag_weight: float = 0.20,
         candidate_limit: int = 200,
         logger: LoggerProtocol | None = None,
+        signal_cache: GraphSignalCache | None = None,
+        candidate_cache: GraphCandidateCache | None = None,
     ) -> None:
-        """初始化五路图谱信号的权重、候选文章上限与可注入日志器"""
+        """初始化五路图谱信号的权重、候选文章上限，并注入单文章信号缓存、批次候选缓存与日志器"""
         self.TAG_INTEREST_WEIGHT: float = tag_interest_weight
         self.FOLLOWED_AUTHOR_WEIGHT: float = followed_author_weight
         self.SAME_SUB_CATEGORY_WEIGHT: float = same_sub_category_weight
         self.CANDIDATE_SIMILARITY_WEIGHT: float = candidate_similarity_weight
         self.KEYWORD_TAG_WEIGHT: float = keyword_tag_weight
         self.candidate_limit: int = max(candidate_limit, 1)
+        # 单文章信号缓存（信号1/2/3/5）与批次候选缓存（信号4）可注入，缺省时保持手工构造可用（不启用缓存）
+        self._signal_cache: GraphSignalCache | None = signal_cache
+        self._candidate_cache: GraphCandidateCache | None = candidate_cache
         # 日志器可注入，缺省回退全局单例
         self._logger: LoggerProtocol = logger or Logger
 
@@ -152,12 +163,13 @@ class GraphSearchService:
         self, user_id: int, article_ids: list[int]
     ) -> dict[int, dict]:
         """信号1: 用户兴趣标签"""
-        rows = await self._safe_query(
-            Scripts.GRAPH_SEARCH_TAG_INTEREST_CYPHER,
+        rows = await self._per_article_rows(
             {
-                "userId": user_id,
-                "articleIds": article_ids,
+                article_id: f"tag_interest:{article_id}:{user_id}"
+                for article_id in article_ids
             },
+            Scripts.GRAPH_SEARCH_TAG_INTEREST_CYPHER,
+            lambda missing_ids: {"userId": user_id, "articleIds": missing_ids},
         )
 
         result: dict[int, dict] = {}
@@ -188,12 +200,13 @@ class GraphSearchService:
         self, user_id: int, article_ids: list[int]
     ) -> dict[int, dict]:
         """信号2: 关注作者"""
-        rows = await self._safe_query(
-            Scripts.GRAPH_SEARCH_FOLLOWED_AUTHOR_CYPHER,
+        rows = await self._per_article_rows(
             {
-                "userId": user_id,
-                "articleIds": article_ids,
+                article_id: f"followed_author:{article_id}:{user_id}"
+                for article_id in article_ids
             },
+            Scripts.GRAPH_SEARCH_FOLLOWED_AUTHOR_CYPHER,
+            lambda missing_ids: {"userId": user_id, "articleIds": missing_ids},
         )
 
         result: dict[int, dict] = {}
@@ -222,12 +235,13 @@ class GraphSearchService:
         self, user_id: int, article_ids: list[int]
     ) -> dict[int, dict]:
         """信号3: 同子分类"""
-        rows = await self._safe_query(
-            Scripts.GRAPH_SEARCH_SAME_SUB_CATEGORY_CYPHER,
+        rows = await self._per_article_rows(
             {
-                "userId": user_id,
-                "articleIds": article_ids,
+                article_id: f"same_sub_category:{article_id}:{user_id}"
+                for article_id in article_ids
             },
+            Scripts.GRAPH_SEARCH_SAME_SUB_CATEGORY_CYPHER,
+            lambda missing_ids: {"userId": user_id, "articleIds": missing_ids},
         )
 
         result: dict[int, dict] = {}
@@ -257,8 +271,9 @@ class GraphSearchService:
     async def _query_candidate_similarity(
         self, article_ids: list[int]
     ) -> dict[int, dict]:
-        """信号4: 候选间相似标签"""
-        rows = await self._safe_query(
+        """信号4: 候选间相似标签（打分依赖整个候选集合，按批次键缓存）"""
+        rows = await self._batch_rows(
+            self._ids_cache_hash(article_ids),
             Scripts.GRAPH_SEARCH_CANDIDATE_SIMILARITY_CYPHER,
             {
                 "articleIds": article_ids,
@@ -295,10 +310,15 @@ class GraphSearchService:
         if not keyword:
             return {}
 
-        rows = await self._safe_query(
-            Scripts.GRAPH_SEARCH_KEYWORD_TAG_CYPHER,
+        keyword_hash = hashlib.md5(keyword.encode()).hexdigest()
+        rows = await self._per_article_rows(
             {
-                "articleIds": article_ids,
+                article_id: f"keyword_tag:{article_id}:{keyword_hash}"
+                for article_id in article_ids
+            },
+            Scripts.GRAPH_SEARCH_KEYWORD_TAG_CYPHER,
+            lambda missing_ids: {
+                "articleIds": missing_ids,
                 "keyword": keyword,
             },
         )
@@ -326,6 +346,108 @@ class GraphSearchService:
                 "matchedPaths": [Messages.GRAPH_SEARCH_PATH_KEYWORD],
             }
         return result
+
+    async def _per_article_rows(
+        self,
+        cache_keys: dict[int, str],
+        cypher: str,
+        build_params: Callable[[list[int]], dict],
+    ) -> list[dict]:
+        """按单文章键读取信号行：命中缓存的文章跳过查询，缺失的 id 合并为一次 Cypher 回源后逐篇回填
+
+        查询失败时不回填缺失文章，避免把瞬时故障固化为长期缓存；
+        与候选集组成相关的信号（候选间相似标签）不适用本方法，仍按批次键缓存
+        """
+        rows_by_id: dict[int, list[dict]] = {}
+        missing_ids: list[int] = []
+
+        if self._signal_cache is not None:
+            for article_id, cache_key in cache_keys.items():
+                cached_rows: list[dict] | None = await self._signal_cache.get_entry(
+                    cache_key
+                )
+                if cached_rows is not None:
+                    self._logger.info(Messages.GRAPH_SIGNAL_CACHE_HIT(cache_key))
+                    rows_by_id[article_id] = cached_rows
+                    continue
+                missing_ids.append(article_id)
+        else:
+            missing_ids = list(cache_keys)
+
+        if missing_ids:
+            try:
+                rows: list[dict] = await get_neo4j_client().run_query(
+                    cypher, build_params(missing_ids), raise_on_error=True
+                )
+            except Exception as e:
+                self._logger.warning(Messages.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG(e))
+                return self._flatten_rows(rows_by_id, cache_keys)
+
+            grouped = self._group_rows_by_article(rows)
+            for article_id in missing_ids:
+                article_rows: list[dict] = grouped.get(article_id, [])
+                rows_by_id[article_id] = article_rows
+                if article_rows and self._signal_cache is not None:
+                    await self._signal_cache.set_entry(
+                        cache_keys[article_id], article_rows
+                    )
+                    self._logger.info(
+                        Messages.GRAPH_SIGNAL_CACHE_STORED(
+                            cache_keys[article_id], len(article_rows)
+                        )
+                    )
+
+        return self._flatten_rows(rows_by_id, cache_keys)
+
+    async def _batch_rows(self, ids_hash: str, cypher: str, params: dict) -> list[dict]:
+        """按批次键读取信号行：优先命中候选缓存，未命中时回源查询并回填，空结果不缓存
+
+        空结果不缓存：Neo4j 异常会被吞成空列表，缓存空集会把瞬时故障固化为长期缺失
+        """
+        cache_key = f"batch:{ids_hash}"
+        if self._candidate_cache is not None:
+            cached_rows: list[dict] | None = await self._candidate_cache.get_entry(
+                cache_key
+            )
+            if cached_rows is not None:
+                self._logger.info(Messages.GRAPH_SIGNAL_CACHE_HIT(cache_key))
+                return cached_rows
+
+        rows = await self._safe_query(cypher, params)
+        if rows and self._candidate_cache is not None:
+            await self._candidate_cache.set_entry(cache_key, rows)
+            self._logger.info(Messages.GRAPH_SIGNAL_CACHE_STORED(cache_key, len(rows)))
+        return rows
+
+    @staticmethod
+    def _group_rows_by_article(rows: list[dict]) -> dict[int, list[dict]]:
+        """按行内的 articleId 把查询行分组，缺失或非法的 articleId 行被丢弃"""
+        grouped: dict[int, list[dict]] = {}
+        for row in rows:
+            article_id = row.get("articleId")
+            if article_id is None:
+                continue
+            try:
+                grouped.setdefault(int(article_id), []).append(row)
+            except (TypeError, ValueError):
+                continue
+        return grouped
+
+    @staticmethod
+    def _flatten_rows(
+        rows_by_id: dict[int, list[dict]], cache_keys: dict[int, str]
+    ) -> list[dict]:
+        """按请求的文章顺序把分组行还原为原始行列表"""
+        result: list[dict] = []
+        for article_id in cache_keys:
+            result.extend(rows_by_id.get(article_id, []))
+        return result
+
+    @staticmethod
+    def _ids_cache_hash(article_ids: list[int]) -> str:
+        """对文章 ID 集合做顺序无关的 md5，作为批次缓存键的参数部分"""
+        joined = ",".join(str(aid) for aid in sorted(set(article_ids)))
+        return hashlib.md5(joined.encode()).hexdigest()
 
     async def _safe_query(self, cypher: str, params: dict) -> list[dict]:
         """安全执行 Neo4j 查询, 失败时返回空列表"""
@@ -375,6 +497,8 @@ class GraphSearchService:
 @lru_cache
 def get_graph_search_service(
     logger: LoggerProtocol | None = None,
+    signal_cache: GraphSignalCache | None = None,
+    candidate_cache: GraphCandidateCache | None = None,
 ) -> GraphSearchService:
     """获取 GraphSearchService 单例"""
     return GraphSearchService(
@@ -385,4 +509,6 @@ def get_graph_search_service(
         keyword_tag_weight=Defaults.GRAPH_KEYWORD_TAG_WEIGHT,
         candidate_limit=Defaults.GRAPH_SEARCH_CANDIDATE_LIMIT,
         logger=logger,
+        signal_cache=signal_cache,
+        candidate_cache=candidate_cache,
     )

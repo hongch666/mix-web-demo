@@ -32,6 +32,10 @@ from app.internal.agents import (
     load_langsmith_config,
     shutdown_langsmith,
 )
+from app.internal.cache import (
+    start_cache_invalidation_subscriber,
+    stop_cache_invalidation_subscriber,
+)
 from app.internal.clients import get_nestjs_client, get_spring_client
 from app.internal.models import AiHistory, AiUserSummary, McpServerConfig
 from app.internal.services import AnalyzeService
@@ -80,6 +84,9 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
         await rabbitmq_client.connect()
     else:
         Logger.warning(Messages.RABBITMQ_CLIENT_NOT_INITIALIZED_MESSAGE)
+
+    # 启动缓存失效广播订阅（Redis 不可用时订阅自动跳过）
+    await start_cache_invalidation_subscriber()
 
     analyze_service: AnalyzeService = resolve_analyze_service()
 
@@ -131,6 +138,9 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     if scheduler:
         scheduler.shutdown(wait=False)
         Logger.info(Messages.SCHEDULER_STOPPED)
+
+    # 停止缓存失效广播订阅
+    await stop_cache_invalidation_subscriber()
 
     # 应用关闭时清理数据库连接池
     await get_neo4j_client().close()

@@ -5,8 +5,11 @@ from fastapi import Depends
 from app.internal.cache import (
     get_article_cache,
     get_category_cache,
+    get_graph_candidate_cache,
+    get_graph_signal_cache,
     get_publish_time_cache,
     get_statistics_cache,
+    get_vector_query_cache,
     get_wordcloud_cache,
 )
 from app.internal.clients import get_nestjs_client, get_spring_client
@@ -171,8 +174,12 @@ def provide_api_log_service(
 
 
 def provide_graph_search_service(logger: LoggerDep) -> GraphSearchService:
-    """装配知识图谱检索服务单例，logger 由 FastAPI 依赖注入提供"""
-    return get_graph_search_service(logger)
+    """装配知识图谱检索服务单例，注入单文章信号缓存与批次候选缓存，logger 由 FastAPI 依赖注入提供"""
+    return get_graph_search_service(
+        logger,
+        signal_cache=get_graph_signal_cache(),
+        candidate_cache=get_graph_candidate_cache(),
+    )
 
 
 def provide_user_service(
@@ -200,8 +207,10 @@ def provide_vector_search_service(
     vector_mapper: VectorMapperDep,
     logger: LoggerDep,
 ) -> VectorSearchService:
-    """装配向量检索服务单例，依赖向量库 Mapper"""
-    return get_vector_search_service(vector_mapper, logger)
+    """装配向量检索服务单例，注入检索结果缓存与向量库 Mapper"""
+    return get_vector_search_service(
+        vector_mapper, logger, vector_query_cache=get_vector_query_cache()
+    )
 
 
 def provide_task_service(

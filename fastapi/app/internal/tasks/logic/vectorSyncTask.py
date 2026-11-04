@@ -7,7 +7,7 @@ from typing import Any, Optional
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys
 from app.internal.agents import get_langsmith_context
-from app.internal.cache import get_redis_client
+from app.internal.cache import get_redis_client, get_vector_query_cache
 from app.internal.clients import SpringClient, get_spring_client
 from app.internal.crud import VectorMapper, get_vector_store_mapper
 
@@ -34,6 +34,12 @@ def build_vector_sync_dependencies() -> VectorSyncDependencies:
 def _get_redis_client() -> Optional[Any]:
     """获取 Redis 客户端"""
     return get_redis_client()
+
+
+async def invalidate_vector_query_cache() -> None:
+    """失效向量检索缓存并跨实例广播，向量同步写入完成后调用"""
+    await get_vector_query_cache().invalidate_namespace()
+    Logger.info(Messages.VECTOR_QUERY_CACHE_INVALIDATED)
 
 
 def _get_article_field(article: Any, field: str, default: Any = "") -> Any:
@@ -300,6 +306,8 @@ async def _export_article_vectors_to_postgres(
 
     sync_start_time: datetime = datetime.now()
     sync_mode = "增量" if enable_incremental_sync else "全量"
+    # 向量库发生实际写入时置位，同步结束后据此失效检索缓存并广播
+    vectors_changed: bool = False
 
     try:
         Logger.info(Messages.START_SYNC_TO_POSTGRES_MESSAGE)
@@ -338,7 +346,10 @@ async def _export_article_vectors_to_postgres(
         # 差集清理要求列表必须完整：分页中途失败时未拉到的文章会被误判为已删除，进而清空其向量，因此这里以 expected_total 作为完整性判据，不完整则跳过并告警
         if len(articles) >= expected_total:
             try:
-                await _remove_stale_vectors(vector_mapper, articles, redis_client)
+                deleted: int = await _remove_stale_vectors(
+                    vector_mapper, articles, redis_client
+                )
+                vectors_changed = vectors_changed or deleted > 0
             except Exception as e:
                 Logger.warning(Messages.VECTOR_STALE_CLEANUP_FAILED(e))
         else:
@@ -469,6 +480,10 @@ async def _export_article_vectors_to_postgres(
         # 5. 只有当有成功的同步时才保存时间戳
         if enable_incremental_sync and total_synced > 0:
             await _save_sync_time(sync_start_time, redis_client)
+
+        vectors_changed = vectors_changed or total_synced > 0
+        if vectors_changed:
+            await invalidate_vector_query_cache()
 
         sync_mode = "增量" if enable_incremental_sync else "全量"
         Logger.info(
@@ -661,6 +676,7 @@ async def _sync_changed_articles(
             *[RedisKeys.article_content_hash(article_id) for article_id in ids]
         )
         Logger.info(f"{Messages.SYNC_VECTOR_EXACT_DELETED}: {deleted}")
+        await invalidate_vector_query_cache()
         return
 
     articles: list[Any] = await dependencies.spring_client.get_articles_by_ids(ids)
@@ -713,6 +729,7 @@ async def _sync_changed_articles(
         metadata_list=metadata_list,
     )
     Logger.info(f"{Messages.SYNC_VECTOR_EXACT_COMPLETED}: {written}")
+    await invalidate_vector_query_cache()
 
 
 async def export_article_vectors_by_changes_async(

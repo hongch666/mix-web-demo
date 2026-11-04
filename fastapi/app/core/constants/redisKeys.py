@@ -76,6 +76,27 @@ class RedisKeys:
     USER_VIEW_DISTRIBUTION_VERSION: str = "user:view_distribution:version"
     """用户文章阅读分布的版本号"""
 
+    CACHE_INVALIDATE_CHANNEL: str = "cache:invalidate"
+    """多级缓存跨实例失效广播频道，失效方发布命名空间，订阅方清理各自的本地条目"""
+
+    CACHE_NAMESPACE_VECTOR: str = "vector"
+    """向量检索缓存的失效命名空间"""
+
+    CACHE_NAMESPACE_GRAPH: str = "graph"
+    """图谱个性化信号缓存的失效命名空间"""
+
+    CACHE_NAMESPACE_CANDIDATE: str = "graph_candidate"
+    """候选相似标签批次缓存的失效命名空间"""
+
+    VECTOR_ENHANCE_CACHE_PREFIX: str = "cache:vector:enhance:"
+    """向量检索 ANN 结果的缓存 key 前缀，运行时拼接查询文本与 fetch_k 的 hash"""
+
+    GRAPH_SIGNAL_CACHE_PREFIX: str = "cache:graph:signal:"
+    """图谱增强个性化信号的缓存 key 前缀，运行时拼接信号名、文章 id 与用户 id"""
+
+    GRAPH_CANDIDATE_CACHE_PREFIX: str = "cache:graph:candidate:"
+    """候选间相似标签信号的缓存 key 前缀，运行时拼接候选集合的 hash"""
+
     # ===== 同步时间 key =====
 
     VECTOR_SYNC_TIME: str = "vector_sync:last_sync_time"

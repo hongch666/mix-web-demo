@@ -7,7 +7,45 @@ from typing import Any, Optional
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys, Scripts
 from app.core.db import Neo4jClient, get_neo4j_client, get_redis_client
+from app.internal.cache import (
+    get_graph_candidate_cache,
+    get_graph_signal_cache,
+)
 from app.internal.clients import SpringClient, get_spring_client
+
+
+async def invalidate_graph_signal_caches_full() -> None:
+    """全量失效图谱信号与候选相似度缓存并跨实例广播，全量同步后调用"""
+    await get_graph_signal_cache().invalidate_namespace()
+    await get_graph_candidate_cache().invalidate_namespace()
+    Logger.info(Messages.GRAPH_SIGNAL_CACHE_INVALIDATED)
+
+
+async def invalidate_graph_signal_cache_for_articles(article_ids: list[int]) -> None:
+    """按变更文章 id 部分失效信号缓存：信号1/2/3/5 按文章键精确删除并广播 id 列表
+
+    候选相似标签信号的打分依赖整个候选集合，无法按文章部分失效，随本次一并整体失效
+    """
+    ids = sorted({int(aid) for aid in article_ids if aid})
+    if not ids:
+        return
+
+    await get_graph_signal_cache().invalidate_ids(ids)
+    await get_graph_candidate_cache().invalidate_namespace()
+    Logger.info(Messages.GRAPH_SIGNAL_CACHE_INVALIDATED)
+
+
+async def invalidate_graph_signal_cache_for_users(user_ids: list[int]) -> None:
+    """按变更用户部分失效个性化信号缓存（兴趣标签/关注作者/同子分类）并广播用户列表
+
+    候选相似标签信号不受用户行为影响，无需失效
+    """
+    ids = sorted({int(uid) for uid in user_ids if uid})
+    if not ids:
+        return
+
+    await get_graph_signal_cache().invalidate_user_ids(ids)
+    Logger.info(Messages.GRAPH_SIGNAL_CACHE_INVALIDATED)
 
 
 class KnowledgeGraphSyncService:
@@ -658,6 +696,7 @@ class KnowledgeGraphSyncService:
         self.logger.info(Messages.NEO4J_FULL_SYNC_SKIP_CLEANUP_MESSAGE)
 
         self.logger.info(Messages.NEO4J_SYNC_FULL_COMPLETE(result))
+        await invalidate_graph_signal_caches_full()
         return result
 
     async def sync_incremental(
@@ -803,6 +842,18 @@ class KnowledgeGraphSyncService:
         if not any(result.values()):
             self.logger.info(Messages.NEO4J_NO_INCREMENTAL_DATA_MESSAGE)
 
+        # 分类/子分类变更影响同子分类信号的文章范围无法枚举，退化为整体失效；
+        # 文章与用户行为变更则按已知 id 精确失效
+        if categories or sub_categories:
+            await invalidate_graph_signal_caches_full()
+        else:
+            await invalidate_graph_signal_cache_for_articles(
+                [item["id"] for item in articles]
+            )
+            await invalidate_graph_signal_cache_for_users(
+                [item["userId"] for item in likes + collects + comments]
+                + [item["followerId"] for item in focus]
+            )
         return result
 
     @staticmethod
@@ -850,12 +901,34 @@ class KnowledgeGraphSyncService:
         }
 
         result: dict[str, int] = {}
+        article_ids: list[int] = []
+        behavior_user_ids: list[int] = []
+        needs_full_invalidation = False
         for resource, items in grouped.items():
             handler = handlers.get(resource)
             if handler is None:
                 self.logger.warning(f"{Messages.SYNC_NEO4J_EXACT_SKIPPED}: {resource}")
                 continue
             result.update(await handler(items))
+
+            # 文章变更可按文章 id 精确失效；点赞/收藏/评论/关注变更按触发用户失效其个性化信号；
+            # 用户资料与分类维度变更的影响范围无法枚举，退化为整体失效
+            if resource == "articles":
+                upsert_ids, delete_ids, _, _ = self._split_change_items(items)
+                article_ids.extend(upsert_ids)
+                article_ids.extend(delete_ids)
+            elif resource in {"likes", "collects", "comments", "focus"}:
+                _, _, trigger_user_id, _ = self._split_change_items(items)
+                if trigger_user_id is not None:
+                    behavior_user_ids.append(trigger_user_id)
+            else:
+                needs_full_invalidation = True
+
+        if needs_full_invalidation:
+            await invalidate_graph_signal_caches_full()
+        else:
+            await invalidate_graph_signal_cache_for_articles(article_ids)
+            await invalidate_graph_signal_cache_for_users(behavior_user_ids)
         return result
 
     async def _sync_article_changes(

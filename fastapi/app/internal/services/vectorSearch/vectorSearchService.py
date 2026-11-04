@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import hashlib
 import time
 from functools import lru_cache
 from typing import Any, Optional
 
+from langchain_core.documents import Document
+
 from app.core.base import Logger, LoggerProtocol
 from app.core.constants import Defaults, Messages
 from app.internal.agents import get_langsmith_context
-from app.internal.crud import VectorMapper, get_vector_store_mapper
+from app.internal.cache import VectorQueryCache
+from app.internal.crud import DocScore, VectorMapper, get_vector_store_mapper
 from app.internal.schemas import (
     VectorMatchedChunkDTO,
     VectorSearchEnhanceItemDTO,
@@ -29,8 +33,9 @@ class VectorSearchService:
         score_mode: str = Defaults.VECTOR_SEARCH_SCORE_MODE,
         vector_mapper: VectorMapper | None = None,
         logger: LoggerProtocol | None = None,
+        vector_query_cache: VectorQueryCache | None = None,
     ) -> None:
-        """初始化向量搜索开关、候选上限、召回倍数、最低分阈值与打分模式，并注入向量 Mapper 与日志器"""
+        """初始化向量搜索开关、候选上限、召回倍数、最低分阈值与打分模式，并注入向量 Mapper、检索缓存与日志器"""
         self.enabled = enabled
         self.candidate_limit = max(candidate_limit, 1)
         self.fetch_multiplier = max(fetch_multiplier, 1)
@@ -41,6 +46,8 @@ class VectorSearchService:
         )
         # 由依赖图注入；缺省时回退到工厂单例，保持手工构造可用
         self._vector_mapper: VectorMapper | None = vector_mapper
+        # 检索结果缓存可注入，缺省时保持手工构造可用（不启用缓存）
+        self._vector_query_cache: VectorQueryCache | None = vector_query_cache
         # 日志器可注入，缺省回退全局单例
         self._logger: LoggerProtocol = logger or Logger
 
@@ -72,9 +79,8 @@ class VectorSearchService:
                 "min_score": self.min_score,
             },
         ):
-            docs_with_scores = await vector_mapper.similarity_search_with_score(
-                query,
-                fetch_k,
+            docs_with_scores = await self._load_vector_docs(
+                vector_mapper, query, fetch_k
             )
         search_elapsed = time.time() - search_start
         self._logger.info(
@@ -131,6 +137,63 @@ class VectorSearchService:
             Messages.VECTOR_ENHANCE_SEARCH_SUCCESS(len(article_ids), len(items))
         )
         return VectorSearchEnhanceResp(items=items)
+
+    async def _load_vector_docs(
+        self, vector_mapper: VectorMapper, query: str, fetch_k: int
+    ) -> list[DocScore]:
+        """读取向量检索结果：优先命中缓存，未命中时执行 ANN 检索并回填两级缓存"""
+        cache_key = self._cache_key(query, fetch_k)
+
+        if self._vector_query_cache is not None:
+            cached: Optional[
+                list[dict[str, Any]]
+            ] = await self._vector_query_cache.get_entry(cache_key)
+            if cached is not None:
+                self._logger.info(Messages.VECTOR_ENHANCE_CACHE_HIT(cache_key))
+                return self._deserialize_docs(cached)
+
+        docs_with_scores: list[
+            DocScore
+        ] = await vector_mapper.similarity_search_with_score(query, fetch_k)
+
+        if self._vector_query_cache is not None:
+            await self._vector_query_cache.set_entry(
+                cache_key, self._serialize_docs(docs_with_scores)
+            )
+            self._logger.info(
+                Messages.VECTOR_ENHANCE_CACHE_STORED(cache_key, len(docs_with_scores))
+            )
+        return docs_with_scores
+
+    def _cache_key(self, query: str, fetch_k: int) -> str:
+        """构造缓存键：查询文本与 fetch_k 联合取 md5，避免不同召回规模的请求互相污染"""
+        return f"{hashlib.md5(query.encode()).hexdigest()}:k{fetch_k}"
+
+    @staticmethod
+    def _serialize_docs(docs_with_scores: list[DocScore]) -> list[dict[str, Any]]:
+        """把检索结果序列化为可缓存的字典列表"""
+        return [
+            {
+                "page_content": doc.page_content,
+                "metadata": dict(doc.metadata or {}),
+                "score": raw_score,
+            }
+            for doc, raw_score in docs_with_scores
+        ]
+
+    @staticmethod
+    def _deserialize_docs(records: list[dict[str, Any]]) -> list[DocScore]:
+        """把缓存的字典列表还原为检索结果"""
+        return [
+            (
+                Document(
+                    page_content=str(item.get("page_content") or ""),
+                    metadata=dict(item.get("metadata") or {}),
+                ),
+                float(item.get("score") or 0.0),
+            )
+            for item in records
+        ]
 
     def _normalize_article_ids(
         self, article_ids: list[int], req_limit: int
@@ -205,6 +268,7 @@ class VectorSearchService:
 def get_vector_search_service(
     vector_mapper: Optional[VectorMapper] = None,
     logger: LoggerProtocol | None = None,
+    vector_query_cache: Optional[VectorQueryCache] = None,
 ) -> VectorSearchService:
     """获取 VectorSearchService 单例"""
     return VectorSearchService(
@@ -216,4 +280,5 @@ def get_vector_search_service(
         score_mode=Defaults.VECTOR_SEARCH_SCORE_MODE,
         vector_mapper=vector_mapper,
         logger=logger,
+        vector_query_cache=vector_query_cache,
     )

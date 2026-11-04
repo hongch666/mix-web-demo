@@ -18,7 +18,12 @@ class _FakeNeo4jClient:
         self.calls: list[tuple[str, dict]] = []
         self.responses: dict[str, object] = {}
 
-    async def run_query(self, cypher: str, params: dict | None = None) -> object:
+    async def run_query(
+        self,
+        cypher: str,
+        params: dict | None = None,
+        raise_on_error: bool = False,
+    ) -> object:
         self.calls.append((cypher, params or {}))
         response = self.responses.get(cypher)
         if response is None:
