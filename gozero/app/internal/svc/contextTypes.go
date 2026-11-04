@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"app/common/pubsub"
+	"app/common/redis"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/client/nestjsClient"
@@ -16,7 +16,7 @@ import (
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 	"github.com/olivere/elastic/v7"
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
 	rabbitmq "github.com/wagslane/go-rabbitmq"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -39,7 +39,7 @@ type InfrastructureContext struct {
 	RawMySQL          *sql.DB
 	ESClient          *elastic.Client
 	RabbitMQPublisher *rabbitmq.Publisher
-	RedisClient       *redis.Client
+	RedisClient       *goredis.Client
 	NamingClient      naming_client.INamingClient
 }
 
@@ -53,7 +53,7 @@ type ModelContext struct {
 type HubContext struct {
 	ChatHub            *hub.ChatHub
 	SSEHub             *hub.SSEHubManager
-	RealtimeBus        *pubsub.RedisPubSub
+	RealtimeBus        *redis.PubSub
 	RealtimeDispatcher *hub.ChatRealtimeDispatcher
 }
 

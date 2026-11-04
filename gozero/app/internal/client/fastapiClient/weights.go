@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
-	"time"
 
 	"app/common/client"
 	"app/common/constants"
@@ -142,148 +140,43 @@ func parseSearchScriptParams(data any) (search.ScriptParamMapping, error) {
 	return paramMap, nil
 }
 
-// 搜索配置缓存 TTL
-const (
-	weightCacheTTL       = 60 * time.Second
-	scriptCacheTTL       = 60 * time.Second
-	scriptParamsCacheTTL = 60 * time.Second
-)
-
-// searchValueCache 搜索配置的实例级缓存，随 FastapiClient 生命周期存在，不使用包级全局状态
-type searchValueCache[T any] struct {
-	mu        sync.RWMutex
-	value     *T
-	lastFetch time.Time
-}
-
-// read 读取未过期的缓存副本
-func (c *searchValueCache[T]) read(ttl time.Duration) (T, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	if c.value != nil && time.Since(c.lastFetch) < ttl {
-		return *c.value, true
-	}
-	var zero T
-	return zero, false
-}
-
-// stale 读取任意已有缓存副本，远端拉取失败时降级使用
-func (c *searchValueCache[T]) stale() (T, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	if c.value != nil {
-		return *c.value, true
-	}
-	var zero T
-	return zero, false
-}
-
-// write 写入缓存副本并记录拉取时间
-func (c *searchValueCache[T]) write(v T) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.value = &v
-	c.lastFetch = time.Now()
-}
-
-// searchConfigCache 搜索配置（权重、脚本、脚本参数映射）的实例级缓存集合
-type searchConfigCache struct {
-	weights      searchValueCache[search.SearchWeights]
-	script       searchValueCache[search.SearchScript]
-	scriptParams searchValueCache[search.ScriptParamMapping]
-}
-
-// GetSearchWeights 从 FastAPI 获取搜索权重（缓存 60s）
+// GetSearchWeights 从 FastAPI 获取搜索权重，走本地加 Redis 两级缓存，回源失败时降级返回本地旧值
 func (c *FastapiClient) GetSearchWeights(ctx context.Context) (search.SearchWeights, error) {
-	// 读缓存
-	if w, ok := c.searchCache.weights.read(weightCacheTTL); ok {
-		return w, nil
-	}
-
-	// 调用 FastAPI
-	result, err := c.serviceDisc.CallService(ctx, c.serviceName, "/algorithm/search/weights", client.RequestOptions{
-		Method: "GET",
-	})
-	if err != nil {
-		// FastAPI 不可用时返回旧缓存（如果存在）
-		if w, ok := c.searchCache.weights.stale(); ok {
-			return w, nil
+	return c.searchWeightsCache.Get(ctx, constants.SEARCH_CONFIG_WEIGHTS_CACHE_KEY, func(loadCtx context.Context) (search.SearchWeights, error) {
+		result, err := c.serviceDisc.CallService(loadCtx, c.serviceName, "/algorithm/search/weights", client.RequestOptions{
+			Method: "GET",
+		})
+		if err != nil {
+			return search.SearchWeights{}, err
 		}
-		return search.SearchWeights{}, err
-	}
-
-	// 解析响应：结构不符必须报错，静默取零权重会让排序失去依据
-	w, err := parseSearchWeights(result.Data)
-	if err != nil {
-		return search.SearchWeights{}, err
-	}
-
-	// 写缓存
-	c.searchCache.weights.write(w)
-
-	return w, nil
+		return parseSearchWeights(result.Data)
+	})
 }
 
-// GetSearchScript 从 FastAPI 获取 ES 搜索脚本模板（缓存 60s），返回使用 params.xxx 占位符的 Painless 脚本，由调用方通过 elastic.NewScript(script).Param(...) 传入权重后使用
+// GetSearchScript 从 FastAPI 获取 ES 搜索脚本模板，走本地加 Redis 两级缓存
+// 返回使用 params.xxx 占位符的 Painless 脚本，由调用方通过 elastic.NewScript(script).Param(...) 传入权重后使用
 func (c *FastapiClient) GetSearchScript(ctx context.Context) (search.SearchScript, error) {
-	// 读缓存
-	if s, ok := c.searchCache.script.read(scriptCacheTTL); ok {
-		return s, nil
-	}
-
-	// 调用 FastAPI 新接口
-	result, err := c.serviceDisc.CallService(ctx, c.serviceName, "/algorithm/search/script", client.RequestOptions{
-		Method: "GET",
-	})
-	if err != nil {
-		// FastAPI 不可用时返回旧缓存（如果存在）
-		if s, ok := c.searchCache.script.stale(); ok {
-			return s, nil
+	return c.searchScriptCache.Get(ctx, constants.SEARCH_CONFIG_SCRIPT_CACHE_KEY, func(loadCtx context.Context) (search.SearchScript, error) {
+		result, err := c.serviceDisc.CallService(loadCtx, c.serviceName, "/algorithm/search/script", client.RequestOptions{
+			Method: "GET",
+		})
+		if err != nil {
+			return search.SearchScript{}, err
 		}
-		return search.SearchScript{}, err
-	}
-
-	// 解析响应：脚本缺失或为空时整条增强链路都应显式降级，而不是把空脚本交给 ES
-	s, err := parseSearchScript(result.Data)
-	if err != nil {
-		return search.SearchScript{}, err
-	}
-
-	// 写缓存
-	c.searchCache.script.write(s)
-
-	return s, nil
+		return parseSearchScript(result.Data)
+	})
 }
 
-// GetSearchScriptParams 从 FastAPI 获取脚本参数名映射（缓存 60s）
+// GetSearchScriptParams 从 FastAPI 获取脚本参数名映射，走本地加 Redis 两级缓存
 // 返回 weight_key → script_param_name 的映射关系，告诉 GoZero 每个权重值在 Painless 脚本中对应的 params.xxx 参数名
-// 当 FastAPI 修改脚本参数名时，GoZero 无需修改代码即可自适应
 func (c *FastapiClient) GetSearchScriptParams(ctx context.Context) (search.ScriptParamMapping, error) {
-	// 读缓存
-	if pm, ok := c.searchCache.scriptParams.read(scriptParamsCacheTTL); ok {
-		return pm, nil
-	}
-
-	// 调用 FastAPI
-	result, err := c.serviceDisc.CallService(ctx, c.serviceName, "/algorithm/search/script-params", client.RequestOptions{
-		Method: "GET",
-	})
-	if err != nil {
-		// FastAPI 不可用时返回旧缓存（如果存在）
-		if pm, ok := c.searchCache.scriptParams.stale(); ok {
-			return pm, nil
+	return c.searchScriptParamsCache.Get(ctx, constants.SEARCH_CONFIG_SCRIPT_PARAMS_CACHE_KEY, func(loadCtx context.Context) (search.ScriptParamMapping, error) {
+		result, err := c.serviceDisc.CallService(loadCtx, c.serviceName, "/algorithm/search/script-params", client.RequestOptions{
+			Method: "GET",
+		})
+		if err != nil {
+			return nil, err
 		}
-		return nil, err
-	}
-
-	// 解析响应：映射缺失时权重无法绑定到脚本参数，必须显式降级
-	paramMap, err := parseSearchScriptParams(result.Data)
-	if err != nil {
-		return nil, err
-	}
-
-	// 写缓存
-	c.searchCache.scriptParams.write(paramMap)
-
-	return paramMap, nil
+		return parseSearchScriptParams(result.Data)
+	})
 }

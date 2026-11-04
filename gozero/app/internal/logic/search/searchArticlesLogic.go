@@ -59,7 +59,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		size = 10
 	}
 
-	// 并行从 FastAPI 拉取 ES 搜索脚本三件套：脚本模板、权重与参数名映射（各自缓存 60s）
+	// 并行从 FastAPI 拉取 ES 搜索脚本三件套：脚本模板、权重与参数名映射（走本地加 Redis 两级缓存，回源失败降级本地旧值）
 	var script search.SearchScript
 	var weights search.SearchWeights
 	var paramMap search.ScriptParamMapping

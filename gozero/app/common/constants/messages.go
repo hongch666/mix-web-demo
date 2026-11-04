@@ -533,6 +533,27 @@ const (
 	// 同步 ES 异步任务的名称
 	SAFE_GO_SYNC_ES_DATA = "同步ES数据"
 
+	// ===== 多级缓存 =====
+
+	// 缓存回源函数缺失的错误消息
+	CACHE_LOADER_MISSING = "缓存回源函数不能为空"
+	// L2 缓存未命中的错误标识，由存储适配器返回给多级缓存组件
+	CACHE_MISS = "缓存未命中"
+	// 并发合并回源结果类型与泛型参数不匹配的错误消息
+	CACHE_VALUE_TYPE_MISMATCH = "缓存回源结果类型不匹配"
+	// 缓存回源失败降级使用本地旧值的日志消息
+	CACHE_LOADER_FALLBACK_STALE = "缓存回源失败，降级使用本地旧值 - key: %s, 原因: %v"
+	// 读取 L2 缓存失败的日志消息
+	CACHE_L2_READ_ERROR = "读取 L2 缓存失败 - key: %s, 原因: %v"
+	// 写入 L2 缓存失败的日志消息
+	CACHE_L2_WRITE_ERROR = "写入 L2 缓存失败 - key: %s, 原因: %v"
+	// 删除 L2 缓存失败的日志消息
+	CACHE_L2_DELETE_ERROR = "删除 L2 缓存失败 - key: %s, 原因: %v"
+	// 解析 L2 缓存内容失败的日志消息
+	CACHE_L2_DECODE_ERROR = "解析 L2 缓存内容失败 - key: %s, 原因: %v"
+	// 序列化待写入 L2 缓存内容的日志消息
+	CACHE_L2_ENCODE_ERROR = "序列化 L2 缓存内容失败 - key: %s, 原因: %v"
+
 	// ===== SQL 工具安全约束消息 =====
 
 	// SQL 查询语句为空的提示

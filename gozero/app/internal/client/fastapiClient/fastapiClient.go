@@ -5,11 +5,15 @@ import (
 	"errors"
 	"fmt"
 
+	"app/common/cache"
 	"app/common/client"
 	"app/common/constants"
+	"app/common/redis"
 	"app/common/utils"
+	"app/model/search"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 // FastapiClient FastAPI 服务客户端，提供图谱搜索和向量搜索增强功能
@@ -17,20 +21,32 @@ type FastapiClient struct {
 	serviceName  string
 	namingClient naming_client.INamingClient
 	serviceDisc  *client.ServiceDiscovery
-	searchCache  searchConfigCache
+	// 搜索算法配置的两级缓存，权重、脚本模板与脚本参数名映射变更频率低，跨实例共享 Redis 副本
+	searchWeightsCache      *cache.MultiLevelCache[search.SearchWeights]
+	searchScriptCache       *cache.MultiLevelCache[search.SearchScript]
+	searchScriptParamsCache *cache.MultiLevelCache[search.ScriptParamMapping]
 }
 
-// NewFastapiClient 创建 FastAPI 客户端
+// NewFastapiClient 创建 FastAPI 客户端，redisClient 为 nil 时算法配置缓存退化为纯本地缓存
 func NewFastapiClient(
 	nc naming_client.INamingClient,
 	remoteCallConfig client.RemoteCallConfig,
 	logger *utils.ZeroLogger,
 	tokenUtil *utils.InternalTokenUtil,
+	redisClient *goredis.Client,
 ) *FastapiClient {
+	cacheOptions := cache.Options{
+		Store:  redis.NewCacheStore(redisClient),
+		Logger: logger,
+	}
+
 	return &FastapiClient{
-		serviceName:  "fastapi",
-		namingClient: nc,
-		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig, logger, tokenUtil),
+		serviceName:             "fastapi",
+		namingClient:            nc,
+		serviceDisc:             client.NewServiceDiscovery(nc, remoteCallConfig, logger, tokenUtil),
+		searchWeightsCache:      cache.NewMultiLevelCache[search.SearchWeights](cacheOptions),
+		searchScriptCache:       cache.NewMultiLevelCache[search.SearchScript](cacheOptions),
+		searchScriptParamsCache: cache.NewMultiLevelCache[search.ScriptParamMapping](cacheOptions),
 	}
 }
 

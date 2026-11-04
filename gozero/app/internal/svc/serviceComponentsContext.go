@@ -6,7 +6,7 @@ import (
 
 	"app/common/client"
 	"app/common/constants"
-	"app/common/pubsub"
+	"app/common/redis"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/client/nestjsClient"
@@ -16,7 +16,7 @@ import (
 	"app/internal/middleware"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -30,12 +30,13 @@ func newHubContext(zLogger *utils.ZeroLogger) *HubContext {
 	}
 }
 
-// 创建 ClientContext 实例，初始化各业务客户端依赖
+// 创建 ClientContext 实例，初始化各业务客户端依赖，redisClient 供客户端侧多级缓存使用
 func newClientContext(
 	namingClient naming_client.INamingClient,
 	remoteCallConfig config.RemoteCallConfig,
 	zLogger *utils.ZeroLogger,
 	tokenUtil *utils.InternalTokenUtil,
+	redisClient *goredis.Client,
 ) *ClientContext {
 	remoteCallCfg := client.RemoteCallConfig{
 		Timeout:        time.Duration(remoteCallConfig.Timeout) * time.Millisecond,
@@ -44,7 +45,7 @@ func newClientContext(
 		MaxBackoff:     time.Duration(remoteCallConfig.MaxBackoff) * time.Millisecond,
 	}
 	return &ClientContext{
-		FastapiClient: fastapiClient.NewFastapiClient(namingClient, remoteCallCfg, zLogger, tokenUtil),
+		FastapiClient: fastapiClient.NewFastapiClient(namingClient, remoteCallCfg, zLogger, tokenUtil, redisClient),
 		NestjsClient:  nestjsClient.NewNestjsClient(namingClient, remoteCallCfg, zLogger, tokenUtil),
 		SpringClient:  springClient.NewSpringClient(namingClient, remoteCallCfg, zLogger, tokenUtil),
 	}
@@ -106,7 +107,7 @@ func (lc *LoggerContext) Close() {
 func setupRealtime(
 	serviceCtx context.Context,
 	hubCtx *HubContext,
-	redisClient *redis.Client,
+	redisClient *goredis.Client,
 	zLogger *utils.ZeroLogger,
 ) {
 	hubCtx.RealtimeDispatcher = hub.NewChatRealtimeDispatcher(
@@ -116,7 +117,7 @@ func setupRealtime(
 	)
 
 	if redisClient != nil {
-		hubCtx.RealtimeBus = pubsub.NewRedisPubSub(redisClient, zLogger, constants.REALTIME_CHAT_CHANNEL)
+		hubCtx.RealtimeBus = redis.NewPubSub(redisClient, zLogger, constants.REALTIME_CHAT_CHANNEL)
 		// 订阅回调只接收消息体，这里补上服务上下文，让分发日志带上链路
 		hubCtx.RealtimeBus.Start(serviceCtx, func(payload []byte) {
 			hubCtx.RealtimeDispatcher.Handle(serviceCtx, payload)

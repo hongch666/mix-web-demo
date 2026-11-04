@@ -1,6 +1,6 @@
 package constants
 
-// ===== 脚本类 — SQL DDL/查询、ES 搜索脚本、ES 索引 Mapping =====
+// ===== 脚本类 — SQL DDL/查询、ES 搜索脚本、ES 索引 Mapping、Lua 脚本 =====
 
 const (
 	// chat_messages 建表 SQL
@@ -23,6 +23,15 @@ const (
 
 	// ES_ARTICLES_INDEX_NAME 文章检索使用的 ES 索引名
 	ES_ARTICLES_INDEX_NAME = "articles"
+
+	// 分布式锁解锁 Lua 脚本：只有当锁的值与传入标识一致时才删除，保证只有锁持有者才能解锁
+	UNLOCK_LUA_SCRIPT = `
+if redis.call("get", KEYS[1]) == ARGV[1] then
+	return redis.call("del", KEYS[1])
+else
+	return 0
+end
+`
 
 	// ES 索引 Mapping 定义
 	// settings 必须与 mapping 同时下发：索引建成后分片数与副本数无法修改

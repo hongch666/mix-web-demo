@@ -1,4 +1,4 @@
-package pubsub
+package redis
 
 import (
 	"context"
@@ -9,30 +9,30 @@ import (
 	"app/common/constants"
 	"app/common/utils"
 
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 // MessageHandler 处理跨实例实时消息
 type MessageHandler func(payload []byte)
 
-// RedisPubSub 基于 Redis Pub/Sub 的跨实例消息总线，每个实例只订阅并发布构造时绑定的那个频道
-type RedisPubSub struct {
-	client  *redis.Client
+// PubSub 基于 Redis Pub/Sub 的跨实例消息总线，每个实例只订阅并发布构造时绑定的那个频道
+type PubSub struct {
+	client  *goredis.Client
 	logger  *utils.ZeroLogger
 	channel string
 
 	mu     sync.Mutex
-	pubsub *redis.PubSub
+	pubsub *goredis.PubSub
 	closed bool
 }
 
-// NewRedisPubSub 创建绑定到指定频道的 Redis 消息总线
-func NewRedisPubSub(client *redis.Client, logger *utils.ZeroLogger, channel string) *RedisPubSub {
-	return &RedisPubSub{client: client, logger: logger, channel: channel}
+// NewPubSub 创建绑定到指定频道的 Redis 消息总线
+func NewPubSub(client *goredis.Client, logger *utils.ZeroLogger, channel string) *PubSub {
+	return &PubSub{client: client, logger: logger, channel: channel}
 }
 
 // Publish 向本实例绑定的频道发布一条消息
-func (p *RedisPubSub) Publish(ctx context.Context, payload []byte) error {
+func (p *PubSub) Publish(ctx context.Context, payload []byte) error {
 	if p == nil || p.client == nil || p.channel == "" {
 		return fmt.Errorf(constants.REDIS_REALTIME_BUS_NOT_INITIALIZED_ERROR)
 	}
@@ -40,7 +40,7 @@ func (p *RedisPubSub) Publish(ctx context.Context, payload []byte) error {
 }
 
 // Start 启动本实例绑定频道的订阅协程
-func (p *RedisPubSub) Start(ctx context.Context, handler MessageHandler) {
+func (p *PubSub) Start(ctx context.Context, handler MessageHandler) {
 	if p == nil || p.client == nil || p.channel == "" || handler == nil {
 		return
 	}
@@ -48,7 +48,7 @@ func (p *RedisPubSub) Start(ctx context.Context, handler MessageHandler) {
 }
 
 // run 订阅循环：建立频道订阅并持续分发消息，断线后记录日志、等待 1 秒后自动重连
-func (p *RedisPubSub) run(ctx context.Context, handler MessageHandler) {
+func (p *PubSub) run(ctx context.Context, handler MessageHandler) {
 	for {
 		if ctx.Err() != nil || p.isClosed() {
 			return
@@ -88,7 +88,7 @@ func (p *RedisPubSub) run(ctx context.Context, handler MessageHandler) {
 }
 
 // Close 停止订阅并关闭当前 Redis Pub/Sub 连接
-func (p *RedisPubSub) Close() {
+func (p *PubSub) Close() {
 	if p == nil {
 		return
 	}
@@ -105,14 +105,14 @@ func (p *RedisPubSub) Close() {
 }
 
 // isClosed 返回消息总线是否已关闭
-func (p *RedisPubSub) isClosed() bool {
+func (p *PubSub) isClosed() bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.closed
 }
 
 // setPubSub 保存当前订阅对象，若总线已关闭则直接关闭新订阅
-func (p *RedisPubSub) setPubSub(pubsub *redis.PubSub) {
+func (p *PubSub) setPubSub(pubsub *goredis.PubSub) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.closed {
@@ -123,7 +123,7 @@ func (p *RedisPubSub) setPubSub(pubsub *redis.PubSub) {
 }
 
 // closeCurrentPubSub 关闭指定订阅，仅当其仍是当前订阅时才清空引用
-func (p *RedisPubSub) closeCurrentPubSub(pubsub *redis.PubSub) {
+func (p *PubSub) closeCurrentPubSub(pubsub *goredis.PubSub) {
 	p.mu.Lock()
 	if p.pubsub == pubsub {
 		p.pubsub = nil
@@ -133,7 +133,7 @@ func (p *RedisPubSub) closeCurrentPubSub(pubsub *redis.PubSub) {
 }
 
 // logError 通过注入的日志实例记录错误，未装配日志时静默忽略
-func (p *RedisPubSub) logError(err error) {
+func (p *PubSub) logError(err error) {
 	if p.logger != nil {
 		p.logger.Error(err.Error())
 	}

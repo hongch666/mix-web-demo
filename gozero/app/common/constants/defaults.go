@@ -33,6 +33,17 @@ var SEARCH_STATS_FILL_METRICS = []string{
 	"views", "likes", "collects", "author_follows", "comment_scores",
 }
 
+// ===== 多级缓存默认值 =====
+
+const (
+	// L1 本地缓存默认有效期，多级缓存未显式配置时使用，跨实例的本地值最多滞后该时长
+	CACHE_LOCAL_TTL = time.Minute
+	// L2 Redis 缓存默认有效期，算法配置类数据变更频率低，取比 L1 更长的有效期以减少跨实例回源
+	CACHE_REDIS_TTL = 5 * time.Minute
+	// L1 本地缓存默认最大条目数，超出后淘汰最早写入的条目
+	CACHE_LOCAL_MAX_ENTRIES = 128
+)
+
 // ===== WebSocket 相关默认值 =====
 
 const (

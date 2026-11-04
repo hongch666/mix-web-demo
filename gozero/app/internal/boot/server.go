@@ -5,7 +5,7 @@ import (
 
 	"app/common/constants"
 	"app/common/metrics"
-	"app/common/utils"
+	"app/common/redis"
 	"app/common/validation"
 	"app/internal/config"
 	"app/internal/handler"
@@ -57,5 +57,5 @@ func registerTaskScheduler(c config.Config, ctx *svc.ServiceContext) {
 		}
 		return
 	}
-	ctx.TaskScheduler = task.NewTaskScheduler(ctx, utils.NewRedisDistributedLock)
+	ctx.TaskScheduler = task.NewTaskScheduler(ctx, redis.NewDistributedLock)
 }

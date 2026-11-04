@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"app/common/pubsub"
+	"app/common/redis"
 	commontestkit "app/common/testkit"
 	"app/internal/hub"
 	"app/internal/svc"
@@ -27,7 +27,7 @@ func NewChatMessageTestContext(t *testing.T, model chatMessages.ChatMessagesMode
 		RealtimeDispatcher: hub.NewChatRealtimeDispatcher(chatHub, sseHub, logger),
 	}
 	if withBrokenBus {
-		hubContext.RealtimeBus = pubsub.NewRedisPubSub(nil, logger, "chat-events")
+		hubContext.RealtimeBus = redis.NewPubSub(nil, logger, "chat-events")
 	}
 	return &svc.ServiceContext{
 		ModelContext:  &svc.ModelContext{ChatMessagesModel: model},

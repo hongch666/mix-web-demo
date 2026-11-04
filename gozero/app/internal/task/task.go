@@ -7,17 +7,18 @@ import (
 
 	"app/common/constants"
 	"app/common/metrics"
+	"app/common/redis"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/task/logic"
 
-	"github.com/redis/go-redis/v9"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
 	zerotrace "github.com/zeromicro/go-zero/core/trace"
 )
 
 // 根据给定 Redis 客户端创建分布式锁实例的工厂函数类型
-type RedisLockFactory func(*redis.Client) *utils.RedisDistributedLock
+type RedisLockFactory func(*goredis.Client) *redis.DistributedLock
 
 // TaskConfig 定时任务定义，新增任务只需在 NewTaskScheduler 中调用 addTask 注册
 type TaskConfig struct {
