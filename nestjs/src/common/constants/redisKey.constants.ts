@@ -48,6 +48,6 @@ export class RedisKeys {
 
   // ===== 多级缓存通道 =====
 
-  /** 多级缓存跨实例失效的 Pub/Sub 频道，写操作删除 Redis 缓存后向该频道广播被失效的 key */
-  static readonly CACHE_INVALIDATE_CHANNEL = "cache:invalidate";
+  /** 多级缓存跨实例失效的 Pub/Sub 频道，按服务隔离避免与 FastAPI 的失效消息格式互相干扰，写操作删除 Redis 缓存后向该频道广播被失效的 key */
+  static readonly CACHE_INVALIDATE_CHANNEL = "cache:invalidate:nestjs";
 }

@@ -3,7 +3,7 @@
 // uuid 为 ESM-only 包，jest-runtime 的 CJS require 无法加载，本测试只关心缓存逻辑，按单测规范在工厂中提供被用到的成员
 jest.mock("uuid", () => ({ v4: () => "mocked-uuid" }));
 
-import { Defaults } from "src/common/constants";
+import { Defaults, RedisKeys } from "src/common/constants";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { RedisService } from "src/module/common/redis/redis.service";
 import { CacheService } from "./cache.service";
@@ -112,9 +112,10 @@ describe("CacheService", () => {
       "cache:table:settings:1:all",
     );
     expect(redis.publish).toHaveBeenCalledWith(
-      "cache:invalidate",
+      RedisKeys.CACHE_INVALIDATE_CHANNEL,
       JSON.stringify(["table:settings:1:articles", "table:settings:1:all"]),
     );
+    expect(RedisKeys.CACHE_INVALIDATE_CHANNEL).toBe("cache:invalidate:nestjs");
     await expect(service.get("table:settings:1:articles")).resolves.toBe(
       undefined,
     );
@@ -128,7 +129,10 @@ describe("CacheService", () => {
 
     const handler = getMessageHandler();
     expect(handler).toBeDefined();
-    handler("cache:invalidate", JSON.stringify(["table:settings:1:articles"]));
+    handler(
+      RedisKeys.CACHE_INVALIDATE_CHANNEL,
+      JSON.stringify(["table:settings:1:articles"]),
+    );
 
     // 本地条目已被清理，读取会穿透到 Redis
     redis.get.mockClear();
@@ -145,7 +149,7 @@ describe("CacheService", () => {
     const service = createService();
     service.onModuleInit();
 
-    getMessageHandler()("cache:invalidate", "not-json");
+    getMessageHandler()(RedisKeys.CACHE_INVALIDATE_CHANNEL, "not-json");
 
     expect(loggerStub.error).toHaveBeenCalled();
     await expect(service.get("table:settings:1:articles")).resolves.toBe(
@@ -206,5 +210,30 @@ describe("CacheService", () => {
 
     await expect(service.get("key-0")).resolves.toBeUndefined();
     await expect(service.get(`key-${total - 1}`)).resolves.toBe(total - 1);
+  });
+
+  it("L1 本地缓存按 5 分钟 TTL 过期", async () => {
+    const service = new CacheService(
+      { getClient: () => null } as unknown as RedisService,
+      logger,
+    );
+    const now: number = Date.now();
+    const nowSpy = jest.spyOn(Date, "now").mockReturnValue(now);
+
+    try {
+      await service.set("table:settings:ttl:articles", { id: 1 });
+      await expect(service.get("table:settings:ttl:articles")).resolves.toEqual(
+        { id: 1 },
+      );
+
+      nowSpy.mockReturnValue(
+        now + (Defaults.CACHE_LOCAL_TTL_SECONDS + 1) * 1000,
+      );
+      await expect(
+        service.get("table:settings:ttl:articles"),
+      ).resolves.toBeUndefined();
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 });

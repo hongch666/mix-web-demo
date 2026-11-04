@@ -48,8 +48,8 @@ export class Defaults {
   /** 多级缓存在 Redis 中的 key 统一前缀，隔离业务 key 与锁、OAuth 状态等其它 Redis 用法 */
   static readonly CACHE_KEY_PREFIX = "cache:";
 
-  /** L1 本地缓存有效期（秒），跨实例的本地值最多滞后该时长 */
-  static readonly CACHE_LOCAL_TTL_SECONDS = 60;
+  /** L1 本地缓存有效期（秒，5 分钟），跨实例的本地值最多滞后该时长，与 Spring/FastAPI 侧 L1 TTL 对齐 */
+  static readonly CACHE_LOCAL_TTL_SECONDS = 300;
 
   /** L2 Redis 缓存有效期（秒），需与 FastAPI 侧 L2_CACHE_TTL 对齐 */
   static readonly CACHE_REDIS_TTL_SECONDS = 86400;
