@@ -6,8 +6,11 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 from app.core.constants import RedisKeys
-from app.internal.cache import KeyedPubSubCache, baseCache as base_cache
-from app.internal.cache import pubSubCache as pub_sub_module
+from app.internal.cache import (
+    KeyedPubSubCache,
+    baseCache as base_cache,
+    pubSubCache as pub_sub_module,
+)
 
 
 class _FakeRedis:
@@ -20,6 +23,8 @@ class _FakeRedis:
         self.keys = AsyncMock(return_value=[])
         self.publish = AsyncMock(return_value=True)
         self.get_pubsub = AsyncMock(return_value=None)
+        self.get_many = AsyncMock(return_value={})
+        self.set_many = AsyncMock(return_value=True)
         self.deleted_patterns: list[str] = []
 
     async def delete_by_patterns(self, *patterns: str) -> int:
@@ -262,6 +267,68 @@ async def test_broadcast_with_user_ids_clears_matching_entries(
 
     assert instance._local_entries.get("test:tag_interest:7:3") is None
     assert instance._local_entries.get("test:keyword_tag:7:abc") is not None
+
+
+# 批量读只发一次 mget，命中结果回填本地
+@pytest.mark.anyio
+async def test_get_entries_reads_redis_in_one_batch(
+    cache: tuple[_TestCache, _FakeRedis],
+) -> None:
+    instance, fake_redis = cache
+    fake_redis.get_many = AsyncMock(
+        return_value={"test:pubsub:a": [1], "test:pubsub:c": []}
+    )
+
+    result = await instance.get_entries(["a", "b", "c"])
+
+    fake_redis.get_many.assert_awaited_once_with(
+        ["test:pubsub:a", "test:pubsub:b", "test:pubsub:c"]
+    )
+    assert result == {"a": [1], "c": []}
+    assert instance._local_entries["test:c"][0] == []
+
+
+# 本地已命中时不访问 Redis
+@pytest.mark.anyio
+async def test_get_entries_skips_redis_when_all_local(
+    cache: tuple[_TestCache, _FakeRedis],
+) -> None:
+    instance, fake_redis = cache
+    await instance.set_entry("a", [1])
+
+    result = await instance.get_entries(["a"])
+
+    assert result == {"a": [1]}
+    fake_redis.get_many.assert_not_awaited()
+
+
+# 批量写只发一次 set_many，并带上默认 TTL
+@pytest.mark.anyio
+async def test_set_entries_writes_redis_in_one_batch(
+    cache: tuple[_TestCache, _FakeRedis],
+) -> None:
+    instance, fake_redis = cache
+
+    await instance.set_entries({"a": [1], "b": []})
+
+    fake_redis.set_many.assert_awaited_once_with(
+        {"test:pubsub:a": [1], "test:pubsub:b": []}, ex=86400
+    )
+    assert instance._local_entries["test:a"][0] == [1]
+
+
+# 指定 TTL 时同时覆盖 L1 过期时间与 L2 过期秒数，用于空结果负缓存
+@pytest.mark.anyio
+async def test_set_entry_with_ttl_overrides_both_levels(
+    cache: tuple[_TestCache, _FakeRedis],
+) -> None:
+    instance, fake_redis = cache
+
+    await instance.set_entry("a", [], ttl=60)
+
+    _, expires_at = instance._local_entries["test:a"]
+    assert 0 < expires_at - time.time() <= 60
+    fake_redis.set.assert_awaited_once_with("test:pubsub:a", [], ex=60)
 
 
 # 失效频道按服务隔离，避免与 NestJS 的 key 列表消息格式互相干扰

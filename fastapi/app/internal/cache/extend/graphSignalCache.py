@@ -1,12 +1,12 @@
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any
 
 from app.core.constants import RedisKeys
 
 from ..pubSubCache import KeyedPubSubCache
 
 
-class GraphSignalCache(KeyedPubSubCache[Optional[list[dict[str, Any]]]]):
+class GraphSignalCache(KeyedPubSubCache[list[dict[str, Any]]]):
     """图谱增强个性化信号的两级缓存（按单文章粒度）
 
     缓存兴趣标签、关注作者、同子分类与关键词标签四路信号的 Neo4j 查询原始行，
@@ -16,6 +16,8 @@ class GraphSignalCache(KeyedPubSubCache[Optional[list[dict[str, Any]]]]):
 
     REDIS_KEY_PREFIX: str = RedisKeys.GRAPH_SIGNAL_CACHE_PREFIX
     INVALIDATION_NAMESPACE: str = RedisKeys.CACHE_NAMESPACE_GRAPH
+    # 单请求最多写入「信号数 × 候选上限」个键（4 × 200），容量不足会淘汰刚写入的条目并使 L1 命中率归零
+    L1_MAX_ENTRIES: int = 4096
 
 
 @lru_cache

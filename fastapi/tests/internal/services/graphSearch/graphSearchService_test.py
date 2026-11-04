@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from app.core.constants import Messages
+from app.core.constants import Defaults, Messages
 from app.internal.schemas import GraphRelationDTO, GraphSearchEnhanceReq
 from app.internal.services.graphSearch import (
     GraphSearchService,
@@ -16,6 +16,7 @@ class _FakeNeo4jClient:
 
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict]] = []
+        self.raise_flags: list[bool] = []
         self.responses: dict[str, object] = {}
 
     async def run_query(
@@ -25,12 +26,33 @@ class _FakeNeo4jClient:
         raise_on_error: bool = False,
     ) -> object:
         self.calls.append((cypher, params or {}))
+        self.raise_flags.append(raise_on_error)
         response = self.responses.get(cypher)
         if response is None:
             return []
         if isinstance(response, Exception):
             raise response
         return response
+
+
+class _FakeSignalCache:
+    """记录批量读写入参的图谱信号缓存替身，可预置命中数据"""
+
+    def __init__(self, cached: dict[str, list[dict]] | None = None) -> None:
+        self.cached = cached or {}
+        self.read_keys: list[str] = []
+        self.write_calls: list[tuple[dict, int | None]] = []
+
+    async def get_entries(self, keys: list[str]) -> dict[str, list[dict]]:
+        """返回预置的命中键值，并记录批量读入参"""
+        self.read_keys.extend(keys)
+        return {key: self.cached[key] for key in keys if key in self.cached}
+
+    async def set_entries(
+        self, mapping: dict[str, list[dict]], ttl: int | None = None
+    ) -> None:
+        """记录批量写入的键值与 TTL"""
+        self.write_calls.append((dict(mapping), ttl))
 
 
 class _ExplodingRows:
@@ -98,7 +120,10 @@ async def test_authenticated_request_runs_all_signals(neo4j_client) -> None:
         GraphSearchEnhanceReq(userId=7, keyword="keyword", articleIds=[1, 2])
     )
 
-    assert len(neo4j_client.calls) == 5
+    # 5 路候选内信号 + 1 路扩召回信号
+    assert len(neo4j_client.calls) == 6
+    # 按文章粒度的信号必须要求 Neo4j 抛出异常，否则故障会被当成空结果
+    assert any(neo4j_client.raise_flags)
     by_id = {item.articleId: item for item in resp.items}
     assert by_id[1].graphScore == pytest.approx(0.72, abs=1e-4)
     assert {rel.type for rel in by_id[1].relations} == {
@@ -281,3 +306,97 @@ def test_generate_reason_returns_empty_without_relations() -> None:
 # 工厂函数返回同一缓存单例
 def test_factory_returns_cached_singleton() -> None:
     assert get_graph_search_service() is get_graph_search_service()
+
+
+# 单文章信号走批量缓存读：一次取全部键，只回源一次
+@pytest.mark.anyio
+async def test_per_article_rows_reads_cache_in_one_batch(
+    neo4j_client: _FakeNeo4jClient,
+) -> None:
+    cache = _FakeSignalCache()
+    service = GraphSearchService(signal_cache=cache)
+
+    rows = await service._per_article_rows(
+        "tag_interest",
+        {7: "tag_interest:7:3", 8: "tag_interest:8:3"},
+        service_module.Scripts.GRAPH_SEARCH_TAG_INTEREST_CYPHER,
+        lambda missing_ids: {"userId": 3, "articleIds": missing_ids},
+    )
+
+    assert cache.read_keys == ["tag_interest:7:3", "tag_interest:8:3"]
+    assert len(neo4j_client.calls) == 1
+    assert rows == []
+
+
+# 全部命中缓存时不再回源 Neo4j
+@pytest.mark.anyio
+async def test_per_article_rows_skips_query_when_all_cached(
+    neo4j_client: _FakeNeo4jClient,
+) -> None:
+    cache = _FakeSignalCache({"tag_interest:7:3": [{"articleId": 7, "rawScore": 5}]})
+    service = GraphSearchService(signal_cache=cache)
+
+    rows = await service._per_article_rows(
+        "tag_interest",
+        {7: "tag_interest:7:3"},
+        service_module.Scripts.GRAPH_SEARCH_TAG_INTEREST_CYPHER,
+        lambda missing_ids: {"userId": 3, "articleIds": missing_ids},
+    )
+
+    assert neo4j_client.calls == []
+    assert rows == [{"articleId": 7, "rawScore": 5}]
+
+
+# 空结果按负缓存 TTL 写入，避免无信号文章每请求重复回源
+@pytest.mark.anyio
+async def test_per_article_rows_caches_empty_result_with_short_ttl(
+    neo4j_client: _FakeNeo4jClient,
+) -> None:
+    cache = _FakeSignalCache()
+    service = GraphSearchService(signal_cache=cache)
+
+    await service._per_article_rows(
+        "tag_interest",
+        {7: "tag_interest:7:3"},
+        service_module.Scripts.GRAPH_SEARCH_TAG_INTEREST_CYPHER,
+        lambda missing_ids: {"userId": 3, "articleIds": missing_ids},
+    )
+
+    assert cache.write_calls == [
+        ({"tag_interest:7:3": []}, Defaults.GRAPH_SIGNAL_NEGATIVE_CACHE_TTL)
+    ]
+
+
+# 扩召回信号把候选集之外的文章一并返回，候选内的 id 被忽略
+@pytest.mark.anyio
+async def test_graph_recall_adds_articles_outside_candidates(
+    neo4j_client: _FakeNeo4jClient,
+) -> None:
+    scripts = service_module.Scripts
+    neo4j_client.responses[scripts.GRAPH_SEARCH_RECALL_CYPHER] = [
+        {"articleId": 9, "rawScore": 3, "names": ["tag-a"]},
+        {"articleId": 1, "rawScore": 3, "names": ["tag-b"]},
+    ]
+
+    resp = await GraphSearchService().enhance(
+        GraphSearchEnhanceReq(userId=7, keyword="", articleIds=[1, 2])
+    )
+
+    by_id = {item.articleId: item for item in resp.items}
+    assert set(by_id) == {1, 2, 9}
+    assert by_id[9].graphScore == pytest.approx(0.3, abs=1e-4)
+    assert by_id[9].relations[0].type == "graph_recall"
+    assert by_id[9].reason == Messages.GRAPH_SEARCH_REASON_RECALL
+
+
+# 扩召回上限为 0 时不再发起扩召回查询
+@pytest.mark.anyio
+async def test_recall_disabled_when_limit_is_zero(
+    neo4j_client: _FakeNeo4jClient,
+) -> None:
+    await GraphSearchService(recall_limit=0).enhance(
+        GraphSearchEnhanceReq(userId=7, keyword="", articleIds=[1])
+    )
+
+    executed = [cypher for cypher, _ in neo4j_client.calls]
+    assert service_module.Scripts.GRAPH_SEARCH_RECALL_CYPHER not in executed

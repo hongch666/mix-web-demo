@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import time
 from collections.abc import Callable
 from functools import lru_cache
 from typing import Any
@@ -9,10 +10,7 @@ from typing import Any
 from app.core.base import Logger, LoggerProtocol
 from app.core.constants import Defaults, Messages, Scripts
 from app.core.db import get_neo4j_client
-from app.internal.cache import (
-    GraphCandidateCache,
-    GraphSignalCache,
-)
+from app.internal.cache import GraphCandidateCache, GraphSignalCache
 from app.internal.schemas import (
     GraphRelationDTO,
     GraphSearchEnhanceItemDTO,
@@ -32,28 +30,37 @@ class GraphSearchService:
         candidate_similarity_weight: float = 0.20,
         keyword_tag_weight: float = 0.20,
         candidate_limit: int = 200,
+        recall_weight: float = Defaults.GRAPH_RECALL_WEIGHT,
+        recall_limit: int = Defaults.GRAPH_RECALL_LIMIT,
         logger: LoggerProtocol | None = None,
         signal_cache: GraphSignalCache | None = None,
         candidate_cache: GraphCandidateCache | None = None,
     ) -> None:
-        """初始化五路图谱信号的权重、候选文章上限，并注入单文章信号缓存、批次候选缓存与日志器"""
+        """初始化五路图谱信号的权重、候选文章上限与扩召回参数，并注入单文章信号缓存、批次候选缓存与日志器"""
         self.TAG_INTEREST_WEIGHT: float = tag_interest_weight
         self.FOLLOWED_AUTHOR_WEIGHT: float = followed_author_weight
         self.SAME_SUB_CATEGORY_WEIGHT: float = same_sub_category_weight
         self.CANDIDATE_SIMILARITY_WEIGHT: float = candidate_similarity_weight
         self.KEYWORD_TAG_WEIGHT: float = keyword_tag_weight
+        self.RECALL_WEIGHT: float = recall_weight
         self.candidate_limit: int = max(candidate_limit, 1)
-        # 单文章信号缓存（信号1/2/3/5）与批次候选缓存（信号4）可注入，缺省时保持手工构造可用（不启用缓存）
+        # 扩召回上限为 0 时关闭扩召回，只对 ES 候选集重排
+        self.recall_limit: int = max(recall_limit, 0)
+        # 单文章信号缓存（信号1/2/3/5）与批次候选缓存（信号4/扩召回）可注入，缺省时保持手工构造可用（不启用缓存）
         self._signal_cache: GraphSignalCache | None = signal_cache
         self._candidate_cache: GraphCandidateCache | None = candidate_cache
         # 日志器可注入，缺省回退全局单例
         self._logger: LoggerProtocol = logger or Logger
 
     async def enhance(self, req: GraphSearchEnhanceReq) -> GraphSearchEnhanceResp:
-        """执行图谱增强, 返回候选文章的图谱分和推荐原因"""
+        """执行图谱增强, 返回候选文章的图谱分和推荐原因
+
+        候选集之外的扩召回文章会一并出现在 items 中，由调用方决定是否并入结果
+        """
         if not req.articleIds:
             return GraphSearchEnhanceResp()
 
+        started_at = time.time()
         # 候选上限与 GoZero 侧召回上限对齐，请求未指定 limit 时按服务上限截断
         limit = (
             min(req.limit, self.candidate_limit)
@@ -89,6 +96,12 @@ class GraphSearchService:
         # 信号5: 关键词标签命中
         tasks.append(self._query_keyword_tag(article_ids, keyword))
 
+        # 信号6: 图谱扩召回（候选集之外的相关文章，需要 userId）
+        if req.userId and req.userId > 0:
+            tasks.append(self._query_graph_recall(req.userId, article_ids))
+        else:
+            tasks.append(self._empty_result(article_ids))
+
         # 等待所有查询完成 (单个失败不影响其他)
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -115,17 +128,24 @@ class GraphSearchService:
                 "matchedPaths": [],
             }
 
-        # 累加各信号分数
+        # 累加各信号分数，扩召回信号会带来候选集之外的 id
         for signal_result in signal_results:
             for article_id, data in signal_result.items():
-                if article_id in article_scores:
-                    base = article_scores[article_id]
-                    base["graphScore"] = min(
-                        base["graphScore"] + data.get("score", 0.0), 1.0
-                    )
-                    base["relations"].extend(data.get("relations", []))
-                    base["matchedTags"].extend(data.get("matchedTags", []))
-                    base["matchedPaths"].extend(data.get("matchedPaths", []))
+                base = article_scores.get(article_id)
+                if base is None:
+                    base = {
+                        "graphScore": 0.0,
+                        "relations": [],
+                        "matchedTags": [],
+                        "matchedPaths": [],
+                    }
+                    article_scores[article_id] = base
+                base["graphScore"] = min(
+                    base["graphScore"] + data.get("score", 0.0), 1.0
+                )
+                base["relations"].extend(data.get("relations", []))
+                base["matchedTags"].extend(data.get("matchedTags", []))
+                base["matchedPaths"].extend(data.get("matchedPaths", []))
 
         # 生成最终结果
         items = []
@@ -153,6 +173,13 @@ class GraphSearchService:
                 )
             )
 
+        self._logger.info(
+            Messages.GRAPH_SEARCH_TIMING(
+                time.time() - started_at,
+                len(article_ids),
+                max(len(article_scores) - len(article_ids), 0),
+            )
+        )
         return GraphSearchEnhanceResp(items=items)
 
     async def _empty_result(self, article_ids: list[int]) -> dict[int, dict]:
@@ -164,6 +191,7 @@ class GraphSearchService:
     ) -> dict[int, dict]:
         """信号1: 用户兴趣标签"""
         rows = await self._per_article_rows(
+            "tag_interest",
             {
                 article_id: f"tag_interest:{article_id}:{user_id}"
                 for article_id in article_ids
@@ -201,6 +229,7 @@ class GraphSearchService:
     ) -> dict[int, dict]:
         """信号2: 关注作者"""
         rows = await self._per_article_rows(
+            "followed_author",
             {
                 article_id: f"followed_author:{article_id}:{user_id}"
                 for article_id in article_ids
@@ -236,6 +265,7 @@ class GraphSearchService:
     ) -> dict[int, dict]:
         """信号3: 同子分类"""
         rows = await self._per_article_rows(
+            "same_sub_category",
             {
                 article_id: f"same_sub_category:{article_id}:{user_id}"
                 for article_id in article_ids
@@ -312,6 +342,7 @@ class GraphSearchService:
 
         keyword_hash = hashlib.md5(keyword.encode()).hexdigest()
         rows = await self._per_article_rows(
+            "keyword_tag",
             {
                 article_id: f"keyword_tag:{article_id}:{keyword_hash}"
                 for article_id in article_ids
@@ -347,56 +378,150 @@ class GraphSearchService:
             }
         return result
 
+    async def _query_graph_recall(
+        self, user_id: int, article_ids: list[int]
+    ) -> dict[int, dict]:
+        """信号6: 图谱扩召回，补充候选集之外、与用户已互动文章共享标签的文章
+
+        该信号只返回候选集之外的 id，用于把图里的关联文章带进结果集，
+        按「用户 + 候选集合」批次键缓存，空结果按短 TTL 负缓存
+        """
+        if self.recall_limit <= 0:
+            return {}
+
+        cache_key = f"recall:{user_id}:{self._ids_cache_hash(article_ids)}"
+        candidate_cache = self._candidate_cache
+        rows: list[dict]
+        if candidate_cache is not None:
+            cached_rows: list[dict] | None = await candidate_cache.get_entry(cache_key)
+            if cached_rows is not None:
+                rows = cached_rows
+            else:
+                rows = await self._recall_rows(user_id, article_ids, cache_key)
+        else:
+            rows = await self._recall_rows(user_id, article_ids, cache_key)
+
+        candidate_ids = set(article_ids)
+        result: dict[int, dict] = {}
+        for row in rows:
+            aid = row.get("articleId")
+            if aid is None or aid in candidate_ids:
+                continue
+            raw = row.get("rawScore", 0) or 0
+            score = min(raw / 3.0, 1.0) * self.RECALL_WEIGHT
+            names = row.get("names", []) or []
+            result[aid] = {
+                "score": score,
+                "relations": [
+                    GraphRelationDTO(
+                        type="graph_recall",
+                        name="图谱关联文章",
+                        score=round(score, 4),
+                        reason=Messages.GRAPH_SEARCH_REASON_RECALL,
+                    )
+                ],
+                "matchedTags": names,
+                "matchedPaths": [Messages.GRAPH_SEARCH_PATH_RECALL],
+            }
+        return result
+
+    async def _recall_rows(
+        self, user_id: int, article_ids: list[int], cache_key: str
+    ) -> list[dict]:
+        """回源执行扩召回查询并写入缓存，查询失败时跳过回填避免固化瞬时故障"""
+        try:
+            rows: list[dict] = await get_neo4j_client().run_query(
+                Scripts.GRAPH_SEARCH_RECALL_CYPHER,
+                {
+                    "userId": user_id,
+                    "excludeIds": article_ids,
+                    "limit": self.recall_limit,
+                },
+                raise_on_error=True,
+            )
+        except Exception as e:
+            self._logger.warning(Messages.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG(e))
+            return []
+
+        candidate_cache = self._candidate_cache
+        if candidate_cache is not None:
+            await candidate_cache.set_entry(
+                cache_key,
+                rows,
+                ttl=Defaults.GRAPH_SIGNAL_NEGATIVE_CACHE_TTL if not rows else None,
+            )
+        return rows
+
     async def _per_article_rows(
         self,
+        signal_name: str,
         cache_keys: dict[int, str],
         cypher: str,
         build_params: Callable[[list[int]], dict],
     ) -> list[dict]:
-        """按单文章键读取信号行：命中缓存的文章跳过查询，缺失的 id 合并为一次 Cypher 回源后逐篇回填
+        """按单文章键批量读取信号行：命中缓存的文章跳过查询，缺失的 id 合并为一次 Cypher 回源后逐篇回填
 
-        查询失败时不回填缺失文章，避免把瞬时故障固化为长期缓存；
-        与候选集组成相关的信号（候选间相似标签）不适用本方法，仍按批次键缓存
+        命中与缺失一次性批量读缓存，回源结果一次性批量写缓存；空结果按短 TTL 负缓存，
+        避免无信号文章在每个请求上重复回源；查询失败时不回填，避免把瞬时故障固化为长期缓存
         """
+        started_at = time.time()
         rows_by_id: dict[int, list[dict]] = {}
         missing_ids: list[int] = []
+        signal_cache = self._signal_cache
 
-        if self._signal_cache is not None:
+        if signal_cache is not None:
+            cached_rows = await signal_cache.get_entries(list(cache_keys.values()))
             for article_id, cache_key in cache_keys.items():
-                cached_rows: list[dict] | None = await self._signal_cache.get_entry(
-                    cache_key
-                )
-                if cached_rows is not None:
-                    self._logger.info(Messages.GRAPH_SIGNAL_CACHE_HIT(cache_key))
-                    rows_by_id[article_id] = cached_rows
+                if cache_key in cached_rows:
+                    rows_by_id[article_id] = cached_rows[cache_key]
                     continue
                 missing_ids.append(article_id)
         else:
             missing_ids = list(cache_keys)
 
-        if missing_ids:
-            try:
-                rows: list[dict] = await get_neo4j_client().run_query(
-                    cypher, build_params(missing_ids), raise_on_error=True
+        cached_count = len(cache_keys) - len(missing_ids)
+        if not missing_ids:
+            self._logger.info(
+                Messages.GRAPH_SIGNAL_CACHE_SUMMARY(
+                    signal_name, cached_count, 0, time.time() - started_at
                 )
-            except Exception as e:
-                self._logger.warning(Messages.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG(e))
-                return self._flatten_rows(rows_by_id, cache_keys)
+            )
+            return self._flatten_rows(rows_by_id, cache_keys)
 
-            grouped = self._group_rows_by_article(rows)
-            for article_id in missing_ids:
-                article_rows: list[dict] = grouped.get(article_id, [])
-                rows_by_id[article_id] = article_rows
-                if article_rows and self._signal_cache is not None:
-                    await self._signal_cache.set_entry(
-                        cache_keys[article_id], article_rows
-                    )
-                    self._logger.info(
-                        Messages.GRAPH_SIGNAL_CACHE_STORED(
-                            cache_keys[article_id], len(article_rows)
-                        )
-                    )
+        try:
+            rows: list[dict] = await get_neo4j_client().run_query(
+                cypher, build_params(missing_ids), raise_on_error=True
+            )
+        except Exception as e:
+            self._logger.warning(Messages.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG(e))
+            return self._flatten_rows(rows_by_id, cache_keys)
 
+        grouped = self._group_rows_by_article(rows)
+        positive_rows: dict[str, list[dict]] = {}
+        negative_rows: dict[str, list[dict]] = {}
+        for article_id in missing_ids:
+            article_rows: list[dict] = grouped.get(article_id, [])
+            rows_by_id[article_id] = article_rows
+            if signal_cache is None:
+                continue
+            if article_rows:
+                positive_rows[cache_keys[article_id]] = article_rows
+            else:
+                negative_rows[cache_keys[article_id]] = []
+
+        if signal_cache is not None:
+            if positive_rows:
+                await signal_cache.set_entries(positive_rows)
+            if negative_rows:
+                await signal_cache.set_entries(
+                    negative_rows, ttl=Defaults.GRAPH_SIGNAL_NEGATIVE_CACHE_TTL
+                )
+
+        self._logger.info(
+            Messages.GRAPH_SIGNAL_CACHE_SUMMARY(
+                signal_name, cached_count, len(missing_ids), time.time() - started_at
+            )
+        )
         return self._flatten_rows(rows_by_id, cache_keys)
 
     async def _batch_rows(self, ids_hash: str, cypher: str, params: dict) -> list[dict]:
@@ -410,13 +535,13 @@ class GraphSearchService:
                 cache_key
             )
             if cached_rows is not None:
-                self._logger.info(Messages.GRAPH_SIGNAL_CACHE_HIT(cache_key))
+                self._logger.debug(Messages.GRAPH_SIGNAL_CACHE_HIT(cache_key))
                 return cached_rows
 
         rows = await self._safe_query(cypher, params)
         if rows and self._candidate_cache is not None:
             await self._candidate_cache.set_entry(cache_key, rows)
-            self._logger.info(Messages.GRAPH_SIGNAL_CACHE_STORED(cache_key, len(rows)))
+            self._logger.debug(Messages.GRAPH_SIGNAL_CACHE_STORED(cache_key, len(rows)))
         return rows
 
     @staticmethod
@@ -466,6 +591,7 @@ class GraphSearchService:
             "same_sub_category": ("属于你常看的分类 {name}", 3),
             "keyword_tag": ("命中图谱标签 {name}", 4),
             "candidate_similarity": (Messages.GRAPH_SEARCH_REASON_CANDIDATE, 5),
+            "graph_recall": (Messages.GRAPH_SEARCH_REASON_RECALL, 6),
         }
 
         # 按优先级排序, 取最高优先级
@@ -508,6 +634,8 @@ def get_graph_search_service(
         candidate_similarity_weight=Defaults.GRAPH_CANDIDATE_SIMILARITY_WEIGHT,
         keyword_tag_weight=Defaults.GRAPH_KEYWORD_TAG_WEIGHT,
         candidate_limit=Defaults.GRAPH_SEARCH_CANDIDATE_LIMIT,
+        recall_weight=Defaults.GRAPH_RECALL_WEIGHT,
+        recall_limit=Defaults.GRAPH_RECALL_LIMIT,
         logger=logger,
         signal_cache=signal_cache,
         candidate_cache=candidate_cache,

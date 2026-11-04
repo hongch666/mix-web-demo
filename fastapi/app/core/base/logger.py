@@ -1,13 +1,28 @@
 import logging
 import os
 from datetime import datetime
-from typing import Protocol, runtime_checkable
+from logging import Handler
+from typing import Any, Protocol, runtime_checkable
 
 from app.core.config import load_config
 from app.core.constants import TelemetryConstants
 from app.core.middleware import get_current_trace_id
 
 logger: logging.Logger = logging.getLogger("uvicorn")
+
+# 文件日志独立命名空间，避免与 uvicorn 自身的 handler 互相影响
+file_logger: logging.Logger = logging.getLogger("mix.file")
+
+# 文件日志句柄与对应配置签名，按日期与配置复用，避免每行日志都重新打开文件
+_file_handler: Handler | None = None
+_file_handler_state: tuple[str, bool, str, str] | None = None
+
+_LEVEL_NAMES: dict[str, int] = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+}
 
 
 @runtime_checkable
@@ -35,35 +50,86 @@ class LoggerProtocol(Protocol):
         ...
 
 
+class _TraceIdFormatter(logging.Formatter):
+    """把当前请求的 trace_id 注入日志行的文件日志格式化器"""
+
+    def format(self, record: logging.LogRecord) -> str:
+        """格式化前补上 trace_id 字段，缺失时使用空值占位"""
+        record.trace_id = get_current_trace_id() or TelemetryConstants.EMPTY_TRACE_ID
+        return super().format(record)
+
+
+def _logs_config() -> dict[str, Any]:
+    """读取 logs 配置段，读取失败时返回空配置，避免日志本身抛出异常"""
+    try:
+        return load_config("logs") or {}
+    except Exception:
+        return {}
+
+
+def _build_formatter(include_timestamp: bool) -> logging.Formatter:
+    """按是否输出时间戳构造文件日志格式，保持与原逐行写文件一致的文本形态"""
+    if include_timestamp:
+        return _TraceIdFormatter(
+            "%(asctime)s - %(levelname)s - trace_id=%(trace_id)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+    return _TraceIdFormatter("%(levelname)s - trace_id=%(trace_id)s - %(message)s")
+
+
+def _ensure_file_handler(logs_config: dict[str, Any]) -> Handler | None:
+    """按当日日期与配置复用文件句柄，配置或日期变化时重新打开文件"""
+    global _file_handler, _file_handler_state
+
+    log_path: str = str(logs_config.get("path") or "")
+    if not log_path:
+        return None
+
+    # 容器部署关闭行内时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
+    include_timestamp: bool = (
+        str(logs_config.get("include_timestamp", True)).strip().lower() != "false"
+    )
+    level_name: str = (
+        str(logs_config.get("file_level") or "INFO").strip().upper() or "INFO"
+    )
+    today: str = datetime.now().strftime("%Y-%m-%d")
+    state: tuple[str, bool, str, str] = (log_path, include_timestamp, level_name, today)
+    if _file_handler is not None and _file_handler_state == state:
+        return _file_handler
+
+    if not os.path.exists(log_path):
+        os.makedirs(log_path, exist_ok=True)
+    log_file: str = os.path.join(log_path, f"app_{today}.log")
+
+    if _file_handler is not None:
+        file_logger.removeHandler(_file_handler)
+        _file_handler.close()
+        _file_handler = None
+
+    handler = logging.FileHandler(log_file, mode="a", encoding="utf-8")
+    handler.setFormatter(_build_formatter(include_timestamp))
+    file_logger.addHandler(handler)
+    file_logger.setLevel(_LEVEL_NAMES.get(level_name, logging.INFO))
+    file_logger.propagate = False
+    _file_handler = handler
+    _file_handler_state = state
+    return handler
+
+
 def write_log(message: str, level: str = "INFO") -> None:
     """
     直接写入日志到文件
+
+    文件句柄与配置按进程复用，低于配置的文件级别时由 logging 直接丢弃，
+    避免高频调试日志（如逐键缓存命中）产生逐行读盘与写文件开销
 
     Args:
         message: 日志消息
         level: 日志级别 (INFO, WARNING, ERROR, DEBUG)
     """
-    logs_config = load_config("logs")
-    LOG_PATH: str = logs_config["path"]
-    if not os.path.exists(LOG_PATH):
-        os.makedirs(LOG_PATH, exist_ok=True)
-    log_file: str = os.path.join(
-        LOG_PATH, f"app_{datetime.now().strftime('%Y-%m-%d')}.log"
-    )
-    timestamp: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    trace_id: str = get_current_trace_id() or TelemetryConstants.EMPTY_TRACE_ID
-    # 容器部署关闭行内时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
-    include_timestamp: bool = (
-        str(logs_config.get("include_timestamp", True)).strip().lower() != "false"
-    )
-    log_entry: str = (
-        f"{timestamp} - {level} - "
-        f"{TelemetryConstants.TRACE_ID_FIELD}={trace_id} - {message}\n"
-        if include_timestamp
-        else f"{level} - {TelemetryConstants.TRACE_ID_FIELD}={trace_id} - {message}\n"
-    )
-    with open(log_file, "a", encoding="utf-8") as f:
-        f.write(log_entry)
+    if _ensure_file_handler(_logs_config()) is None:
+        return
+    file_logger.log(_LEVEL_NAMES.get(level.upper(), logging.INFO), message)
 
 
 def log_info(message: str) -> None:

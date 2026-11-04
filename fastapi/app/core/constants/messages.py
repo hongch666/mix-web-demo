@@ -3465,3 +3465,35 @@ class Messages:
 
     GRAPH_SIGNAL_CACHE_INVALIDATED: str = "[图谱缓存] 已失效并广播"
     """图谱信号缓存失效完成的日志消息"""
+
+    @staticmethod
+    def CACHE_BATCH_READ(requested: int, hits: int) -> str:
+        """构造批量读缓存的聚合日志消息"""
+        return f"[缓存] 批量读取 {requested} 个键，命中 {hits} 个"
+
+    @staticmethod
+    def CACHE_BATCH_WRITE(count: int) -> str:
+        """构造批量写缓存的聚合日志消息"""
+        return f"[缓存] 批量写入 {count} 个键"
+
+    @staticmethod
+    def GRAPH_SIGNAL_CACHE_SUMMARY(
+        signal: str, hits: int, misses: int, elapsed: float
+    ) -> str:
+        """构造单路图谱信号的缓存命中数与耗时聚合日志消息"""
+        return (
+            f"[图谱缓存] {signal} 命中 {hits} 个，回源 {misses} 个，耗时 {elapsed:.3f}s"
+        )
+
+    @staticmethod
+    def GRAPH_SEARCH_TIMING(elapsed: float, candidates: int, extras: int) -> str:
+        """构造图谱增强整体耗时与扩召回条数的日志消息"""
+        return f"图谱增强耗时: {elapsed:.3f}s, 候选: {candidates}, 扩召回: {extras}"
+
+    GRAPH_SEARCH_REASON_RECALL: str = "图谱关联的相似文章"
+    """图谱扩召回信号的推荐原因文案"""
+
+    GRAPH_SEARCH_PATH_RECALL: str = (
+        "User-[:LIKES]->Article-[:TAGGED_AS]->Tag<-[:TAGGED_AS]->Article"
+    )
+    """图谱扩召回信号的匹配路径文案"""

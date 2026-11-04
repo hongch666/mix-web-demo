@@ -94,6 +94,8 @@ logs:
   path: ${LOGS_PATH:../logs/fastapi}
   # 是否在日志行写入时间戳，容器部署置 false（时间由 Loki 采集侧提供，避免行内出现两个日期）
   include_timestamp: ${LOG_INCLUDE_TIMESTAMP:true}
+  # 写入文件的日志级别，低于该级别只输出到控制台；逐键缓存命中这类高频日志走 DEBUG，默认不落盘
+  file_level: ${LOG_FILE_LEVEL:INFO}
 
 telemetry:
   enabled: ${OTEL_ENABLED:false}

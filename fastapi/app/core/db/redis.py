@@ -145,6 +145,53 @@ class RedisClient:
             Logger.error(Messages.REDIS_SET_FAILED(key, e))
             return False
 
+    async def get_many(self, keys: list[str]) -> dict[str, Any]:
+        """批量读取多个键，返回命中的键值映射，缺失键不出现在结果中"""
+        if not keys:
+            return {}
+
+        try:
+            client: Optional[Any] = await self._ensure_client()
+            if not client:
+                return {}
+
+            values: list[Optional[Any]] = await client.mget(keys)
+            result: dict[str, Any] = {}
+            for key, value in zip(keys, values, strict=False):
+                if value is None:
+                    continue
+                try:
+                    result[key] = json.loads(value)
+                except Exception:
+                    result[key] = value
+            return result
+        except Exception as e:
+            Logger.error(Messages.REDIS_GET_FAILED(",".join(keys), e))
+            return {}
+
+    async def set_many(self, mapping: dict[str, Any], ex: Optional[int] = None) -> bool:
+        """批量写入多个键值，单次 pipeline 提交，减少逐键往返"""
+        if not mapping:
+            return True
+
+        try:
+            client: Optional[Any] = await self._ensure_client()
+            if not client:
+                return False
+
+            pipe: Any = client.pipeline(transaction=False)
+            for key, value in mapping.items():
+                if isinstance(value, (dict, list)):
+                    value = json.dumps(
+                        value, ensure_ascii=False, default=self._json_default
+                    )
+                pipe.set(key, value, ex=ex)
+            await pipe.execute()
+            return True
+        except Exception as e:
+            Logger.error(Messages.REDIS_SET_FAILED(",".join(mapping), e))
+            return False
+
     async def delete(self, *keys: str) -> bool:
         """删除键"""
         try:
@@ -253,7 +300,7 @@ class RedisClient:
                 await client.delete(*keys)
             return len(keys)
         except Exception as e:
-            Logger.error(Messages.REDIS_SCAN_DELETE_FAILED(patterns, e))
+            Logger.error(Messages.REDIS_SCAN_DELETE_FAILED(list(patterns), e))
             return 0
 
     # 分布式锁相关方法

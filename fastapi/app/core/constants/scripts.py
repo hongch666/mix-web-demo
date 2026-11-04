@@ -494,6 +494,17 @@ class Scripts:
     """
     """图谱召回查询：关键词命中标签的文章"""
 
+    GRAPH_SEARCH_RECALL_CYPHER: str = """
+        MATCH (u:User {id: $userId})-[:LIKES|COLLECTS|COMMENTED_ON]->(:Article)-[:TAGGED_AS]->(tag:Tag)<-[:TAGGED_AS]-(cand:Article)
+        WHERE NOT cand.id IN $excludeIds
+          AND NOT (u)-[:LIKES|COLLECTS|COMMENTED_ON]->(cand)
+        WITH cand.id AS articleId, collect(DISTINCT tag.name) AS names
+        RETURN articleId, size(names) AS rawScore, names
+        ORDER BY rawScore DESC, articleId ASC
+        LIMIT $limit
+    """
+    """图谱扩召回查询：与用户已互动文章共享标签、且不在 ES 候选集内的文章"""
+
     # ===== ES 搜索排序脚本（Painless） =====
 
     ES_SEARCH_SCRIPT: str = """

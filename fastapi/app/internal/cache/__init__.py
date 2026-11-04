@@ -8,10 +8,7 @@ from .extend.apiLogCalledCountCache import (
 from .extend.apiLogSpeedCache import ApiLogSpeedCache, get_api_log_speed_cache
 from .extend.articleCache import ArticleCache, get_article_cache
 from .extend.categoryCache import CategoryCache, get_category_cache
-from .extend.graphCandidateCache import (
-    GraphCandidateCache,
-    get_graph_candidate_cache,
-)
+from .extend.graphCandidateCache import GraphCandidateCache, get_graph_candidate_cache
 from .extend.graphSignalCache import GraphSignalCache, get_graph_signal_cache
 from .extend.publishTimeCache import PublishTimeCache, get_publish_time_cache
 from .extend.statisticsCache import StatisticsCache, get_statistics_cache

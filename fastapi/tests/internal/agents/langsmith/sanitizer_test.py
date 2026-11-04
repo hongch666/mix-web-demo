@@ -2,6 +2,7 @@
 
 import pytest
 
+from app.core.config import clear_config_cache
 from app.core.constants import Messages, Scripts
 from app.internal.agents.langsmith import sanitizer as sanitizer_module
 from app.internal.agents.langsmith.sanitizer import (
@@ -42,10 +43,15 @@ def test_sanitize_user_id_is_stable_and_not_reversible(
 ) -> None:
     monkeypatch.setenv("LANGSMITH_USER_HASH_KEY", "unit-test-hmac-key")
     monkeypatch.setattr(sanitizer_module, "_user_hash_hmac_key", None)
+    # 配置按进程缓存，改环境变量后需清空缓存才能读到新值
+    clear_config_cache()
 
-    first = sanitize_user_id("1001")
-    monkeypatch.setattr(sanitizer_module, "_user_hash_hmac_key", None)
-    second = sanitize_user_id("1001")
+    try:
+        first = sanitize_user_id("1001")
+        monkeypatch.setattr(sanitizer_module, "_user_hash_hmac_key", None)
+        second = sanitize_user_id("1001")
+    finally:
+        clear_config_cache()
 
     assert first == second
     assert first.startswith("u_")

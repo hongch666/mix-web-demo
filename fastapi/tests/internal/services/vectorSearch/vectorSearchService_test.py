@@ -199,12 +199,21 @@ def test_normalize_score_similarity_clamps_range() -> None:
     assert service._normalize_score(0.42) == 0.42
 
 
-# distance 模式把距离反转为相似度
+# distance 模式把余弦距离折算为相似度，超过 1 的距离视为不相似
 def test_normalize_score_distance_mode_inverts() -> None:
     service = _make_service(AsyncMock(), score_mode="distance", min_score=0.0)
 
     assert service._normalize_score(0.0) == 1.0
-    assert service._normalize_score(3.0) == pytest.approx(0.25)
+    assert service._normalize_score(0.3) == pytest.approx(0.7)
+    assert service._normalize_score(2.0) == 0.0
+
+
+# 默认评分模式按距离解释，与 PGVector 返回余弦距离的口径一致
+def test_default_score_mode_is_distance() -> None:
+    service = VectorSearchService()
+
+    assert service.score_mode == "distance"
+    assert service._normalize_score(0.2) == pytest.approx(0.8)
 
 
 # 非法 score_mode 回退为 similarity

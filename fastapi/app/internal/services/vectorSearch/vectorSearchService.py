@@ -234,9 +234,13 @@ class VectorSearchService:
         return "\n".join(parts)
 
     def _normalize_score(self, raw_score: float) -> float:
-        """按 distance 或 similarity 模式把原始分数归一化到 0 到 1 区间"""
+        """按 distance 或 similarity 模式把原始分数归一化到 0 到 1 区间
+
+        PGVector 的 similarity_search_with_score 返回余弦距离（越小越相似），
+        distance 模式下折算为 1 减距离；余弦距离超过 1 视为不相似，避免负分进入排序
+        """
         if self.score_mode == "distance":
-            score = 1 / (1 + max(raw_score, 0))
+            score = 1.0 - min(max(raw_score, 0.0), 1.0)
         else:
             score = raw_score
         return max(0.0, min(float(score), 1.0))

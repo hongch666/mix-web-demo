@@ -48,6 +48,46 @@ class KeyedPubSubCache[T](BaseCache[T]):
 
         return await self._read_redis(key)
 
+    async def get_entries(self, keys: list[str]) -> dict[str, T]:
+        """批量读取多个业务键，返回命中的键值映射，缺失的键不出现在结果中
+
+        本地全部命中时不访问 Redis；缺失的键合并为一次 mget，
+        避免逐键 await 造成每请求数百次串行往返与逐键日志
+        """
+        result: dict[str, T] = {}
+        missing: list[str] = []
+        for key in dict.fromkeys(keys):
+            local_value = self._read_local(key)
+            if local_value is not None:
+                result[key] = local_value
+                continue
+            missing.append(key)
+
+        if not missing:
+            self._logger.debug(Messages.CACHE_BATCH_READ(len(result), len(result)))
+            return result
+
+        requested: int = len(result) + len(missing)
+
+        store_keys = {key: f"{self.REDIS_KEY_PREFIX}{key}" for key in missing}
+        try:
+            values = await self._redis.get_many(list(store_keys.values()))
+        except Exception as e:
+            self._logger.error(Messages.CACHE_L2_READ_FAILED(e))
+            values = {}
+
+        for key in missing:
+            store_key = store_keys[key]
+            value = values.get(store_key)
+            # JSON null 反序列化为 None，与「未命中」语义冲突，按未命中处理
+            if value is None:
+                continue
+            result[key] = value
+            self._write_local(key, value)
+
+        self._logger.debug(Messages.CACHE_BATCH_READ(requested, len(result)))
+        return result
+
     async def get(self) -> Optional[T]:
         """按键分片缓存不提供无键读取入口"""
         raise NotImplementedError
@@ -56,10 +96,22 @@ class KeyedPubSubCache[T](BaseCache[T]):
         """按键分片缓存不提供无键写入入口"""
         raise NotImplementedError
 
-    async def set_entry(self, key: str, value: T) -> None:
-        """按业务键写入两级缓存"""
-        self._write_local(key, value)
-        await self._write_redis(key, value)
+    async def set_entry(self, key: str, value: T, ttl: Optional[int] = None) -> None:
+        """按业务键写入两级缓存，ttl 非空时覆盖默认有效期，用于空结果的短 TTL 负缓存"""
+        self._write_local(key, value, ttl)
+        await self._write_redis(key, value, ttl)
+
+    async def set_entries(
+        self, mapping: dict[str, T], ttl: Optional[int] = None
+    ) -> None:
+        """批量写入多个业务键，L2 用一次 pipeline 提交，减少逐键往返"""
+        if not mapping:
+            return
+
+        for key, value in mapping.items():
+            self._write_local(key, value, ttl)
+        await self._write_redis_bulk(mapping, ttl)
+        self._logger.debug(Messages.CACHE_BATCH_WRITE(len(mapping)))
 
     async def delete_entry(self, key: str) -> None:
         """按业务键删除两级缓存"""
@@ -206,53 +258,73 @@ class KeyedPubSubCache[T](BaseCache[T]):
         return f"{self.INVALIDATION_NAMESPACE}:{key}"
 
     def _read_local(self, key: str) -> Optional[T]:
-        """读取未过期的本地条目，过期条目顺手清理"""
-        entry = self._local_entries.get(self._local_key(key))
+        """读取未过期的本地条目，过期条目顺手清理
+
+        命中与未命中日志走 DEBUG：逐键日志量随候选数线性增长，
+        只保留聚合日志，避免日志 IO 反噬请求耗时
+        """
+        local_key = self._local_key(key)
+        entry = self._local_entries.get(local_key)
         if entry is None:
             return None
 
-        value, written_at = entry
-        if time.time() - written_at > self._local_cache_ttl:
-            self._local_entries.pop(self._local_key(key), None)
-            self._logger.info(Messages.L1_CACHE_TTL_EXPIRED)
+        value, expires_at = entry
+        if time.time() > expires_at:
+            self._local_entries.pop(local_key, None)
+            self._logger.debug(Messages.L1_CACHE_TTL_EXPIRED)
             return None
 
-        self._logger.info(Messages.CACHE_L1_HIT(time.time() - written_at))
         return value
 
-    def _write_local(self, key: str, value: T) -> None:
-        """写入本地条目，超出容量上限时淘汰最早写入的条目"""
-        if (
-            len(self._local_entries) >= self.L1_MAX_ENTRIES
-            and self._local_key(key) not in self._local_entries
+    def _write_local(self, key: str, value: T, ttl: Optional[int] = None) -> None:
+        """写入本地条目，超出容量上限时淘汰最早过期的条目，ttl 非空时覆盖默认有效期"""
+        local_key = self._local_key(key)
+        if len(self._local_entries) >= self.L1_MAX_ENTRIES and (
+            local_key not in self._local_entries
         ):
             oldest_key = min(
                 self._local_entries, key=lambda item: self._local_entries[item][1]
             )
             self._local_entries.pop(oldest_key, None)
 
-        self._local_entries[self._local_key(key)] = (value, time.time())
+        effective_ttl: int = ttl if ttl and ttl > 0 else self._local_cache_ttl
+        self._local_entries[local_key] = (value, time.time() + effective_ttl)
 
     async def _read_redis(self, key: str) -> Optional[T]:
         """读取 L2 缓存，命中时回填本地缓存"""
         try:
             value = await self._redis.get(f"{self.REDIS_KEY_PREFIX}{key}")
             if value is not None:
-                self._logger.info(Messages.L2_CACHE_HIT)
+                self._logger.debug(Messages.L2_CACHE_HIT)
                 self._write_local(key, value)
                 return value
 
-            self._logger.info(Messages.L2_CACHE_MISS)
+            self._logger.debug(Messages.L2_CACHE_MISS)
             return None
         except Exception as e:
             self._logger.error(Messages.CACHE_L2_READ_FAILED(e))
             return None
 
-    async def _write_redis(self, key: str, value: T) -> None:
-        """写入 L2 缓存，失败只记录日志"""
+    async def _write_redis(self, key: str, value: T, ttl: Optional[int] = None) -> None:
+        """写入 L2 缓存，失败只记录日志，ttl 非空时覆盖默认有效期"""
         try:
             await self._redis.set(
-                f"{self.REDIS_KEY_PREFIX}{key}", value, ex=self._redis_ttl
+                f"{self.REDIS_KEY_PREFIX}{key}", value, ex=ttl or self._redis_ttl
+            )
+        except Exception as e:
+            self._logger.error(Messages.CACHE_L2_WRITE_FAILED(e))
+
+    async def _write_redis_bulk(
+        self, mapping: dict[str, T], ttl: Optional[int] = None
+    ) -> None:
+        """批量写入 L2 缓存，单次 pipeline 提交，失败只记录日志"""
+        try:
+            await self._redis.set_many(
+                {
+                    f"{self.REDIS_KEY_PREFIX}{key}": value
+                    for key, value in mapping.items()
+                },
+                ex=ttl or self._redis_ttl,
             )
         except Exception as e:
             self._logger.error(Messages.CACHE_L2_WRITE_FAILED(e))

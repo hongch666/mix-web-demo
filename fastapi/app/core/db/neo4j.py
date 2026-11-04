@@ -199,9 +199,16 @@ class Neo4jClient:
             self.logger.debug(detail)
 
     async def run_query(
-        self, cypher: str, params: Optional[dict[str, Any]] = None
+        self,
+        cypher: str,
+        params: Optional[dict[str, Any]] = None,
+        raise_on_error: bool = False,
     ) -> list[dict[str, Any]]:
-        """执行只读 Cypher 查询，返回字典列表"""
+        """执行只读 Cypher 查询，返回字典列表
+
+        raise_on_error 为真时把异常抛给调用方，用于区分「查询失败」与「无数据」，
+        避免调用方把瞬时故障当成空结果写入缓存
+        """
         if not await self.connect():
             return []
 
@@ -214,6 +221,8 @@ class Neo4jClient:
             return [dict(zip(headers, row, strict=False)) for row in records]
         except Exception as e:
             self.logger.error(Messages.CYPHER_QUERY_FAILED(e, cypher, params))
+            if raise_on_error:
+                raise
             return []
 
     async def run_write_query(

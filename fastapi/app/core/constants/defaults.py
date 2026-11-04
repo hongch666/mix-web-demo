@@ -10,7 +10,7 @@ class Defaults:
     L2_CACHE_TTL: int = 86400
     """L2 Redis 缓存的 TTL（秒），即 1 天"""
     L1_CACHE_MAX_ENTRIES: int = 512
-    """L1 本地缓存的最大条目数，键分片缓存按此上限淘汰最旧条目"""
+    """L1 本地缓存的最大条目数，键分片缓存按此上限淘汰最旧条目，键数量大的子类需自行覆盖"""
 
     # ===== 分布式锁 =====
 
@@ -57,6 +57,12 @@ class Defaults:
     """图谱召回中关键词命中标签的权重"""
     GRAPH_SEARCH_CANDIDATE_LIMIT: int = 200
     """图谱召回候选上限，需不小于 GoZero 侧 SEARCH_GRAPH_CANDIDATE_LIMIT"""
+    GRAPH_RECALL_WEIGHT: float = 0.30
+    """图谱扩召回（候选集之外的相关文章）的分数权重"""
+    GRAPH_RECALL_LIMIT: int = 10
+    """单次请求允许补充到候选集之外的图谱召回文章条数上限，需与 GoZero 侧 SEARCH_GRAPH_RECALL_MAX 对齐"""
+    GRAPH_SIGNAL_NEGATIVE_CACHE_TTL: int = 60
+    """图谱信号空结果的负缓存秒数，避免无信号文章每个请求都重复回源"""
 
     # ===== 向量搜索配置 =====
 
@@ -70,8 +76,8 @@ class Defaults:
     """单篇文章最多返回的匹配片段数"""
     VECTOR_SEARCH_MIN_SCORE: float = 0.3
     """向量相似度下限，低于该值不计入语义分"""
-    VECTOR_SEARCH_SCORE_MODE: str = "similarity"
-    """向量检索评分模式，similarity 表示按余弦相似度计分"""
+    VECTOR_SEARCH_SCORE_MODE: str = "distance"
+    """向量检索原始分的语义，PGVector 的 similarity_search_with_score 返回余弦距离，故默认按 distance 折算为相似度"""
 
     # ===== 搜索权重=====
 
