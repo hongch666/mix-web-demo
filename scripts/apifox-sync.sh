@@ -188,6 +188,39 @@ spec_path_for() {
     esac
 }
 
+# 校验已配置的数据模型目录在 Apifox 中是否仍然存在
+# 目录被删除后导入不会重建模型：targetSchemaFolderId 指向不存在的目录，模型落库失败，
+# 接口上残留的 $ref 全部指向不存在的模型 ID，表现为 Apifox「校验响应」报 can't resolve reference
+assert_schema_folders_exist() {
+    local services="$1"
+    local folders_json="$TMP_DIR/schema-folders.json"
+
+    if ! apifox folder list --project "$project_id" --access-token "$token" --type schema >"$folders_json" 2>/dev/null; then
+        print_warn "数据模型目录清单获取失败，跳过目录存在性校验"
+        return 0
+    fi
+
+    local service folder_id env_name missing=""
+    for service in $services; do
+        folder_id=$(schema_folder_for "$service")
+        [ -n "$folder_id" ] || continue
+        if grep -q "\"id\"[[:space:]]*:[[:space:]]*$folder_id\\([{,}[:space:]]\\|$\\)" "$folders_json"; then
+            continue
+        fi
+        env_name=$(schema_folder_env_name "$service")
+        print_error "[$service] 数据模型目录 $folder_id（$env_name）在 Apifox 中已不存在"
+        missing="$missing $service"
+    done
+
+    if [ -n "$missing" ]; then
+        print_error "目录缺失时导入无法落库数据模型，接口上的 \$ref 会全部断链并导致 Apifox「校验响应」失败"
+        print_error "修复方式：apifox folder create --project $project_id --type schema --name <服务名>，再把新目录 ID 填入 .env 的 APIFOX_SCHEMA_FOLDER_<服务> 后重跑"
+        return 1
+    fi
+
+    return 0
+}
+
 # ==================== 数据模型变更检测 ====================
 
 schema_state_file() {
@@ -547,9 +580,11 @@ post_import_openapi() {
             -w '%{http_code}' 2>"$curl_err_file")
         http_status=${http_status:-000}
 
-        if [ "$http_status" = "200" ]; then
-            return 0
-        fi
+        # 导入接口按 2xx 判成功：内容无变化时 Apifox 返回 200，真正落库时返回 201 且响应体为空，
+        # 只认 200 会把后者当成失败重试，最终误报同步失败
+        case "$http_status" in
+            2[0-9][0-9]) return 0 ;;
+        esac
 
         if [ "$http_status" = "000" ]; then
             print_error "请求失败: $(tr -d '\r\n' < "$curl_err_file")"
@@ -954,6 +989,11 @@ main() {
     local spec_file options_json response_file response
     local url created updated ignored failed errors
 
+    # 目录缺失是「模型全部断链」的前置条件，导入前先拦住，避免把一次注定失败的同步跑完
+    if [ "$dry_run" != "true" ] && ! assert_schema_folders_exist "$services"; then
+        return 1
+    fi
+
     for service in $services; do
         echo ""
         spec_file=$(spec_path_for "$service")
@@ -1055,14 +1095,20 @@ main() {
         updated=$(extract_counter "$response" endpointUpdated)
         ignored=$(extract_counter "$response" endpointIgnored)
         failed=$(extract_counter "$response" endpointFailed)
-        created=${created:-0}
-        updated=${updated:-0}
-        ignored=${ignored:-0}
-        failed=${failed:-0}
 
-        print_info "[$service] 新增 $created / 更新 $updated / 忽略 $ignored / 失败 $failed"
+        # 2xx + 空响应体是导入已接受的正常形态，此时没有计数字段，不能拿 0 冒充「什么都没做」
+        if [ -z "$created$updated$ignored$failed" ]; then
+            print_info "[$service] 导入已接受，Apifox 未返回导入计数，结果以随后的模型引用自检为准"
+        else
+            created=${created:-0}
+            updated=${updated:-0}
+            ignored=${ignored:-0}
+            failed=${failed:-0}
 
-        if [ "$failed" != "0" ]; then
+            print_info "[$service] 新增 $created / 更新 $updated / 忽略 $ignored / 失败 $failed"
+        fi
+
+        if [ -n "$failed" ] && [ "$failed" != "0" ]; then
             errors=$(extract_error_messages "$response")
             if [ -n "$errors" ]; then
                 echo "$errors" | while IFS= read -r line; do
