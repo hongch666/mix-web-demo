@@ -5,6 +5,8 @@ import {
   IsInt,
   IsNotEmpty,
   IsOptional,
+  Length,
+  Matches,
   Min,
   ValidateNested,
 } from "class-validator";
@@ -61,4 +63,17 @@ export class TableSettingsQueryDto {
   @IsInt({ message: "目标用户ID必须是整数" })
   @Min(1, { message: "目标用户ID必须大于0" })
   user_id?: number;
+}
+
+/**
+ * 列设置接口的页面标识路径参数
+ * 页面标识会参与两级缓存 key 拼接，因此限制长度与字符集，避免产生无界或异常的缓存键
+ */
+export class TableKeyParamDto {
+  @ApiProperty({ description: "页面标识", example: "articles" })
+  @Length(1, 64, { message: "页面标识长度必须在1到64之间" })
+  @Matches(/^[A-Za-z0-9_-]+$/, {
+    message: "页面标识只能包含字母、数字、下划线与中划线",
+  })
+  table_key!: string;
 }

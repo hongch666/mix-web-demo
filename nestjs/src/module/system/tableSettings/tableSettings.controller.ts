@@ -28,6 +28,7 @@ import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { RequireSelf } from "src/framework/decorators/requireSelf.decorator";
 import {
   SaveTableSettingsDto,
+  TableKeyParamDto,
   TableSettingsQueryDto,
 } from "./dto/tableSettings.dto";
 import { TableSettings } from "./entities/tableSettings.entity";
@@ -89,13 +90,13 @@ export class TableSettingsController {
   @ApiLog("获取列配置")
   @ApiResponseModel({ data: SwaggerTableSettingsData })
   async getSettings(
-    @Param("table_key") tableKey: string,
+    @Param() params: TableKeyParamDto,
     @Query() query: TableSettingsQueryDto,
   ): Promise<ApiResponse<TableSettings | null>> {
     const settings: TableSettings | null =
       await this.tableSettingsService.getSettings(
         this.resolveUserId(query),
-        tableKey,
+        params.table_key,
       );
     return success(settings);
   }
@@ -121,13 +122,13 @@ export class TableSettingsController {
   @ApiLog("保存列配置")
   @ApiResponseModel({ data: SwaggerNullData })
   async saveSettings(
-    @Param("table_key") tableKey: string,
+    @Param() params: TableKeyParamDto,
     @Body() dto: SaveTableSettingsDto,
     @Query() query: TableSettingsQueryDto,
   ): Promise<ApiResponse<null>> {
     await this.tableSettingsService.saveSettings(
       this.resolveUserId(query),
-      tableKey,
+      params.table_key,
       dto.columns,
     );
     return success(null);
@@ -153,12 +154,12 @@ export class TableSettingsController {
   @ApiLog("删除列配置")
   @ApiResponseModel({ data: SwaggerNullData })
   async deleteSettings(
-    @Param("table_key") tableKey: string,
+    @Param() params: TableKeyParamDto,
     @Query() query: TableSettingsQueryDto,
   ): Promise<ApiResponse<null>> {
     await this.tableSettingsService.deleteSettings(
       this.resolveUserId(query),
-      tableKey,
+      params.table_key,
     );
     return success(null);
   }

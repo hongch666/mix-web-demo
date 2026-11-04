@@ -3,6 +3,7 @@ import { ValidationPipe } from "@nestjs/common";
 import {
   ColumnConfigDto,
   SaveTableSettingsDto,
+  TableKeyParamDto,
   TableSettingsQueryDto,
 } from "./tableSettings.dto";
 
@@ -91,6 +92,38 @@ describe("TableSettingsQueryDto", () => {
       pipe.transform(
         { user_id: "0" },
         { type: "query" as const, metatype: TableSettingsQueryDto },
+      ),
+    ).rejects.toThrow();
+  });
+});
+
+describe("TableKeyParamDto", () => {
+  // 验证常规页面标识通过校验，页面标识会参与缓存 key 拼接
+  it("验证常规页面标识通过校验", async () => {
+    const dto = (await pipe.transform(
+      { table_key: "api-logs_v2" },
+      { type: "param" as const, metatype: TableKeyParamDto },
+    )) as TableKeyParamDto;
+
+    expect(dto.table_key).toBe("api-logs_v2");
+  });
+
+  // 验证包含特殊字符的页面标识被拒绝，避免拼出异常缓存 key
+  it("验证包含特殊字符的页面标识被拒绝", async () => {
+    await expect(
+      pipe.transform(
+        { table_key: "articles:1" },
+        { type: "param" as const, metatype: TableKeyParamDto },
+      ),
+    ).rejects.toThrow();
+  });
+
+  // 验证超长页面标识被拒绝
+  it("验证超长页面标识被拒绝", async () => {
+    await expect(
+      pipe.transform(
+        { table_key: "a".repeat(65) },
+        { type: "param" as const, metatype: TableKeyParamDto },
       ),
     ).rejects.toThrow();
   });

@@ -539,6 +539,88 @@ export class Messages {
   static readonly OTEL_UNSUPPORTED_SAMPLER = (sampler: string): string =>
     `不支持的 OpenTelemetry 采样器: ${sampler}`;
 
+  // ===== 多级缓存 =====
+
+  /** 构造 L1 本地缓存命中的调试日志 */
+  static readonly CACHE_L1_HIT = (key: string, ageSeconds: number): string =>
+    `命中 L1 本地缓存 - key: ${key}, 缓存年龄: ${ageSeconds.toFixed(1)} 秒`;
+
+  /** 构造 L2 Redis 缓存命中的调试日志 */
+  static readonly CACHE_L2_HIT = (key: string): string =>
+    `命中 L2 Redis 缓存 - key: ${key}`;
+
+  /** 构造两级缓存均未命中的调试日志 */
+  static readonly CACHE_MISS = (key: string): string =>
+    `两级缓存未命中 - key: ${key}`;
+
+  /** 构造两级缓存写入成功的调试日志 */
+  static readonly CACHE_WRITTEN = (key: string, ttlSeconds: number): string =>
+    `缓存已写入 - key: ${key}, Redis 有效期: ${ttlSeconds} 秒`;
+
+  /** 构造缓存删除成功的调试日志 */
+  static readonly CACHE_EVICTED = (key: string): string =>
+    `缓存已失效 - key: ${key}`;
+
+  /** 构造收到跨实例失效通知后清理本地缓存的调试日志 */
+  static readonly CACHE_L1_INVALIDATED = (count: number): string =>
+    `收到跨实例缓存失效通知，已清理本地缓存 ${count} 条`;
+
+  /** 构造缓存失效频道订阅失败的日志消息 */
+  static readonly CACHE_INVALIDATE_SUBSCRIBE_FAILED = (
+    message: string,
+  ): string => `订阅缓存失效频道失败: ${message}`;
+
+  /** 构造缓存失效频道退订失败的日志消息 */
+  static readonly CACHE_INVALIDATE_UNSUBSCRIBE_FAILED = (
+    message: string,
+  ): string => `释放缓存失效订阅连接失败: ${message}`;
+
+  /** 构造缓存失效通知解析失败的日志消息 */
+  static readonly CACHE_INVALIDATE_MESSAGE_FAILED = (message: string): string =>
+    `解析缓存失效通知失败: ${message}`;
+
+  /** 构造缓存失效广播失败的日志消息 */
+  static readonly CACHE_PUBLISH_FAILED = (
+    keys: string,
+    message: string,
+  ): string => `广播缓存失效通知失败 - keys: ${keys}, 原因: ${message}`;
+
+  /** 构造注解执行器读取缓存异常降级的日志消息 */
+  static readonly CACHE_EXPLORER_READ_FAILED = (
+    key: string,
+    message: string,
+  ): string => `读取缓存异常，降级为直接回源 - key: ${key}, 原因: ${message}`;
+
+  /** 构造注解执行器写入缓存异常降级的日志消息 */
+  static readonly CACHE_EXPLORER_WRITE_FAILED = (
+    key: string,
+    message: string,
+  ): string => `写入缓存异常，本次结果不缓存 - key: ${key}, 原因: ${message}`;
+
+  /** 构造注解执行器失效缓存异常降级的日志消息 */
+  static readonly CACHE_EXPLORER_EVICT_FAILED = (
+    keys: string,
+    message: string,
+  ): string => `失效缓存异常 - keys: ${keys}, 原因: ${message}`;
+
+  /** 构造 Redis 缓存读取失败的日志消息 */
+  static readonly CACHE_L2_READ_FAILED = (
+    key: string,
+    message: string,
+  ): string => `读取 Redis 缓存失败 - key: ${key}, 原因: ${message}`;
+
+  /** 构造 Redis 缓存写入失败的日志消息 */
+  static readonly CACHE_L2_WRITE_FAILED = (
+    key: string,
+    message: string,
+  ): string => `写入 Redis 缓存失败 - key: ${key}, 原因: ${message}`;
+
+  /** 构造 Redis 缓存删除失败的日志消息 */
+  static readonly CACHE_L2_DELETE_FAILED = (
+    key: string,
+    message: string,
+  ): string => `删除 Redis 缓存失败 - key: ${key}, 原因: ${message}`;
+
   // ===== MongoDB 工具消息 =====
 
   // ===== MongoDB 与 SQL 代理 =====

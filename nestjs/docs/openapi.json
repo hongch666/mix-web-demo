@@ -1364,6 +1364,7 @@
             "in": "path",
             "description": "页面标识",
             "schema": {
+              "example": "articles",
               "type": "string"
             }
           },
@@ -1415,6 +1416,7 @@
             "in": "path",
             "description": "页面标识",
             "schema": {
+              "example": "articles",
               "type": "string"
             }
           },
@@ -1476,6 +1478,7 @@
             "in": "path",
             "description": "页面标识",
             "schema": {
+              "example": "articles",
               "type": "string"
             }
           },

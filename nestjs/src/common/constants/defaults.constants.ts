@@ -42,4 +42,18 @@ export class Defaults {
 
   /** GitHub 外部接口单次请求超时时间（毫秒） */
   static readonly GITHUB_HTTP_TIMEOUT_MS = 10000;
+
+  // ===== 多级缓存 =====
+
+  /** 多级缓存在 Redis 中的 key 统一前缀，隔离业务 key 与锁、OAuth 状态等其它 Redis 用法 */
+  static readonly CACHE_KEY_PREFIX = "cache:";
+
+  /** L1 本地缓存有效期（秒），跨实例的本地值最多滞后该时长 */
+  static readonly CACHE_LOCAL_TTL_SECONDS = 60;
+
+  /** L2 Redis 缓存有效期（秒），需与 FastAPI 侧 L2_CACHE_TTL 对齐 */
+  static readonly CACHE_REDIS_TTL_SECONDS = 86400;
+
+  /** L1 本地缓存最大条目数，超出后淘汰最早写入的条目 */
+  static readonly CACHE_LOCAL_MAX_ENTRIES = 1000;
 }

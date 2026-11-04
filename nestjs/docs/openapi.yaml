@@ -878,6 +878,7 @@ paths:
           in: path
           description: 页面标识
           schema:
+            example: articles
             type: string
         - name: user_id
           required: false
@@ -911,6 +912,7 @@ paths:
           in: path
           description: 页面标识
           schema:
+            example: articles
             type: string
         - name: user_id
           required: false
@@ -950,6 +952,7 @@ paths:
           in: path
           description: 页面标识
           schema:
+            example: articles
             type: string
         - name: user_id
           required: false
