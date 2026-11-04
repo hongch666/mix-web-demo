@@ -6,7 +6,9 @@ import (
 	"math"
 	"testing"
 
+	"app/common/cache"
 	commonclient "app/common/client"
+	"app/common/keys"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/svc"
@@ -102,9 +104,14 @@ func TestFusionMeanFillAndWeights(t *testing.T) {
 
 	graphItems := []fastapiClient.GraphEnhanceItem{
 		{ArticleID: 1, GraphScore: 0.4},
+		{ArticleID: 99, GraphScore: 1.0},
 	}
-	if got := meanOfGraphItems(graphItems); math.Abs(got-0.4) > 1e-9 {
+	// 99 为图谱扩召回补入、不在候选集内的文章，不参与均值填充
+	if got := meanOfGraphItems([]types.ArticleEsItem{{Id: 1}}, graphItems); math.Abs(got-0.4) > 1e-9 {
 		t.Fatalf("meanOfGraphItems = %v, 期望 0.4", got)
+	}
+	if got := meanOfGraphItems(nil, graphItems); got != 0 {
+		t.Fatalf("meanOfGraphItems(nil, ...) = %v, 期望 0", got)
 	}
 
 	engine := NewFusionEngine(FusionConfig{
@@ -189,13 +196,93 @@ func TestSearchArticlesDegradesToRequestedESPageWhenScriptFetchFails(t *testing.
 	}
 }
 
+// 相同用户与相同查询条件在缓存 TTL 内只回源检索一次
+func TestSearchArticlesReusesCachedResultForSameQuery(t *testing.T) {
+	model := &searchModelStub{
+		articles: []searchmodel.ArticleES{{ID: 1, Title: "a", ESScore: 1}},
+		total:    1,
+	}
+	client := &fastapiClientStub{
+		script:   searchmodel.SearchScript{EsScript: "return 1"},
+		weights:  searchmodel.SearchWeights{ESScoreWeight: 1},
+		paramMap: searchmodel.ScriptParamMapping{"es_score_weight": "esWeight"},
+	}
+	logic, cleanup := newSearchLogicForTest(t, model, client)
+	defer cleanup()
+	logic.svcCtx.SearchResultCache = cache.NewMultiLevelCache[*types.SearchArticlesResp](cache.Options{})
+
+	req := &types.SearchArticlesReq{Page: 1, Size: 10}
+	if _, err := logic.SearchArticles(req); err != nil {
+		t.Fatalf("首次搜索失败: %v", err)
+	}
+	if _, err := logic.SearchArticles(req); err != nil {
+		t.Fatalf("二次搜索失败: %v", err)
+	}
+
+	if model.searchCalls != 1 {
+		t.Fatalf("ES 检索次数 = %d, 期望命中缓存后仍为 1", model.searchCalls)
+	}
+}
+
+// 图谱扩召回返回的候选集外文章按 id 从 ES 补齐后参与融合排序
+func TestSearchArticlesAppendsGraphRecallItems(t *testing.T) {
+	mode := "hybrid"
+	model := &searchModelStub{
+		articles: []searchmodel.ArticleES{
+			{ID: 1, ESScore: 3},
+			{ID: 2, ESScore: 2},
+		},
+		total:        2,
+		byIDArticles: []searchmodel.ArticleES{{ID: 9}},
+	}
+	client := &fastapiClientStub{
+		script:   searchmodel.SearchScript{EsScript: "return 1"},
+		weights:  searchmodel.SearchWeights{ESScoreWeight: 1, GraphScoreWeight: 0.5, HybridMinESWeight: 0.1},
+		paramMap: searchmodel.ScriptParamMapping{"es_score_weight": "esWeight"},
+		graphData: map[string]any{
+			"items": []any{
+				map[string]any{"article_id": 1, "graph_score": 0.1},
+				map[string]any{"article_id": 2, "graph_score": 0.1},
+				map[string]any{"article_id": 9, "graph_score": 0.9},
+			},
+		},
+	}
+	logic, cleanup := newSearchLogicForTest(t, model, client)
+	defer cleanup()
+	// 登录用户才启用图谱权重
+	logic.ctx = context.WithValue(context.Background(), keys.UserIDKey, int64(7))
+
+	response, err := logic.SearchArticles(&types.SearchArticlesReq{Page: 1, Size: 10, Mode: &mode})
+	if err != nil {
+		t.Fatalf("搜索失败: %v", err)
+	}
+
+	if len(model.requestedIDs) != 1 || model.requestedIDs[0] != 9 {
+		t.Fatalf("扩召回补取 id = %v, 期望 [9]", model.requestedIDs)
+	}
+	if len(response.List) != 3 {
+		t.Fatalf("结果条数 = %d, 期望 3", len(response.List))
+	}
+	if response.List[0].Id != 9 {
+		t.Fatalf("图谱分最高的扩召回文章应排在首位, 实际首位 = %d", response.List[0].Id)
+	}
+	// total 始终由 ES 决定，扩召回不改变总数
+	if response.Total != 2 {
+		t.Fatalf("total = %d, 期望仍为 ES 的 2", response.Total)
+	}
+}
+
 type searchModelStub struct {
-	articles  []searchmodel.ArticleES
-	total     int
-	err       error
-	searchDTO searchmodel.ArticleSearchDTO
-	esScript  string
-	weights   *searchmodel.SearchWeights
+	articles     []searchmodel.ArticleES
+	total        int
+	err          error
+	searchDTO    searchmodel.ArticleSearchDTO
+	esScript     string
+	weights      *searchmodel.SearchWeights
+	searchCalls  int
+	byIDArticles []searchmodel.ArticleES
+	byIDErr      error
+	requestedIDs []int64
 }
 
 func (s *searchModelStub) SearchArticle(
@@ -205,10 +292,19 @@ func (s *searchModelStub) SearchArticle(
 	weights *searchmodel.SearchWeights,
 	_ searchmodel.ScriptParamMapping,
 ) ([]searchmodel.ArticleES, int, error) {
+	s.searchCalls++
 	s.searchDTO = searchDTO
 	s.esScript = esScript
 	s.weights = weights
 	return s.articles, s.total, s.err
+}
+
+func (s *searchModelStub) GetArticlesByIDs(
+	_ context.Context,
+	articleIDs []int64,
+) ([]searchmodel.ArticleES, error) {
+	s.requestedIDs = append(s.requestedIDs, articleIDs...)
+	return s.byIDArticles, s.byIDErr
 }
 
 type fastapiClientStub struct {
@@ -216,6 +312,7 @@ type fastapiClientStub struct {
 	weights   searchmodel.SearchWeights
 	paramMap  searchmodel.ScriptParamMapping
 	scriptErr error
+	graphData any
 }
 
 func (s *fastapiClientStub) GetSearchScript(context.Context) (searchmodel.SearchScript, error) {
@@ -231,7 +328,7 @@ func (s *fastapiClientStub) GetSearchScriptParams(context.Context) (searchmodel.
 }
 
 func (s *fastapiClientStub) EnhanceGraph(context.Context, *fastapiClient.GraphEnhanceRequest) (commonclient.Result, error) {
-	return commonclient.Result{}, nil
+	return commonclient.Result{Data: s.graphData}, nil
 }
 
 func (s *fastapiClientStub) EnhanceVector(context.Context, *fastapiClient.VectorEnhanceRequest) (commonclient.Result, error) {

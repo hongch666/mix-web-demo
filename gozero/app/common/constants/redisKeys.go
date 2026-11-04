@@ -21,4 +21,9 @@ const (
 	SEARCH_CONFIG_SCRIPT_CACHE_KEY = "cache:search:config:script"
 	// 脚本参数名映射在 Redis 中的缓存 key
 	SEARCH_CONFIG_SCRIPT_PARAMS_CACHE_KEY = "cache:search:config:script_params"
+
+	// ===== 搜索结果缓存 Key =====
+
+	// 搜索结果多级缓存的 key 前缀，运行时拼接用户与全部查询条件的稳定摘要
+	SEARCH_RESULT_CACHE_PREFIX = "cache:search:result:"
 )

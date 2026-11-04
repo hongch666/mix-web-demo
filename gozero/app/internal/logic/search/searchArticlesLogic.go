@@ -4,7 +4,7 @@ package search
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -37,7 +37,7 @@ func NewSearchArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Se
 	}
 }
 
-// SearchArticles 处理搜索文章接口请求，按脚本获取结果决定降级或执行 ES 检索、向量与图谱增强融合重排，并异步记录搜索日志
+// SearchArticles 处理搜索文章接口请求，相同用户与相同查询条件在缓存 TTL 内直接复用检索结果，未命中时执行 ES 检索、向量与图谱增强融合重排，并记录搜索日志
 func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp *types.SearchArticlesResp, err error) {
 	startedAt := time.Now()
 	mode := "hybrid"
@@ -49,12 +49,46 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		metrics.SearchRequests.WithLabelValues(mode, result).Inc()
 		metrics.SearchDuration.WithLabelValues(mode).Observe(time.Since(startedAt).Seconds())
 	}()
+
 	// 设置默认分页
-	page := max(req.Page, 1)
-	size := req.Size
-	if size < 1 {
-		size = 10
+	page, size := normalizePaging(req)
+	currentUserID, _ := getCurrentUserFromContext(l.ctx)
+
+	// 缓存回源函数：检索结果写入两级缓存，并把本次实际生效的模式回填给指标
+	loader := func(ctx context.Context) (*types.SearchArticlesResp, error) {
+		result, searchMode, searchErr := l.search(ctx, req, page, size)
+		mode = searchMode
+		return result, searchErr
 	}
+
+	// 深分页响应体过大，不进入结果缓存，直接回源
+	cache := l.svcCtx.SearchResultCache
+	if cache == nil || size > constants.SEARCH_RESULT_CACHE_MAX_SIZE {
+		return loader(l.ctx)
+	}
+
+	resp, err = cache.Get(
+		l.ctx,
+		buildSearchResultCacheKey(req, page, size, currentUserID),
+		loader,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// 搜索历史按请求记录，命中缓存时同样投递，避免行为日志缺失
+	l.publishSearchLog(req, page, size, currentUserID)
+	return resp, nil
+}
+
+// search 执行一次完整检索：拉取脚本三件套、ES 召回、向量与图谱增强、融合重排与切页，返回实际生效的搜索模式
+func (l *SearchArticlesLogic) search(
+	ctx context.Context,
+	req *types.SearchArticlesReq,
+	page int,
+	size int,
+) (*types.SearchArticlesResp, string, error) {
+	mode := "hybrid"
 
 	// 并行从 FastAPI 拉取 ES 搜索脚本三件套：脚本模板、权重与参数名映射（走本地加 Redis 两级缓存，回源失败降级本地旧值）
 	var script search.SearchScript
@@ -63,15 +97,15 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	var scriptErr, weightsErr, paramErr error
 	_ = mr.Finish(
 		func() error {
-			script, scriptErr = l.svcCtx.FastapiClient.GetSearchScript(l.ctx)
+			script, scriptErr = l.svcCtx.FastapiClient.GetSearchScript(ctx)
 			return nil
 		},
 		func() error {
-			weights, weightsErr = l.svcCtx.FastapiClient.GetSearchWeights(l.ctx)
+			weights, weightsErr = l.svcCtx.FastapiClient.GetSearchWeights(ctx)
 			return nil
 		},
 		func() error {
-			paramMap, paramErr = l.svcCtx.FastapiClient.GetSearchScriptParams(l.ctx)
+			paramMap, paramErr = l.svcCtx.FastapiClient.GetSearchScriptParams(ctx)
 			return nil
 		},
 	)
@@ -96,24 +130,12 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	}
 
 	// 构建搜索DTO
-	keyword := ""
-	if req.Keyword != nil {
-		keyword = *req.Keyword
-	}
-	username := ""
-	if req.Username != nil {
-		username = *req.Username
-	}
-	categoryName := ""
-	if req.CategoryName != nil {
-		categoryName = *req.CategoryName
-	}
-	subCategoryName := ""
-	if req.SubCategoryName != nil {
-		subCategoryName = *req.SubCategoryName
-	}
+	keyword := derefString(req.Keyword)
+	username := derefString(req.Username)
+	categoryName := derefString(req.CategoryName)
+	subCategoryName := derefString(req.SubCategoryName)
 
-	currentUserID, _ := getCurrentUserFromContext(l.ctx)
+	currentUserID, _ := getCurrentUserFromContext(ctx)
 	userID := req.UserId
 
 	searchDTO := search.ArticleSearchDTO{
@@ -135,51 +157,30 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		esScript = script.EsScript
 		searchWeights = &weights
 	}
-	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO, esScript, searchWeights, paramMap)
+	articles, total, err := l.svcCtx.SearchModel.SearchArticle(ctx, searchDTO, esScript, searchWeights, paramMap)
 	if err != nil {
-		l.Error(fmt.Sprintf(constants.SEARCH_EXECUTION_ERROR+": %v", err))
-		return nil, exceptions.NewInternalServerError(constants.SEARCH_EXECUTION_ERROR, err.Error())
+		l.Errorf(constants.SEARCH_EXECUTION_ERROR+": %v", err)
+		return nil, mode, exceptions.NewInternalServerError(constants.SEARCH_EXECUTION_ERROR, err.Error())
 	}
 
 	// 转换为ArticleEsItem，此时 items 是召回候选集，切出目标页在融合重排之后进行
-	items := make([]types.ArticleEsItem, len(articles))
-	for i, article := range articles {
-		items[i] = types.ArticleEsItem{
-			Id:                article.ID,
-			Title:             article.Title,
-			Content:           article.Content,
-			UserId:            article.UserID,
-			Username:          article.Username,
-			Tags:              article.Tags,
-			Status:            article.Status,
-			Views:             article.Views,
-			LikeCount:         article.LikeCount,
-			CollectCount:      article.CollectCount,
-			AuthorFollowCount: article.AuthorFollowCount,
-			CategoryName:      article.CategoryName,
-			SubCategoryName:   article.SubCategoryName,
-			CreateAt:          derefString(article.CreateAt),
-			UpdateAt:          derefString(article.UpdateAt),
-			AiScore:           article.AIScore,
-			UserScore:         article.UserScore,
-			AiCommentCount:    article.AICommentCount,
-			UserCommentCount:  article.UserCommentCount,
-			EsScore:           article.ESScore,
-		}
-	}
+	items := toArticleEsItems(articles)
 
 	l.Info(constants.ARTICLE_SEARCH_SUCCESS)
 
-	resp = &types.SearchArticlesResp{
+	resp := &types.SearchArticlesResp{
 		Total: total,
 		List:  items,
 	}
 
+	// 降级路径不启用向量与图谱增强，仅归一化 ES 分用于展示
 	if degraded {
-		// 降级路径不启用向量与图谱增强，仅归一化 ES 分用于展示
 		FillDefaultScores(resp.List)
-	} else if len(items) > 0 {
-		mode := normalizeSearchMode(req)
+		return resp, mode, nil
+	}
+
+	if len(items) > 0 {
+		searchMode := normalizeSearchMode(req)
 		vectorEnabled := isVectorEnhanceEnabled(req, keyword)
 		graphEnabled := isGraphEnhanceEnabled(req)
 
@@ -192,18 +193,24 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		var enhanceTasks []func() error
 		if vectorEnabled {
 			enhanceTasks = append(enhanceTasks, func() error {
-				vectorItems = l.fetchVectorEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, mode)
+				vectorItems = l.fetchVectorEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, searchMode)
 				return nil
 			})
 		}
 		if graphEnabled {
 			enhanceTasks = append(enhanceTasks, func() error {
-				graphItems = l.fetchGraphEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, mode)
+				graphItems = l.fetchGraphEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, searchMode)
 				return nil
 			})
 		}
 		if len(enhanceTasks) > 0 {
 			_ = mr.Finish(enhanceTasks...)
+		}
+
+		// 图谱扩召回会把候选集之外的关联文章带回，按 id 从 ES 补齐后才能参与融合与切页
+		if graphEnabled && amplified {
+			items = l.appendGraphRecallItems(items, graphItems)
+			resp.List = items
 		}
 
 		if vectorEnabled || graphEnabled {
@@ -230,27 +237,157 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		clearExplainFields(resp.List)
 	}
 
-	// 如果指定了搜索关键字，记录搜索信息
-	if req.Keyword != nil && *req.Keyword != "" {
-		logUserID := currentUserID
-		if logUserID <= 0 && req.UserId != nil {
-			logUserID = int64(*req.UserId)
-		}
+	return resp, mode, nil
+}
 
-		// 发送搜索信息到消息队列中进行异步处理
-		msg := map[string]any{
-			"action":  "search",
-			"userId":  logUserID,
-			"content": searchDTO,
-			"msg":     constants.SEARCH_MSG,
+// normalizePaging 归一化分页参数，页码小于 1 取 1，页大小小于 1 取 10
+func normalizePaging(req *types.SearchArticlesReq) (int, int) {
+	page := max(req.Page, 1)
+	size := req.Size
+	if size < 1 {
+		size = 10
+	}
+	return page, size
+}
+
+// buildSearchResultCacheKey 按用户与全部查询条件生成稳定缓存键，任一条件不同都不会命中同一缓存
+func buildSearchResultCacheKey(req *types.SearchArticlesReq, page int, size int, currentUserID int64) string {
+	authorID := ""
+	if req.UserId != nil {
+		authorID = strconv.FormatUint(*req.UserId, 10)
+	}
+
+	return utils.StableKey(
+		strconv.FormatInt(currentUserID, 10),
+		strconv.Itoa(page),
+		strconv.Itoa(size),
+		normalizeSearchMode(req),
+		derefString(req.Keyword),
+		authorID,
+		derefString(req.Username),
+		derefString(req.CategoryName),
+		derefString(req.SubCategoryName),
+		derefString(req.StartDate),
+		derefString(req.EndDate),
+		boolFlag(req.EnableVector),
+		boolFlag(req.EnableGraph),
+		boolFlag(req.Explain),
+	)
+}
+
+// boolFlag 把可选布尔参数渲染成缓存键片段，缺省值用 d 表示
+func boolFlag(value *bool) string {
+	if value == nil {
+		return "d"
+	}
+	if *value {
+		return "1"
+	}
+	return "0"
+}
+
+// publishSearchLog 把搜索行为投递到消息队列，投递失败只记录日志
+func (l *SearchArticlesLogic) publishSearchLog(req *types.SearchArticlesReq, page int, size int, currentUserID int64) {
+	keyword := derefString(req.Keyword)
+	if keyword == "" {
+		return
+	}
+
+	logUserID := currentUserID
+	if logUserID <= 0 && req.UserId != nil {
+		logUserID = int64(*req.UserId)
+	}
+
+	msg := map[string]any{
+		"action": "search",
+		"userId": logUserID,
+		"content": search.ArticleSearchDTO{
+			Keyword:         keyword,
+			UserID:          req.UserId,
+			Username:        derefString(req.Username),
+			CategoryName:    derefString(req.CategoryName),
+			SubCategoryName: derefString(req.SubCategoryName),
+			StartDate:       req.StartDate,
+			EndDate:         req.EndDate,
+			Page:            page,
+			Size:            size,
+		},
+		"msg": constants.SEARCH_MSG,
+	}
+	if err := l.svcCtx.RabbitMQPublisher.PublishJSON(constants.ARTICLE_LOG_QUEUE, msg); err != nil {
+		l.Errorf(constants.SEARCH_ERR+": %v", err)
+	}
+}
+
+// appendGraphRecallItems 把图谱扩召回返回、但不在 ES 候选集内的文章按 id 补齐到候选集
+// 补入条数以 SEARCH_GRAPH_RECALL_MAX 为上限，total 始终由 ES 决定
+func (l *SearchArticlesLogic) appendGraphRecallItems(items []types.ArticleEsItem, graphItems []fastapiClient.GraphEnhanceItem) []types.ArticleEsItem {
+	if len(graphItems) == 0 {
+		return items
+	}
+
+	existing := make(map[int64]struct{}, len(items))
+	for i := range items {
+		existing[items[i].Id] = struct{}{}
+	}
+
+	extraIDs := make([]int64, 0, constants.SEARCH_GRAPH_RECALL_MAX)
+	for i := range graphItems {
+		articleID := graphItems[i].ArticleID
+		if articleID <= 0 {
+			continue
 		}
-		// 发布失败只记录日志：搜索结果已生成，日志投递失败不应影响本次响应
-		if err := l.svcCtx.RabbitMQPublisher.PublishJSON(constants.ARTICLE_LOG_QUEUE, msg); err != nil {
-			l.Error(fmt.Sprintf(constants.SEARCH_ERR+": %v", err))
+		if _, ok := existing[articleID]; ok {
+			continue
+		}
+		existing[articleID] = struct{}{}
+		extraIDs = append(extraIDs, articleID)
+		if len(extraIDs) >= constants.SEARCH_GRAPH_RECALL_MAX {
+			break
 		}
 	}
 
-	return
+	if len(extraIDs) == 0 {
+		return items
+	}
+
+	extraArticles, err := l.svcCtx.SearchModel.GetArticlesByIDs(l.ctx, extraIDs)
+	if err != nil {
+		l.Warningf(constants.SEARCH_GRAPH_RECALL_DEGRADE_LOG, len(extraIDs), err)
+		return items
+	}
+
+	return append(items, toArticleEsItems(extraArticles)...)
+}
+
+// toArticleEsItems 把 ES 文档转换为接口返回的文章项
+func toArticleEsItems(articles []search.ArticleES) []types.ArticleEsItem {
+	items := make([]types.ArticleEsItem, len(articles))
+	for i, article := range articles {
+		items[i] = types.ArticleEsItem{
+			Id:                article.ID,
+			Title:             article.Title,
+			Content:           article.Content,
+			UserId:            article.UserID,
+			Username:          article.Username,
+			Tags:              article.Tags,
+			Status:            article.Status,
+			Views:             article.Views,
+			LikeCount:         article.LikeCount,
+			CollectCount:      article.CollectCount,
+			AuthorFollowCount: article.AuthorFollowCount,
+			CategoryName:      article.CategoryName,
+			SubCategoryName:   article.SubCategoryName,
+			CreateAt:          derefString(article.CreateAt),
+			UpdateAt:          derefString(article.UpdateAt),
+			AiScore:           article.AIScore,
+			UserScore:         article.UserScore,
+			AiCommentCount:    article.AICommentCount,
+			UserCommentCount:  article.UserCommentCount,
+			EsScore:           article.ESScore,
+		}
+	}
+	return items
 }
 
 // derefString 将 *string 安全解引用为 string，nil 时返回空串

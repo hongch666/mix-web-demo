@@ -161,40 +161,101 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 		articleIDs = append(articleIDs, article.ID)
 	}
 
-	if len(articles) > 0 && m.springClient != nil {
-		authorUserIDs := make([]int64, 0, len(articles))
-		for _, article := range articles {
-			authorUserIDs = append(authorUserIDs, article.UserID)
-		}
-
-		// ES 文档里的阅读量、点赞、收藏、粉丝与评分都是同步快照，检索时统一用实时统计覆盖，失败则保留 ES 文档原值作为降级
-		stats, statsErr := m.springClient.FetchArticleStats(ctx, articleIDs, authorUserIDs)
-
-		// 实时统计整体失败或响应结构不符契约时全部指标降级，不阻断搜索主链路：解析静默失败会让统计与评分长期显示 ES 旧值
-		if statsErr != nil {
-			logx.WithContext(ctx).Slow("[WARN] " + fmt.Sprintf(constants.SEARCH_STATS_FILL_DEGRADE_LOG,
-				strings.Join(constants.SEARCH_STATS_FILL_METRICS, ","), statsErr))
-		}
-
-		for i := range articles {
-			if views, ok := stats.Views[articles[i].ID]; ok {
-				articles[i].Views = views
-			}
-			if likes, ok := stats.Likes[articles[i].ID]; ok {
-				articles[i].LikeCount = int(likes)
-			}
-			if collects, ok := stats.Collects[articles[i].ID]; ok {
-				articles[i].CollectCount = int(collects)
-			}
-			if followCount, ok := stats.Follows[articles[i].UserID]; ok {
-				articles[i].AuthorFollowCount = int(followCount)
-			}
-			applyCommentScores(&articles[i], stats.CommentScores[articles[i].ID])
-		}
+	if len(articles) > 0 {
+		m.fillArticleStats(ctx, articles, articleIDs)
 	}
 
 	total := int(searchResult.Hits.TotalHits.Value)
 	return articles, total, nil
+}
+
+// GetArticlesByIDs 按文章 ID 批量读取 ES 文档，返回已发布文章，用于图谱扩召回补取候选集之外的文章
+func (m *searchModel) GetArticlesByIDs(ctx context.Context, articleIDs []int64) ([]ArticleES, error) {
+	if m.esClient == nil {
+		return nil, ErrNilESClient
+	}
+	if len(articleIDs) == 0 {
+		return []ArticleES{}, nil
+	}
+
+	// 索引名按条指定：MultiGet 没有服务级 Index 方法，未指定的 id 会落到默认索引
+	items := make([]*elastic.MultiGetItem, 0, len(articleIDs))
+	for _, articleID := range articleIDs {
+		items = append(items, elastic.NewMultiGetItem().
+			Index(articlesIndexName).
+			Id(fmt.Sprintf("%d", articleID)))
+	}
+
+	result, err := m.esClient.MultiGet().Add(items...).Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	articles := make([]ArticleES, 0, len(result.Docs))
+	for _, doc := range result.Docs {
+		// 未命中的文档直接跳过：扩召回是增益项，缺失不影响主链路
+		if doc == nil || !doc.Found {
+			continue
+		}
+
+		var article ArticleES
+		if err = json.Unmarshal(doc.Source, &article); err != nil {
+			continue
+		}
+		// 只补已发布文章，与检索侧的 status 过滤保持一致
+		if article.Status != 1 {
+			continue
+		}
+
+		articles = append(articles, article)
+	}
+
+	if len(articles) > 0 {
+		foundIDs := make([]int64, 0, len(articles))
+		for _, article := range articles {
+			foundIDs = append(foundIDs, article.ID)
+		}
+		m.fillArticleStats(ctx, articles, foundIDs)
+	}
+
+	return articles, nil
+}
+
+// fillArticleStats 用 Spring 实时统计覆盖 ES 文档快照里的阅读量、点赞、收藏、粉丝与评分，失败时保留 ES 原值
+func (m *searchModel) fillArticleStats(ctx context.Context, articles []ArticleES, articleIDs []int64) {
+	if len(articles) == 0 || m.springClient == nil {
+		return
+	}
+
+	authorUserIDs := make([]int64, 0, len(articles))
+	for _, article := range articles {
+		authorUserIDs = append(authorUserIDs, article.UserID)
+	}
+
+	// ES 文档里的阅读量、点赞、收藏、粉丝与评分都是同步快照，检索时统一用实时统计覆盖，失败则保留 ES 文档原值作为降级
+	stats, statsErr := m.springClient.FetchArticleStats(ctx, articleIDs, authorUserIDs)
+
+	// 实时统计整体失败或响应结构不符契约时全部指标降级，不阻断搜索主链路：解析静默失败会让统计与评分长期显示 ES 旧值
+	if statsErr != nil {
+		logx.WithContext(ctx).Slow("[WARN] " + fmt.Sprintf(constants.SEARCH_STATS_FILL_DEGRADE_LOG,
+			strings.Join(constants.SEARCH_STATS_FILL_METRICS, ","), statsErr))
+	}
+
+	for i := range articles {
+		if views, ok := stats.Views[articles[i].ID]; ok {
+			articles[i].Views = views
+		}
+		if likes, ok := stats.Likes[articles[i].ID]; ok {
+			articles[i].LikeCount = int(likes)
+		}
+		if collects, ok := stats.Collects[articles[i].ID]; ok {
+			articles[i].CollectCount = int(collects)
+		}
+		if followCount, ok := stats.Follows[articles[i].UserID]; ok {
+			articles[i].AuthorFollowCount = int(followCount)
+		}
+		applyCommentScores(&articles[i], stats.CommentScores[articles[i].ID])
+	}
 }
 
 // getParamName 从脚本参数映射中获取参数名，返回 FastAPI 定义的脚本参数名，paramMap: 从 FastAPI 获取的 weight_key → param_name 映射，weightKey: FastAPI 定义的权重 key

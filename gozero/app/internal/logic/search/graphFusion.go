@@ -94,17 +94,31 @@ func meanOfVectorItems(items []fastapiClient.VectorEnhanceItem) float64 {
 	return sum / float64(len(items))
 }
 
-// meanOfGraphItems 计算图谱增强结果的均值，该均值用于填充未被图谱召回的候选，避免把「无关系」当成零分
-func meanOfGraphItems(items []fastapiClient.GraphEnhanceItem) float64 {
+// meanOfGraphItems 计算图谱增强结果在候选集内的均值，该均值用于填充未被图谱召回的候选，避免把「无关系」当成零分
+// 图谱扩召回补入、但不在 ES 候选集内的条目不参与均值，避免拉高未命中候选的图谱分
+func meanOfGraphItems(articles []types.ArticleEsItem, items []fastapiClient.GraphEnhanceItem) float64 {
 	if len(items) == 0 {
 		return 0
 	}
 
-	sum := 0.0
-	for i := range items {
-		sum += clamp01(items[i].GraphScore)
+	candidates := make(map[int64]struct{}, len(articles))
+	for i := range articles {
+		candidates[articles[i].Id] = struct{}{}
 	}
-	return sum / float64(len(items))
+
+	sum := 0.0
+	count := 0
+	for i := range items {
+		if _, ok := candidates[items[i].ArticleID]; !ok {
+			continue
+		}
+		sum += clamp01(items[i].GraphScore)
+		count++
+	}
+	if count == 0 {
+		return 0
+	}
+	return sum / float64(count)
 }
 
 // MergeAndRerank 融合 ES、向量和图谱结果并重排
@@ -147,7 +161,7 @@ func MergeAndRerank(
 
 	// 未被向量或图谱召回的候选用候选集均值填充，避免信号缺失被当成零分而系统性压低排序
 	vectorMean := meanOfVectorItems(vectorItems)
-	graphMean := meanOfGraphItems(graphItems)
+	graphMean := meanOfGraphItems(articles, graphItems)
 
 	// 为每篇文章计算最终分
 	for i := range articles {

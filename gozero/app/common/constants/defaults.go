@@ -26,6 +26,14 @@ const (
 	SEARCH_VECTOR_CANDIDATE_LIMIT = 200
 	// 图谱增强候选上限，需不小于召回放大上限
 	SEARCH_GRAPH_CANDIDATE_LIMIT = 200
+	// 单次搜索允许并入的图谱扩召回文章条数上限，需与 FastAPI 侧 GRAPH_RECALL_LIMIT 对齐
+	SEARCH_GRAPH_RECALL_MAX = 10
+	// 搜索结果 L1 本地缓存有效期，覆盖连续点击与快速翻页的相同查询
+	SEARCH_RESULT_CACHE_LOCAL_TTL = 10 * time.Second
+	// 搜索结果 L2 Redis 缓存有效期，供多实例复用，过期后重新检索
+	SEARCH_RESULT_CACHE_REDIS_TTL = 30 * time.Second
+	// 允许写入搜索结果缓存的单页条数上限，响应体过大的深分页不进入缓存
+	SEARCH_RESULT_CACHE_MAX_SIZE = 20
 )
 
 // 搜索统计回填指标，顺序与检索时并行拉取的顺序一一对应，作为 SEARCH_STATS_FILL_DEGRADE_LOG 的 metrics 字段使用，新增回填指标时同步追加，模型层按下标与回填结果对应

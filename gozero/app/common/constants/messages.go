@@ -307,6 +307,8 @@ const (
 	SEARCH_RECALL_DEGRADE_LOG = "深分页超出召回上限，退化为窗口内重排: page=%d, size=%d, recallLimit=%d"
 	// 检索统计回填失败后指标降级的日志消息
 	SEARCH_STATS_FILL_DEGRADE_LOG = "文章统计回填失败，对应指标降级为 ES 文档原值: metrics=%s, error=%v"
+	// 图谱扩召回文章按 id 补取失败后保持 ES 候选集的日志消息
+	SEARCH_GRAPH_RECALL_DEGRADE_LOG = "图谱扩召回文章补取失败，保持 ES 候选集: count=%d, err=%v"
 	// 可选依赖缺失导致服务降级的警告
 	DEPENDENCY_MANIFEST_DEGRADED = "可选依赖缺失，服务降级运行: %s"
 	// 必需依赖缺失拒绝启动的错误消息

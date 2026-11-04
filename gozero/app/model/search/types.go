@@ -93,6 +93,8 @@ type SearchModelDeps struct {
 // 文章搜索模型接口，提供基于 ES 的文章检索能力
 type SearchModel interface {
 	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, esScript string, weights *SearchWeights, paramMap ScriptParamMapping) ([]ArticleES, int, error)
+	// GetArticlesByIDs 按文章 ID 批量读取索引文档，用于把图谱扩召回的文章补进候选集
+	GetArticlesByIDs(ctx context.Context, articleIDs []int64) ([]ArticleES, error)
 }
 
 // SearchModel 的默认实现，持有 ES 客户端、Spring 客户端与查询 DSL 日志配置

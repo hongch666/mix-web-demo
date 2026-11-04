@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"app/common/cache"
 	"app/common/mq"
 	"app/common/redis"
 	"app/common/utils"
@@ -12,6 +13,7 @@ import (
 	"app/internal/client/springClient"
 	"app/internal/config"
 	"app/internal/hub"
+	"app/internal/types"
 	"app/model/chatMessages"
 	"app/model/search"
 
@@ -47,6 +49,8 @@ type InfrastructureContext struct {
 type ModelContext struct {
 	ChatMessagesModel chatMessages.ChatMessagesModel
 	SearchModel       search.SearchModel
+	// SearchResultCache 搜索结果两级缓存，未装配（无 Redis）时为 nil，搜索链路直接回源
+	SearchResultCache *cache.MultiLevelCache[*types.SearchArticlesResp]
 }
 
 // HubContext 保存实时通信相关依赖
