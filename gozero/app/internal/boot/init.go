@@ -35,8 +35,9 @@ func Run(configFile string) error {
 	// 创建并初始化服务器
 	server := CreateServer(cfg, ctx)
 	defer func() {
-		ctx.Close()
+		// 先停止接收新请求，再释放请求处理期间依赖的基础设施
 		server.Stop()
+		ctx.Close()
 	}()
 
 	// 启动服务器

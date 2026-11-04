@@ -43,8 +43,8 @@ func CreateServer(c config.Config, ctx *svc.ServiceContext) *rest.Server {
 	// 按开关注册定时任务调度器，生命周期随 ServiceContext 管理
 	registerTaskScheduler(c, ctx)
 
-	// 输出启动信息
-	PrintStartupInfo(c)
+	// 输出启动信息（复用 ServiceContext 的日志实例，避免额外创建独立日志文件句柄）
+	PrintStartupInfo(c, ctx.Logger)
 
 	return server
 }
@@ -57,5 +57,5 @@ func registerTaskScheduler(c config.Config, ctx *svc.ServiceContext) {
 		}
 		return
 	}
-	ctx.TaskScheduler = task.NewTaskScheduler(ctx, redis.NewDistributedLock)
+	ctx.RegisterTaskScheduler(task.NewTaskScheduler(ctx, redis.NewDistributedLock))
 }

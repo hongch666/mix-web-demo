@@ -9,6 +9,7 @@ import (
 	"app/common/utils"
 	"app/internal/config"
 
+	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -63,6 +64,15 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	setupRealtime(serviceContext, serviceCtx.HubContext, infrastructure.RedisClient, zLogger)
 
 	return serviceCtx
+}
+
+// RegisterTaskScheduler 注册定时任务调度器，装配在启动层完成，生命周期统一由 Close 释放
+// task 包依赖 svc，不能由 svc 反向 import，因此创建仍在 boot 层，但不再从包外直接写字段
+func (sc *ServiceContext) RegisterTaskScheduler(scheduler *cron.Cron) {
+	if sc == nil || sc.RuntimeContext == nil {
+		return
+	}
+	sc.RuntimeContext.TaskScheduler = scheduler
 }
 
 // Close 释放 ServiceContext 持有的所有资源

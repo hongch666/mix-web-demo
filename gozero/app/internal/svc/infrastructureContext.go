@@ -74,6 +74,16 @@ func initRawMysql(c config.Config, logger *utils.ZeroLogger) *sql.DB {
 
 // Close 关闭基础设施连接
 func (ic *InfrastructureContext) Close() {
+	// ES 客户端有 sniff/healthcheck 后台协程，必须显式停止
+	if ic.ESClient != nil {
+		ic.ESClient.Stop()
+	}
+
+	// Nacos 命名客户端持有 gRPC 连接与实例心跳，需显式释放
+	if ic.NamingClient != nil {
+		ic.NamingClient.CloseClient()
+	}
+
 	if ic.RawMySQL != nil {
 		if err := ic.RawMySQL.Close(); err != nil {
 			logx.Errorf(constants.MYSQL_CLOSE_FAIL, err)
