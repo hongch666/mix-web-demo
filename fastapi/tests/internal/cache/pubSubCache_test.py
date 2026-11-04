@@ -264,6 +264,11 @@ async def test_broadcast_with_user_ids_clears_matching_entries(
     assert instance._local_entries.get("test:keyword_tag:7:abc") is not None
 
 
+# 失效频道按服务隔离，避免与 NestJS 的 key 列表消息格式互相干扰
+def test_invalidate_channel_is_service_scoped() -> None:
+    assert RedisKeys.CACHE_INVALIDATE_CHANNEL == "cache:invalidate:fastapi"
+
+
 # Redis 不可用时订阅协程静默跳过且可安全停止
 @pytest.mark.anyio
 async def test_subscriber_skips_when_redis_unavailable(

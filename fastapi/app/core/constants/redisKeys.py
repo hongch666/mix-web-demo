@@ -76,8 +76,8 @@ class RedisKeys:
     USER_VIEW_DISTRIBUTION_VERSION: str = "user:view_distribution:version"
     """用户文章阅读分布的版本号"""
 
-    CACHE_INVALIDATE_CHANNEL: str = "cache:invalidate"
-    """多级缓存跨实例失效广播频道，失效方发布命名空间，订阅方清理各自的本地条目"""
+    CACHE_INVALIDATE_CHANNEL: str = "cache:invalidate:fastapi"
+    """多级缓存跨实例失效广播频道，按服务隔离频道避免与 NestJS 的消息格式互相干扰，失效方发布命名空间，订阅方清理各自的本地条目"""
 
     CACHE_NAMESPACE_VECTOR: str = "vector"
     """向量检索缓存的失效命名空间"""
