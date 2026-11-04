@@ -2194,6 +2194,77 @@ class Messages:
         """构造用户分析指标不支持的错误消息"""
         return f"不支持的用户分析指标: {metric}"
 
+    # ===== 缓存与图谱检索日志 =====
+
+    @staticmethod
+    def CACHE_BROADCAST_APPLIED(namespace: str, count: int) -> str:
+        """构造应用失效广播清理本地缓存的日志消息"""
+        return f"[缓存] 收到失效广播，已清理命名空间 {namespace} 的本地缓存 {count} 条"
+
+    @staticmethod
+    def CACHE_BROADCAST_INVALID_MESSAGE(error: Exception) -> str:
+        """构造失效广播内容解析失败的日志消息"""
+        return f"[缓存] 解析失效广播失败: {error}"
+
+    @staticmethod
+    def CACHE_BROADCAST_LOOP_FAILED(error: Exception) -> str:
+        """构造订阅循环异常退出的日志消息"""
+        return f"[缓存] 失效广播订阅循环异常退出: {error}"
+
+    @staticmethod
+    def CACHE_PARTIAL_INVALIDATED(namespace: str, cleared: int, deleted: int) -> str:
+        """构造按 id 部分失效结果的日志消息"""
+        return (
+            f"[缓存] 命名空间 {namespace} 部分失效完成，"
+            f"清理本地 {cleared} 条，删除 Redis {deleted} 条"
+        )
+
+    @staticmethod
+    def VECTOR_ENHANCE_CACHE_HIT(cache_key: str) -> str:
+        """构造向量检索缓存命中的日志消息"""
+        return f"[向量缓存] 命中 - key: {cache_key}"
+
+    @staticmethod
+    def VECTOR_ENHANCE_CACHE_STORED(cache_key: str, count: int) -> str:
+        """构造向量检索结果写入缓存的日志消息"""
+        return f"[向量缓存] 已写入 - key: {cache_key}, 结果数: {count}"
+
+    @staticmethod
+    def GRAPH_SIGNAL_CACHE_HIT(cache_key: str) -> str:
+        """构造图谱信号缓存命中的日志消息"""
+        return f"[图谱缓存] 命中 - key: {cache_key}"
+
+    @staticmethod
+    def GRAPH_SIGNAL_CACHE_STORED(cache_key: str, count: int) -> str:
+        """构造图谱信号结果写入缓存的日志消息"""
+        return f"[图谱缓存] 已写入 - key: {cache_key}, 行数: {count}"
+
+    @staticmethod
+    def CACHE_BATCH_READ(requested: int, hits: int) -> str:
+        """构造批量读缓存的聚合日志消息"""
+        return f"[缓存] 批量读取 {requested} 个键，命中 {hits} 个"
+
+    @staticmethod
+    def CACHE_BATCH_WRITE(count: int) -> str:
+        """构造批量写缓存的聚合日志消息"""
+        return f"[缓存] 批量写入 {count} 个键"
+
+    @staticmethod
+    def GRAPH_SIGNAL_CACHE_SUMMARY(
+        signal: str, hits: int, misses: int, elapsed: float
+    ) -> str:
+        """构造单路图谱信号的缓存命中数与耗时聚合日志消息"""
+        return (
+            f"[图谱缓存] {signal} 命中 {hits} 个，回源 {misses} 个，耗时 {elapsed:.3f}s"
+        )
+
+    @staticmethod
+    def GRAPH_SEARCH_TIMING(elapsed: float, candidates: int, extras: int) -> str:
+        """构造图谱增强整体耗时与扩召回条数的日志消息"""
+        return f"图谱增强耗时: {elapsed:.3f}s, 候选: {candidates}, 扩召回: {extras}"
+
+    # ===== 服务运行与配置提示 =====
+
     WORDCLOUD_ADS_SOURCE: str = "词云关键词使用 ClickHouse ADS 数据源"
     """词云关键词取数来源说明，标示已切换到 ClickHouse ADS"""
 
@@ -3412,83 +3483,16 @@ class Messages:
     )
     """Redis 不可用导致订阅未启动的日志消息"""
 
-    @staticmethod
-    def CACHE_BROADCAST_APPLIED(namespace: str, count: int) -> str:
-        """构造应用失效广播清理本地缓存的日志消息"""
-        return f"[缓存] 收到失效广播，已清理命名空间 {namespace} 的本地缓存 {count} 条"
-
-    @staticmethod
-    def CACHE_BROADCAST_INVALID_MESSAGE(error: Exception) -> str:
-        """构造失效广播内容解析失败的日志消息"""
-        return f"[缓存] 解析失效广播失败: {error}"
-
-    @staticmethod
-    def CACHE_BROADCAST_LOOP_FAILED(error: Exception) -> str:
-        """构造订阅循环异常退出的日志消息"""
-        return f"[缓存] 失效广播订阅循环异常退出: {error}"
-
     CACHE_BROADCAST_PUBLISH_FAILED: str = (
         "[缓存] 发布失效广播失败，其它实例的本地缓存将滞后至 TTL 过期"
     )
     """失效广播发布失败的日志消息"""
 
-    @staticmethod
-    def CACHE_PARTIAL_INVALIDATED(namespace: str, cleared: int, deleted: int) -> str:
-        """构造按 id 部分失效结果的日志消息"""
-        return (
-            f"[缓存] 命名空间 {namespace} 部分失效完成，"
-            f"清理本地 {cleared} 条，删除 Redis {deleted} 条"
-        )
-
-    @staticmethod
-    def VECTOR_ENHANCE_CACHE_HIT(cache_key: str) -> str:
-        """构造向量检索缓存命中的日志消息"""
-        return f"[向量缓存] 命中 - key: {cache_key}"
-
-    @staticmethod
-    def VECTOR_ENHANCE_CACHE_STORED(cache_key: str, count: int) -> str:
-        """构造向量检索结果写入缓存的日志消息"""
-        return f"[向量缓存] 已写入 - key: {cache_key}, 结果数: {count}"
-
     VECTOR_QUERY_CACHE_INVALIDATED: str = "[向量缓存] 已失效并广播"
     """向量检索缓存失效完成的日志消息"""
 
-    @staticmethod
-    def GRAPH_SIGNAL_CACHE_HIT(cache_key: str) -> str:
-        """构造图谱信号缓存命中的日志消息"""
-        return f"[图谱缓存] 命中 - key: {cache_key}"
-
-    @staticmethod
-    def GRAPH_SIGNAL_CACHE_STORED(cache_key: str, count: int) -> str:
-        """构造图谱信号结果写入缓存的日志消息"""
-        return f"[图谱缓存] 已写入 - key: {cache_key}, 行数: {count}"
-
     GRAPH_SIGNAL_CACHE_INVALIDATED: str = "[图谱缓存] 已失效并广播"
     """图谱信号缓存失效完成的日志消息"""
-
-    @staticmethod
-    def CACHE_BATCH_READ(requested: int, hits: int) -> str:
-        """构造批量读缓存的聚合日志消息"""
-        return f"[缓存] 批量读取 {requested} 个键，命中 {hits} 个"
-
-    @staticmethod
-    def CACHE_BATCH_WRITE(count: int) -> str:
-        """构造批量写缓存的聚合日志消息"""
-        return f"[缓存] 批量写入 {count} 个键"
-
-    @staticmethod
-    def GRAPH_SIGNAL_CACHE_SUMMARY(
-        signal: str, hits: int, misses: int, elapsed: float
-    ) -> str:
-        """构造单路图谱信号的缓存命中数与耗时聚合日志消息"""
-        return (
-            f"[图谱缓存] {signal} 命中 {hits} 个，回源 {misses} 个，耗时 {elapsed:.3f}s"
-        )
-
-    @staticmethod
-    def GRAPH_SEARCH_TIMING(elapsed: float, candidates: int, extras: int) -> str:
-        """构造图谱增强整体耗时与扩召回条数的日志消息"""
-        return f"图谱增强耗时: {elapsed:.3f}s, 候选: {candidates}, 扩召回: {extras}"
 
     GRAPH_SEARCH_REASON_RECALL: str = "图谱关联的相似文章"
     """图谱扩召回信号的推荐原因文案"""
