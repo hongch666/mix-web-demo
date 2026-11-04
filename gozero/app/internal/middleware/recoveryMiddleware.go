@@ -1,3 +1,5 @@
+// Code scaffolded by goctl. Safe to edit.
+
 package middleware
 
 import (
