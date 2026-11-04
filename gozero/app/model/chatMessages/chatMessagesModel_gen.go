@@ -35,12 +35,14 @@ type (
 	}
 
 	ChatMessages struct {
-		Id         uint64    `db:"id"`          // 消息ID，主键
-		SenderId   int64     `db:"sender_id"`   // 发送者ID
-		ReceiverId int64     `db:"receiver_id"` // 接收者ID
-		Content    string    `db:"content"`     // 消息内容
-		IsRead     int64     `db:"is_read"`     // 是否已读，0未读，1已读
-		CreatedAt  time.Time `db:"created_at"`  // 创建时间
+		Id               uint64        `db:"id"`                // 消息ID，主键
+		SenderId         int64         `db:"sender_id"`         // 发送者ID
+		ReceiverId       int64         `db:"receiver_id"`       // 接收者ID
+		Content          string        `db:"content"`           // 消息内容
+		IsRead           int64         `db:"is_read"`           // 是否已读，0未读，1已读
+		CreatedAt        time.Time     `db:"created_at"`        // 创建时间
+		ConversationLow  sql.NullInt64 `db:"conversation_low"`  // 会话对端较小ID
+		ConversationHigh sql.NullInt64 `db:"conversation_high"` // 会话对端较大ID
 	}
 )
 
@@ -72,14 +74,14 @@ func (m *defaultChatMessagesModel) FindOne(ctx context.Context, id uint64) (*Cha
 }
 
 func (m *defaultChatMessagesModel) Insert(ctx context.Context, data *ChatMessages) (sql.Result, error) {
-	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?)", m.table, chatMessagesRowsExpectAutoSet)
-	ret, err := m.conn.ExecCtx(ctx, query, data.SenderId, data.ReceiverId, data.Content, data.IsRead)
+	query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?)", m.table, chatMessagesRowsExpectAutoSet)
+	ret, err := m.conn.ExecCtx(ctx, query, data.SenderId, data.ReceiverId, data.Content, data.IsRead, data.ConversationLow, data.ConversationHigh)
 	return ret, err
 }
 
 func (m *defaultChatMessagesModel) Update(ctx context.Context, data *ChatMessages) error {
 	query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, chatMessagesRowsWithPlaceHolder)
-	_, err := m.conn.ExecCtx(ctx, query, data.SenderId, data.ReceiverId, data.Content, data.IsRead, data.Id)
+	_, err := m.conn.ExecCtx(ctx, query, data.SenderId, data.ReceiverId, data.Content, data.IsRead, data.ConversationLow, data.ConversationHigh, data.Id)
 	return err
 }
 
