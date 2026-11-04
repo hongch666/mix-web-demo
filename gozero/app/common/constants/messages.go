@@ -218,8 +218,12 @@ const (
 	RABBITMQ_CONNECTION_INIT_FAIL = "初始化 RabbitMQ 连接失败: %v"
 	// RabbitMQ 连接成功的日志消息
 	RABBITMQ_CONNECT_SUCCESS = "RabbitMQ 连接成功"
-	// RabbitMQ 通道未初始化的日志消息
-	RABBITMQ_CHANNEL_NOT_INITIALIZED_MESSAGE = "RabbitMQ 发布者未初始化"
+	// RabbitMQ 连接地址为空的错误消息
+	MQ_AMQP_URL_EMPTY_ERROR = "RabbitMQ 连接地址为空"
+	// MQ 发布器未初始化的错误消息
+	MQ_PUBLISHER_NOT_INITIALIZED_ERROR = "MQ 发布器未初始化"
+	// MQ 消息序列化失败的错误消息
+	MQ_PUBLISH_SERIALIZE_ERROR = "序列化 MQ 消息失败 - queue: %s, 原因: %v"
 	// Nacos 客户端初始化失败的日志消息
 	NACOS_CLIENT_INIT_FAIL = "初始化 Nacos 客户端失败: %v"
 	// Nacos 实例注册失败的日志消息
@@ -321,8 +325,6 @@ const (
 
 	// ===== API日志 =====
 
-	// 序列化 API 日志失败的错误消息
-	SERIALIZE_API_LOG_FAIL_MESSAGE = "序列化 API 日志消息失败: %v"
 	// API 日志投递失败的错误消息
 	SEND_API_LOG_FAIL_MESSAGE = "发送 API 日志到队列失败: %v"
 	// API 日志投递成功的日志消息

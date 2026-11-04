@@ -13,21 +13,20 @@ import (
 
 	"app/common/constants"
 	"app/common/keys"
+	"app/common/mq"
 	"app/common/utils"
-
-	rabbitmq "github.com/wagslane/go-rabbitmq"
 )
 
 // 记录 API 请求日志并将日志异步投递到 RabbitMQ 的中间件
 type ApiLogMiddleware struct {
 	description     string
 	excludeFields   []string
-	rabbitPublisher *rabbitmq.Publisher
+	rabbitPublisher *mq.Publisher
 	*utils.ZeroLogger
 }
 
 // NewApiLogMiddleware 创建 API 日志中间件，可指定接口描述与敏感字段排除列表
-func NewApiLogMiddleware(description string, rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, excludeFields ...string) *ApiLogMiddleware {
+func NewApiLogMiddleware(description string, rabbitPublisher *mq.Publisher, log *utils.ZeroLogger, excludeFields ...string) *ApiLogMiddleware {
 	return &ApiLogMiddleware{
 		description:     description,
 		excludeFields:   excludeFields,
@@ -232,8 +231,8 @@ func formatLogMessage(method, path, description string, userID int64, username s
 	return message
 }
 
-// sendApiLogToQueue 发送 API 日志到队列（异步处理）
-func sendApiLogToQueue(lgr *utils.ZeroLogger, rabbitPublisher *rabbitmq.Publisher, userID int64, username, method, path, description string,
+// sendApiLogToQueue 发送 API 日志到队列（异步处理），发布器未初始化或投递失败只记录日志，不影响业务响应
+func sendApiLogToQueue(lgr *utils.ZeroLogger, publisher *mq.Publisher, userID int64, username, method, path, description string,
 	queryParams map[string]any, requestBody any, responseTimeMs int64,
 ) {
 	// 构建 API 日志消息（统一格式：camelCase）
@@ -248,34 +247,14 @@ func sendApiLogToQueue(lgr *utils.ZeroLogger, rabbitPublisher *rabbitmq.Publishe
 		"responseTime":   responseTimeMs,
 	}
 
-	// 序列化为 JSON
-	messageJSON, err := json.Marshal(apiLogMessage)
-	if err != nil {
+	if err := publisher.PublishJSON(constants.API_LOG_QUEUE, apiLogMessage); err != nil {
 		if lgr != nil {
-			lgr.Error(fmt.Sprintf(constants.SERIALIZE_API_LOG_FAIL_MESSAGE, err))
+			lgr.Error(fmt.Sprintf(constants.SEND_API_LOG_FAIL_MESSAGE, err))
 		}
 		return
 	}
 
-	// 发送到 RabbitMQ
-	if rabbitPublisher == nil {
-		if lgr != nil {
-			lgr.Error(constants.RABBITMQ_CHANNEL_NOT_INITIALIZED_MESSAGE)
-		}
-		return
-	}
-
-	// 发布消息到队列
-	err = rabbitPublisher.Publish(
-		messageJSON,
-		[]string{"api-log-queue"},
-		rabbitmq.WithPublishOptionsContentType("application/json"),
-		rabbitmq.WithPublishOptionsTimestamp(time.Now()),
-	)
-
-	if err != nil {
-		lgr.Error(fmt.Sprintf(constants.SEND_API_LOG_FAIL_MESSAGE, err))
-	} else {
+	if lgr != nil {
 		lgr.Info(constants.SEND_API_LOG_SUCCESS_MESSAGE)
 	}
 }
@@ -341,13 +320,13 @@ func sanitizeQueryParams(params map[string]any, excludeFields []string) map[stri
 }
 
 // WithApiLog 为 handler 添加 API 日志中间件，WithApiLog 中间件工厂函数
-func WithApiLog(rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, description string, excludeFields ...string) func(http.HandlerFunc) http.HandlerFunc {
+func WithApiLog(rabbitPublisher *mq.Publisher, log *utils.ZeroLogger, description string, excludeFields ...string) func(http.HandlerFunc) http.HandlerFunc {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
 		return NewApiLogMiddleware(description, rabbitPublisher, log, excludeFields...).Handle(handler)
 	}
 }
 
 // ApplyApiLog 直接应用 API 日志中间件到 handler，用法: return middleware.ApplyApiLog(rabbitPublisher, logger, handler, "操作描述", "password", "captcha")
-func ApplyApiLog(rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, handler http.HandlerFunc, description string, excludeFields ...string) http.HandlerFunc {
+func ApplyApiLog(rabbitPublisher *mq.Publisher, log *utils.ZeroLogger, handler http.HandlerFunc, description string, excludeFields ...string) http.HandlerFunc {
 	return WithApiLog(rabbitPublisher, log, description, excludeFields...)(handler)
 }

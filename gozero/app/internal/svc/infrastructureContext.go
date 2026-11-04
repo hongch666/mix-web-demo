@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"app/common/constants"
+	"app/common/mq"
 	"app/common/utils"
 	"app/internal/config"
 
@@ -22,7 +23,6 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/olivere/elastic/v7"
 	"github.com/redis/go-redis/v9"
-	rabbitmq "github.com/wagslane/go-rabbitmq"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
@@ -216,7 +216,7 @@ func initES(c config.Config, logger *utils.ZeroLogger) *elastic.Client {
 }
 
 // 初始化 RabbitMQ 发布者
-func initRabbitMQ(c config.Config, logger *utils.ZeroLogger) *rabbitmq.Publisher {
+func initRabbitMQ(c config.Config, logger *utils.ZeroLogger) *mq.Publisher {
 	mqConf := c.MQ
 	if mqConf.Host == "" || mqConf.Port == 0 {
 		logger.Warning(constants.RABBITMQ_CONFIG_MISSING_DEGRADE)
@@ -235,13 +235,7 @@ func initRabbitMQ(c config.Config, logger *utils.ZeroLogger) *rabbitmq.Publisher
 		trimSlashPrefix(vhost),
 	)
 
-	conn, err := rabbitmq.NewConn(url)
-	if err != nil {
-		logger.Errorf(constants.RABBITMQ_CONNECTION_INIT_FAIL, err)
-		panic(err)
-	}
-
-	publisher, err := rabbitmq.NewPublisher(conn, rabbitmq.WithPublisherOptionsLogging)
+	publisher, err := mq.NewPublisher(url)
 	if err != nil {
 		logger.Errorf(constants.RABBITMQ_CONNECTION_INIT_FAIL, err)
 		panic(err)

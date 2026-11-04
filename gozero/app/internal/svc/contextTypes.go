@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"app/common/mq"
 	"app/common/redis"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
@@ -18,7 +19,6 @@ import (
 	"github.com/olivere/elastic/v7"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
-	rabbitmq "github.com/wagslane/go-rabbitmq"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/rest"
 )
@@ -38,7 +38,7 @@ type InfrastructureContext struct {
 	// RawMySQL 标准库 MySQL 连接，供动态列 SQL（如 SQL 工具）手动扫描结果
 	RawMySQL          *sql.DB
 	ESClient          *elastic.Client
-	RabbitMQPublisher *rabbitmq.Publisher
+	RabbitMQPublisher *mq.Publisher
 	RedisClient       *goredis.Client
 	NamingClient      naming_client.INamingClient
 }

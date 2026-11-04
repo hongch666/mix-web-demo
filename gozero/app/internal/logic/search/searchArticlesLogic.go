@@ -4,7 +4,6 @@ package search
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -18,8 +17,6 @@ import (
 	"app/internal/svc"
 	"app/internal/types"
 	"app/model/search"
-
-	rabbitmq "github.com/wagslane/go-rabbitmq"
 
 	"github.com/zeromicro/go-zero/core/mr"
 )
@@ -247,19 +244,9 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 			"content": searchDTO,
 			"msg":     constants.SEARCH_MSG,
 		}
-		jsonBytes, err := json.Marshal(msg)
-		if err != nil {
+		// 发布失败只记录日志：搜索结果已生成，日志投递失败不应影响本次响应
+		if err := l.svcCtx.RabbitMQPublisher.PublishJSON(constants.ARTICLE_LOG_QUEUE, msg); err != nil {
 			l.Error(fmt.Sprintf(constants.SEARCH_ERR+": %v", err))
-		} else if l.svcCtx.RabbitMQPublisher != nil {
-			// 通过RabbitMQ发送消息
-			err = l.svcCtx.RabbitMQPublisher.Publish(
-				jsonBytes,
-				[]string{"article-log-queue"},
-				rabbitmq.WithPublishOptionsContentType("application/json"),
-			)
-			if err != nil {
-				l.Error(fmt.Sprintf(constants.SEARCH_ERR+": %v", err))
-			}
 		}
 	}
 
