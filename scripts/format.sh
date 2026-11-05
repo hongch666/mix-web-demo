@@ -39,6 +39,20 @@ format_package_imports() {
     return 0
 }
 
+# 依赖别名整理（fastapi）：装配函数写在前面、依赖别名集中到文件末尾，python 缺失时跳过
+format_dependency_aliases() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/dependency-aliases.py" --fix "$1"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/dependency-aliases.py" --fix "$1"
+        return
+    fi
+    print_warn "未检测到 python，跳过依赖别名整理"
+    return 0
+}
+
 # API 文件格式化（gozero）：与 genApi.sh 生成流程使用同一命令，goctl 缺失时跳过
 format_api_files() {
     if command -v goctl >/dev/null 2>&1; then
@@ -87,6 +101,8 @@ format_fastapi() {
     (cd "$WORKDIR/fastapi" && ruff format . && ruff check --fix .) || return 1
     print_info "整理 FastAPI 包导入（合并重复导入、按字典序排列）..."
     format_package_imports "$WORKDIR/fastapi" || return 1
+    print_info "整理 FastAPI 依赖别名（集中到文件末尾）..."
+    format_dependency_aliases "$WORKDIR/fastapi/app" || return 1
 }
 
 # ==================== 执行格式化 ====================

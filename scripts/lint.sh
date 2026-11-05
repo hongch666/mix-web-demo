@@ -67,6 +67,20 @@ lint_package_imports() {
     return 0
 }
 
+# 依赖别名规范检查（fastapi）：装配函数写在前面、依赖别名集中到文件末尾，python 缺失时跳过
+lint_dependency_aliases() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/dependency-aliases.py" --check "$1"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/dependency-aliases.py" --check "$1"
+        return
+    fi
+    print_warn "未检测到 python，跳过依赖别名规范检查"
+    return 0
+}
+
 # API 文件格式检查（gozero）：goctl api format 没有只读校验模式，
 # 把 .api 复制到临时目录执行格式化后与仓库文件比对，仓库文件只读不修改，goctl 缺失时跳过
 lint_api_format() {
@@ -177,7 +191,9 @@ lint_fastapi() {
     print_info "检查 FastAPI 常量文件规范（成员注释、分类注释、函数成员在前）..."
     lint_constants "$WORKDIR/fastapi/app/core/constants" || return 1
     print_info "检查 FastAPI 包导入规范..."
-    lint_package_imports "$WORKDIR/fastapi"
+    lint_package_imports "$WORKDIR/fastapi" || return 1
+    print_info "检查 FastAPI 依赖别名规范（装配函数在前、别名集中在末尾）..."
+    lint_dependency_aliases "$WORKDIR/fastapi/app"
 }
 
 # ==================== 执行检查 ====================
