@@ -46,7 +46,8 @@ nginx_config:
         index index.html;
         try_files $uri $uri/ /swagger-ui/index.html;
     }
-  error_log_level: warn
+  # 只记录 error：warn 里全是插件加载清单与 http 明文 TLS 提示，每个 worker 启动都重复刷一遍
+  error_log_level: error
 
 plugin_attr:
   prometheus:
