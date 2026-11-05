@@ -288,6 +288,7 @@ app/internal/agents     LangChain Agent 与工具
   - 定义层 `internal/{clients,crud,cache}/` 各文件底部：类 + 构造 + `@lru_cache` 工厂三位一体
   - 注册层 `app/dependencies/` 包（`database.py`、`mappers.py`、`caches.py`、`clients.py`、`services.py`、`tools.py`、`llm.py`）：集中定义 `Annotated` 别名（`DbSession`、`XxxServiceDep`、`XxxToolDep`），由包 `__init__.py` 统一导出
   - 装配层 `dependencies/services.py` / `tools.py` / `llm.py`：`provide_xxx(...)` 函数，**参数即依赖别名**，函数体调用底层工厂；服务与工具的构造依赖必须由这里显式传入，构造函数内不得自建依赖
+  - **文件内顺序固定为「装配函数 → 依赖别名」**：`app/dependencies/` 下每个文件先集中写 `provide_*` / `resolve_*` 函数，再把全部依赖别名（`XxxDep = Annotated[...]`，含 `DbSession`、`ClickHouseSession` 这类会话别名）集中在文件末尾构成连续区块，中间不再夹装配函数。由此装配函数的参数不能引用本文件定义的别名（`def` 时注解即求值，别名排在后面会变成前向引用），需要注入另一个服务的实例时写内联 `Annotated[XxxService, Depends(provide_xxx_service)]`。该约定由 `./mix lint fastapi` 里的 `scripts/dependency-aliases.py` 检查，`./mix format fastapi` 会把散落的别名搬到文件末尾；引用本文件别名的装配函数不做自动改写，脚本报出位置后人工改成内联
 - 注册范围只含**路由函数签名里直接出现**的依赖（DB 会话 + 服务 + agent 工具）；Client / Mapper / Cache 工厂不注册，只被 `provide_*` 与 `get_*_service` 消费
 - `@lru_cache` 工厂是承重墙：`provide_*` 每次请求都会执行，底层工厂漏 `@lru_cache` 会让 `get_xxx_service` 的缓存按新键无界累积
 - 非请求链路（APScheduler 任务）用 `resolve_xxx_service()` 复用同一组单例工厂，禁止 `cls(...)` 直接 new（会造出第二个实例、内部状态不共享）
@@ -729,9 +730,10 @@ FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大�
 ./mix format nestjs      # npm run format + npm run lint:fix
 ./mix lint nestjs        # npm run lint + npm run format:check + 常量规范检查
 
-# FastAPI：配置在 fastapi/pyproject.toml
-./mix format fastapi     # ruff format . + ruff check --fix .
-./mix lint fastapi       # ruff check . + 常量规范检查
+# FastAPI：配置在 fastapi/pyproject.toml；lint 额外执行 scripts/constants.py（常量注释与分类）、
+# scripts/package-imports.py（包导入规范）与 scripts/dependency-aliases.py（装配函数在前、依赖别名集中在末尾）
+./mix format fastapi     # ruff format . + ruff check --fix . + 包导入整理 + 依赖别名整理
+./mix lint fastapi       # ruff check . + pyright + 常量规范检查 + 包导入规范 + 依赖别名规范
 ```
 
 底层脚本是 `scripts/format.sh` 与 `scripts/lint.sh`，对应工具未安装时该服务会自动跳过并提示；`gateway` 为 APISIX 配置，不参与。行尾由根目录 `.gitattributes` 统一为 LF。
