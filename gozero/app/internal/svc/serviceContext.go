@@ -5,6 +5,7 @@ package svc
 import (
 	"context"
 
+	"app/common/cache"
 	"app/common/constants"
 	"app/common/utils"
 	"app/internal/config"
@@ -41,11 +42,20 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		panic(err)
 	}
 
+	searchConfigCacheTTL := cache.TTL{
+		Local: constants.SEARCH_CONFIG_CACHE_LOCAL_TTL,
+		Redis: constants.SEARCH_CONFIG_CACHE_REDIS_TTL,
+	}
+	searchResultCacheTTL := cache.TTL{
+		Local: constants.SEARCH_RESULT_CACHE_LOCAL_TTL,
+		Redis: constants.SEARCH_RESULT_CACHE_REDIS_TTL,
+	}
+
 	infrastructure := newInfrastructureContext(c, zLogger)
 	// 装配后立即校验依赖清单：必需依赖缺失直接 panic，避免带病启动
 	validateDependencies(infrastructure)
-	clientCtx := newClientContext(infrastructure.NamingClient, c.RemoteCall, zLogger, tokenUtil, infrastructure.RedisClient)
-	models := newModelContext(c, infrastructure, clientCtx, zLogger)
+	clientCtx := newClientContext(infrastructure.NamingClient, c.RemoteCall, zLogger, tokenUtil, infrastructure.RedisClient, searchConfigCacheTTL)
+	models := newModelContext(c, infrastructure, clientCtx, zLogger, searchResultCacheTTL)
 
 	serviceCtx := &ServiceContext{
 		RuntimeContext:        &RuntimeContext{Context: serviceContext, Cancel: cancel, Config: c},

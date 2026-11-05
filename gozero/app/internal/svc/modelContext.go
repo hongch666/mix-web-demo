@@ -12,7 +12,13 @@ import (
 )
 
 // 创建 ModelContext 实例，初始化各业务模型依赖
-func newModelContext(c config.Config, infrastructure *InfrastructureContext, clientCtx *ClientContext, logger *utils.ZeroLogger) *ModelContext {
+func newModelContext(
+	c config.Config,
+	infrastructure *InfrastructureContext,
+	clientCtx *ClientContext,
+	logger *utils.ZeroLogger,
+	searchResultCacheTTL cache.TTL,
+) *ModelContext {
 	models := &ModelContext{}
 	if infrastructure.MySQLConn != nil {
 		models.ChatMessagesModel = chatMessages.NewChatMessagesModel(infrastructure.MySQLConn)
@@ -29,8 +35,8 @@ func newModelContext(c config.Config, infrastructure *InfrastructureContext, cli
 	if infrastructure.RedisClient != nil {
 		models.SearchResultCache = cache.NewMultiLevelCache[*types.SearchArticlesResp](cache.Options{
 			KeyPrefix: constants.SEARCH_RESULT_CACHE_PREFIX,
-			LocalTTL:  constants.SEARCH_RESULT_CACHE_LOCAL_TTL,
-			RedisTTL:  constants.SEARCH_RESULT_CACHE_REDIS_TTL,
+			LocalTTL:  searchResultCacheTTL.Local,
+			RedisTTL:  searchResultCacheTTL.Redis,
 			Store:     redis.NewCacheStore(infrastructure.RedisClient),
 			Logger:    logger,
 		})

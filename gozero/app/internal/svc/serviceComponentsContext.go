@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"app/common/cache"
 	"app/common/client"
 	"app/common/constants"
 	"app/common/redis"
@@ -37,6 +38,7 @@ func newClientContext(
 	zLogger *utils.ZeroLogger,
 	tokenUtil *utils.InternalTokenUtil,
 	redisClient *goredis.Client,
+	searchConfigCacheTTL cache.TTL,
 ) *ClientContext {
 	remoteCallCfg := client.RemoteCallConfig{
 		Timeout:        time.Duration(remoteCallConfig.Timeout) * time.Millisecond,
@@ -45,7 +47,7 @@ func newClientContext(
 		MaxBackoff:     time.Duration(remoteCallConfig.MaxBackoff) * time.Millisecond,
 	}
 	return &ClientContext{
-		FastapiClient: fastapiClient.NewFastapiClient(namingClient, remoteCallCfg, zLogger, tokenUtil, redisClient),
+		FastapiClient: fastapiClient.NewFastapiClient(namingClient, remoteCallCfg, zLogger, tokenUtil, redisClient, searchConfigCacheTTL),
 		NestjsClient:  nestjsClient.NewNestjsClient(namingClient, remoteCallCfg, zLogger, tokenUtil),
 		SpringClient:  springClient.NewSpringClient(namingClient, remoteCallCfg, zLogger, tokenUtil),
 	}

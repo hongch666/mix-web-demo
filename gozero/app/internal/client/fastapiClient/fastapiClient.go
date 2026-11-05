@@ -27,17 +27,20 @@ type FastapiClient struct {
 	searchScriptParamsCache *cache.MultiLevelCache[search.ScriptParamMapping]
 }
 
-// NewFastapiClient 创建 FastAPI 客户端，redisClient 为 nil 时算法配置缓存退化为纯本地缓存
+// NewFastapiClient 创建 FastAPI 客户端，cacheTTL 指定算法配置缓存的两级有效期，redisClient 为 nil 时算法配置缓存退化为纯本地缓存
 func NewFastapiClient(
 	nc naming_client.INamingClient,
 	remoteCallConfig client.RemoteCallConfig,
 	logger *utils.ZeroLogger,
 	tokenUtil *utils.InternalTokenUtil,
 	redisClient *goredis.Client,
+	cacheTTL cache.TTL,
 ) *FastapiClient {
 	cacheOptions := cache.Options{
-		Store:  redis.NewCacheStore(redisClient),
-		Logger: logger,
+		LocalTTL: cacheTTL.Local,
+		RedisTTL: cacheTTL.Redis,
+		Store:    redis.NewCacheStore(redisClient),
+		Logger:   logger,
 	}
 
 	return &FastapiClient{

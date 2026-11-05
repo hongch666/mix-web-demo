@@ -29,6 +29,14 @@ type Store interface {
 // ErrCacheMiss L2 缓存未命中
 var ErrCacheMiss = errors.New(constants.CACHE_MISS)
 
+// TTL 两级缓存的有效期配置，由调用方按业务场景传入，未配置的项由默认值兜底
+type TTL struct {
+	// Local L1 本地缓存有效期
+	Local time.Duration
+	// Redis L2 Redis 缓存有效期
+	Redis time.Duration
+}
+
 // Options 多级缓存配置，零值项回退到 constants 中的默认值
 type Options struct {
 	// KeyPrefix Redis key 前缀，用于隔离不同业务的缓存，空串表示直接使用业务 key

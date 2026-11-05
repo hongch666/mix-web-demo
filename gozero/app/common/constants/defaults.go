@@ -34,6 +34,10 @@ const (
 	SEARCH_RESULT_CACHE_REDIS_TTL = 30 * time.Second
 	// 允许写入搜索结果缓存的单页条数上限，响应体过大的深分页不进入缓存
 	SEARCH_RESULT_CACHE_MAX_SIZE = 20
+	// 搜索算法配置 L1 本地缓存有效期，脚本、权重与参数名映射变更频率低，按此周期回源刷新
+	SEARCH_CONFIG_CACHE_LOCAL_TTL = 5 * time.Minute
+	// 搜索算法配置 L2 Redis 缓存有效期，供多实例复用并减少跨实例回源
+	SEARCH_CONFIG_CACHE_REDIS_TTL = 24 * time.Hour
 )
 
 // 搜索统计回填指标，顺序与检索时并行拉取的顺序一一对应，作为 SEARCH_STATS_FILL_DEGRADE_LOG 的 metrics 字段使用，新增回填指标时同步追加，模型层按下标与回填结果对应
@@ -46,7 +50,7 @@ var SEARCH_STATS_FILL_METRICS = []string{
 const (
 	// L1 本地缓存默认有效期，多级缓存未显式配置时使用，跨实例的本地值最多滞后该时长
 	CACHE_LOCAL_TTL = time.Minute
-	// L2 Redis 缓存默认有效期，算法配置类数据变更频率低，取比 L1 更长的有效期以减少跨实例回源
+	// L2 Redis 缓存默认有效期，多级缓存未显式配置时使用，取比 L1 更长的有效期以减少跨实例回源
 	CACHE_REDIS_TTL = 5 * time.Minute
 	// L1 本地缓存默认最大条目数，超出后淘汰最早写入的条目
 	CACHE_LOCAL_MAX_ENTRIES = 128
