@@ -46,6 +46,15 @@ NestJS 的测试文件必须同时能被 Jest 和 `bun test` 执行：
 - 默认可并行、可重复执行，单条测试通常在 200ms 内完成
 - 允许使用内存对象、Fake、Stub、Mock、`httptest` 和框架轻量测试工具
 
+### 真实第三方组件一律不进单元测试
+
+外部基础设施与第三方 SDK 都是系统边界，只能通过 Fake、Mock 或注入窄接口替换，禁止让被测代码自己解析地址、拨号、等待超时。典型症状是「用例不失败但很慢」：连接超时被 `except` 吞掉只打日志，每条用例凭空多出 5~20 秒
+
+- 被测函数内部调用 `get_xxx_cache()` / `get_xxx_client()` 这类 `@lru_cache` 单例时，必须在模块级打桩（如 `monkeypatch.setattr(task, "invalidate_vector_query_cache", AsyncMock())`）：这些单例自带客户端，替换调用方的客户端不会生效
+- FastAPI 侧 `tests/conftest.py` 的 `block_real_redis` 已把 `RedisClient._ensure_client` 固定成返回 `None`，缓存失效、分布式锁与 Pub/Sub 一律走降级分支；新增测试不要绕过它去连真实实例，需要断言 Redis 交互时注入 Fake 客户端
+- 数据库、MQ、Nacos、Neo4j、ClickHouse、pgvector、OSS、HTTP 与模型 SDK 同理：默认测试集不得出现真实拨号或真实网络请求，真实语义放集成测试
+- 第三方组件自身的重试、退避、熔断算法不重复测试，只验证项目配置与可观察行为；等待用虚拟时钟或可注入的 Sleeper
+
 ### 组件测试
 
 组件测试允许启动框架上下文，但所有外部基础设施必须替换为测试实现。适用场景：
@@ -207,6 +216,7 @@ NestJS 默认 OSS 单元测试必须使用显式假配置、Mock OSS Client/Adap
 ## 提交前检查
 
 - 默认测试在无 Docker、无云凭据、无真实 `.env` 的环境通过
+- 全量默认测试在没有 Redis/DB/MQ 的环境下应为秒级完成，出现单条用例数秒级耗时先查是否漏了第三方组件打桩
 - 断言覆盖失败分支和状态变化，不只是成功路径
 - 权限测试覆盖本人、管理员、其他用户和依赖异常
 - 远程调用覆盖重试、取消、4xx 不重试、内部 Token 和降级
