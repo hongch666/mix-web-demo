@@ -296,7 +296,7 @@ app/internal/agents     LangChain Agent 与工具
 - 并行：独立 IO 用 `asyncio.gather`；循环内并行把每次迭代封装为内部 async 函数后 gather
 - `__init__.py` 导出：包内有 `__init__.py` 导出的功能，导入一律走包路径（`from app.internal.crud import UserAnalysisMapper`），禁止深入到文件路径；新增模块必须同步更新 `__init__.py` 导出。该约定由 `./mix lint` 里的 `scripts/package-imports.py` 检查（目标目录没有 `__init__.py`、与目标同包、或导入方位于目标包导入链上时不受约束），历史违规可执行 `python scripts/package-imports.py --fix fastapi` 批量整理
 - `internal/services` 每个业务子目录及 `llm/extend` 都在自身 `__init__.py` 导出公开类和工厂；顶层 `services/__init__.py` 只从子包聚合导出，避免跨层直接指向具体服务文件。新增业务服务时同步维护子包与顶层两级导出
-- 类型标注全覆盖；`import` 全部在文件顶部，禁止逻辑中导入；生成后检查并删除未使用的 import
+- 类型标注全覆盖；**`import` / `from ... import` 一律写在文件顶部，禁止出现在函数体、类体或条件分支里**（`if TYPE_CHECKING:` 块不受约束，它不参与运行时导入）；确认无法上移的只有两类，必须在导入语句行尾或上一行写 `# lazy-import: 原因`：循环依赖（`app.core.db` 的建表/装图函数导入 `app.internal.models`，models 反向依赖 `core.db`）与明确的延迟加载（`app/__init__.py` 的 `create_app` 门面，避免导入工具模块时初始化数据库驱动与遥测 SDK）。该约定由 `./mix lint fastapi` 里的 `scripts/local-imports.py` 检查，`./mix format fastapi` 会把可整理的导入搬到顶部对应分组（标准库 / 第三方 / `app` 与相对导入各自成组、组内按模块名字典序）；多名字导入、多行括号导入、带行尾注释（如 `# noqa`）与分支内的导入只报位置，需人工处理；生成后检查并删除未使用的 import
 - **入参校验用 Pydantic 模型**（放 `internal/schemas/`，文件名 `xxxDTO.py`）：字段用 `Field(...)` 声明，单字段规则用 `@field_validator` + `PydanticCustomError`（中文消息，参考 `createHistoryDTO.py`），请求体禁止用裸 `dict` / `Any` 接收；新增接口必须带校验（通用规则 13）
 - **统一响应模型使用泛型**：`core/base/response.py` 的 `ApiResponse[T]` 负责声明 `code`、`msg` 和 `data`，路由必须通过 `response_model=ApiResponse[具体类型]` 暴露返回结构。已知结构使用领域 DTO、列表或字典泛型；只有运行时结构确实不固定时才使用 `ApiResponse[object]`，禁止退回不带类型参数的 `ApiResponse`
 - **FastAPI 响应结构必须可展开**：已知返回字段必须定义 Pydantic 响应 DTO，并在路由使用 `response_model=ApiResponse[具体 DTO]`；禁止用 `ApiResponse[object]` 隐藏可确定的 `data` 结构。DTO 的每个字段、嵌套对象和列表项都要用 `Field(description=...)` 写明含义。
@@ -731,9 +731,10 @@ FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大�
 ./mix lint nestjs        # npm run lint + npm run format:check + 常量规范检查
 
 # FastAPI：配置在 fastapi/pyproject.toml；lint 额外执行 scripts/constants.py（常量注释与分类）、
-# scripts/package-imports.py（包导入规范）与 scripts/dependency-aliases.py（装配函数在前、依赖别名集中在末尾）
-./mix format fastapi     # ruff format . + ruff check --fix . + 包导入整理 + 依赖别名整理
-./mix lint fastapi       # ruff check . + pyright + 常量规范检查 + 包导入规范 + 依赖别名规范
+# scripts/package-imports.py（包导入规范）、scripts/local-imports.py（import 写在文件顶部）
+# 与 scripts/dependency-aliases.py（装配函数在前、依赖别名集中在末尾）
+./mix format fastapi     # 模块级导入上移 + ruff format . + ruff check --fix . + 包导入整理 + 依赖别名整理
+./mix lint fastapi       # ruff check . + pyright + 常量规范检查 + 包导入规范 + 模块级导入规范 + 依赖别名规范
 ```
 
 底层脚本是 `scripts/format.sh` 与 `scripts/lint.sh`，对应工具未安装时该服务会自动跳过并提示；`gateway` 为 APISIX 配置，不参与。行尾由根目录 `.gitattributes` 统一为 LF。
