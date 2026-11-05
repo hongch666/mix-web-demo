@@ -155,7 +155,9 @@ def collapse_blank_runs(lines: list[str], limit: int = 2) -> list[str]:
     return result
 
 
-def is_trailing_group(tree: ast.Module, chunks: list[AliasChunk], lines: list[str]) -> bool:
+def is_trailing_group(
+    tree: ast.Module, chunks: list[AliasChunk], lines: list[str]
+) -> bool:
     """别名是否已经构成文件末尾的连续区块，是则无需整理"""
     if not chunks:
         return True
@@ -206,7 +208,9 @@ def reorder(source: str) -> str:
     return "\n".join(result) + "\n"
 
 
-def alias_references(tree: ast.Module, chunks: list[AliasChunk]) -> list[tuple[int, str, str]]:
+def alias_references(
+    tree: ast.Module, chunks: list[AliasChunk]
+) -> list[tuple[int, str, str]]:
     """找出引用了本文件别名的装配函数，返回（行号，函数名，别名）"""
     names = {chunk.name for chunk in chunks}
     hits: list[tuple[int, str, str]] = []
@@ -224,9 +228,7 @@ def misplaced_aliases(
     tree: ast.Module, chunks: list[AliasChunk]
 ) -> list[tuple[AliasChunk, int]]:
     """找出后面还有其他定义的别名，返回（别名区间，其后第一处语句行号）"""
-    following = [
-        node_start(node) for node in tree.body if not is_alias_node(node)
-    ]
+    following = [node_start(node) for node in tree.body if not is_alias_node(node)]
 
     misplaced: list[tuple[AliasChunk, int]] = []
     for chunk in chunks:
@@ -321,9 +323,7 @@ def main() -> int:
         return 1
 
     print(
-        "[INFO] 依赖别名规范检查通过"
-        if args.check
-        else "[INFO] 依赖别名规范整理完成"
+        "[INFO] 依赖别名规范检查通过" if args.check else "[INFO] 依赖别名规范整理完成"
     )
     return 0
 

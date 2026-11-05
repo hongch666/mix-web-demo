@@ -39,6 +39,20 @@ format_package_imports() {
     return 0
 }
 
+# 模块级导入整理（fastapi）：把函数体或类体里的导入提升到文件顶部，python 缺失时跳过
+format_local_imports() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/local-imports.py" --fix "$@"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/local-imports.py" --fix "$@"
+        return
+    fi
+    print_warn "未检测到 python，跳过模块级导入整理"
+    return 0
+}
+
 # 依赖别名整理（fastapi）：装配函数写在前面、依赖别名集中到文件末尾，python 缺失时跳过
 format_dependency_aliases() {
     if command -v python >/dev/null 2>&1; then
@@ -96,6 +110,9 @@ format_nestjs() {
 
 format_fastapi() {
     command -v ruff >/dev/null 2>&1 || return 2
+    # 先上移函数体内的导入，再交给 ruff 统一排版与修复
+    print_info "整理 FastAPI 模块级导入（提升到文件顶部）..."
+    format_local_imports "$WORKDIR/fastapi/app" "$WORKDIR/fastapi/main.py" || return 1
     print_info "格式化 FastAPI 代码（Ruff）..."
     # 先统一排版，再修复可自动处理的检查项
     (cd "$WORKDIR/fastapi" && ruff format . && ruff check --fix .) || return 1

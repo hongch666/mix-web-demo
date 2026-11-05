@@ -67,6 +67,20 @@ lint_package_imports() {
     return 0
 }
 
+# 模块级导入检查（fastapi）：import 必须在文件顶部，延迟导入须带 lazy-import 标记，python 缺失时跳过
+lint_local_imports() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/local-imports.py" --check "$@"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/local-imports.py" --check "$@"
+        return
+    fi
+    print_warn "未检测到 python，跳过模块级导入检查"
+    return 0
+}
+
 # 依赖别名规范检查（fastapi）：装配函数写在前面、依赖别名集中到文件末尾，python 缺失时跳过
 lint_dependency_aliases() {
     if command -v python >/dev/null 2>&1; then
@@ -192,6 +206,8 @@ lint_fastapi() {
     lint_constants "$WORKDIR/fastapi/app/core/constants" || return 1
     print_info "检查 FastAPI 包导入规范..."
     lint_package_imports "$WORKDIR/fastapi" || return 1
+    print_info "检查 FastAPI 模块级导入规范（import 写在文件顶部）..."
+    lint_local_imports "$WORKDIR/fastapi/app" "$WORKDIR/fastapi/main.py" || return 1
     print_info "检查 FastAPI 依赖别名规范（装配函数在前、别名集中在末尾）..."
     lint_dependency_aliases "$WORKDIR/fastapi/app"
 }
