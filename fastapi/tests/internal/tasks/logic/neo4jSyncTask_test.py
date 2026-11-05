@@ -23,11 +23,39 @@ class SummaryWithoutCounters:
     """模拟没有 counters 属性的 Neo4j 结果摘要"""
 
 
+class CacheInvalidationSpy:
+    """记录同步任务触发的三类图谱缓存失效调用"""
+
+    def __init__(self) -> None:
+        """初始化整命名空间、按文章、按用户三条失效链路的替身"""
+        self.full = AsyncMock()
+        self.articles = AsyncMock()
+        self.users = AsyncMock()
+
+
 @pytest.fixture(autouse=True)
 def silence_logger(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     """Neo4j 同步任务日志密集，测试中静默日志"""
     monkeypatch.setattr(task, "Logger", Mock())
     yield
+
+
+@pytest.fixture(autouse=True)
+def fake_cache_invalidation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> CacheInvalidationSpy:
+    """拦截图谱缓存失效
+
+    失效入口内部走 get_graph_signal_cache() 等 lru_cache 单例，它们自带 Redis 客户端，
+    和任务里被替换的客户端不是同一个对象；不拦截就会真实拨号并等满连接超时
+    """
+    spy = CacheInvalidationSpy()
+    monkeypatch.setattr(task, "invalidate_graph_signal_caches_full", spy.full)
+    monkeypatch.setattr(
+        task, "invalidate_graph_signal_cache_for_articles", spy.articles
+    )
+    monkeypatch.setattr(task, "invalidate_graph_signal_cache_for_users", spy.users)
+    return spy
 
 
 def _build_neo4j_client(**attributes: Any) -> Mock:
@@ -342,6 +370,7 @@ async def test_sync_incremental_falls_back_to_full_sync_without_watermark(
 @pytest.mark.anyio
 async def test_sync_incremental_uses_watermark_window_and_skips_cleanup(
     monkeypatch: pytest.MonkeyPatch,
+    fake_cache_invalidation: CacheInvalidationSpy,
 ) -> None:
     client = _build_neo4j_client(
         run_query=AsyncMock(return_value=[{"total": 1}]), run_write_query=AsyncMock()
@@ -356,12 +385,16 @@ async def test_sync_incremental_uses_watermark_window_and_skips_cleanup(
     fetch.assert_awaited_once_with(last_sync_time)
     assert {"users", "articles", "tagged_as", "follows"} <= set(result)
     assert all(value == 0 for value in result.values())
+    # 快照里没有分类变更时退化为按 id 精确失效，不做整命名空间失效
+    fake_cache_invalidation.full.assert_not_awaited()
+    fake_cache_invalidation.articles.assert_awaited_once_with([])
 
 
 # 增量同步对水位线之后的文章同样先收敛旧关系，再写入新关系
 @pytest.mark.anyio
 async def test_sync_incremental_prunes_stale_relations_before_merge(
     monkeypatch: pytest.MonkeyPatch,
+    fake_cache_invalidation: CacheInvalidationSpy,
 ) -> None:
     client = _build_neo4j_client(
         run_query=AsyncMock(return_value=[{"total": 1}]), run_write_query=AsyncMock()
@@ -395,12 +428,16 @@ async def test_sync_incremental_prunes_stale_relations_before_merge(
     executed = [call.args[0] for call in client.run_write_query.await_args_list]
     assert task.Scripts.NEO4J_PRUNE_ARTICLE_SUB_CATEGORY_CYPHER in executed
     assert task.Scripts.NEO4J_PRUNE_SUB_CATEGORY_CATEGORY_CYPHER in executed
+    # 分类维度变更影响范围无法枚举，必须退化为整命名空间失效
+    fake_cache_invalidation.full.assert_awaited_once_with()
+    fake_cache_invalidation.articles.assert_not_awaited()
 
 
 # 全量同步汇总快照各类型节点与关系计数且不执行删除清理
 @pytest.mark.anyio
 async def test_sync_all_merges_snapshot_without_cleanup(
     monkeypatch: pytest.MonkeyPatch,
+    fake_cache_invalidation: CacheInvalidationSpy,
 ) -> None:
     client = _build_neo4j_client(run_write_query=AsyncMock())
     service = _build_service(monkeypatch, client)
@@ -434,6 +471,7 @@ async def test_sync_all_merges_snapshot_without_cleanup(
     assert result["tagged_as"] == 1
     assert result["published_by"] == 1
     cleanup.assert_not_awaited()
+    fake_cache_invalidation.full.assert_awaited_once_with()
 
 
 # 分类等基础维度始终全量抓取，其余按同步水位增量抓取
@@ -638,7 +676,9 @@ def _build_sync_service() -> tuple[task.KnowledgeGraphSyncService, Mock, Mock]:
 
 # 精确同步按主键删除文章节点
 @pytest.mark.anyio
-async def test_sync_changes_deletes_articles_by_ids() -> None:
+async def test_sync_changes_deletes_articles_by_ids(
+    fake_cache_invalidation: CacheInvalidationSpy,
+) -> None:
     service, neo4j_client, _ = _build_sync_service()
 
     await service.sync_changes(
@@ -647,11 +687,16 @@ async def test_sync_changes_deletes_articles_by_ids() -> None:
 
     executed = [call.args[0] for call in neo4j_client.run_write_query.await_args_list]
     assert task.Scripts.NEO4J_DELETE_ARTICLES_BY_IDS_CYPHER in executed
+    # 删除也要按被删文章 id 失效文章维度缓存
+    fake_cache_invalidation.articles.assert_awaited_once_with([7, 8])
+    fake_cache_invalidation.full.assert_not_awaited()
 
 
 # 精确同步按主键拉取文章快照并写入节点与关系
 @pytest.mark.anyio
-async def test_sync_changes_upserts_articles_by_ids() -> None:
+async def test_sync_changes_upserts_articles_by_ids(
+    fake_cache_invalidation: CacheInvalidationSpy,
+) -> None:
     service, neo4j_client, spring_client = _build_sync_service()
     spring_client.get_articles_by_ids = AsyncMock(
         return_value=[
@@ -677,6 +722,8 @@ async def test_sync_changes_upserts_articles_by_ids() -> None:
     executed = [call.args[0] for call in neo4j_client.run_write_query.await_args_list]
     assert task.Scripts.NEO4J_MERGE_ARTICLES_CYPHER in executed
     assert task.Scripts.NEO4J_MERGE_TAGGED_AS_CYPHER in executed
+    fake_cache_invalidation.articles.assert_awaited_once_with([7])
+    fake_cache_invalidation.users.assert_awaited_once_with([])
 
 
 # 精确同步改子分类、作者或标签时先删旧关系再 MERGE，避免图上残留两条归属关系
@@ -733,7 +780,9 @@ async def test_sync_changes_prunes_stale_sub_category_relation() -> None:
 
 # 点赞关系按触发用户与目标文章精确写入
 @pytest.mark.anyio
-async def test_sync_changes_upserts_like_relation() -> None:
+async def test_sync_changes_upserts_like_relation(
+    fake_cache_invalidation: CacheInvalidationSpy,
+) -> None:
     service, neo4j_client, _ = _build_sync_service()
 
     await service.sync_changes(
@@ -750,11 +799,16 @@ async def test_sync_changes_upserts_like_relation() -> None:
 
     executed = [call.args[0] for call in neo4j_client.run_write_query.await_args_list]
     assert task.Scripts.NEO4J_MERGE_LIKES_CYPHER in executed
+    # 点赞属于用户行为变更，按触发用户精确失效个性化信号
+    fake_cache_invalidation.users.assert_awaited_once_with([1])
+    fake_cache_invalidation.full.assert_not_awaited()
 
 
 # 取消点赞按两端主键精确删除关系
 @pytest.mark.anyio
-async def test_sync_changes_deletes_like_relation() -> None:
+async def test_sync_changes_deletes_like_relation(
+    fake_cache_invalidation: CacheInvalidationSpy,
+) -> None:
     service, neo4j_client, _ = _build_sync_service()
 
     await service.sync_changes(
@@ -777,6 +831,7 @@ async def test_sync_changes_deletes_like_relation() -> None:
     assert delete_calls
     assert delete_calls[0].args[1]["rows"][0]["userId"] == 1
     assert delete_calls[0].args[1]["rows"][0]["articleId"] == 7
+    fake_cache_invalidation.users.assert_awaited_once_with([1])
 
 
 # 评论删除按评论主键精确删除关系

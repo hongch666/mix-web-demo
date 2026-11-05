@@ -35,6 +35,26 @@ _disable_langsmith_tracing()
 
 
 @pytest.fixture(autouse=True)
+def block_real_redis(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+    """单元测试禁止连接真实 Redis
+
+    RedisClient 的每个读写方法都带「客户端为空则返回默认值」的降级分支，
+    把 _ensure_client 固定成返回 None 等价于 Redis 不可用，缓存失效、分布式锁与
+    Pub/Sub 一律走降级路径，不会用 socket_connect_timeout 去等一个不存在的实例
+    不拦这一层时，异常会被吞掉只打日志，表现为用例不失败但每条多等 5 秒以上
+    真实 Redis 语义（锁互斥、跨实例广播）属于集成测试，见 references/unit-testing.md
+    """
+    # 延迟到 fixture 内导入，保持「导入任何 app 模块之前先关闭 LangSmith 追踪」的顺序
+    from app.core.db import RedisClient
+
+    async def unavailable(_self: RedisClient) -> None:
+        """模拟 Redis 不可用，不建立任何连接"""
+
+    monkeypatch.setattr(RedisClient, "_ensure_client", unavailable)
+    yield
+
+
+@pytest.fixture(autouse=True)
 def clear_service_caches() -> Generator[None, None, None]:
     """每个测试执行前后清空所有 lru_cache 服务工厂的单例缓存
 

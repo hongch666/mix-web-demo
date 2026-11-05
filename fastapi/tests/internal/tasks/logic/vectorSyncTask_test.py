@@ -28,6 +28,20 @@ def silence_logger(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, Non
     yield
 
 
+@pytest.fixture(autouse=True)
+def fake_vector_cache_invalidation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> AsyncMock:
+    """拦截向量检索缓存失效
+
+    失效入口内部走 get_vector_query_cache() 这个 lru_cache 单例，它自带 Redis 客户端，
+    和用例里替换的假客户端不是同一个对象；不拦截就会真实拨号并等满连接超时
+    """
+    invalidation = AsyncMock()
+    monkeypatch.setattr(task, "invalidate_vector_query_cache", invalidation)
+    return invalidation
+
+
 def _fake_dependencies(
     *,
     spring_client: Mock | None = None,
@@ -343,6 +357,7 @@ async def test_export_returns_when_no_changed_articles(
 @pytest.mark.anyio
 async def test_export_upserts_batch_and_saves_sync_time(
     monkeypatch: pytest.MonkeyPatch,
+    fake_vector_cache_invalidation: AsyncMock,
 ) -> None:
     article = {
         "id": 9,
@@ -389,12 +404,15 @@ async def test_export_upserts_batch_and_saves_sync_time(
         }
     ]
     save_time.assert_awaited_once()
+    # 有向量写入必须失效检索缓存，否则增强检索会继续用旧向量打分
+    fake_vector_cache_invalidation.assert_awaited_once_with()
 
 
 # 分批写入全部失败重试后不更新同步时间
 @pytest.mark.anyio
 async def test_export_does_not_save_sync_time_when_all_batches_fail(
     monkeypatch: pytest.MonkeyPatch,
+    fake_vector_cache_invalidation: AsyncMock,
 ) -> None:
     article = {"id": 9, "status": 1, "title": "t", "content": "c", "tags": ""}
     vector_mapper = Mock()
@@ -423,12 +441,15 @@ async def test_export_does_not_save_sync_time_when_all_batches_fail(
     assert vector_mapper.upsert_articles.await_count == 3
     assert sleep.await_count == 2
     save_time.assert_not_awaited()
+    # 一条都没写成功时向量未变化，不应触发检索缓存失效
+    fake_vector_cache_invalidation.assert_not_awaited()
 
 
 # 关闭增量同步时仅推送已发布文章且不更新增量时间
 @pytest.mark.anyio
 async def test_export_full_mode_uses_published_articles(
     monkeypatch: pytest.MonkeyPatch,
+    fake_vector_cache_invalidation: AsyncMock,
 ) -> None:
     published = {"id": 1, "status": 1, "title": "a", "content": "x", "tags": ""}
     draft = {"id": 2, "status": 0, "title": "b", "content": "y", "tags": ""}
@@ -449,6 +470,7 @@ async def test_export_full_mode_uses_published_articles(
 
     assert vector_mapper.upsert_articles.await_args.kwargs["article_ids"] == [1]
     save_time.assert_not_awaited()
+    fake_vector_cache_invalidation.assert_awaited_once_with()
 
 
 # 未获取到分布式锁时跳过向量导出且不释放锁
@@ -595,6 +617,7 @@ async def test_article_hash_access_is_noop_without_redis(
 @pytest.mark.anyio
 async def test_exact_vector_delete_removes_vectors_and_hashes(
     monkeypatch: pytest.MonkeyPatch,
+    fake_vector_cache_invalidation: AsyncMock,
 ) -> None:
     vector_mapper = Mock()
     vector_mapper.delete_by_article_ids = AsyncMock(return_value=2)
@@ -611,12 +634,14 @@ async def test_exact_vector_delete_removes_vectors_and_hashes(
     vector_mapper.delete_by_article_ids.assert_awaited_once_with([11, 12])
     redis_client.delete.assert_awaited_once()
     spring_client.get_articles_by_ids.assert_not_awaited()
+    fake_vector_cache_invalidation.assert_awaited_once_with()
 
 
 # 精确写入只处理已发布且内容变化的文章
 @pytest.mark.anyio
 async def test_exact_vector_upsert_only_writes_changed_published_articles(
     monkeypatch: pytest.MonkeyPatch,
+    fake_vector_cache_invalidation: AsyncMock,
 ) -> None:
     vector_mapper = Mock()
     vector_mapper.delete_by_article_ids = AsyncMock(return_value=1)
@@ -641,12 +666,14 @@ async def test_exact_vector_upsert_only_writes_changed_published_articles(
     vector_mapper.upsert_articles.assert_awaited_once()
     written_ids = vector_mapper.upsert_articles.await_args.kwargs["article_ids"]
     assert written_ids == [11]
+    fake_vector_cache_invalidation.assert_awaited_once_with()
 
 
 # 内容哈希一致时跳过向量写入，避免无意义写放大
 @pytest.mark.anyio
 async def test_exact_vector_upsert_skips_unchanged_content(
     monkeypatch: pytest.MonkeyPatch,
+    fake_vector_cache_invalidation: AsyncMock,
 ) -> None:
     article = {"id": 11, "title": "标题", "content": "内容", "tags": "go", "status": 1}
     current_hash = task._compute_article_hash(article)
@@ -666,3 +693,5 @@ async def test_exact_vector_upsert_skips_unchanged_content(
     await task.export_article_vectors_by_changes_async("update", [11])
 
     vector_mapper.upsert_articles.assert_not_awaited()
+    # 内容未变化时向量没被改写，不需要失效检索缓存
+    fake_vector_cache_invalidation.assert_not_awaited()
