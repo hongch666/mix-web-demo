@@ -106,10 +106,11 @@ scrape_configs:
       - structured_metadata:
           trace_id:
 
+  # 网关只采集 error.log：access.log 是 APISIX 逐请求输出的 JSON 访问日志，量大且业务排查用不到，需要时把路径改回 *.log
   - job_name: dist_service_logs_gateway
     static_configs:
       - targets: [localhost]
-        labels: {job: service-logs, mode: dist, __path__: /app/dist-logs/gateway/*.log, service: gateway}
+        labels: {job: service-logs, mode: dist, __path__: /app/dist-logs/gateway/error*.log, service: gateway}
     pipeline_stages:
       # 新版 access.log 使用 JSON 与 RFC3339 时间
       - regex:
