@@ -23,6 +23,44 @@ RESTART_INTERVAL=15
 
 cd "$WORKDIR/gateway" || exit 1
 
+# 各服务在 dev 模式下的宿主机端口，与容器编排里的健康检查保持一致
+service_port() {
+    case $1 in
+        spring) echo 8081 ;;
+        gozero) echo 8082 ;;
+        nestjs) echo 8083 ;;
+        fastapi) echo 8084 ;;
+    esac
+}
+
+# 四个服务未就绪时先不启动网关，避免 forward-auth 在上游不可用时持续刷 connection refused
+wait_services() {
+    local deadline=$((SECONDS + WAIT_SECONDS)) pending service port
+
+    if ! command -v curl >/dev/null 2>&1; then
+        return 0
+    fi
+
+    while [ $SECONDS -lt $deadline ]; do
+        pending=""
+        for service in $SERVICES; do
+            port="$(service_port "$service")"
+            if ! curl -sf --noproxy '*' -o /dev/null --max-time 3 "http://127.0.0.1:$port/test/$service" 2>/dev/null; then
+                pending="$pending $service"
+            fi
+        done
+        if [ -z "$pending" ]; then
+            echo "[gateway] 四个服务均已就绪，开始启动网关"
+            return 0
+        fi
+        echo "[gateway] 等待服务就绪:$pending"
+        sleep $POLL_INTERVAL
+    done
+
+    echo "[gateway] 等待超时，仍有服务未就绪，先启动网关并在窗口内重试"
+    return 1
+}
+
 check_upstreams() {
     local service code failed=0
 
@@ -42,6 +80,7 @@ check_upstreams() {
     return $failed
 }
 
+wait_services || true
 docker compose up -d
 
 deadline=$((SECONDS + WAIT_SECONDS))

@@ -224,6 +224,15 @@ services:
         condition: service_completed_successfully
       otel-collector:
         condition: service_started
+      # forward-auth 固定转发到 spring，四个服务未就绪时网关会把业务请求全部打成 502 并刷 connection refused
+      spring:
+        condition: service_healthy
+      gozero:
+        condition: service_healthy
+      nestjs:
+        condition: service_healthy
+      fastapi:
+        condition: service_healthy
     ports:
       - "8080:9080"
     expose:
@@ -285,6 +294,8 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_TRACES_SAMPLER: always_on
+      # 覆盖镜像默认 JAVA_OPTS：关闭 JMX 并限制 JIT 只编译到 C1，容器冷启动更快，代价是长跑吞吐略降
+      JAVA_OPTS: "-Xms512m -Xmx1024m -XX:+UseG1GC -XX:TieredStopAtLevel=1 -Dspring.jmx.enabled=false"
     volumes:
       - ./spring/src/main/resources/application.yaml:/app/application.yaml:ro
       - ./logs/spring:/app/logs/spring
@@ -305,9 +316,11 @@ services:
           memory: 512M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/test/spring"]
-      interval: 30s
+      # 探测间隔压到 10s，spring 一就绪网关就能在同一次 compose up 内接着启动
+      # retries 9 让失败容忍窗口与原来的 30s×3 相当，慢启动不会被误判 unhealthy 而卡住网关
+      interval: 10s
       timeout: 10s
-      retries: 3
+      retries: 9
       start_period: 60s
 
   gozero:
@@ -358,9 +371,11 @@ services:
           memory: 256M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/test/gozero"]
-      interval: 30s
+      # 探测间隔压到 10s，服务一就绪网关就能接着启动
+      # retries 9 让失败容忍窗口与原来的 30s×3 相当，慢启动不会被误判 unhealthy 而卡住网关
+      interval: 10s
       timeout: 10s
-      retries: 3
+      retries: 9
       start_period: 30s
 
   nestjs:
@@ -409,9 +424,11 @@ services:
           memory: 256M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/test/nestjs"]
-      interval: 30s
+      # 探测间隔压到 10s，服务一就绪网关就能接着启动
+      # retries 9 让失败容忍窗口与原来的 30s×3 相当，慢启动不会被误判 unhealthy 而卡住网关
+      interval: 10s
       timeout: 10s
-      retries: 3
+      retries: 9
       start_period: 40s
 
   fastapi:
@@ -468,9 +485,11 @@ services:
           "-c",
           "import urllib.request; urllib.request.urlopen('http://localhost:8084/test/fastapi', timeout=5)",
         ]
-      interval: 30s
+      # 探测间隔压到 10s，服务一就绪网关就能接着启动
+      # retries 9 让失败容忍窗口与原来的 30s×3 相当，慢启动不会被误判 unhealthy 而卡住网关
+      interval: 10s
       timeout: 10s
-      retries: 3
+      retries: 9
       start_period: 60s
 
 networks:

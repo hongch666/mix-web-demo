@@ -140,3 +140,7 @@ scrape_configs:
           source: ts
           format: '2006/01/02 15:04:05'
           action_on_failure: skip
+      # error.log 行首自带 UTC 时间，与 Grafana 时间列重复且时区不同；入库前去掉，界面只显示 Grafana 时间
+      - replace:
+          expression: '^\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} '
+          replace: ''
