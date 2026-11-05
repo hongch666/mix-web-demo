@@ -1,8 +1,10 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import Redis from "ioredis";
 import { Defaults, Messages, RedisKeys } from "src/common/constants";
 import { LoggerService } from "src/module/common/logger/logger.service";
-import { RedisService } from "src/module/common/redis/redis.service";
+import {
+  RedisService,
+  RedisSubscription,
+} from "src/module/common/redis/redis.service";
 
 /** 多级缓存的写入选项，缺省沿用 Defaults 中的全局 TTL */
 export interface CacheWriteOptions {
@@ -27,7 +29,7 @@ interface CachePayload {
 /**
  * 多级缓存服务，提供 L1 本地内存加 L2 Redis 的读写与失效能力
  * L1 按条目的写入时间做过期与容量淘汰，L2 统一加前缀并带 TTL；Redis 未配置时退化为纯本地缓存
- * 失效时通过 Redis Pub/Sub 广播被删除的 key，其它实例据此清理自己的 L1，避免多实例读到过期本地值
+ * Redis 命令全部经 RedisService 封装，失效时通过 Pub/Sub 广播被删除的 key，其它实例据此清理自己的 L1
  */
 @Injectable()
 export class CacheService implements OnModuleInit, OnModuleDestroy {
@@ -35,7 +37,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   private readonly localTtl: number = Defaults.CACHE_LOCAL_TTL_SECONDS;
   private readonly redisTtl: number = Defaults.CACHE_REDIS_TTL_SECONDS;
   private readonly localMaxEntries: number = Defaults.CACHE_LOCAL_MAX_ENTRIES;
-  private subscriber: Redis | null = null;
+  private subscription: RedisSubscription | null = null;
 
   constructor(
     private readonly redisService: RedisService,
@@ -55,14 +57,14 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {
     this.local.clear();
 
-    const subscriber: Redis | null = this.subscriber;
-    this.subscriber = null;
-    if (!subscriber) {
+    const subscription: RedisSubscription | null = this.subscription;
+    this.subscription = null;
+    if (!subscription) {
       return;
     }
 
     try {
-      await subscriber.quit();
+      await subscription.close();
     } catch (error) {
       this.logger.error(
         Messages.CACHE_INVALIDATE_UNSUBSCRIBE_FAILED(String(error)),
@@ -85,14 +87,15 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       this.local.delete(key);
     }
 
-    const redis = this.redisService.getClient();
-    if (!redis) {
+    if (!this.redisService.isAvailable()) {
       this.logger.debug(Messages.CACHE_MISS(key));
       return undefined;
     }
 
     try {
-      const raw: string | null = await redis.get(this.buildRedisKey(key));
+      const raw: string | null = await this.redisService.getValue(
+        this.buildRedisKey(key),
+      );
       if (raw === null) {
         this.logger.debug(Messages.CACHE_MISS(key));
         return undefined;
@@ -119,17 +122,15 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     const redisTtl: number = options.redisTtl ?? this.redisTtl;
     this.writeLocal(key, value, options.localTtl);
 
-    const redis = this.redisService.getClient();
-    if (!redis) {
+    if (!this.redisService.isAvailable()) {
       return;
     }
 
     try {
       const payload: CachePayload = { value };
-      await redis.set(
+      await this.redisService.setValue(
         this.buildRedisKey(key),
         JSON.stringify(payload),
-        "EX",
         redisTtl,
       );
       this.logger.debug(Messages.CACHE_WRITTEN(key, redisTtl));
@@ -158,42 +159,35 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       this.logger.debug(Messages.CACHE_EVICTED(key));
     });
 
-    const redis = this.redisService.getClient();
-    if (!redis) {
+    if (!this.redisService.isAvailable()) {
       return;
     }
 
     await Promise.all([
-      this.publishInvalidation(redis, keys),
-      this.deleteRedisKeys(redis, keys),
+      this.publishInvalidation(keys),
+      this.deleteRedisKeys(keys),
     ]);
   }
 
   /**
    * 订阅跨实例缓存失效频道，收到通知后清理本地对应条目
-   * 订阅连接必须是独立的 duplicate 客户端，主客户端处于订阅模式后无法再执行读写命令
+   * 订阅连接的创建与释放由 RedisService 封装，调用方只持有订阅句柄
    */
   private subscribeInvalidationChannel(): void {
-    const redis = this.redisService.getClient();
-    if (!redis || typeof redis.duplicate !== "function") {
-      return;
-    }
-
     try {
-      const subscriber: Redis = redis.duplicate();
-      subscriber.on("message", (channel: string, message: string): void => {
-        if (channel === RedisKeys.CACHE_INVALIDATE_CHANNEL) {
-          this.clearLocalByMessage(message);
-        }
-      });
-      subscriber
-        .subscribe(RedisKeys.CACHE_INVALIDATE_CHANNEL)
-        .catch((error: unknown): void => {
+      this.subscription = this.redisService.subscribe(
+        RedisKeys.CACHE_INVALIDATE_CHANNEL,
+        (channel: string, message: string): void => {
+          if (channel === RedisKeys.CACHE_INVALIDATE_CHANNEL) {
+            this.clearLocalByMessage(message);
+          }
+        },
+        (error: unknown): void => {
           this.logger.error(
             Messages.CACHE_INVALIDATE_SUBSCRIBE_FAILED(String(error)),
           );
-        });
-      this.subscriber = subscriber;
+        },
+      );
     } catch (error) {
       this.logger.error(
         Messages.CACHE_INVALIDATE_SUBSCRIBE_FAILED(String(error)),
@@ -219,12 +213,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   /**
    * 向失效频道广播被删除的 key，失败只记录日志
    */
-  private async publishInvalidation(
-    redis: Redis,
-    keys: string[],
-  ): Promise<void> {
+  private async publishInvalidation(keys: string[]): Promise<void> {
     try {
-      await redis.publish(
+      await this.redisService.publish(
         RedisKeys.CACHE_INVALIDATE_CHANNEL,
         JSON.stringify(keys),
       );
@@ -238,12 +229,12 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   /**
    * 删除 Redis 中对应的缓存 key，失败只记录日志
    */
-  private async deleteRedisKeys(redis: Redis, keys: string[]): Promise<void> {
+  private async deleteRedisKeys(keys: string[]): Promise<void> {
     try {
       const redisKeys: string[] = keys.map((key: string): string =>
         this.buildRedisKey(key),
       );
-      await redis.del(...redisKeys);
+      await this.redisService.deleteKeys(redisKeys);
     } catch (error) {
       this.logger.error(
         Messages.CACHE_L2_DELETE_FAILED(keys.join(","), String(error)),

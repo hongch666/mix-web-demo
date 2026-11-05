@@ -8,8 +8,11 @@ import {
   CacheableOptions,
   CacheKey,
 } from "src/framework/decorators/cache.decorator";
+import {
+  CacheService,
+  CacheWriteOptions,
+} from "src/module/common/cache/cache.service";
 import { LoggerService } from "src/module/common/logger/logger.service";
-import { CacheService, CacheWriteOptions } from "./cache.service";
 
 /** 可被织入缓存逻辑的异步方法签名 */
 type CacheableMethod = (...args: unknown[]) => Promise<unknown>;

@@ -3,6 +3,7 @@
 // uuid 为 ESM-only 包，jest-runtime 的 CJS require 无法加载，本测试只关心缓存逻辑，按单测规范在工厂中提供被用到的成员
 jest.mock("uuid", () => ({ v4: () => "mocked-uuid" }));
 
+import Redis from "ioredis";
 import { Defaults, RedisKeys } from "src/common/constants";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { RedisService } from "src/module/common/redis/redis.service";
@@ -30,7 +31,8 @@ describe("CacheService", () => {
     publish: jest.fn(async (): Promise<number> => 1),
     duplicate: jest.fn(() => subscriber),
   };
-  const redisService = { getClient: () => redis } as unknown as RedisService;
+  // 用真实的 RedisService 包装替身客户端，同时验证缓存层与 Redis 封装层的协作
+  const redisService = new RedisService(redis as unknown as Redis);
   const loggerStub = {
     debug: jest.fn(),
     error: jest.fn(),
@@ -173,10 +175,7 @@ describe("CacheService", () => {
   });
 
   it("Redis 未配置时退化为纯本地缓存", async () => {
-    const service = new CacheService(
-      { getClient: () => null } as unknown as RedisService,
-      logger,
-    );
+    const service = new CacheService(new RedisService(null), logger);
 
     service.onModuleInit();
     await service.set("table:settings:2:articles", { id: 2 });
@@ -198,10 +197,7 @@ describe("CacheService", () => {
   });
 
   it("本地缓存条目数超过上限时淘汰最早写入的条目", async () => {
-    const service = new CacheService(
-      { getClient: () => null } as unknown as RedisService,
-      logger,
-    );
+    const service = new CacheService(new RedisService(null), logger);
     const total: number = Defaults.CACHE_LOCAL_MAX_ENTRIES + 1;
 
     for (let index = 0; index < total; index += 1) {
@@ -213,10 +209,7 @@ describe("CacheService", () => {
   });
 
   it("L1 本地缓存按 5 分钟 TTL 过期", async () => {
-    const service = new CacheService(
-      { getClient: () => null } as unknown as RedisService,
-      logger,
-    );
+    const service = new CacheService(new RedisService(null), logger);
     const now: number = Date.now();
     const nowSpy = jest.spyOn(Date, "now").mockReturnValue(now);
 

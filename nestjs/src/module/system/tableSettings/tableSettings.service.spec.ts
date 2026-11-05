@@ -4,7 +4,7 @@
 jest.mock("uuid", () => ({ v4: () => "mocked-uuid" }));
 
 import { DiscoveryService, MetadataScanner, Reflector } from "@nestjs/core";
-import { CacheExplorer } from "src/module/common/cache/cache.explorer";
+import { CacheExplorer } from "src/framework/explorer/cache.explorer";
 import { CacheService } from "src/module/common/cache/cache.service";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { TableSettingsService } from "./tableSettings.service";

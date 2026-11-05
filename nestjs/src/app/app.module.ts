@@ -114,8 +114,8 @@ interface MongoDbConfig {
     }),
     // 定时任务开关关闭时不注册 ScheduleModule，@Cron 任务不再触发（改由 Dolphin 调度器触发 /task/* 接口）
     ...(isTaskEnabled(config) ? [ScheduleModule.forRoot()] : []),
-    RedisModule.forRoot(),
-    CacheModule.forRoot(),
+    RedisModule,
+    CacheModule,
     RabbitMQModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

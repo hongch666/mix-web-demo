@@ -8,7 +8,7 @@ import {
 } from "src/framework/decorators/cache.decorator";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { CacheExplorer } from "./cache.explorer";
-import { CacheService } from "./cache.service";
+import { CacheService } from "src/module/common/cache/cache.service";
 
 describe("CacheExplorer", () => {
   const cache = {
