@@ -34,6 +34,11 @@ plugins:
   - prometheus
 
 nginx_config:
+  # Nacos 发现只在 worker 0 拉全量，再经 events 广播给其它 worker：首次广播若早于某个 worker
+  # 完成 init_worker，该 worker 的 applications 永远是 nil，而节点内容不变时 fetch 不会再 post
+  # 事件，它会永久返回 503（failed to set upstream: no valid upstream node）。收敛到单 worker
+  # 后由它自己拉取，彻底规避该竞态；网关只做转发，单 worker 足够本地栈使用。
+  worker_processes: 1
   http:
     enable_access_log: true
     access_log_format: '{"time":"$time_iso8601","level":"INFO","trace_id":"$opentelemetry_trace_id","remote_addr":"$remote_addr","request":"$request","status":$status,"request_time":$request_time}'

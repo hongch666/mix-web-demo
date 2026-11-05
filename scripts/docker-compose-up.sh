@@ -96,4 +96,40 @@ bash "$WORKDIR/scripts/prepull-images.sh" "$COMPOSE_FILE" "$COMPOSE_CMD"
 
 $COMPOSE_CMD -f "$COMPOSE_FILE" up -d
 
+# 网关的 Nacos 发现按 worker 各自缓存，启动瞬间没拉到实例的服务会一直保持空上游并返回 503，
+# 这里复用 dev 模式的收敛逻辑：轮询四个服务的规范，不可达就重启网关重建发现缓存
+if command -v curl >/dev/null 2>&1; then
+    GATEWAY_WAIT_SECONDS="${GATEWAY_WAIT_SECONDS:-180}"
+    GATEWAY_PORT="${GATEWAY_PORT:-8080}"
+    gateway_ready=0
+    deadline=$((SECONDS + GATEWAY_WAIT_SECONDS))
+    last_restart=$SECONDS
+
+    while [ $SECONDS -lt $deadline ]; do
+        pending=""
+        for service in spring gozero nestjs fastapi; do
+            code="$(curl -s --noproxy '*' -o /dev/null -w '%{http_code}' --max-time 5 \
+                "http://127.0.0.1:$GATEWAY_PORT/swagger/$service.json" 2>/dev/null || true)"
+            [ "$code" = "200" ] || pending="$pending $service"
+        done
+        if [ -z "$pending" ]; then
+            gateway_ready=1
+            break
+        fi
+        echo "网关上游未就绪:$pending"
+        if [ $((SECONDS - last_restart)) -ge 15 ]; then
+            echo "重启网关重建 Nacos 服务发现缓存"
+            $COMPOSE_CMD -f "$COMPOSE_FILE" restart gateway >/dev/null 2>&1 || true
+            last_restart=$SECONDS
+        fi
+        sleep 5
+    done
+
+    if [ $gateway_ready -eq 1 ]; then
+        echo "四个服务经网关均可访问"
+    else
+        echo "警告：仍有服务经网关不可达，服务就绪后执行 $COMPOSE_CMD -f $COMPOSE_FILE restart gateway"
+    fi
+fi
+
 echo "应用服务已启动，使用 $COMPOSE_CMD -f $COMPOSE_FILE ps 查看状态"
