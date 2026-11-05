@@ -160,6 +160,29 @@ def provide_ai_history_service(
     )
 
 
+def provide_chat_application_service(
+    gpt_service: GptServiceDep,
+    gemini_service: GeminiServiceDep,
+    glm_service: GlmServiceDep,
+    deepseek_service: DeepseekServiceDep,
+    claude_service: ClaudeServiceDep,
+    qwen_service: QwenServiceDep,
+    history_service: Annotated[AiHistoryService, Depends(provide_ai_history_service)],
+    logger: LoggerDep,
+) -> ChatApplicationService:
+    """装配聊天应用服务单例，依赖六个大模型服务与 AI 历史服务"""
+    return get_chat_application_service(
+        gpt_service,
+        gemini_service,
+        glm_service,
+        deepseek_service,
+        claude_service,
+        qwen_service,
+        history_service,
+        logger,
+    )
+
+
 def provide_api_log_service(
     nestjs_client: NestjsClientDep,
     api_log_mapper: ApiLogMapperDep,
@@ -223,45 +246,20 @@ def provide_task_service(
     return get_task_service(analyze_service, db_factory, spring_client, nestjs_client)
 
 
-AlgorithmServiceDep = Annotated[AlgorithmService, Depends(provide_algorithm_service)]
-ChatServiceDep = Annotated[ChatService, Depends(provide_chat_service)]
-AnalyzeServiceDep = Annotated[AnalyzeService, Depends(provide_analyze_service)]
-GenerateServiceDep = Annotated[GenerateService, Depends(provide_generate_service)]
 AiHistoryServiceDep = Annotated[AiHistoryService, Depends(provide_ai_history_service)]
-
-
-def provide_chat_application_service(
-    gpt_service: GptServiceDep,
-    gemini_service: GeminiServiceDep,
-    glm_service: GlmServiceDep,
-    deepseek_service: DeepseekServiceDep,
-    claude_service: ClaudeServiceDep,
-    qwen_service: QwenServiceDep,
-    history_service: AiHistoryServiceDep,
-    logger: LoggerDep,
-) -> ChatApplicationService:
-    """装配聊天应用服务单例，依赖六个大模型服务与 AI 历史服务"""
-    return get_chat_application_service(
-        gpt_service,
-        gemini_service,
-        glm_service,
-        deepseek_service,
-        claude_service,
-        qwen_service,
-        history_service,
-        logger,
-    )
-
-
+AlgorithmServiceDep = Annotated[AlgorithmService, Depends(provide_algorithm_service)]
+AnalyzeServiceDep = Annotated[AnalyzeService, Depends(provide_analyze_service)]
+ApiLogServiceDep = Annotated[ApiLogService, Depends(provide_api_log_service)]
 ChatApplicationServiceDep = Annotated[
     ChatApplicationService, Depends(provide_chat_application_service)
 ]
-ApiLogServiceDep = Annotated[ApiLogService, Depends(provide_api_log_service)]
+ChatServiceDep = Annotated[ChatService, Depends(provide_chat_service)]
+GenerateServiceDep = Annotated[GenerateService, Depends(provide_generate_service)]
 GraphSearchServiceDep = Annotated[
     GraphSearchService, Depends(provide_graph_search_service)
 ]
+TaskServiceDep = Annotated[TaskService, Depends(provide_task_service)]
 UserServiceDep = Annotated[UserService, Depends(provide_user_service)]
 VectorSearchServiceDep = Annotated[
     VectorSearchService, Depends(provide_vector_search_service)
 ]
-TaskServiceDep = Annotated[TaskService, Depends(provide_task_service)]
