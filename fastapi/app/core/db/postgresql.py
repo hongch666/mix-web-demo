@@ -2,6 +2,8 @@ import asyncio
 from functools import lru_cache
 from typing import Any
 
+import psycopg2
+
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages, PostgreSQLIndexes
@@ -49,8 +51,6 @@ async def ensure_pgvector_indexes_async() -> None:
 
 def _ensure_pgvector_indexes_sync() -> None:
     """同步执行 pgvector 的扩展与索引 DDL，由异步入口放入线程池调用"""
-
-    import psycopg2
 
     cfg: dict[str, Any] = get_postgres_config()
     try:

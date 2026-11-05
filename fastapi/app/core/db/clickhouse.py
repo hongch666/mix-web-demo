@@ -119,7 +119,7 @@ async def execute_clickhouse_query(
 async def create_warehouse_tables_async() -> None:
     """根据数仓 ORM 元数据创建缺失的 ClickHouse 表"""
 
-    # 延迟导入避免 app.core.db 与 app.internal.models 循环依赖
+    # lazy-import: app.internal.models 反向依赖 app.core.db，延迟导入打破导入环
     from app.internal.models import (  # noqa: F401
         AdsApiAverageSpeed,
         AdsApiCalledCount,

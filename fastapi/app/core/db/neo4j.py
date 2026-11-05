@@ -172,7 +172,7 @@ class Neo4jClient:
         if self._schema_installed:
             return
 
-        # 延迟导入触发节点类注册，neomodel 按已注册子类的唯一索引声明建约束
+        # lazy-import: app.internal.models 反向依赖 app.core.db，延迟导入同时触发节点类注册
         from app.internal.models import (  # noqa: F401
             Article,
             Category,
