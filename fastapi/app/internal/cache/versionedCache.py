@@ -152,11 +152,11 @@ class VersionedCache[T](BaseCache[T]):
             return None
 
         local_data: Optional[T] = await self.get_from_local()
-        if local_data:
+        if local_data is not None:
             return local_data
 
         redis_data: Optional[T] = await self.get_from_redis()
-        if redis_data:
+        if redis_data is not None:
             return redis_data
 
         self._logger.info(self.MISS_LOG_MESSAGE)

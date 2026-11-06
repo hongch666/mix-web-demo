@@ -1,3 +1,4 @@
+import asyncio
 import time
 from unittest.mock import AsyncMock, Mock
 
@@ -47,6 +48,8 @@ def test_init_binds_redis_client_and_default_ttls(
     assert instance._local_cache is None
     assert instance._local_cache_time == 0
     assert instance._local_cache_ttl == 300
+    assert instance._local_cache_present is False
+    assert instance._single_flight.in_flight == 0
 
 
 # 首次写入前 L1 无数据，有效性判定为 False 且读取返回 None
@@ -60,17 +63,18 @@ async def test_local_cache_is_invalid_before_first_write(
     assert await instance.get_from_local() is None
 
 
-# 写入空列表后因假值判定为未命中，L1 有效性仍为 False
+# 写入空列表后仍是有效缓存：假值不能被当成未命中
 @pytest.mark.anyio
-async def test_falsy_local_cache_is_treated_as_invalid(
+async def test_falsy_local_cache_is_treated_as_valid(
     cache: tuple[_ConcreteCache, _FakeRedis],
 ) -> None:
     instance, _ = cache
 
     await instance.update_local_cache([])
 
-    # 空列表为假值，判定为未命中，避免把空结果当作有效缓存
-    assert await instance.is_local_cache_valid() is False
+    # 空列表为合法缓存值，有效性只取决于写入标记与 TTL
+    assert await instance.is_local_cache_valid() is True
+    assert await instance.get_from_local() == []
 
 
 # 写入数据且在 TTL 内时 L1 判定有效并原样返回缓存内容
@@ -126,6 +130,19 @@ async def test_redis_miss_returns_none(
     assert await instance.get_from_redis() is None
 
 
+# L2 返回假值（空列表）时属于命中，并回填本地缓存
+@pytest.mark.anyio
+async def test_redis_falsy_payload_is_hit_and_warms_local(
+    cache: tuple[_ConcreteCache, _FakeRedis],
+) -> None:
+    instance, fake_redis = cache
+    fake_redis.get.return_value = []
+
+    assert await instance.get_from_redis() == []
+    assert instance._local_cache == []
+    assert instance._local_cache_present is True
+
+
 # L2 读取抛异常时降级返回 None 且不污染 L1 状态
 @pytest.mark.anyio
 async def test_redis_read_failure_degrades_to_none(
@@ -176,6 +193,7 @@ async def test_clear_local_cache_resets_state(
 
     assert instance._local_cache is None
     assert instance._local_cache_time == 0
+    assert instance._local_cache_present is False
 
 
 # 清空 L2 时按配置前缀键调用删除
@@ -215,6 +233,114 @@ async def test_clear_all_clears_both_levels(
 
     assert instance._local_cache is None
     fake_redis.delete.assert_awaited_once_with("test:base:key")
+
+
+# 缓存命中时 get_or_load 直接返回缓存值且不执行回源
+@pytest.mark.anyio
+async def test_get_or_load_returns_cached_without_loading(
+    cache: tuple[_ConcreteCache, _FakeRedis],
+) -> None:
+    instance, _ = cache
+    await instance.update_local_cache([])
+    loader = AsyncMock(return_value=[{"id": 1}])
+
+    assert await instance.get_or_load(loader) == []
+    loader.assert_not_awaited()
+
+
+# 两级缓存都未命中时执行回源并回填，后续读取直接命中
+@pytest.mark.anyio
+async def test_get_or_load_fills_cache_on_miss(
+    cache: tuple[_ConcreteCache, _FakeRedis],
+) -> None:
+    instance, _ = cache
+    loader = AsyncMock(return_value=[{"id": 1}])
+
+    assert await instance.get_or_load(loader) == [{"id": 1}]
+    assert await instance.get_from_local() == [{"id": 1}]
+    loader.assert_awaited_once()
+
+
+# 回源得到空结果时不写缓存，避免把空集固化为长期缓存
+@pytest.mark.anyio
+async def test_get_or_load_skips_fill_for_empty_result(
+    cache: tuple[_ConcreteCache, _FakeRedis],
+) -> None:
+    instance, _ = cache
+
+    assert await instance.get_or_load(AsyncMock(return_value=[])) == []
+    assert instance._local_cache_present is False
+    assert instance._single_flight.in_flight == 0
+
+
+# 同 key 并发未命中只回源一次，其余请求复用首个结果
+@pytest.mark.anyio
+async def test_get_or_load_merges_concurrent_misses(
+    cache: tuple[_ConcreteCache, _FakeRedis],
+) -> None:
+    instance, _ = cache
+    started = asyncio.Event()
+    release = asyncio.Event()
+    calls = 0
+
+    async def loader() -> list[dict[str, int]]:
+        nonlocal calls
+        calls += 1
+        started.set()
+        await release.wait()
+        return [{"id": 1}]
+
+    first = asyncio.create_task(instance.get_or_load(loader))
+    await started.wait()
+    second = asyncio.create_task(instance.get_or_load(loader))
+    await asyncio.sleep(0)
+    release.set()
+
+    assert await asyncio.gather(first, second) == [[{"id": 1}], [{"id": 1}]]
+    assert calls == 1
+    assert instance._single_flight.in_flight == 0
+
+
+# 回源异常向调用方传播且结束后释放单飞 key，后续请求可重新回源
+@pytest.mark.anyio
+async def test_get_or_load_propagates_loader_error_and_releases_key(
+    cache: tuple[_ConcreteCache, _FakeRedis],
+) -> None:
+    instance, _ = cache
+
+    with pytest.raises(RuntimeError, match="db down"):
+        await instance.get_or_load(AsyncMock(side_effect=RuntimeError("db down")))
+
+    assert instance._single_flight.in_flight == 0
+    assert await instance.get_or_load(AsyncMock(return_value=[{"id": 2}])) == [
+        {"id": 2}
+    ]
+
+
+# run_single_flight 按键合并并发任务，不同 key 互不影响
+@pytest.mark.anyio
+async def test_run_single_flight_scopes_by_key(
+    cache: tuple[_ConcreteCache, _FakeRedis],
+) -> None:
+    instance, _ = cache
+    started = asyncio.Event()
+    release = asyncio.Event()
+    calls: list[str] = []
+
+    async def loader() -> str:
+        calls.append("a")
+        started.set()
+        await release.wait()
+        return "a"
+
+    first = asyncio.create_task(instance.run_single_flight("a", loader))
+    await started.wait()
+    second = asyncio.create_task(instance.run_single_flight("a", loader))
+    await asyncio.sleep(0)
+    release.set()
+
+    assert await asyncio.gather(first, second) == ["a", "a"]
+    assert calls == ["a"]
 
 
 # repr 与 str 均返回类名加括号的表示形式

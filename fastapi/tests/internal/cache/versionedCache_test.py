@@ -43,6 +43,14 @@ class _VersionedCache(VersionedCache):
         await self.update_local_cache(data)
 
 
+class _RawVersionedCache(VersionedCache):
+    """保留模板默认 get/set 的实现，用于验证两级缓存读取行为"""
+
+    REDIS_KEY_PREFIX: str = "test:versioned:data"
+    REDIS_VERSION_KEY: str = "test:versioned:version"
+    VERSION_MODEL = _FakeModel
+
+
 @pytest.fixture(autouse=True)
 def _isolate_read_versions() -> Generator[None, None, None]:
     versioned_cache._READ_VERSIONS.set(None)
@@ -332,3 +340,36 @@ async def test_clear_all_swallows_version_delete_failure(
 
     assert instance._cache_version is None
     assert fake_redis.delete.await_count == 2
+
+
+# L1 中的假值（空列表）属于命中，不能被当成未命中
+@pytest.mark.anyio
+async def test_get_returns_falsy_local_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_redis = _FakeRedis()
+    monkeypatch.setattr(base_cache, "get_redis_client", lambda: fake_redis)
+    monkeypatch.setattr(base_cache, "Logger", Mock())
+    instance = _RawVersionedCache()
+    monkeypatch.setattr(instance, "is_version_changed", AsyncMock(return_value=False))
+    await instance.update_local_cache([])
+
+    assert await instance.get() == []
+    fake_redis.get.assert_not_awaited()
+
+
+# L2 中的假值（空字符串）属于命中，并回填本地缓存
+@pytest.mark.anyio
+async def test_get_returns_falsy_redis_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_redis = _FakeRedis()
+    fake_redis.get.return_value = ""
+    monkeypatch.setattr(base_cache, "get_redis_client", lambda: fake_redis)
+    monkeypatch.setattr(base_cache, "Logger", Mock())
+    instance = _RawVersionedCache()
+    monkeypatch.setattr(instance, "is_version_changed", AsyncMock(return_value=False))
+
+    assert await instance.get() == ""
+    assert instance._local_cache == ""
+    assert instance._local_cache_present is True

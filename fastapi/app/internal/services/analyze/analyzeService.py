@@ -20,6 +20,7 @@ from app.internal.cache import (
     ArticleCache,
     CategoryCache,
     PublishTimeCache,
+    SingleFlight,
     StatisticsCache,
     WordcloudCache,
     get_article_cache,
@@ -66,8 +67,8 @@ class AnalyzeService:
             statistics_cache or get_statistics_cache()
         )
         self._wordcloud_cache: WordcloudCache = wordcloud_cache or get_wordcloud_cache()
-        self._singleflight_locks: dict[str, asyncio.Lock] = {}
-        self._singleflight_guard: asyncio.Lock = asyncio.Lock()
+        # 分析类接口共用一份单飞表：同 key 只回源一次，避免缓存过期瞬间并发打爆数仓
+        self._single_flight: SingleFlight = SingleFlight()
         # 远程服务客户端由工厂装配，缺省时取共享单例
         self._nestjs_client: NestjsClient = nestjs_client or get_nestjs_client()
         self._spring_client: SpringClient = spring_client or get_spring_client()
@@ -84,35 +85,35 @@ class AnalyzeService:
             self._wordcloud_cache.clear_all(),
         )
 
-    async def _get_singleflight_lock(self, key: str) -> asyncio.Lock:
-        """按 key 取出或创建单飞锁，用保护锁保证并发协程下的创建安全"""
-        async with self._singleflight_guard:
-            lock: Optional[asyncio.Lock] = self._singleflight_locks.get(key)
-            if lock is None:
-                lock = asyncio.Lock()
-                self._singleflight_locks[key] = lock
-            return lock
-
     async def _run_with_singleflight(
         self,
         key: str,
         cache_getter: Callable[[], Any],
         loader: Callable[[], Awaitable[Any]],
     ) -> Any:
-        """使用 asyncio.Lock 合并同 key 的并发缓存回源请求，避免缓存雪崩时同时打到数据库"""
+        """用共享单飞表合并同 key 的并发回源，避免缓存雪崩时同时打到数据库"""
         cached_result: Any = await cache_getter()
         if cached_result is not None:
             return cached_result
 
-        lock: asyncio.Lock = await self._get_singleflight_lock(key)
-        async with lock:
-            cached_result: Any = await cache_getter()
-            if cached_result is not None:
-                self._logger.info(Messages.SINGLEFLIGHT_KEY_HIT(key))
-                return cached_result
+        return await self._single_flight.do(
+            key, lambda: self._load_after_singleflight(key, cache_getter, loader)
+        )
 
-            self._logger.info(Messages.SINGLEFLIGHT_KEY_START(key))
-            return await loader()
+    async def _load_after_singleflight(
+        self,
+        key: str,
+        cache_getter: Callable[[], Any],
+        loader: Callable[[], Awaitable[Any]],
+    ) -> Any:
+        """单飞内二次确认缓存，仍未命中时才执行回源并复用首个请求结果"""
+        cached_result: Any = await cache_getter()
+        if cached_result is not None:
+            self._logger.info(Messages.SINGLEFLIGHT_KEY_HIT(key))
+            return cached_result
+
+        self._logger.info(Messages.SINGLEFLIGHT_KEY_START(key))
+        return await loader()
 
     async def _get_top10_cached(self) -> Optional[list[dict[str, Any]]]:
         """从文章缓存读取 Top10 数据，缓存异常时返回 None 走回源"""
@@ -233,7 +234,7 @@ class AnalyzeService:
             cached_result: Optional[
                 list[dict[str, Any]]
             ] = await self._article_cache.get()
-            if cached_result:
+            if cached_result is not None:
                 total_time: float = time.time() - start
                 self._logger.info(
                     Messages.SERVICE_CACHE_HIT("get_top10_articles_service", total_time)
@@ -403,7 +404,7 @@ class AnalyzeService:
         # ========== 步骤1: 尝试从缓存获取（二级缓存） ==========
         try:
             cached_url: Optional[str] = await self._wordcloud_cache.get()
-            if cached_url:
+            if cached_url is not None:
                 elapsed: float = time.time() - start
                 self._logger.info(
                     Messages.SERVICE_CACHE_HIT("get_wordcloud_service", elapsed)
@@ -538,7 +539,7 @@ class AnalyzeService:
         # ========== 步骤1: 尝试从缓存获取 ==========
         try:
             cached_result: Optional[dict[str, Any]] = await self._statistics_cache.get()
-            if cached_result:
+            if cached_result is not None:
                 total_time: float = time.time() - start
                 self._logger.info(
                     Messages.SERVICE_CACHE_HIT(
@@ -635,7 +636,7 @@ class AnalyzeService:
             cached_result: Optional[
                 list[dict[str, Any]]
             ] = await self._category_cache.get()
-            if cached_result:
+            if cached_result is not None:
                 total_time: float = time.time() - start
                 self._logger.info(
                     Messages.SERVICE_CACHE_HIT(
@@ -755,7 +756,7 @@ class AnalyzeService:
             cached_result: Optional[
                 list[dict[str, Any]]
             ] = await self._publish_time_cache.get()
-            if cached_result:
+            if cached_result is not None:
                 total_time: float = time.time() - start
                 self._logger.info(
                     Messages.SERVICE_CACHE_HIT(

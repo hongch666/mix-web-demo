@@ -22,6 +22,10 @@ class NoopKeyedCache:
         """写入直接丢弃"""
         return None
 
+    async def get_entry_or_load(self, key: str, loader):
+        """固定未命中时直接回源，单飞与回填行为由缓存模板自身用例覆盖"""
+        return await loader()
+
 
 @pytest.fixture
 def service_deps(

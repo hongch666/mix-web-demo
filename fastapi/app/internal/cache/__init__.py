@@ -24,6 +24,7 @@ from .pubSubCache import (
     start_cache_invalidation_subscriber,
     stop_cache_invalidation_subscriber,
 )
+from .singleFlight import SingleFlight
 from .versionedCache import VersionedCache
 
 __all__: list[str] = [
@@ -43,6 +44,7 @@ __all__: list[str] = [
     "KeyedVersionedCache",
     "KeyedPubSubCache",
     "PublishTimeCache",
+    "SingleFlight",
     "get_publish_time_cache",
     "StatisticsCache",
     "get_statistics_cache",

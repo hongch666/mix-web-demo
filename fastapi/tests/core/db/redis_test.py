@@ -1,4 +1,5 @@
 import json
+from collections.abc import AsyncIterator
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
@@ -6,6 +7,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from app.core.constants import Defaults
 from app.core.db import RedisClient, redis as redis_module
 
 _REDIS_CONFIG: dict[str, Any] = {
@@ -225,6 +227,111 @@ async def test_unlock_accepts_only_script_success(
     assert await client.unlock("lock:task", "value") is False
 
     assert fake.eval.await_args.args[1:] == (1, "lock:task", "value")
+
+
+class _FakeKeyspace:
+    """最小 Redis 键空间替身：按模式产出键并记录每批删除的键"""
+
+    def __init__(self, keys_by_pattern: dict[str, list[str]]) -> None:
+        self._keys_by_pattern = keys_by_pattern
+        self.scan_calls: list[dict[str, Any]] = []
+        self.deleted_batches: list[list[str]] = []
+        self.delete = AsyncMock(side_effect=self._delete)
+
+    def scan_iter(self, match: str, count: int | None = None) -> AsyncIterator[str]:
+        """按模式返回异步键迭代器，并记录扫描参数"""
+        self.scan_calls.append({"match": match, "count": count})
+        keys: list[str] = list(self._keys_by_pattern.get(match, []))
+
+        async def iterator() -> AsyncIterator[str]:
+            for key in keys:
+                yield key
+
+        return iterator()
+
+    async def _delete(self, *keys: str) -> int:
+        """记录一批删除并返回删除数量"""
+        self.deleted_batches.append(list(keys))
+        return len(keys)
+
+
+# 命中键按批 DEL：一批最多 DEFAULT 个键，避免单条命令参数过多阻塞主线程
+@pytest.mark.anyio
+async def test_delete_by_patterns_deletes_in_batches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _new_client(monkeypatch)
+    fake = _FakeKeyspace({"cache:a:*": [f"cache:a:{index}" for index in range(1200)]})
+    monkeypatch.setattr(client, "_ensure_client", AsyncMock(return_value=fake))
+    monkeypatch.setattr(Defaults, "REDIS_SCAN_DELETE_BATCH_SIZE", 500)
+
+    assert await client.delete_by_patterns("cache:a:*") == 1200
+    assert [len(batch) for batch in fake.deleted_batches] == [500, 500, 200]
+    # COUNT 用批大小，减少 SCAN 往返次数
+    assert fake.scan_calls == [{"match": "cache:a:*", "count": 500}]
+
+
+# 没有匹配键时不发起 DEL
+@pytest.mark.anyio
+async def test_delete_by_patterns_skips_delete_when_no_match(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _new_client(monkeypatch)
+    fake = _FakeKeyspace({})
+    monkeypatch.setattr(client, "_ensure_client", AsyncMock(return_value=fake))
+
+    assert await client.delete_by_patterns("cache:none:*") == 0
+    fake.delete.assert_not_awaited()
+
+
+# 多个模式的命中键共用同一批缓冲，跨模式攒满一批再删
+@pytest.mark.anyio
+async def test_delete_by_patterns_batches_across_patterns(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _new_client(monkeypatch)
+    fake = _FakeKeyspace(
+        {
+            "p1:*": [f"p1:{index}" for index in range(300)],
+            "p2:*": [f"p2:{index}" for index in range(300)],
+        }
+    )
+    monkeypatch.setattr(client, "_ensure_client", AsyncMock(return_value=fake))
+    monkeypatch.setattr(Defaults, "REDIS_SCAN_DELETE_BATCH_SIZE", 500)
+
+    assert await client.delete_by_patterns("p1:*", "p2:*") == 600
+    assert [len(batch) for batch in fake.deleted_batches] == [500, 100]
+    assert [call["match"] for call in fake.scan_calls] == ["p1:*", "p2:*"]
+
+
+# Redis 不可用时按 0 处理且不报错
+@pytest.mark.anyio
+async def test_delete_by_patterns_returns_zero_without_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _new_client(monkeypatch)
+    monkeypatch.setattr(client, "_ensure_client", AsyncMock(return_value=None))
+
+    assert await client.delete_by_patterns("cache:a:*") == 0
+
+
+# 中途失败时记录错误并返回已删除数量，不再继续后续批次
+@pytest.mark.anyio
+async def test_delete_by_patterns_returns_partial_count_on_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _new_client(monkeypatch)
+    fake = _FakeKeyspace({"p:*": ["p:1", "p:2", "p:3"]})
+    fake.delete.side_effect = [1, RuntimeError("redis down")]
+    monkeypatch.setattr(client, "_ensure_client", AsyncMock(return_value=fake))
+    monkeypatch.setattr(Defaults, "REDIS_SCAN_DELETE_BATCH_SIZE", 1)
+    errors: list[str] = []
+    monkeypatch.setattr(redis_module.Logger, "error", errors.append)
+
+    assert await client.delete_by_patterns("p:*") == 1
+    assert errors
+    # 第一批成功、第二批抛错后停止，不再尝试剩余批次
+    assert fake.delete.await_count == 2
 
 
 # 全局客户端按单例返回

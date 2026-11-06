@@ -397,7 +397,14 @@ class GraphSearchService:
             if cached_rows is not None:
                 rows = cached_rows
             else:
-                rows = await self._recall_rows(user_id, article_ids, cache_key)
+                # 同批次并发未命中时只回源一次，避免同一批候选反复查 Neo4j
+                rows = (
+                    await candidate_cache.run_single_flight(
+                        cache_key,
+                        lambda: self._recall_rows(user_id, article_ids, cache_key),
+                    )
+                    or []
+                )
         else:
             rows = await self._recall_rows(user_id, article_ids, cache_key)
 
@@ -462,7 +469,8 @@ class GraphSearchService:
         """按单文章键批量读取信号行：命中缓存的文章跳过查询，缺失的 id 合并为一次 Cypher 回源后逐篇回填
 
         命中与缺失一次性批量读缓存，回源结果一次性批量写缓存；空结果按短 TTL 负缓存，
-        避免无信号文章在每个请求上重复回源；查询失败时不回填，避免把瞬时故障固化为长期缓存
+        避免无信号文章在每个请求上重复回源；同批缺失 id 的并发请求由单飞合并为一次回源；
+        查询失败时不回填，避免把瞬时故障固化为长期缓存
         """
         started_at = time.time()
         rows_by_id: dict[int, list[dict]] = {}
@@ -488,34 +496,34 @@ class GraphSearchService:
             )
             return self._flatten_rows(rows_by_id, cache_keys)
 
+        batch_key: str = f"{signal_name}:" + ",".join(
+            str(item) for item in sorted(missing_ids)
+        )
         try:
-            rows: list[dict] = await get_neo4j_client().run_query(
-                cypher, build_params(missing_ids), raise_on_error=True
-            )
+            grouped: dict[int, list[dict]]
+            if signal_cache is None:
+                rows: list[dict] = await get_neo4j_client().run_query(
+                    cypher, build_params(missing_ids), raise_on_error=True
+                )
+                grouped = self._group_rows_by_article(rows)
+            else:
+                # 同批缺失 id 的并发请求只回源一次，其余请求复用首个结果
+                grouped = await signal_cache.run_single_flight(
+                    batch_key,
+                    lambda: self._load_missing_signals(
+                        signal_cache,
+                        cypher,
+                        build_params(missing_ids),
+                        cache_keys,
+                        missing_ids,
+                    ),
+                )
         except Exception as e:
             self._logger.warning(Messages.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG(e))
             return self._flatten_rows(rows_by_id, cache_keys)
 
-        grouped = self._group_rows_by_article(rows)
-        positive_rows: dict[str, list[dict]] = {}
-        negative_rows: dict[str, list[dict]] = {}
         for article_id in missing_ids:
-            article_rows: list[dict] = grouped.get(article_id, [])
-            rows_by_id[article_id] = article_rows
-            if signal_cache is None:
-                continue
-            if article_rows:
-                positive_rows[cache_keys[article_id]] = article_rows
-            else:
-                negative_rows[cache_keys[article_id]] = []
-
-        if signal_cache is not None:
-            if positive_rows:
-                await signal_cache.set_entries(positive_rows)
-            if negative_rows:
-                await signal_cache.set_entries(
-                    negative_rows, ttl=Defaults.GRAPH_SIGNAL_NEGATIVE_CACHE_TTL
-                )
+            rows_by_id[article_id] = grouped.get(article_id, [])
 
         self._logger.info(
             Messages.GRAPH_SIGNAL_CACHE_SUMMARY(
@@ -524,23 +532,78 @@ class GraphSearchService:
         )
         return self._flatten_rows(rows_by_id, cache_keys)
 
+    async def _load_missing_signals(
+        self,
+        signal_cache: GraphSignalCache,
+        cypher: str,
+        params: dict,
+        cache_keys: dict[int, str],
+        missing_ids: list[int],
+    ) -> dict[int, list[dict]]:
+        """单飞内执行一次 Cypher 并按文章批量回填缓存，返回按文章分组的行
+
+        空结果按短 TTL 负缓存，避免无信号文章每次请求都重复回源；
+        查询失败直接抛出，由调用方跳过回填，避免把瞬时故障固化为长期缓存
+        """
+        rows: list[dict] = await get_neo4j_client().run_query(
+            cypher, params, raise_on_error=True
+        )
+        grouped: dict[int, list[dict]] = self._group_rows_by_article(rows)
+        positive_rows: dict[str, list[dict]] = {}
+        negative_rows: dict[str, list[dict]] = {}
+        for article_id in missing_ids:
+            article_rows: list[dict] = grouped.get(article_id, [])
+            if article_rows:
+                positive_rows[cache_keys[article_id]] = article_rows
+            else:
+                negative_rows[cache_keys[article_id]] = []
+
+        if positive_rows:
+            await signal_cache.set_entries(positive_rows)
+        if negative_rows:
+            await signal_cache.set_entries(
+                negative_rows, ttl=Defaults.GRAPH_SIGNAL_NEGATIVE_CACHE_TTL
+            )
+        return grouped
+
     async def _batch_rows(self, ids_hash: str, cypher: str, params: dict) -> list[dict]:
-        """按批次键读取信号行：优先命中候选缓存，未命中时回源查询并回填，空结果不缓存
+        """按批次键读取信号行：优先命中候选缓存，未命中时合并并发回源并回填，空结果不缓存
 
         空结果不缓存：Neo4j 异常会被吞成空列表，缓存空集会把瞬时故障固化为长期缺失
         """
         cache_key = f"batch:{ids_hash}"
-        if self._candidate_cache is not None:
-            cached_rows: list[dict] | None = await self._candidate_cache.get_entry(
-                cache_key
-            )
-            if cached_rows is not None:
-                self._logger.debug(Messages.GRAPH_SIGNAL_CACHE_HIT(cache_key))
-                return cached_rows
+        candidate_cache = self._candidate_cache
+        if candidate_cache is None:
+            return await self._safe_query(cypher, params)
 
-        rows = await self._safe_query(cypher, params)
-        if rows and self._candidate_cache is not None:
-            await self._candidate_cache.set_entry(cache_key, rows)
+        cached_rows: list[dict] | None = await candidate_cache.get_entry(cache_key)
+        if cached_rows is not None:
+            self._logger.debug(Messages.GRAPH_SIGNAL_CACHE_HIT(cache_key))
+            return cached_rows
+
+        rows: list[dict] | None = await candidate_cache.run_single_flight(
+            cache_key,
+            lambda: self._query_and_store_batch(
+                candidate_cache, cache_key, cypher, params
+            ),
+        )
+        return rows or []
+
+    async def _query_and_store_batch(
+        self,
+        candidate_cache: GraphCandidateCache,
+        cache_key: str,
+        cypher: str,
+        params: dict,
+    ) -> list[dict]:
+        """单飞内二次确认缓存后执行批次查询并回填，空结果不写缓存"""
+        cached_rows: list[dict] | None = await candidate_cache.get_entry(cache_key)
+        if cached_rows is not None:
+            return cached_rows
+
+        rows: list[dict] = await self._safe_query(cypher, params)
+        if rows:
+            await candidate_cache.set_entry(cache_key, rows)
             self._logger.debug(Messages.GRAPH_SIGNAL_CACHE_STORED(cache_key, len(rows)))
         return rows
 

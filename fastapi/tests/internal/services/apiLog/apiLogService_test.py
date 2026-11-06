@@ -21,6 +21,10 @@ class NoopCache:
         """写入直接丢弃"""
         return None
 
+    async def get_or_load(self, loader):
+        """固定未命中时直接回源，单飞与回填行为由缓存模板自身用例覆盖"""
+        return await loader()
+
 
 def _make_service() -> tuple[ApiLogService, AsyncMock, AsyncMock]:
     nestjs_client = AsyncMock()

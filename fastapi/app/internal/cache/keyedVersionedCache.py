@@ -1,4 +1,5 @@
 import time
+from collections.abc import Awaitable, Callable
 from typing import Any, Optional
 
 from app.core.base import LoggerProtocol
@@ -49,14 +50,36 @@ class KeyedVersionedCache(VersionedCache[Any]):
         await self._write_redis(key, data)
         await self.update_version()
 
+    async def get_entry_or_load(
+        self, key: str, loader: Callable[[], Awaitable[Any]]
+    ) -> Optional[Any]:
+        """按键先读两级缓存，未命中时合并同 key 的并发回源并回填缓存"""
+        cached: Optional[Any] = await self.get_entry(key)
+        if cached is not None:
+            return cached
+
+        return await self._single_flight.do(key, lambda: self._load_entry(key, loader))
+
+    async def _load_entry(
+        self, key: str, loader: Callable[[], Awaitable[Any]]
+    ) -> Optional[Any]:
+        """单飞内二次确认缓存，仍未命中才回源，空结果不回填避免固化长期空集"""
+        cached: Optional[Any] = await self.get_entry(key)
+        if cached is not None:
+            self._logger.debug(Messages.SINGLEFLIGHT_KEY_HIT(key))
+            return cached
+
+        result: Optional[Any] = await loader()
+        if result:
+            await self.set_entry(key, result)
+        return result
+
     async def clear_all(self) -> None:
-        """清空本地键值、Redis 中该前缀的全部键与版本号"""
+        """清空本地键值、Redis 中该前缀的全部键与版本号，按 SCAN 分批删除避免阻塞 Redis"""
         self._local_entries.clear()
         self._cache_version = None
         try:
-            keys = await self._redis.keys(f"{self.REDIS_KEY_PREFIX}*")
-            for key in keys:
-                await self._redis.delete(key)
+            await self._redis.delete_by_patterns(f"{self.REDIS_KEY_PREFIX}*")
             await self._redis.delete(self.REDIS_VERSION_KEY)
         except Exception as e:
             self._logger.error(Messages.CACHE_L2_CLEAR_FAILED(e))
@@ -92,7 +115,7 @@ class KeyedVersionedCache(VersionedCache[Any]):
         """按业务键读取 Redis 缓存，命中时回填本地缓存"""
         try:
             data = await self._redis.get(f"{self.REDIS_KEY_PREFIX}{key}")
-            if data:
+            if data is not None:
                 self._logger.info(Messages.L2_CACHE_HIT)
                 self._write_local(key, data)
                 return data

@@ -55,56 +55,27 @@ class ApiLogService:
             self._logger.debug(traceback.format_exc())
         return await remote_loader()
 
-    async def _read_cache(self, cache: Any) -> Optional[list[dict[str, Any]]]:
-        """读取结果缓存，缓存异常时按未命中处理"""
-        try:
-            cached: Optional[list[dict[str, Any]]] = await cache.get()
-            if cached:
-                self._logger.info(
-                    Messages.SERVICE_CACHE_HIT(cache.__class__.__name__, 0)
-                )
-                return cached
-            return None
-        except Exception as error:
-            self._logger.debug(
-                Messages.CACHE_GET_FAILED_DETAIL(cache.__class__.__name__, error)
-            )
-            return None
-
-    async def _write_cache(self, cache: Any, data: list[dict[str, Any]]) -> None:
-        """把数仓或兜底的结果统一写入缓存，空结果与非缓存异常都不影响主流程"""
-        if not data:
-            return
-        try:
-            await cache.set(data)
-        except Exception as error:
-            self._logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(error))
-
     async def get_api_average_response_time_service(self) -> list[dict[str, Any]]:
-        """获取所有接口的平均响应时间，命中结果缓存时直接返回"""
-        cached = await self._read_cache(self._speed_cache)
-        if cached is not None:
-            return cached
-
-        result = await self._query_ads_with_fallback(
-            self._apiLogMapper.get_api_average_speed_clickhouse_mapper_async,
-            self._nestjs_client.get_api_average_speed,
+        """获取所有接口的平均响应时间，命中结果缓存时直接返回，未命中时合并并发回源"""
+        result: Optional[list[dict[str, Any]]] = await self._speed_cache.get_or_load(
+            lambda: self._query_ads_with_fallback(
+                self._apiLogMapper.get_api_average_speed_clickhouse_mapper_async,
+                self._nestjs_client.get_api_average_speed,
+            )
         )
-        await self._write_cache(self._speed_cache, result)
-        return result
+        return result or []
 
     async def get_called_count_apis_service(self) -> list[dict[str, Any]]:
-        """获取接口调用次数，命中结果缓存时直接返回"""
-        cached = await self._read_cache(self._called_count_cache)
-        if cached is not None:
-            return cached
-
-        result = await self._query_ads_with_fallback(
-            self._apiLogMapper.get_called_count_clickhouse_mapper_async,
-            self._nestjs_client.get_called_count,
+        """获取接口调用次数，命中结果缓存时直接返回，未命中时合并并发回源"""
+        result: Optional[
+            list[dict[str, Any]]
+        ] = await self._called_count_cache.get_or_load(
+            lambda: self._query_ads_with_fallback(
+                self._apiLogMapper.get_called_count_clickhouse_mapper_async,
+                self._nestjs_client.get_called_count,
+            )
         )
-        await self._write_cache(self._called_count_cache, result)
-        return result
+        return result or []
 
 
 @lru_cache

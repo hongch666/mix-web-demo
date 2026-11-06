@@ -55,23 +55,9 @@ class UserService:
         key: str,
         loader: Callable[[], Awaitable[dict[str, Any]]],
     ) -> dict[str, Any]:
-        """优先读取两级缓存，未命中执行回源并写缓存，缓存异常时直接回源"""
-        try:
-            cached = await cache.get_entry(key)
-            if cached is not None:
-                return cached
-        except Exception as e:
-            self._logger.debug(
-                Messages.CACHE_GET_FAILED_DETAIL(cache.__class__.__name__, e)
-            )
-
-        result: dict[str, Any] = await loader()
-        if result:
-            try:
-                await cache.set_entry(key, result)
-            except Exception as e:
-                self._logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(e))
-        return result
+        """优先读取两级缓存，未命中时由缓存模板合并同 key 并发回源并回填"""
+        result: Optional[dict[str, Any]] = await cache.get_entry_or_load(key, loader)
+        return result or {}
 
     @staticmethod
     def _period_dates(period: str) -> tuple[datetime, datetime, int, str]:

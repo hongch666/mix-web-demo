@@ -54,6 +54,10 @@ class _FakeSignalCache:
         """记录批量写入的键值与 TTL"""
         self.write_calls.append((dict(mapping), ttl))
 
+    async def run_single_flight(self, key: str, loader):
+        """直接执行回源，单飞合并行为由 SingleFlight 自身用例覆盖"""
+        return await loader()
+
 
 class _ExplodingRows:
     """迭代即抛出，用于模拟信号协程在读取结果时失败"""

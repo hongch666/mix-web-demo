@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 import json
 import time
+from collections.abc import Awaitable, Callable
 from typing import Any, Optional
 
 from app.core.base import Logger, LoggerProtocol
@@ -96,6 +97,30 @@ class KeyedPubSubCache[T](BaseCache[T]):
         """按键分片缓存不提供无键写入入口"""
         raise NotImplementedError
 
+    async def get_entry_or_load(
+        self, key: str, loader: Callable[[], Awaitable[Optional[T]]]
+    ) -> Optional[T]:
+        """按键先读两级缓存，未命中时合并同 key 的并发回源并回填缓存"""
+        cached: Optional[T] = await self.get_entry(key)
+        if cached is not None:
+            return cached
+
+        return await self._single_flight.do(key, lambda: self._load_entry(key, loader))
+
+    async def _load_entry(
+        self, key: str, loader: Callable[[], Awaitable[Optional[T]]]
+    ) -> Optional[T]:
+        """单飞内二次确认缓存，仍未命中才回源，空结果不回填避免固化长期空集"""
+        cached: Optional[T] = await self.get_entry(key)
+        if cached is not None:
+            self._logger.debug(Messages.SINGLEFLIGHT_KEY_HIT(key))
+            return cached
+
+        result: Optional[T] = await loader()
+        if result:
+            await self.set_entry(key, result)
+        return result
+
     async def set_entry(self, key: str, value: T, ttl: Optional[int] = None) -> None:
         """按业务键写入两级缓存，ttl 非空时覆盖默认有效期，用于空结果的短 TTL 负缓存"""
         self._write_local(key, value, ttl)
@@ -122,13 +147,15 @@ class KeyedPubSubCache[T](BaseCache[T]):
             self._logger.error(Messages.CACHE_L2_CLEAR_FAILED(e))
 
     async def invalidate_namespace(self) -> None:
-        """失效本缓存命名空间：清空 Redis 中本前缀的全部键、清理本地条目并发布失效广播"""
+        """失效本缓存命名空间：按 SCAN 分批删除该前缀的全部键、清理本地条目并发布失效广播
+
+        不使用 KEYS 全量列举：key 空间较大时 KEYS 会阻塞 Redis 主线程；
+        delete_by_patterns 内部走 SCAN 迭代并按批 DEL，单条命令的键数量固定
+        """
         self.clear_local_namespace(self.INVALIDATION_NAMESPACE)
 
         try:
-            keys: list[str] = await self._redis.keys(f"{self.REDIS_KEY_PREFIX}*")
-            if keys:
-                await self._redis.delete(*keys)
+            await self._redis.delete_by_patterns(f"{self.REDIS_KEY_PREFIX}*")
         except Exception as e:
             self._logger.error(Messages.CACHE_L2_CLEAR_FAILED(e))
 

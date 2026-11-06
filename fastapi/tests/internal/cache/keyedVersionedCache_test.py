@@ -1,3 +1,4 @@
+import asyncio
 import time
 from unittest.mock import AsyncMock, Mock
 
@@ -7,13 +8,14 @@ from app.internal.cache import KeyedVersionedCache, baseCache as base_cache
 
 
 class _FakeRedis:
-    """最小 Redis 替身，记录读写、删除与按前缀列举，不连接真实 Redis"""
+    """最小 Redis 替身，记录读写、删除与按模式批量删除，不连接真实 Redis"""
 
     def __init__(self) -> None:
         self.get = AsyncMock(return_value=None)
         self.set = AsyncMock(return_value=True)
         self.delete = AsyncMock(return_value=True)
         self.keys = AsyncMock(return_value=[])
+        self.delete_by_patterns = AsyncMock(return_value=0)
 
 
 class _KeyedCache(KeyedVersionedCache):
@@ -141,9 +143,9 @@ async def test_get_entry_returns_none_when_both_levels_miss(
     assert "u1" not in instance._local_entries
 
 
-# 空列表等假值视为未命中，不把空结果当缓存回填
+# 空列表等假值是合法缓存值，命中后回填本地键值
 @pytest.mark.anyio
-async def test_get_entry_treats_falsy_redis_payload_as_miss(
+async def test_get_entry_treats_falsy_redis_payload_as_hit(
     monkeypatch: pytest.MonkeyPatch,
     cache: tuple[_KeyedCache, _FakeRedis],
 ) -> None:
@@ -151,8 +153,8 @@ async def test_get_entry_treats_falsy_redis_payload_as_miss(
     monkeypatch.setattr(instance, "is_version_changed", AsyncMock(return_value=False))
     fake_redis.get.return_value = []
 
-    assert await instance.get_entry("u1") is None
-    assert "u1" not in instance._local_entries
+    assert await instance.get_entry("u1") == []
+    assert instance._local_entries["u1"][0] == []
 
 
 # L2 读取抛异常时降级为未命中且不污染本地键值
@@ -203,26 +205,26 @@ async def test_set_entry_keeps_local_value_when_redis_write_fails(
     update_version.assert_awaited_once()
 
 
-# 清空时删除该前缀下的全部数据键与版本号键，并重置本地状态
+# 清空时按 SCAN 模式删除该前缀下的全部数据键并删除版本号键，重置本地状态
 @pytest.mark.anyio
-async def test_clear_all_deletes_every_prefixed_key_and_version(
+async def test_clear_all_deletes_prefixed_keys_by_scan_and_version(
     cache: tuple[_KeyedCache, _FakeRedis],
 ) -> None:
     instance, fake_redis = cache
     instance._local_entries["u1"] = ({"views": 1}, time.time())
     instance._cache_version = "v1"
-    fake_redis.keys.return_value = ["test:keyed:u1", "test:keyed:u2"]
 
     await instance.clear_all()
 
-    fake_redis.keys.assert_awaited_once_with("test:keyed:*")
-    deleted = [call.args[0] for call in fake_redis.delete.await_args_list]
-    assert deleted == ["test:keyed:u1", "test:keyed:u2", "test:keyed:version"]
+    fake_redis.delete_by_patterns.assert_awaited_once_with("test:keyed:*")
+    fake_redis.delete.assert_awaited_once_with("test:keyed:version")
+    # KEYS 会阻塞 Redis，清空逻辑不再使用
+    fake_redis.keys.assert_not_awaited()
     assert instance._local_entries == {}
     assert instance._cache_version is None
 
 
-# Redis 列举或删除失败被吞掉，本地键值仍清空
+# Redis 扫描删除或删除版本号失败被吞掉，本地键值仍清空
 @pytest.mark.anyio
 async def test_clear_all_resets_local_state_when_redis_fails(
     cache: tuple[_KeyedCache, _FakeRedis],
@@ -230,12 +232,109 @@ async def test_clear_all_resets_local_state_when_redis_fails(
     instance, fake_redis = cache
     instance._local_entries["u1"] = ({"views": 1}, time.time())
     instance._cache_version = "v1"
-    fake_redis.keys.side_effect = RuntimeError("redis down")
+    fake_redis.delete_by_patterns.side_effect = RuntimeError("redis down")
 
     await instance.clear_all()
 
     assert instance._local_entries == {}
     assert instance._cache_version is None
+
+
+# 命中缓存时 get_entry_or_load 不执行回源
+@pytest.mark.anyio
+async def test_get_entry_or_load_returns_cached_without_loading(
+    monkeypatch: pytest.MonkeyPatch,
+    cache: tuple[_KeyedCache, _FakeRedis],
+) -> None:
+    instance, _ = cache
+    monkeypatch.setattr(instance, "is_version_changed", AsyncMock(return_value=False))
+    instance._local_entries["u1"] = ([], time.time())
+    loader = AsyncMock(return_value=[{"views": 1}])
+
+    assert await instance.get_entry_or_load("u1", loader) == []
+    loader.assert_not_awaited()
+
+
+# 未命中时执行回源并写入两级缓存
+@pytest.mark.anyio
+async def test_get_entry_or_load_loads_and_fills_on_miss(
+    monkeypatch: pytest.MonkeyPatch,
+    cache: tuple[_KeyedCache, _FakeRedis],
+) -> None:
+    instance, fake_redis = cache
+    monkeypatch.setattr(instance, "is_version_changed", AsyncMock(return_value=False))
+    monkeypatch.setattr(instance, "update_version", AsyncMock())
+
+    assert await instance.get_entry_or_load(
+        "u1", AsyncMock(return_value={"views": 2})
+    ) == {"views": 2}
+
+    fake_redis.set.assert_awaited_once_with("test:keyed:u1", {"views": 2}, ex=86400)
+    assert instance._local_entries["u1"][0] == {"views": 2}
+    assert instance._single_flight.in_flight == 0
+
+
+# 空结果回源后不写缓存，避免把空集固化为长期缓存
+@pytest.mark.anyio
+async def test_get_entry_or_load_skips_fill_for_empty_result(
+    monkeypatch: pytest.MonkeyPatch,
+    cache: tuple[_KeyedCache, _FakeRedis],
+) -> None:
+    instance, fake_redis = cache
+    monkeypatch.setattr(instance, "is_version_changed", AsyncMock(return_value=False))
+    update_version = AsyncMock()
+    monkeypatch.setattr(instance, "update_version", update_version)
+
+    assert await instance.get_entry_or_load("u1", AsyncMock(return_value=[])) == []
+    fake_redis.set.assert_not_awaited()
+    update_version.assert_not_awaited()
+
+
+# 同 key 并发未命中只回源一次
+@pytest.mark.anyio
+async def test_get_entry_or_load_merges_concurrent_misses(
+    monkeypatch: pytest.MonkeyPatch,
+    cache: tuple[_KeyedCache, _FakeRedis],
+) -> None:
+    instance, _ = cache
+    monkeypatch.setattr(instance, "is_version_changed", AsyncMock(return_value=False))
+    monkeypatch.setattr(instance, "update_version", AsyncMock())
+    started = asyncio.Event()
+    release = asyncio.Event()
+    calls = 0
+
+    async def loader() -> dict[str, int]:
+        nonlocal calls
+        calls += 1
+        started.set()
+        await release.wait()
+        return {"views": 3}
+
+    first = asyncio.create_task(instance.get_entry_or_load("u1", loader))
+    await started.wait()
+    second = asyncio.create_task(instance.get_entry_or_load("u1", loader))
+    await asyncio.sleep(0)
+    release.set()
+
+    assert await asyncio.gather(first, second) == [{"views": 3}, {"views": 3}]
+    assert calls == 1
+
+
+# 回源异常向调用方传播并释放单飞 key
+@pytest.mark.anyio
+async def test_get_entry_or_load_propagates_loader_error(
+    monkeypatch: pytest.MonkeyPatch,
+    cache: tuple[_KeyedCache, _FakeRedis],
+) -> None:
+    instance, _ = cache
+    monkeypatch.setattr(instance, "is_version_changed", AsyncMock(return_value=False))
+
+    with pytest.raises(RuntimeError, match="db down"):
+        await instance.get_entry_or_load(
+            "u1", AsyncMock(side_effect=RuntimeError("db down"))
+        )
+
+    assert instance._single_flight.in_flight == 0
 
 
 # 容量达到上限且写入新键时淘汰最早写入的条目

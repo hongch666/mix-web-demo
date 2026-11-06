@@ -141,29 +141,49 @@ class VectorSearchService:
     async def _load_vector_docs(
         self, vector_mapper: VectorMapper, query: str, fetch_k: int
     ) -> list[DocScore]:
-        """读取向量检索结果：优先命中缓存，未命中时执行 ANN 检索并回填两级缓存"""
+        """读取向量检索结果：优先命中缓存，未命中时合并同 key 并发检索并回填两级缓存"""
         cache_key = self._cache_key(query, fetch_k)
+        cache = self._vector_query_cache
 
-        if self._vector_query_cache is not None:
-            cached: Optional[
-                list[dict[str, Any]]
-            ] = await self._vector_query_cache.get_entry(cache_key)
-            if cached is not None:
-                self._logger.info(Messages.VECTOR_ENHANCE_CACHE_HIT(cache_key))
-                return self._deserialize_docs(cached)
+        if cache is None:
+            return await vector_mapper.similarity_search_with_score(query, fetch_k)
+
+        cached: Optional[list[dict[str, Any]]] = await cache.get_entry(cache_key)
+        if cached is not None:
+            self._logger.info(Messages.VECTOR_ENHANCE_CACHE_HIT(cache_key))
+            return self._deserialize_docs(cached)
+
+        serialized: Optional[list[dict[str, Any]]] = await cache.run_single_flight(
+            cache_key,
+            lambda: self._search_and_store(
+                cache, cache_key, vector_mapper, query, fetch_k
+            ),
+        )
+        return self._deserialize_docs(serialized or [])
+
+    async def _search_and_store(
+        self,
+        cache: VectorQueryCache,
+        cache_key: str,
+        vector_mapper: VectorMapper,
+        query: str,
+        fetch_k: int,
+    ) -> list[dict[str, Any]]:
+        """单飞内二次确认缓存后执行 ANN 检索并回填，空结果不写缓存"""
+        cached: Optional[list[dict[str, Any]]] = await cache.get_entry(cache_key)
+        if cached is not None:
+            return cached
 
         docs_with_scores: list[
             DocScore
         ] = await vector_mapper.similarity_search_with_score(query, fetch_k)
-
-        if self._vector_query_cache is not None:
-            await self._vector_query_cache.set_entry(
-                cache_key, self._serialize_docs(docs_with_scores)
-            )
+        serialized: list[dict[str, Any]] = self._serialize_docs(docs_with_scores)
+        if serialized:
+            await cache.set_entry(cache_key, serialized)
             self._logger.info(
                 Messages.VECTOR_ENHANCE_CACHE_STORED(cache_key, len(docs_with_scores))
             )
-        return docs_with_scores
+        return serialized
 
     def _cache_key(self, query: str, fetch_k: int) -> str:
         """构造缓存键：查询文本与 fetch_k 联合取 md5，避免不同召回规模的请求互相污染"""

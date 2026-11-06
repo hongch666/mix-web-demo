@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from collections.abc import Generator
@@ -115,19 +116,21 @@ async def test_local_entry_expires_after_ttl(
     assert await instance.get_entry("k") is None
 
 
-# 失效命名空间应清空 Redis 前缀键、清理本地并发布广播
+# 失效命名空间应按 SCAN 模式删除 Redis 前缀键、清理本地并发布广播
 @pytest.mark.anyio
 async def test_invalidate_namespace_clears_and_broadcasts(
     cache: tuple[_TestCache, _FakeRedis],
 ) -> None:
     instance, fake_redis = cache
     await instance.set_entry("k", {"views": 1})
-    fake_redis.keys = AsyncMock(return_value=["test:pubsub:k"])
     fake_redis.publish.reset_mock()
+    fake_redis.deleted_patterns.clear()
 
     await instance.invalidate_namespace()
 
-    fake_redis.delete.assert_awaited_once_with("test:pubsub:k")
+    assert fake_redis.deleted_patterns == ["test:pubsub:*"]
+    # KEYS 在大 key 空间下会阻塞 Redis，失效流程不再使用
+    fake_redis.keys.assert_not_awaited()
     fake_redis.publish.assert_awaited_once_with(
         RedisKeys.CACHE_INVALIDATE_CHANNEL, '{"namespace": "test"}'
     )
@@ -329,6 +332,73 @@ async def test_set_entry_with_ttl_overrides_both_levels(
     _, expires_at = instance._local_entries["test:a"]
     assert 0 < expires_at - time.time() <= 60
     fake_redis.set.assert_awaited_once_with("test:pubsub:a", [], ex=60)
+
+
+# 命中缓存时 get_entry_or_load 不执行回源
+@pytest.mark.anyio
+async def test_get_entry_or_load_returns_cached_without_loading(
+    cache: tuple[_TestCache, _FakeRedis],
+) -> None:
+    instance, _ = cache
+    await instance.set_entry("k", [])
+    loader = AsyncMock(return_value=[{"views": 1}])
+
+    assert await instance.get_entry_or_load("k", loader) == []
+    loader.assert_not_awaited()
+
+
+# 未命中时执行回源并写入两级缓存
+@pytest.mark.anyio
+async def test_get_entry_or_load_loads_and_fills_on_miss(
+    cache: tuple[_TestCache, _FakeRedis],
+) -> None:
+    instance, fake_redis = cache
+
+    assert await instance.get_entry_or_load(
+        "k", AsyncMock(return_value=[{"views": 2}])
+    ) == [{"views": 2}]
+
+    fake_redis.set.assert_awaited_once_with("test:pubsub:k", [{"views": 2}], ex=86400)
+    assert instance._local_entries["test:k"][0] == [{"views": 2}]
+
+
+# 空结果回源后不写缓存，负缓存由 set_entry 的短 TTL 显式控制
+@pytest.mark.anyio
+async def test_get_entry_or_load_skips_fill_for_empty_result(
+    cache: tuple[_TestCache, _FakeRedis],
+) -> None:
+    instance, fake_redis = cache
+
+    assert await instance.get_entry_or_load("k", AsyncMock(return_value=[])) == []
+    fake_redis.set.assert_not_awaited()
+
+
+# 同 key 并发未命中只回源一次
+@pytest.mark.anyio
+async def test_get_entry_or_load_merges_concurrent_misses(
+    cache: tuple[_TestCache, _FakeRedis],
+) -> None:
+    instance, _ = cache
+    started = asyncio.Event()
+    release = asyncio.Event()
+    calls = 0
+
+    async def loader() -> list[dict[str, int]]:
+        nonlocal calls
+        calls += 1
+        started.set()
+        await release.wait()
+        return [{"views": 3}]
+
+    first = asyncio.create_task(instance.get_entry_or_load("k", loader))
+    await started.wait()
+    second = asyncio.create_task(instance.get_entry_or_load("k", loader))
+    await asyncio.sleep(0)
+    release.set()
+
+    assert await asyncio.gather(first, second) == [[{"views": 3}], [{"views": 3}]]
+    assert calls == 1
+    assert instance._single_flight.in_flight == 0
 
 
 # 失效频道按服务隔离，避免与 NestJS 的 key 列表消息格式互相干扰

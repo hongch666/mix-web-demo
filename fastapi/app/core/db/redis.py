@@ -11,7 +11,7 @@ import redis.asyncio as redis
 
 from app.core.base import Logger
 from app.core.config import load_config
-from app.core.constants import Messages
+from app.core.constants import Defaults, Messages
 
 
 class RedisClient:
@@ -287,21 +287,33 @@ class RedisClient:
             return None
 
     async def delete_by_patterns(self, *patterns: str) -> int:
-        """按通配模式扫描并删除匹配的键，返回删除数量"""
+        """按通配模式扫描并分批删除匹配的键，返回实际删除数量
+
+        SCAN 游标逐个遍历，命中键攒满 Defaults.REDIS_SCAN_DELETE_BATCH_SIZE 就 DEL 一次：
+        单条命令的参数数量可控，不会像一次性 DEL 上万个键那样长时间占用 Redis 主线程，
+        进程内也不会因收集全量键出现瞬时内存峰值。
+        中途失败时记录错误并返回已删除的数量，后续批次不再执行。
+        """
+        deleted: int = 0
+        batch_size: int = Defaults.REDIS_SCAN_DELETE_BATCH_SIZE
         try:
             client: Optional[Any] = await self._ensure_client()
             if not client:
                 return 0
-            keys: list[str] = []
+
+            batch: list[str] = []
             for pattern in patterns:
-                async for key in client.scan_iter(match=pattern):
-                    keys.append(key)
-            if keys:
-                await client.delete(*keys)
-            return len(keys)
+                async for key in client.scan_iter(match=pattern, count=batch_size):
+                    batch.append(key)
+                    if len(batch) >= batch_size:
+                        deleted += await client.delete(*batch)
+                        batch.clear()
+            if batch:
+                deleted += await client.delete(*batch)
+            return deleted
         except Exception as e:
             Logger.error(Messages.REDIS_SCAN_DELETE_FAILED(list(patterns), e))
-            return 0
+            return deleted
 
     # 分布式锁相关方法
 
