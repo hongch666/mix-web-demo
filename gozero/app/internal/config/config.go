@@ -116,17 +116,10 @@ func (l LogsConfig) TimestampEnabled() bool {
 	return value != "false" && value != "0" && value != "no" && value != "off"
 }
 
-// 远程服务调用的超时、重试与退避策略配置
+// 远程服务调用的超时、重试与退避策略配置，熔断由 httpc 按服务名内置的 breaker 承担
 type RemoteCallConfig struct {
-	Timeout        int                  `json:"timeout"`        // 请求超时时间（毫秒）
-	MaxRetries     int                  `json:"maxRetries"`     // 最大重试次数
-	InitialBackoff int                  `json:"initialBackoff"` // 初始退避时间（毫秒）
-	MaxBackoff     int                  `json:"maxBackoff"`     // 最大退避时间（毫秒）
-	CircuitBreaker CircuitBreakerConfig `json:"circuitBreaker"` // 熔断器配置
-}
-
-// 熔断器的失败阈值与恢复超时配置
-type CircuitBreakerConfig struct {
-	FailureThreshold int `json:"failureThreshold"` // 失败阈值
-	RecoveryTimeout  int `json:"recoveryTimeout"`  // 恢复超时时间（毫秒）
+	Timeout        int `json:"timeout"`        // 请求超时时间（毫秒）
+	MaxRetries     int `json:"maxRetries"`     // 最大重试次数
+	InitialBackoff int `json:"initialBackoff"` // 初始退避时间（毫秒）
+	MaxBackoff     int `json:"maxBackoff"`     // 最大退避时间（毫秒）
 }

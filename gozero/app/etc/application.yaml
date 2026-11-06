@@ -78,6 +78,4 @@ remote-call:
   maxRetries: 3 # 最大重试次数
   initialBackoff: 200 # 初始退避时间（毫秒）
   maxBackoff: 2000 # 最大退避时间（毫秒）
-  circuitBreaker:
-    failureThreshold: 3 # 失败阈值（连续失败次数）
-    recoveryTimeout: 15000 # 恢复超时时间（毫秒）
+  # 熔断由 go-zero httpc 按服务名内置的 breaker 承担，不在此处配置
