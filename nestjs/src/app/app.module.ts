@@ -17,11 +17,12 @@ import { RequireSelfGuard } from "src/framework/guards/requireSelf.guard";
 import { ApiLogInterceptor } from "src/framework/interceptors/apiLog.interceptor";
 import { CacheModule } from "src/module/common/cache/cache.module";
 import { CommonModule } from "src/module/common/common.module";
+import { LoggerModule } from "src/module/common/logger/logger.module";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { createMongooseDebugLogger } from "src/module/common/logger/mongooseDebugLogger";
+import { NacosModule } from "src/module/common/nacos/nacos.module";
 import { RedisModule } from "src/module/common/redis/redis.module";
 import { SystemModule } from "src/module/system/system.module";
-import { InternalTokenUtil } from "../common/utils/internalToken.util";
 import { ClsMiddleware } from "../framework/middleware/cls.middleware";
 
 /**
@@ -78,7 +79,7 @@ interface MongoDbConfig {
       load: [(): Record<string, unknown> => config],
     }),
     MongooseModule.forRootAsync({
-      imports: [ConfigModule],
+      imports: [ConfigModule, LoggerModule],
       useFactory: async (
         configService: ConfigService,
         loggerService: LoggerService,
@@ -149,11 +150,11 @@ interface MongoDbConfig {
       },
     }),
     CommonModule,
+    NacosModule,
     SystemModule,
   ],
   controllers: [],
   providers: [
-    InternalTokenUtil,
     AllExceptionsFilter,
     {
       provide: APP_INTERCEPTOR,
