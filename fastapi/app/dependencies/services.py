@@ -2,15 +2,11 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from app.core.base import LoggerProtocol
 from app.internal.cache import (
-    get_article_cache,
-    get_category_cache,
     get_graph_candidate_cache,
     get_graph_signal_cache,
-    get_publish_time_cache,
-    get_statistics_cache,
     get_vector_query_cache,
-    get_wordcloud_cache,
 )
 from app.internal.clients import get_nestjs_client, get_spring_client
 from app.internal.services import (
@@ -49,6 +45,11 @@ from .caches import (
     UserStatsCacheDep,
     UserViewCacheDep,
     WordcloudCacheDep,
+    provide_article_cache,
+    provide_category_cache,
+    provide_publish_time_cache,
+    provide_statistics_cache,
+    provide_wordcloud_cache,
 )
 from .clients import NestjsClientDep, SpringClientDep
 from .database import DbSessionFactoryDep
@@ -60,7 +61,7 @@ from .llm import (
     GptServiceDep,
     QwenServiceDep,
 )
-from .logger import LoggerDep
+from .logger import LoggerDep, provide_logger
 from .mappers import (
     AiHistoryMapperDep,
     AiUserSummaryMapperDep,
@@ -108,20 +109,22 @@ def provide_analyze_service(
 
 
 def resolve_analyze_service() -> AnalyzeService:
-    """请求外（调度器等）通过依赖图解析 AnalyzeService
+    """请求外（调度器等）复用请求链路的装配函数解析 AnalyzeService
 
-    参数取自与 provide_analyze_service 相同的单例工厂，
+    与 provide_analyze_service 传入同一组单例依赖与相同的参数序列，
     因此返回的是与请求路径完全相同的实例，singleflight 锁等内部状态共享
     """
-    return get_analyze_service(
+    logger: LoggerProtocol = provide_logger()
+    return provide_analyze_service(
         resolve_article_mapper(),
-        get_article_cache(),
-        get_category_cache(),
-        get_publish_time_cache(),
-        get_statistics_cache(),
-        get_wordcloud_cache(),
+        provide_article_cache(logger),
+        provide_category_cache(logger),
+        provide_publish_time_cache(logger),
+        provide_statistics_cache(logger),
+        provide_wordcloud_cache(logger),
         get_spring_client(),
         get_nestjs_client(),
+        logger,
     )
 
 

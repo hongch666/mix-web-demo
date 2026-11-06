@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from app.internal.cache.singleFlight import SingleFlight
+from app.internal.cache import SingleFlight
 
 
 # 同 key 并发调用只执行一次 loader，所有调用方拿到同一结果
