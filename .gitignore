@@ -212,6 +212,9 @@ dist/
 
 .github/*
 !.github/copilot-instructions.md
+# CI/CD 工作流必须提交到仓库，GitHub Actions 才能生效；其余 .github 工具目录保持忽略
+!.github/workflows/
+!.github/workflows/**
 
 .codebuddy/*
 !.codebuddy/rules

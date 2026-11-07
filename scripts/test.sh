@@ -70,7 +70,15 @@ for SERVICE in $SERVICES; do
 
     case $STATUS in
         0) echo "Tests passed: $SERVICE" ;;
-        2) echo "Tests skipped: $SERVICE (required tool not installed)" ;;
+        2)
+            # CI_STRICT=1（CI 环境）时工具缺失视为失败，避免门禁假绿
+            if [ "${CI_STRICT:-0}" = "1" ]; then
+                echo "Tests failed: $SERVICE (required tool not installed, CI_STRICT=1)"
+                FAILED_SERVICES="$FAILED_SERVICES $SERVICE"
+            else
+                echo "Tests skipped: $SERVICE (required tool not installed)"
+            fi
+            ;;
         *)
             echo "Tests failed: $SERVICE"
             FAILED_SERVICES="$FAILED_SERVICES $SERVICE"

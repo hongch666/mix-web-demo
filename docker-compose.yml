@@ -265,11 +265,12 @@ services:
       start_period: 60s
 
   # 业务服务镜像引用支持远程仓库前缀：DOCKER_IMAGE_PREFIX（根目录 .env，取值以 / 结尾，例如 docker.io/yourname/）
-  # 未配置时镜像名为本地构建名 mix-<service>:latest；配置后为 <前缀>mix-<service>:latest
+  # 镜像 tag 支持 DOCKER_IMAGE_TAG 覆盖，默认 latest；CI/CD 按短 sha 部署与回滚依赖该变量
+  # 未配置时镜像名为本地构建名 mix-<service>:latest；配置后为 <前缀>mix-<service>:<tag>
   # Compose 默认 pull_policy: missing：本地已有同名镜像直接使用，缺失才从远程仓库拉取
   # 配合构建脚本给本地构建镜像补打同名标签，实现「本地构建优先，远程镜像兜底」
   spring:
-    image: ${DOCKER_IMAGE_PREFIX:-}mix-spring:latest
+    image: ${DOCKER_IMAGE_PREFIX:-}mix-spring:${DOCKER_IMAGE_TAG:-latest}
     container_name: mix-spring
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     depends_on:
@@ -324,7 +325,7 @@ services:
       start_period: 60s
 
   gozero:
-    image: ${DOCKER_IMAGE_PREFIX:-}mix-gozero:latest
+    image: ${DOCKER_IMAGE_PREFIX:-}mix-gozero:${DOCKER_IMAGE_TAG:-latest}
     container_name: mix-gozero
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     depends_on:
@@ -379,7 +380,7 @@ services:
       start_period: 30s
 
   nestjs:
-    image: ${DOCKER_IMAGE_PREFIX:-}mix-nestjs:latest
+    image: ${DOCKER_IMAGE_PREFIX:-}mix-nestjs:${DOCKER_IMAGE_TAG:-latest}
     container_name: mix-nestjs
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     depends_on:
@@ -432,7 +433,7 @@ services:
       start_period: 40s
 
   fastapi:
-    image: ${DOCKER_IMAGE_PREFIX:-}mix-fastapi:latest
+    image: ${DOCKER_IMAGE_PREFIX:-}mix-fastapi:${DOCKER_IMAGE_TAG:-latest}
     container_name: mix-fastapi
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     depends_on:

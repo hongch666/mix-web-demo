@@ -1,0 +1,122 @@
+name: Release Images
+
+# 触发：
+#   push prod    → 构建并推送 :sha短号 与 :latest（生产分支，WSL 部署的镜像来源）
+#   push tag v*  → 追加 :vX.Y.Z（配合 GitHub Release）
+#   workflow_dispatch → 手工补建镜像
+#
+# 构建位置：GitHub 托管 runner（ACR 个人版公网端点可达）。
+# 若镜像仓库换成企业版 VPC 端点或内网 Harbor，把 runs-on 改为 [self-hosted, linux, x64, builder]。
+on:
+  push:
+    branches: [prod]
+    tags: ['v*']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'db/**'
+      - 'scripts/**'
+      - 'skills/**'
+      - 'static/**'
+      - 'loki-config/**'
+      - 'otel-config/**'
+      - 'prometheus-config/**'
+      - '.github/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build / ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [spring, gozero, nestjs, fastapi]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 校验镜像仓库配置
+        run: |
+          if [ -z "${{ vars.DOCKER_IMAGE_PREFIX }}" ]; then
+            echo "::error::仓库变量 DOCKER_IMAGE_PREFIX 未配置（示例：crpi-xxx.cn-guangzhou.personal.cr.aliyuncs.com/mix-web-demo/，以 / 结尾）"
+            exit 1
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ vars.DOCKER_IMAGE_PREFIX }}mix-${{ matrix.service }}
+          tags: |
+            # 唯一真相：部署与回滚只用短 sha
+            type=sha,format=short,prefix=
+            # latest 跟随 prod 分支；打 tag 时不会打 latest
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/prod' }}
+            # v1.2.3 → 1.2.3
+            type=semver,pattern={{version}}
+
+      # Dockerfile 里的 --mount=type=cache 在托管 runner 上跨 run 不保留，
+      # 必须靠 type=gha 缓存，否则每次全量拉 Maven / 全量 npm ci
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  scan:
+    name: Scan / ${{ matrix.service }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [spring, gozero, nestjs, fastapi]
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.DOCKER_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - id: ref
+        run: echo "image=${{ vars.DOCKER_IMAGE_PREFIX }}mix-${{ matrix.service }}:${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+      # 只对 CRITICAL 阻断（ignore-unfixed 排除无修复版本的白噪音），报告整体上传到 Security 标签页
+      - id: trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ steps.ref.outputs.image }}
+          format: sarif
+          output: trivy-${{ matrix.service }}.sarif
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-${{ matrix.service }}.sarif
+          category: trivy-${{ matrix.service }}

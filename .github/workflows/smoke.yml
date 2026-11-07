@@ -1,0 +1,41 @@
+name: Runner Smoke
+
+# 自托管 runner 冒烟检查：只验证 runner 连通、git/docker 可用与部署目录就绪，
+# 不触碰任何容器。首次接入内网 runner 时先跑这个，把网络与权限问题一次性暴露。
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: 冒烟检查
+    runs-on: [self-hosted, linux, x64, deploy]
+    timeout-minutes: 5
+    steps:
+      - name: 基础环境
+        run: |
+          set -euo pipefail
+          echo "runner: $(uname -a)"
+          git --version
+          docker version
+          docker compose version
+          docker info --format 'Docker 可用，运行中容器数: {{.ContainersRunning}}'
+
+      - name: 出网验证
+        run: |
+          curl -fsSI https://api.github.com >/dev/null && echo "GitHub API 可达"
+
+      - name: 部署目录就绪
+        run: |
+          set -euo pipefail
+          DEPLOY_DIR="${{ vars.DEPLOY_DIR }}"
+          if [ -z "$DEPLOY_DIR" ] || [ ! -d "$DEPLOY_DIR/.git" ]; then
+            echo "::error::仓库变量 DEPLOY_DIR 未配置，或目录不是 git 仓库: $DEPLOY_DIR"
+            exit 1
+          fi
+          cd "$DEPLOY_DIR"
+          git log -1 --oneline
+          [ -f .env ] || { echo "::error::缺少 .env（需含 DOCKER_IMAGE_PREFIX）"; exit 1; }
+          grep -q '^DOCKER_IMAGE_PREFIX=' .env && echo ".env 就绪（DOCKER_IMAGE_PREFIX 已配置）"
+          for f in spring/.env.docker gozero/app/.env.docker nestjs/.env.docker fastapi/.env.docker; do
+            [ -f "$f" ] || echo "::warning::缺少 $f"
+          done

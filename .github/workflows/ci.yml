@@ -1,0 +1,185 @@
+name: CI
+
+# 触发（main 为开发分支，不触发任何 CI/CD）：
+#   pull_request      → prod 质量门禁（合并前必须全绿）
+#   push prod         → 合并后复验一次，防止绕过 PR 的 merge commit
+#   workflow_dispatch → 手工只跑指定服务，便于排障
+on:
+  pull_request:
+    branches: [prod]
+  push:
+    branches: [prod]
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 只跑指定服务（空格分隔：spring gozero nestjs fastapi），留空按变更检测
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+# 同一分支连续推送时取消旧任务，节省额度
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # CI_STRICT=1：把脚本里「工具缺失就跳过」的降级行为升级为失败，避免门禁假绿
+  CI_STRICT: "1"
+  # 与本地开发对齐的工具版本，升级前先确认本地 golangci-lint / goctl 版本
+  GOLANGCI_LINT_VERSION: v1.64.8
+  GOCTL_VERSION: v1.10.0
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 变更检测：把受影响服务算成 JSON 数组喂给 matrix，未变更的服务不占 job
+  # （4 语言全量矩阵很贵，路径过滤是必须项而不是优化项）
+  # ---------------------------------------------------------------------------
+  changes:
+    name: 变更检测
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      services: ${{ steps.plan.outputs.services }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            spring:
+              - 'spring/**'
+              - 'scripts/**'
+              - '.github/workflows/ci.yml'
+            gozero:
+              - 'gozero/**'
+              - 'scripts/**'
+              - '.github/workflows/ci.yml'
+            nestjs:
+              - 'nestjs/**'
+              - 'scripts/**'
+              - '.github/workflows/ci.yml'
+            fastapi:
+              - 'fastapi/**'
+              - 'scripts/**'
+              - '.github/workflows/ci.yml'
+
+      - id: plan
+        name: 计算参与门禁的服务
+        env:
+          MANUAL: ${{ inputs.services }}
+          CHANGED_SPRING: ${{ steps.filter.outputs.spring }}
+          CHANGED_GOZERO: ${{ steps.filter.outputs.gozero }}
+          CHANGED_NESTJS: ${{ steps.filter.outputs.nestjs }}
+          CHANGED_FASTAPI: ${{ steps.filter.outputs.fastapi }}
+        run: |
+          set -euo pipefail
+          list=()
+          if [ -n "${MANUAL:-}" ]; then
+            for svc in $MANUAL; do list+=("$svc"); done
+          else
+            if [ "$CHANGED_SPRING" = "true" ]; then list+=(spring); fi
+            if [ "$CHANGED_GOZERO" = "true" ]; then list+=(gozero); fi
+            if [ "$CHANGED_NESTJS" = "true" ]; then list+=(nestjs); fi
+            if [ "$CHANGED_FASTAPI" = "true" ]; then list+=(fastapi); fi
+          fi
+
+          count=${#list[@]}
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" -eq 0 ]; then
+            echo "services=[]" >> "$GITHUB_OUTPUT"
+            echo "::notice::未检测到服务代码变更，跳过质量门禁"
+            exit 0
+          fi
+          json="$(printf '%s\n' "${list[@]}" | jq -R . | jq -cs .)"
+          echo "services=$json" >> "$GITHUB_OUTPUT"
+          echo "::notice::参与门禁的服务: ${list[*]}"
+
+  # ---------------------------------------------------------------------------
+  # 质量门禁：复用本地同一套脚本（lint.sh / compile.sh / test.sh），判据完全一致
+  # ---------------------------------------------------------------------------
+  quality:
+    name: Quality / ${{ matrix.service }}
+    needs: changes
+    if: needs.changes.outputs.count != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.changes.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---------- spring：JDK 17 + Maven ----------
+      - if: matrix.service == 'spring'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: spring/pom.xml
+
+      # ---------- gozero：Go + golangci-lint + goctl ----------
+      - if: matrix.service == 'gozero'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: gozero/app/go.mod
+          cache-dependency-path: gozero/app/go.sum
+
+      - if: matrix.service == 'gozero'
+        name: 安装 golangci-lint 与 goctl
+        run: |
+          set -euo pipefail
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+            | sh -s -- -b "$(go env GOPATH)/bin" "${GOLANGCI_LINT_VERSION}"
+          golangci-lint version
+          # GOWORK=off：仓库根目录有 go.work，workspace 模式下 go install pkg@version 会报错
+          # 固定版本拉取失败时回退 latest，避免上游仓库抖动阻断门禁
+          GOWORK=off go install "github.com/zeromicro/go-zero/tools/goctl@${GOCTL_VERSION}" \
+            || GOWORK=off go install github.com/zeromicro/go-zero/tools/goctl@latest
+          goctl --version
+
+      # ---------- nestjs：Node 20 + npm（脚本走 npm run lint / tsc，不用 bun） ----------
+      - if: matrix.service == 'nestjs'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: nestjs/package-lock.json
+
+      - if: matrix.service == 'nestjs'
+        name: 安装依赖（npm ci）
+        working-directory: nestjs
+        run: npm ci --no-audit --no-fund
+
+      # ---------- fastapi：Python 3.12 + uv（dev 组含 ruff/pyright） ----------
+      - if: matrix.service == 'fastapi'
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.12'
+          enable-cache: true
+          cache-dependency-glob: fastapi/uv.lock
+
+      - if: matrix.service == 'fastapi'
+        name: 安装依赖（uv sync --frozen）
+        working-directory: fastapi
+        run: uv sync --frozen
+
+      - if: matrix.service == 'fastapi'
+        name: 将 venv 加入 PATH（lint.sh 通过 command -v 探测 ruff/pyright）
+        run: echo "$PWD/fastapi/.venv/bin" >> "$GITHUB_PATH"
+
+      # ---------- 统一门禁 ----------
+      - name: lint → compile → test
+        run: |
+          set -euo pipefail
+          SVC="${{ matrix.service }}"
+          bash scripts/lint.sh "$SVC"
+          bash scripts/compile.sh "$SVC"
+          bash scripts/test.sh "$SVC"

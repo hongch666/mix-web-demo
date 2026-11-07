@@ -1,0 +1,164 @@
+name: Deploy
+
+# 生产部署（WSL 内网，自托管 runner，仅出站 443，无任何入站要求）
+#
+# 触发：
+#   1. workflow_run：Release Images 在 prod 分支构建成功后自动部署（受 environment 审批保护）
+#   2. release published：发布 GitHub Release 时部署对应 tag
+#   3. workflow_dispatch：手工部署 / 回滚，image_tag 填短 sha 或 vX.Y.Z
+#
+# 部署机要求（一次配置，见 README 或交接说明）：
+#   - 自托管 runner，labels 含 deploy（svc.sh 注册为 systemd 服务）
+#   - 仓库克隆于仓库变量 DEPLOY_DIR（如 /home/hongch666/mix-web-demo），
+#     并备好 .env（DOCKER_IMAGE_PREFIX / HOST_UID / HOST_GID）与四个 .env.docker
+#     （这些文件被 gitignore，部署目录不随 checkout 重置，正好保留）
+#   - runner 用户具备 docker 权限
+on:
+  workflow_run:
+    workflows: [Release Images]
+    types: [completed]
+    branches: [prod]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 镜像 tag（短 sha 或 vX.Y.Z）；留空则部署 prod 最新 commit 的短 sha
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+# 部署全局互斥：同 group 的两次部署排队执行，不取消进行中的那次
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  # shellcheck disable=SC2086 —— 刻意不加引号，作为 compose 的服务列表展开
+  SERVICES: spring gozero nestjs fastapi gateway
+
+jobs:
+  deploy:
+    name: 部署到生产（WSL）
+    runs-on: [self-hosted, linux, x64, deploy]
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - name: 上游结果检查
+        id: guard
+        if: github.event_name == 'workflow_run'
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+            echo "::notice::上游 Release Images 结论为 ${{ github.event.workflow_run.conclusion }}，跳过部署"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 同步部署目录到目标版本
+        id: sync
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          INPUT_TAG: ${{ inputs.image_tag }}
+          # workflow_run 事件的 GITHUB_SHA 指向默认分支头，不是触发构建的 commit；
+          # 必须用触发工作流的 head_sha，否则会部署错版本
+          WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          DEPLOY_DIR="${{ vars.DEPLOY_DIR }}"
+          if [ -z "$DEPLOY_DIR" ] || [ ! -d "$DEPLOY_DIR/.git" ]; then
+            echo "::error::仓库变量 DEPLOY_DIR 未配置，或目录不是 git 仓库: $DEPLOY_DIR"
+            exit 1
+          fi
+          cd "$DEPLOY_DIR"
+          git fetch origin --prune --tags
+          if [ -n "${INPUT_TAG:-}" ]; then
+            tag="$INPUT_TAG"
+            if [[ "$tag" == v* ]]; then
+              commit="$(git rev-list -n 1 "refs/tags/$tag")"
+            else
+              commit="$tag"
+            fi
+          else
+            commit="${WORKFLOW_SHA:-$GITHUB_SHA}"
+            tag="${commit:0:7}"
+          fi
+          git cat-file -e "${commit}^{commit}" 2>/dev/null \
+            || { echo "::error::提交不存在: $commit（在部署目录执行 git fetch origin main 后重试）"; exit 1; }
+          prev_commit="$(git rev-parse HEAD)"
+          git checkout --detach "$commit"
+          git reset --hard "$commit"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "prev_commit=$prev_commit" >> "$GITHUB_OUTPUT"
+          echo "deploy_dir=$DEPLOY_DIR" >> "$GITHUB_OUTPUT"
+          echo "::notice::目标版本 tag=$tag（上一版本 ${prev_commit:0:7}）"
+
+      - name: 部署前检查
+        if: steps.sync.outputs.tag
+        run: |
+          set -euo pipefail
+          cd "${{ steps.sync.outputs.deploy_dir }}"
+          command -v docker >/dev/null || { echo "::error::docker 不可用"; exit 1; }
+          docker compose version >/dev/null || { echo "::error::docker compose v2 不可用"; exit 1; }
+          [ -f .env ] || { echo "::error::缺少 .env（需含 DOCKER_IMAGE_PREFIX，建议含 HOST_UID/HOST_GID）"; exit 1; }
+          grep -q '^DOCKER_IMAGE_PREFIX=' .env || { echo "::error::.env 缺少 DOCKER_IMAGE_PREFIX"; exit 1; }
+          for f in spring/.env.docker gozero/app/.env.docker nestjs/.env.docker fastapi/.env.docker; do
+            [ -f "$f" ] || echo "::warning::缺少 $f"
+          done
+          if [ -z "${{ vars.DOCKER_REGISTRY }}" ]; then
+            echo "::warning::仓库变量 DOCKER_REGISTRY 未配置，docker login 将使用 Docker Hub"
+          fi
+
+      - name: 登录镜像仓库
+        if: steps.sync.outputs.tag
+        run: |
+          echo "${{ secrets.ACR_PASSWORD }}" \
+            | docker login "${{ vars.DOCKER_REGISTRY }}" -u "${{ secrets.ACR_USERNAME }}" --password-stdin
+
+      - name: 拉取镜像并启动（失败自动回滚）
+        if: steps.sync.outputs.tag
+        env:
+          TAG: ${{ steps.sync.outputs.tag }}
+          COMMIT: ${{ steps.sync.outputs.commit }}
+          PREV_COMMIT: ${{ steps.sync.outputs.prev_commit }}
+        run: |
+          set -euo pipefail
+          cd "${{ steps.sync.outputs.deploy_dir }}"
+          state_dir="${RUNNER_WORKSPACE}/mix-deploy-state"
+          mkdir -p "$state_dir"
+          state_file="$state_dir/last-deploy"
+          prev_tag=""
+          if [ -f "$state_file" ]; then read -r prev_tag _ < "$state_file" || true; fi
+          echo "本次部署: $TAG（上一版本: ${prev_tag:-无}）"
+
+          deploy_stack() {
+            local t="$1"
+            DOCKER_IMAGE_TAG="$t" docker compose pull $SERVICES
+            # --wait 等待 compose 里已定义的 healthcheck 全部通过，不额外写等待逻辑
+            DOCKER_IMAGE_TAG="$t" docker compose up -d --wait --wait-timeout 300 $SERVICES
+          }
+
+          if deploy_stack "$TAG"; then
+            printf '%s %s\n' "$TAG" "$COMMIT" > "$state_file"
+            echo "::notice::部署成功: $TAG"
+          else
+            echo "::error::部署失败（tag=$TAG）"
+            if [ -n "$prev_tag" ] && [ "$prev_tag" != "$TAG" ]; then
+              echo "回滚到上一版本: $prev_tag（$PREV_COMMIT）"
+              git checkout --detach "$PREV_COMMIT" 2>/dev/null || true
+              git reset --hard "$PREV_COMMIT" 2>/dev/null || true
+              deploy_stack "$prev_tag" || echo "::warning::回滚也失败，需要人工介入"
+            fi
+            exit 1
+          fi
+
+      - name: 网关配置变更时重启 APISIX
+        if: steps.sync.outputs.tag
+        run: |
+          cd "${{ steps.sync.outputs.deploy_dir }}"
+          # APISIX 只在启动时读配置，bind mount 变更不会触发容器重建，需显式重启
+          if git diff --name-only "${{ steps.sync.outputs.prev_commit }}" "${{ steps.sync.outputs.commit }}" -- gateway/ | grep -q .; then
+            echo "检测到 gateway 配置变更，重启网关加载新配置..."
+            docker compose restart gateway
+          fi

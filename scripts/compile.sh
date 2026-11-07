@@ -129,7 +129,13 @@ for SERVICE in $SERVICES; do
             print_info "$SERVICE 编译校验通过"
             ;;
         2)
-            print_warn "$SERVICE 已跳过（对应工具未安装）"
+            # CI_STRICT=1（CI 环境）时工具缺失视为失败，避免门禁假绿
+            if [ "${CI_STRICT:-0}" = "1" ]; then
+                print_error "$SERVICE 编译校验未通过（对应工具未安装，CI_STRICT=1 不允许降级为跳过）"
+                FAILED_SERVICES="$FAILED_SERVICES $SERVICE"
+            else
+                print_warn "$SERVICE 已跳过（对应工具未安装）"
+            fi
             ;;
         *)
             print_error "$SERVICE 编译校验未通过"

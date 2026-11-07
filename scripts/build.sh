@@ -121,15 +121,18 @@ build_spring() {
     OTEL_ENABLED=true bash "$PROJECT_ROOT/scripts/otel-env.sh" spring
     cd "$PROJECT_ROOT/spring"
     
-    # Gradle 打包
-    if command -v gradle &> /dev/null; then
+    # 与 lint.sh / compile.sh / Dockerfile 保持一致，统一优先使用 Maven 构建
+    if command -v mvn &> /dev/null && [ -f "pom.xml" ]; then
+        print_info "使用 Maven 打包 Spring..."
+        mvn -q clean package -DskipTests -Dspotless.check.skip=true
+    elif command -v gradle &> /dev/null; then
         print_info "使用全局 Gradle 打包 Spring..."
         gradle clean build -x test
     elif [ -f "./gradlew" ]; then
         print_info "使用本地 Gradle Wrapper 打包 Spring..."
         ./gradlew clean build -x test
     else
-        print_error "Gradle 未安装，跳过 Spring 打包"
+        print_error "Maven/Gradle 未安装，跳过 Spring 打包"
         return 1
     fi
     
@@ -137,8 +140,12 @@ build_spring() {
     SPRING_DIST="$DIST_DIR/spring"
     mkdir -p "$SPRING_DIST"
     
-    # 复制 jar 文件（排除 plain jar，只复制可执行的 jar）
-    if [ -f "build/libs/spring-1.0.0.jar" ]; then
+    # 复制 jar 文件（Maven 产物在 target/，Gradle 产物在 build/libs/；排除 plain/original，只复制可执行的 jar）
+    if [ -f "target/spring-1.0.0.jar" ]; then
+        cp "target/spring-1.0.0.jar" "$SPRING_DIST/spring.jar"
+    elif ls target/spring-*.jar 1> /dev/null 2>&1; then
+        cp $(ls target/spring-*.jar | grep -Ev 'plain|original' | head -1) "$SPRING_DIST/spring.jar"
+    elif [ -f "build/libs/spring-1.0.0.jar" ]; then
         cp "build/libs/spring-1.0.0.jar" "$SPRING_DIST/spring.jar"
     elif ls build/libs/spring-*.jar 1> /dev/null 2>&1; then
         # 如果上面的文件不存在，使用通配符找到第一个 jar 文件
