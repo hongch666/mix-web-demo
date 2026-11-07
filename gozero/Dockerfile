@@ -3,7 +3,7 @@
 # 多阶段构建：构建阶段 + 运行阶段
 
 # 阶段1：构建阶段
-FROM golang:1.24-alpine3.20 AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
@@ -41,7 +41,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 # 阶段2：运行阶段
 # 使用具体的 alpine 版本而不是 latest
-FROM alpine:3.20
+FROM alpine:3.24
 
 WORKDIR /app
 

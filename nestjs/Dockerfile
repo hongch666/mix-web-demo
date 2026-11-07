@@ -4,7 +4,7 @@
 # 多阶段构建：构建阶段 + 运行阶段
 
 # 阶段1：构建阶段
-FROM node:20-alpine AS builder
+FROM node:20.20.2-alpine AS builder
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ COPY src ./src
 RUN npm run node:build && npm prune --omit=dev --no-audit --no-fund
 
 # 阶段2：运行阶段
-FROM node:20-alpine
+FROM node:20.20.2-alpine
 
 WORKDIR /app
 

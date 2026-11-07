@@ -1,6 +1,6 @@
 # 构建阶段：安装运行期依赖，并把业务源码编译为字节码后删除 .py
 # 运行阶段只复制字节码与依赖，镜像内不存在可直接阅读的业务源码
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.12.16-slim-bookworm AS builder
 
 # 构建时接收代理，供 RUN 里的 pip 使用
 ARG http_proxy
@@ -35,7 +35,7 @@ RUN set -eux; \
     rm -f /app/requirements.txt /app/pyproject.toml /app/uv.lock
 
 # 运行阶段：仅保留解释器、运行期依赖与字节码
-FROM python:3.12-slim-bookworm
+FROM python:3.12.16-slim-bookworm
 
 # 构建时接收代理，供 RUN 里的 apt 使用
 ARG http_proxy
