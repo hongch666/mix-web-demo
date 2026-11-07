@@ -2,6 +2,7 @@ package chatMessages
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -38,8 +39,19 @@ func NewChatMessagesModel(conn sqlx.SqlConn) ChatMessagesModel {
 
 // Insert 插入一条聊天消息
 func (m *customChatMessagesModel) Insert(ctx context.Context, data *ChatMessages) error {
-	_, err := m.baseModel.Insert(ctx, data)
+	_, err := m.insert(ctx, data)
 	return err
+}
+
+// insert 执行插入并返回结果集，供需要回填自增主键的调用方复用
+// conversation_low/conversation_high 是虚拟生成列，显式写入（含写 NULL）会被 MySQL 拒绝并报 3105 错误，
+// goctl 生成的 baseModel.Insert 会把这两列一起写进去，这里只写业务列，会话键交给数据库计算
+func (m *customChatMessagesModel) insert(ctx context.Context, data *ChatMessages) (sql.Result, error) {
+	query := fmt.Sprintf(
+		"insert into %s (sender_id, receiver_id, content, is_read) values (?, ?, ?, ?)",
+		m.baseModel.table,
+	)
+	return m.conn.ExecCtx(ctx, query, data.SenderId, data.ReceiverId, data.Content, data.IsRead)
 }
 
 // FindOne 按主键查询聊天消息
@@ -48,8 +60,14 @@ func (m *customChatMessagesModel) FindOne(ctx context.Context, id uint64) (*Chat
 }
 
 // Update 更新聊天消息记录
+// created_at 由数据库默认值生成、conversation_low/conversation_high 为生成列，三者都不能出现在 set 子句里
 func (m *customChatMessagesModel) Update(ctx context.Context, data *ChatMessages) error {
-	return m.baseModel.Update(ctx, data)
+	query := fmt.Sprintf(
+		"update %s set sender_id = ?, receiver_id = ?, content = ?, is_read = ? where id = ?",
+		m.baseModel.table,
+	)
+	_, err := m.conn.ExecCtx(ctx, query, data.SenderId, data.ReceiverId, data.Content, data.IsRead, data.Id)
+	return err
 }
 
 // Delete 按主键删除聊天消息
@@ -59,7 +77,7 @@ func (m *customChatMessagesModel) Delete(ctx context.Context, id uint64) error {
 
 // CreateChatMessage 插入聊天消息并把数据库生成的 id、created_at 等字段回写到入参对象
 func (m *customChatMessagesModel) CreateChatMessage(ctx context.Context, message *ChatMessages) error {
-	result, err := m.baseModel.Insert(ctx, message)
+	result, err := m.insert(ctx, message)
 	if err != nil {
 		return err
 	}
