@@ -26,6 +26,8 @@ on:
 
 permissions:
   contents: read
+  # 推镜像到 GHCR 需要 packages: write
+  packages: write
   security-events: write
 
 concurrency:
@@ -46,65 +48,34 @@ jobs:
 
       - name: 校验镜像仓库配置
         env:
-          REG: ${{ vars.DOCKER_REGISTRY }}
-          ACR_USER: ${{ secrets.ACR_USERNAME }}
-          ACR_PASS: ${{ secrets.ACR_PASSWORD }}
+          PREFIX: ${{ vars.DOCKER_IMAGE_PREFIX }}
         run: |
-          # 变量用方括号包裹打印，便于看出首尾空格/换行等隐藏字符（变量非机密可直接打印）
-          echo "registry=[$REG]"
-          echo "prefix=[${{ vars.DOCKER_IMAGE_PREFIX }}]"
-          if [ -z "$REG" ] || [ -z "${{ vars.DOCKER_IMAGE_PREFIX }}" ]; then
-            echo "::error::仓库变量 DOCKER_REGISTRY / DOCKER_IMAGE_PREFIX 未配置"
+          # 变量用方括号包裹打印，便于看出首尾空格等隐藏字符（变量非机密可直接打印）
+          echo "prefix=[$PREFIX]"
+          if [ -z "$PREFIX" ]; then
+            echo "::error::仓库变量 DOCKER_IMAGE_PREFIX 未配置，应形如 ghcr.io/<owner>/<repo>/ （以 / 结尾）"
             exit 1
           fi
-          if [ -z "${ACR_USER:-}" ] || [ -z "${ACR_PASS:-}" ]; then
-            echo "::error::缺少仓库级 Secrets：ACR_USERNAME / ACR_PASSWORD（不是 Variables，不要建在 Environment 里，名字不能带空格）"
-            exit 1
-          fi
-
-          # /v2/ 探针：401 = 域名指向真实 registry（正常）；400 = ACR 边缘直接拒绝（主机名/来源 IP 问题）
-          v2="$(curl -s -o /dev/null -m 10 -w '%{http_code}' "https://$REG/v2/" || echo ERR)"
-          v2old="$(curl -s -o /dev/null -m 10 -w '%{http_code}' "https://registry.cn-guangzhou.aliyuncs.com/v2/" || echo ERR)"
-          if echo "$ACR_PASS" | docker login "$REG" -u "$ACR_USER" --password-stdin >/dev/null 2>&1; then
-            login="LOGIN_OK"
-          else
-            login="LOGIN_FAIL"
-          fi
-
-          # 期望：用户名 9（hongch666）、密码 11（csc20040312）；多 1 位通常是尾部空格或换行
-          # 指纹用于确定性比对 Secret 值内容（哈希不可逆，可安全打印）
-          user_sha="$(printf '%s' "$ACR_USER" | sha256sum | cut -d' ' -f1)"
-          pass_sha="$(printf '%s' "$ACR_PASS" | sha256sum | cut -d' ' -f1)"
+          # GHCR 探针：401 = 域名正常（需要鉴权）；其它值说明网络或地址异常
+          code="$(curl -s -o /dev/null -m 10 -w '%{http_code}' https://ghcr.io/v2/ || echo ERR)"
+          echo "ghcr.io /v2/ = $code"
           {
-            echo "### ACR 诊断"
+            echo "### 镜像仓库"
             echo ""
             echo "| 项 | 值 |"
             echo "| --- | --- |"
-            echo "| registry | \`$REG\` |"
-            echo "| 用户名长度 | ${#ACR_USER}（期望 9） |"
-            echo "| 密码长度 | ${#ACR_PASS}（期望 11） |"
-            echo "| 用户名 sha256 | \`$user_sha\` |"
-            echo "| 密码 sha256 | \`$pass_sha\` |"
-            echo "| 当前 registry /v2/ | $v2（401=域名正常） |"
-            echo "| 老域名 /v2/ | $v2old |"
-            echo "| docker login | $login |"
+            echo "| 前缀 | \`$PREFIX\` |"
+            echo "| ghcr.io /v2/ | $code（401=正常） |"
           } >> "$GITHUB_STEP_SUMMARY"
-
-          echo "用户名长度=${#ACR_USER} 密码长度=${#ACR_PASS} v2=$v2 v2old=$v2old login=$login"
-          echo "user_sha256=$user_sha"
-          echo "pass_sha256=$pass_sha"
-          if [ "$login" != "LOGIN_OK" ]; then
-            echo "::error::ACR 登录失败｜registry=$REG｜用户sha=${user_sha:0:16}｜密码sha=${pass_sha:0:16}｜/v2/=$v2｜登录=$login"
-            exit 1
-          fi
 
       - uses: docker/setup-buildx-action@v3
 
+      # GHCR 使用 GitHub 内置 GITHUB_TOKEN，无需任何自定义 Secret
       - uses: docker/login-action@v3
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - id: meta
         uses: docker/metadata-action@v5
@@ -144,9 +115,9 @@ jobs:
     steps:
       - uses: docker/login-action@v3
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - id: ref
         run: echo "image=${{ vars.DOCKER_IMAGE_PREFIX }}mix-${{ matrix.service }}:${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"

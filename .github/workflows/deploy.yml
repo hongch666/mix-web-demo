@@ -29,6 +29,8 @@ on:
 
 permissions:
   contents: read
+  # 从 GHCR 拉取镜像需要 packages: read
+  packages: read
 
 # 部署全局互斥：同 group 的两次部署排队执行，不取消进行中的那次
 concurrency:
@@ -107,15 +109,18 @@ jobs:
           for f in spring/.env.docker gozero/app/.env.docker nestjs/.env.docker fastapi/.env.docker; do
             [ -f "$f" ] || echo "::warning::缺少 $f"
           done
-          if [ -z "${{ vars.DOCKER_REGISTRY }}" ]; then
-            echo "::warning::仓库变量 DOCKER_REGISTRY 未配置，docker login 将使用 Docker Hub"
+          # 前置条件：部署机 .env 的 DOCKER_IMAGE_PREFIX 必须与构建产物一致（GHCR）
+          if ! grep -q '^DOCKER_IMAGE_PREFIX=ghcr\.io/' .env; then
+            echo "::error::.env 的 DOCKER_IMAGE_PREFIX 应为 ghcr.io/<owner>/<repo>/ 前缀，否则 compose 拉不到本次构建的镜像"
+            exit 1
           fi
 
-      - name: 登录镜像仓库
+      - name: 登录镜像仓库（GHCR）
         if: steps.sync.outputs.tag
         run: |
-          echo "${{ secrets.ACR_PASSWORD }}" \
-            | docker login "${{ vars.DOCKER_REGISTRY }}" -u "${{ secrets.ACR_USERNAME }}" --password-stdin
+          # GHCR 用 GITHUB_TOKEN 登录，无需自定义 Secret（job 已声明 packages: read）
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: 拉取镜像并启动（失败自动回滚）
         if: steps.sync.outputs.tag
