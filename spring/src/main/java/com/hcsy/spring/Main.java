@@ -8,6 +8,7 @@ import com.hcsy.spring.bootstrap.Starter;
 /**
  * 应用启动入口，先加载 .env 环境变量再启动 Spring Boot 应用
  */
+// 测试注释
 @Starter
 public class Main {
     /**
