@@ -35,14 +35,78 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 变更检测：只构建改动的服务，避免改一个服务也全量构建 4 个镜像
+  changes:
+    name: 变更检测
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      services: ${{ steps.plan.outputs.services }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            spring:
+              - 'spring/**'
+            gozero:
+              - 'gozero/**'
+            nestjs:
+              - 'nestjs/**'
+            fastapi:
+              - 'fastapi/**'
+
+      - id: plan
+        name: 计算本次需要构建的服务
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          EVENT: ${{ github.event_name }}
+          CHANGED_SPRING: ${{ steps.filter.outputs.spring }}
+          CHANGED_GOZERO: ${{ steps.filter.outputs.gozero }}
+          CHANGED_NESTJS: ${{ steps.filter.outputs.nestjs }}
+          CHANGED_FASTAPI: ${{ steps.filter.outputs.fastapi }}
+        run: |
+          set -euo pipefail
+          list=()
+          # 打 tag 或手工触发时全量构建，保证一个版本号对应完整的 4 个镜像
+          if [ "$REF_TYPE" = "tag" ] || [ "$EVENT" = "workflow_dispatch" ]; then
+            list=(spring gozero nestjs fastapi)
+          else
+            if [ "$CHANGED_SPRING" = "true" ]; then list+=(spring); fi
+            if [ "$CHANGED_GOZERO" = "true" ]; then list+=(gozero); fi
+            if [ "$CHANGED_NESTJS" = "true" ]; then list+=(nestjs); fi
+            if [ "$CHANGED_FASTAPI" = "true" ]; then list+=(fastapi); fi
+          fi
+          count=${#list[@]}
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "services=$(printf '%s\n' "${list[@]}" | jq -R . | jq -cs .)" >> "$GITHUB_OUTPUT"
+          # 供 deploy.yml 读取的清单（每行一个服务名；无变更写 none，部署侧据此跳过容器更新）
+          if [ "$count" -eq 0 ]; then
+            echo none > "$RUNNER_TEMP/deploy-plan.txt"
+          else
+            printf '%s\n' "${list[@]}" > "$RUNNER_TEMP/deploy-plan.txt"
+          fi
+          echo "::notice::本次构建服务: ${list[*]:-无}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deploy-plan
+          path: ${{ runner.temp }}/deploy-plan.txt
+          retention-days: 3
+
   build:
     name: Build / ${{ matrix.service }}
+    needs: changes
+    if: needs.changes.outputs.count != '0'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
-        service: [spring, gozero, nestjs, fastapi]
+        service: ${{ fromJson(needs.changes.outputs.services) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -89,20 +153,22 @@ jobs:
             # v1.2.3 → 1.2.3
             type=semver,pattern={{version}}
 
-      # Dockerfile 里的 --mount=type=cache 在托管 runner 上跨 run 不保留，
-      # 必须靠 type=gha 缓存，否则每次全量拉 Maven / 全量 npm ci
+      # 缓存后端用 registry（GHCR 里的 buildcache tag）：
+      # gha 缓存有 10GB/仓库上限，4 个大镜像很快挤满，导致 npm ci 层被淘汰后反复全量下载
+      # （Dockerfile 里的 --mount=type=cache 只在同一次构建内有效，不跨 run）
       - uses: docker/build-push-action@v6
         with:
           context: ./${{ matrix.service }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          cache-from: type=registry,ref=${{ vars.DOCKER_IMAGE_PREFIX }}mix-${{ matrix.service }}:buildcache
+          cache-to: type=registry,ref=${{ vars.DOCKER_IMAGE_PREFIX }}mix-${{ matrix.service }}:buildcache,mode=max
 
   scan:
     name: Scan / ${{ matrix.service }}
-    needs: build
+    needs: [changes, build]
+    if: needs.changes.outputs.count != '0'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -111,7 +177,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [spring, gozero, nestjs, fastapi]
+        service: ${{ fromJson(needs.changes.outputs.services) }}
     steps:
       - uses: docker/login-action@v3
         with:

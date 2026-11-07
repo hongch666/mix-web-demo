@@ -37,11 +37,6 @@ concurrency:
   group: production-deploy
   cancel-in-progress: false
 
-env:
-  # shellcheck disable=SC2086 —— 刻意不加引号，作为 compose 的服务列表展开
-  # 仅用于逐版本拉取业务镜像；up 阶段不带服务列表（全栈启动，含可观测组件）
-  SERVICES: spring gozero nestjs fastapi gateway
-
 jobs:
   deploy:
     name: 部署到生产（WSL）
@@ -115,6 +110,34 @@ jobs:
             exit 1
           fi
 
+      - name: 下载本次构建清单
+        if: steps.sync.outputs.tag && github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: deploy-plan
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/deploy-plan
+
+      - name: 解析部署范围
+        id: plan
+        if: steps.sync.outputs.tag
+        run: |
+          set -euo pipefail
+          plan=""
+          f="${{ runner.temp }}/deploy-plan/deploy-plan.txt"
+          if [ -f "$f" ]; then
+            plan="$(tr '\n' ' ' < "$f" | xargs)"
+          fi
+          # 取不到清单（手工触发 / Release 事件 / 制品过期）时按全量部署，保证不遗漏服务
+          if [ -z "$plan" ]; then
+            plan="all"
+            echo "::notice::未取到构建清单，按全量部署处理"
+          fi
+          echo "services=$plan" >> "$GITHUB_OUTPUT"
+          echo "::notice::本次部署服务: $plan"
+
       - name: 登录镜像仓库（GHCR）
         if: steps.sync.outputs.tag
         run: |
@@ -127,37 +150,71 @@ jobs:
         env:
           TAG: ${{ steps.sync.outputs.tag }}
           COMMIT: ${{ steps.sync.outputs.commit }}
-          PREV_COMMIT: ${{ steps.sync.outputs.prev_commit }}
+          PLAN: ${{ steps.plan.outputs.services }}
         run: |
           set -euo pipefail
           cd "${{ steps.sync.outputs.deploy_dir }}"
+          # 本次提交未改动任何服务代码（只改了 compose/CI 等）：没有新镜像可拉，跳过容器更新
+          if [ "$PLAN" = "none" ]; then
+            echo "::notice::本次提交没有服务代码变更，跳过容器更新（compose 变更将在下次业务发布时生效）"
+            exit 0
+          fi
           state_dir="${RUNNER_WORKSPACE}/mix-deploy-state"
           mkdir -p "$state_dir"
-          state_file="$state_dir/last-deploy"
-          prev_tag=""
-          if [ -f "$state_file" ]; then read -r prev_tag _ < "$state_file" || true; fi
-          echo "本次部署: $TAG（上一版本: ${prev_tag:-无}）"
+          # 状态文件按服务记录当前运行的 tag（每行 "服务=tag"），供精准回滚使用
+          state_file="$state_dir/last-deploy.txt"
+          prev_tag() { grep -E "^$1=" "$state_file" 2>/dev/null | head -1 | cut -d= -f2 || true; }
+          set_tag() {
+            local svc="$1" tag="$2" tmp="$state_file.tmp"
+            { grep -vE "^$svc=" "$state_file" 2>/dev/null || true; echo "$svc=$tag"; } > "$tmp"
+            mv "$tmp" "$state_file"
+          }
+
+          BUSINESS="spring gozero nestjs fastapi"
+          if [ "$PLAN" = "all" ]; then
+            TARGETS="$BUSINESS gateway"
+            UP_ARGS=""                     # 不带服务列表 → 全栈启动（含可观测组件）
+            PULL_ARGS="$BUSINESS gateway"
+          else
+            TARGETS="$PLAN"
+            UP_ARGS="$PLAN"
+            PULL_ARGS="$PLAN"
+          fi
+          echo "本次部署: tag=$TAG 服务=[$TARGETS]"
 
           deploy_stack() {
             local t="$1"
-            # 只拉取业务镜像（每个版本都变）；观测栈等基础镜像变化少，交给 compose 的缺失拉取策略
-            DOCKER_IMAGE_TAG="$t" docker compose pull $SERVICES
-            # 全栈启动：业务服务 + APISIX 网关 + 可观测组件（与 ./mix compose up 行为一致），
-            # --wait 等待 compose 里已定义的 healthcheck 全部通过
-            DOCKER_IMAGE_TAG="$t" docker compose up -d --wait --wait-timeout 300
+            DOCKER_IMAGE_TAG="$t" docker compose pull $PULL_ARGS
+            # 只重建目标服务，其余容器不动 → 中断范围从「4 个齐闪」缩到「只闪变更的那个」
+            DOCKER_IMAGE_TAG="$t" docker compose up -d --wait --wait-timeout 300 $UP_ARGS
+          }
+
+          rollback_stack() {
+            local ok=1
+            for svc in $TARGETS; do
+              [ "$svc" = "gateway" ] && continue
+              local prev; prev="$(prev_tag "$svc")"
+              if [ -z "$prev" ]; then
+                echo "::warning::$svc 无历史版本记录，跳过回滚"
+                continue
+              fi
+              echo "回滚 $svc → $prev"
+              DOCKER_IMAGE_TAG="$prev" docker compose pull "$svc" || true
+              DOCKER_IMAGE_TAG="$prev" docker compose up -d --wait --wait-timeout 300 "$svc" || ok=0
+            done
+            [ "$ok" = "1" ]
           }
 
           if deploy_stack "$TAG"; then
-            printf '%s %s\n' "$TAG" "$COMMIT" > "$state_file"
-            echo "::notice::部署成功: $TAG"
+            for svc in $TARGETS; do
+              [ "$svc" = "gateway" ] && continue
+              set_tag "$svc" "$TAG"
+            done
+            set_tag "__commit__" "$COMMIT"
+            echo "::notice::部署成功: tag=$TAG 服务=[$TARGETS]"
           else
             echo "::error::部署失败（tag=$TAG）"
-            if [ -n "$prev_tag" ] && [ "$prev_tag" != "$TAG" ]; then
-              echo "回滚到上一版本: $prev_tag（$PREV_COMMIT）"
-              git checkout --detach "$PREV_COMMIT" 2>/dev/null || true
-              git reset --hard "$PREV_COMMIT" 2>/dev/null || true
-              deploy_stack "$prev_tag" || echo "::warning::回滚也失败，需要人工介入"
-            fi
+            rollback_stack || echo "::warning::回滚未完全成功，需要人工介入"
             exit 1
           fi
 
