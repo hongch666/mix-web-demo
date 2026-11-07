@@ -45,11 +45,21 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: 校验镜像仓库配置
+        env:
+          ACR_USER: ${{ secrets.ACR_USERNAME }}
+          ACR_PASS: ${{ secrets.ACR_PASSWORD }}
         run: |
           if [ -z "${{ vars.DOCKER_IMAGE_PREFIX }}" ]; then
             echo "::error::仓库变量 DOCKER_IMAGE_PREFIX 未配置（示例：crpi-xxx.cn-guangzhou.personal.cr.aliyuncs.com/mix-web-demo/，以 / 结尾）"
             exit 1
           fi
+          # 凭据为空时 docker login 只会返回含糊的 400 Bad Request，
+          # 这里提前给出明确原因：多为 Secret 名字带空格、或建到了 Variables / Environment 里
+          if [ -z "${ACR_USER:-}" ] || [ -z "${ACR_PASS:-}" ]; then
+            echo "::error::缺少仓库级 Secrets：ACR_USERNAME / ACR_PASSWORD（不是 Variables，不要建在 Environment 里，名字不能带空格）"
+            exit 1
+          fi
+          echo "凭据已注入（用户名长度 ${#ACR_USER}，密码长度 ${#ACR_PASS}）"
 
       - uses: docker/setup-buildx-action@v3
 
