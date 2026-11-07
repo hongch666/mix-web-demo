@@ -147,8 +147,13 @@ jobs:
         run: |
           set -euo pipefail
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
-            | sh -s -- -b "$(go env GOPATH)/bin" "${GOLANGCI_LINT_VERSION}"
+          # 不用官方 install.sh：它对部分 release（如 v2.15.0）会因 checksums 文件与产物不匹配而误报，
+          # 直接下载官方 tar 包解压
+          curl -sSfL \
+            "https://github.com/golangci/golangci-lint/releases/download/${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION#v}-linux-amd64.tar.gz" \
+            | tar xz -C /tmp
+          mv "/tmp/golangci-lint-${GOLANGCI_LINT_VERSION#v}-linux-amd64/golangci-lint" \
+            "$(go env GOPATH)/bin/golangci-lint"
           golangci-lint version
           # GOWORK=off：仓库根目录有 go.work，workspace 模式下 go install pkg@version 会报错
           # 固定版本拉取失败时回退 latest，避免上游仓库抖动阻断门禁
