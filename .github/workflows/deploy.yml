@@ -31,6 +31,8 @@ permissions:
   contents: read
   # 从 GHCR 拉取镜像需要 packages: read
   packages: read
+  # workflow_run 触发时下载上游 Release Images 的制品（deploy-plan）需要 actions: read
+  actions: read
 
 # 部署全局互斥：同 group 的两次部署排队执行，不取消进行中的那次
 concurrency:
@@ -172,14 +174,36 @@ jobs:
 
           BUSINESS="spring gozero nestjs fastapi"
           if [ "$PLAN" = "all" ]; then
-            TARGETS="$BUSINESS gateway"
-            UP_ARGS=""                     # 不带服务列表 → 全栈启动（含可观测组件）
-            PULL_ARGS="$BUSINESS gateway"
+            CANDIDATES="$BUSINESS gateway"
           else
-            TARGETS="$PLAN"
-            UP_ARGS="$PLAN"
-            PULL_ARGS="$PLAN"
+            CANDIDATES="$PLAN"
           fi
+
+          # 预检：过滤掉仓库里不存在该 tag 的服务。
+          # 作用一：清单制品缺失走到 all 兜底时，不会去拉根本没构建的镜像（manifest unknown）；
+          # 作用二：打 tag 发布但某服务构建失败时，只部署成功的部分而不是整体失败。
+          PREFIX="${{ vars.DOCKER_IMAGE_PREFIX }}"
+          TARGETS=""
+          for svc in $CANDIDATES; do
+            if [ "$svc" = "gateway" ] || docker manifest inspect "${PREFIX}mix-${svc}:${TAG}" >/dev/null 2>&1; then
+              TARGETS="$TARGETS $svc"
+            else
+              echo "::warning::${PREFIX}mix-${svc}:${TAG} 不存在，跳过该服务"
+            fi
+          done
+          TARGETS="$(echo $TARGETS)"
+          if [ -z "$TARGETS" ]; then
+            echo "::error::tag=$TAG 下没有任何可用镜像，无可部署内容"
+            exit 1
+          fi
+
+          # 只有「全量且 4 个业务镜像齐全」才做全栈 up（含可观测组件），否则只动目标服务
+          if [ "$PLAN" = "all" ] && [ "$(echo "$TARGETS" | wc -w)" -ge 5 ]; then
+            UP_ARGS=""
+          else
+            UP_ARGS="$TARGETS"
+          fi
+          PULL_ARGS="$TARGETS"
           echo "本次部署: tag=$TAG 服务=[$TARGETS]"
 
           deploy_stack() {
