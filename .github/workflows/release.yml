@@ -123,8 +123,9 @@ jobs:
         run: echo "image=${{ vars.DOCKER_IMAGE_PREFIX }}mix-${{ matrix.service }}:${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
 
       # 只对 CRITICAL 阻断（ignore-unfixed 排除无修复版本的白噪音），报告整体上传到 Security 标签页
+      # 注意：该仓库的 release tag 带 v 前缀（v0.36.0），不是 0.36.0
       - id: trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.ref.outputs.image }}
           format: sarif
