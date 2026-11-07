@@ -25,7 +25,7 @@ RUN --mount=type=cache,target=/root/.m2 \
     mvn -s settings-docker.xml clean package -DskipTests -Dspotless.check.skip=true -q
 
 # 阶段2：运行阶段
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17.0.21_9-jre-alpine-3.24
 
 ARG OTEL_JAVA_AGENT_VERSION=2.31.1
 

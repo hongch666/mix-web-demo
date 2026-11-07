@@ -6,6 +6,7 @@ services:
   tempo:
     image: grafana/tempo:2.6.0
     container_name: mix-tempo
+    restart: unless-stopped
     command: ["-config.file=/etc/tempo/tempo.yaml"]
     volumes:
       - ./otel-config/tempo.yaml:/etc/tempo/tempo.yaml:ro
@@ -20,6 +21,7 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.112.0
     container_name: mix-otel-collector
+    restart: unless-stopped
     command: ["--config=/etc/otel/config.yaml"]
     environment:
       <<: *no-proxy-env
@@ -41,6 +43,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: prometheus
+    restart: unless-stopped
     command:
       [
         "--config.file=/etc/prometheus/prometheus.yml",
@@ -84,6 +87,7 @@ services:
   loki:
     image: grafana/loki:3.0.0
     container_name: loki
+    restart: unless-stopped
     # 每次容器启动先清空数据目录：旧日志完全不保留，重启即空
     entrypoint:
       - /bin/sh
@@ -143,6 +147,7 @@ services:
   promtail:
     image: grafana/promtail:2.9.7
     container_name: promtail
+    restart: unless-stopped
     command: ["-config.file=/etc/promtail/config.yaml"]
     environment:
       <<: *no-proxy-env
@@ -167,6 +172,7 @@ services:
   grafana:
     image: grafana/grafana:11.4.0
     container_name: grafana
+    restart: unless-stopped
     depends_on:
       loki:
         condition: service_healthy
@@ -216,6 +222,7 @@ services:
   gateway:
     image: apache/apisix:3.11.0-debian
     container_name: mix-gateway
+    restart: unless-stopped
     entrypoint: ["/bin/sh", "/usr/local/apisix/scripts/render-config.sh"]
     environment:
       APISIX_OTEL_ENABLED: "true"
@@ -272,6 +279,7 @@ services:
   spring:
     image: ${DOCKER_IMAGE_PREFIX:-}mix-spring:${DOCKER_IMAGE_TAG:-latest}
     container_name: mix-spring
+    restart: unless-stopped
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     depends_on:
       logs-owner-init:
@@ -327,6 +335,7 @@ services:
   gozero:
     image: ${DOCKER_IMAGE_PREFIX:-}mix-gozero:${DOCKER_IMAGE_TAG:-latest}
     container_name: mix-gozero
+    restart: unless-stopped
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     depends_on:
       logs-owner-init:
@@ -382,6 +391,7 @@ services:
   nestjs:
     image: ${DOCKER_IMAGE_PREFIX:-}mix-nestjs:${DOCKER_IMAGE_TAG:-latest}
     container_name: mix-nestjs
+    restart: unless-stopped
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     depends_on:
       logs-owner-init:
@@ -435,6 +445,7 @@ services:
   fastapi:
     image: ${DOCKER_IMAGE_PREFIX:-}mix-fastapi:${DOCKER_IMAGE_TAG:-latest}
     container_name: mix-fastapi
+    restart: unless-stopped
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     depends_on:
       logs-owner-init:
