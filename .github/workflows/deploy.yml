@@ -86,7 +86,10 @@ jobs:
           git cat-file -e "${commit}^{commit}" 2>/dev/null \
             || { echo "::error::提交不存在: $commit（在部署目录执行 git fetch origin main 后重试）"; exit 1; }
           prev_commit="$(git rev-parse HEAD)"
-          git checkout --detach "$commit"
+          # 用 -B 把本地 prod 分支固定到目标提交，而不是 --detach：
+          # detached HEAD 会让部署机上的 git pull 报「not currently on a branch」，
+          # 运维手动拉取/排障就被卡住了
+          git checkout -f -B prod "$commit"
           git reset --hard "$commit"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
