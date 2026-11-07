@@ -37,6 +37,7 @@ concurrency:
 
 env:
   # shellcheck disable=SC2086 —— 刻意不加引号，作为 compose 的服务列表展开
+  # 仅用于逐版本拉取业务镜像；up 阶段不带服务列表（全栈启动，含可观测组件）
   SERVICES: spring gozero nestjs fastapi gateway
 
 jobs:
@@ -134,9 +135,11 @@ jobs:
 
           deploy_stack() {
             local t="$1"
+            # 只拉取业务镜像（每个版本都变）；观测栈等基础镜像变化少，交给 compose 的缺失拉取策略
             DOCKER_IMAGE_TAG="$t" docker compose pull $SERVICES
-            # --wait 等待 compose 里已定义的 healthcheck 全部通过，不额外写等待逻辑
-            DOCKER_IMAGE_TAG="$t" docker compose up -d --wait --wait-timeout 300 $SERVICES
+            # 全栈启动：业务服务 + APISIX 网关 + 可观测组件（与 ./mix compose up 行为一致），
+            # --wait 等待 compose 里已定义的 healthcheck 全部通过
+            DOCKER_IMAGE_TAG="$t" docker compose up -d --wait --wait-timeout 300
           }
 
           if deploy_stack "$TAG"; then
