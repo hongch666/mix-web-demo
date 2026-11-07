@@ -221,6 +221,15 @@ jobs:
           deploy_stack() {
             local t="$1"
             DOCKER_IMAGE_TAG="$t" docker compose pull $PULL_ARGS
+            # 二次确认镜像已在本地：compose 在 up 阶段才发现缺镜像时，会先把旧容器停掉再失败，
+            # 造成「服务全停但没人拉起」的事故，这里提前拦住（此时容器尚未被改动）
+            for svc in $PULL_ARGS; do
+              [ "$svc" = "gateway" ] && continue
+              if ! docker image inspect "${PREFIX}mix-${svc}:${t}" >/dev/null 2>&1; then
+                echo "::error::本地缺少镜像 ${PREFIX}mix-${svc}:${t}，已中止部署（容器未改动）"
+                return 1
+              fi
+            done
             up_services "$t" $UP_ARGS
           }
 
