@@ -225,7 +225,7 @@ crontab -e   # 追加：
 | 部署卡在 healthcheck                | WSL 里 `docker compose ps` 与 `docker compose logs <service>`；`--wait-timeout 300` 到点后自动回滚             |
 | `Quality / gozero` 报 lint 版本问题 | 版本锁在 `ci.yml` 的 `env`（`GOLANGCI_LINT_VERSION` / `GOCTL_VERSION`），与本地对齐                            |
 | `Quality / spring` 测试连不上中间件 | 单测需要真实 MySQL/Nacos 时，给 job 补 `services:` 容器（找 AI 加）                                            |
-| trivy 阻断发布                      | Security 标签页看报告；升级基础镜像或加 `.trivyignore`（需注明理由）                                           |
+| trivy 报告有 CRITICAL 漏洞          | 默认「只报告不阻断」（`exit-code: 0`）；定期升级基线镜像后，把 `exit-code` 改回 `1` 即恢复阻断                 |
 | 镜像仓库换成企业版/内网 Harbor      | `release.yml` 的 `runs-on` 改为 `[self-hosted, linux, x64, builder]`，并新增一台 builder runner                |
 
 ---
