@@ -29,7 +29,8 @@ env:
   # CI_STRICT=1：把脚本里「工具缺失就跳过」的降级行为升级为失败，避免门禁假绿
   CI_STRICT: "1"
   # 与本地开发对齐的工具版本，升级前先确认本地 golangci-lint / goctl 版本
-  GOLANGCI_LINT_VERSION: v1.64.8
+  # golangci-lint 必须用 v2：gozero/app/.golangci.yml 是 v2 配置，v1 会直接报错
+  GOLANGCI_LINT_VERSION: v2.15.0
   GOCTL_VERSION: v1.10.0
 
 jobs:
