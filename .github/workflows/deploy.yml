@@ -206,11 +206,22 @@ jobs:
           PULL_ARGS="$TARGETS"
           echo "本次部署: tag=$TAG 服务=[$TARGETS]"
 
+          # 启动指定服务；不传服务名表示全栈启动（含可观测组件）
+          # --no-deps 必须加：实测 compose v2.36 会忽略单服务参数、把项目内所有服务一起重建
+          # --pull never 防止 up 阶段再去拉根本没构建的 tag（镜像已在上一步显式 pull 过）
+          up_services() {
+            local t="$1"; shift
+            if [ $# -eq 0 ]; then
+              DOCKER_IMAGE_TAG="$t" docker compose up -d --wait --wait-timeout 300
+            else
+              DOCKER_IMAGE_TAG="$t" docker compose up -d --wait --wait-timeout 300 --no-deps --pull never "$@"
+            fi
+          }
+
           deploy_stack() {
             local t="$1"
             DOCKER_IMAGE_TAG="$t" docker compose pull $PULL_ARGS
-            # 只重建目标服务，其余容器不动 → 中断范围从「4 个齐闪」缩到「只闪变更的那个」
-            DOCKER_IMAGE_TAG="$t" docker compose up -d --wait --wait-timeout 300 $UP_ARGS
+            up_services "$t" $UP_ARGS
           }
 
           rollback_stack() {
@@ -224,7 +235,7 @@ jobs:
               fi
               echo "回滚 $svc → $prev"
               DOCKER_IMAGE_TAG="$prev" docker compose pull "$svc" || true
-              DOCKER_IMAGE_TAG="$prev" docker compose up -d --wait --wait-timeout 300 "$svc" || ok=0
+              up_services "$prev" "$svc" || ok=0
             done
             [ "$ok" = "1" ]
           }
