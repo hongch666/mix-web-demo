@@ -19,6 +19,7 @@ async function bootstrap(): Promise<void> {
 }
 
 // 启动失败时以非零状态码退出，避免进程静默存活
+// 测试提交
 void bootstrap().catch((error: unknown) => {
   Logger.error(Messages.SERVER_START_FAILED, error, "Bootstrap");
   process.exit(1);
