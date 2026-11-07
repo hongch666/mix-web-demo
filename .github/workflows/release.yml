@@ -72,6 +72,9 @@ jobs:
           fi
 
           # 期望：用户名 9（hongch666）、密码 11（csc20040312）；多 1 位通常是尾部空格或换行
+          # 指纹用于确定性比对 Secret 值内容（哈希不可逆，可安全打印）
+          user_sha="$(printf '%s' "$ACR_USER" | sha256sum | cut -d' ' -f1)"
+          pass_sha="$(printf '%s' "$ACR_PASS" | sha256sum | cut -d' ' -f1)"
           {
             echo "### ACR 诊断"
             echo ""
@@ -80,14 +83,18 @@ jobs:
             echo "| registry | \`$REG\` |"
             echo "| 用户名长度 | ${#ACR_USER}（期望 9） |"
             echo "| 密码长度 | ${#ACR_PASS}（期望 11） |"
+            echo "| 用户名 sha256 | \`$user_sha\` |"
+            echo "| 密码 sha256 | \`$pass_sha\` |"
             echo "| 当前 registry /v2/ | $v2（401=域名正常） |"
             echo "| 老域名 /v2/ | $v2old |"
             echo "| docker login | $login |"
           } >> "$GITHUB_STEP_SUMMARY"
 
           echo "用户名长度=${#ACR_USER} 密码长度=${#ACR_PASS} v2=$v2 v2old=$v2old login=$login"
+          echo "user_sha256=$user_sha"
+          echo "pass_sha256=$pass_sha"
           if [ "$login" != "LOGIN_OK" ]; then
-            echo "::error::ACR 登录失败｜registry=$REG｜用户名长度=${#ACR_USER}｜密码长度=${#ACR_PASS}｜当前域名 /v2/ = $v2｜老域名 /v2/ = $v2old"
+            echo "::error::ACR 登录失败｜registry=$REG｜用户sha=${user_sha:0:16}｜密码sha=${pass_sha:0:16}｜/v2/=$v2｜登录=$login"
             exit 1
           fi
 
