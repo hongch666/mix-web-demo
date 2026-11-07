@@ -57,26 +57,38 @@ jobs:
             echo "::error::仓库变量 DOCKER_REGISTRY / DOCKER_IMAGE_PREFIX 未配置"
             exit 1
           fi
-          # 凭据为空时 docker login 只会返回含糊的 400 Bad Request，
-          # 这里提前给出明确原因：多为 Secret 名字带空格、或建到了 Variables / Environment 里
           if [ -z "${ACR_USER:-}" ] || [ -z "${ACR_PASS:-}" ]; then
             echo "::error::缺少仓库级 Secrets：ACR_USERNAME / ACR_PASSWORD（不是 Variables，不要建在 Environment 里，名字不能带空格）"
             exit 1
           fi
-          # 期望：用户名长度 9（hongch666）、密码长度 11（csc20040312）；多 1 位通常是尾部空格或换行
-          echo "凭据长度 用户名=${#ACR_USER} 密码=${#ACR_PASS}"
 
-          # 探针：/v2/ 返回 401 = 域名解析到真实 registry（正常，需鉴权）；
-          # 返回 400 = 主机名/实例 ID 不对，ACR 边缘直接拒绝，与凭据无关
-          echo "=== /v2/ 探测 ==="
-          curl -sS -o /dev/null -m 10 -w "当前 registry: %{http_code}\n" "https://$REG/v2/" || true
-          curl -sS -o /dev/null -m 10 -w "老域名 registry.cn-guangzhou.aliyuncs.com: %{http_code}\n" "https://registry.cn-guangzhou.aliyuncs.com/v2/" || true
-
-          echo "=== 当前 registry 登录测试（与下一步 login-action 等价） ==="
-          if echo "$ACR_PASS" | docker login "$REG" -u "$ACR_USER" --password-stdin; then
-            echo "LOGIN_OK"
+          # /v2/ 探针：401 = 域名指向真实 registry（正常）；400 = ACR 边缘直接拒绝（主机名/来源 IP 问题）
+          v2="$(curl -s -o /dev/null -m 10 -w '%{http_code}' "https://$REG/v2/" || echo ERR)"
+          v2old="$(curl -s -o /dev/null -m 10 -w '%{http_code}' "https://registry.cn-guangzhou.aliyuncs.com/v2/" || echo ERR)"
+          if echo "$ACR_PASS" | docker login "$REG" -u "$ACR_USER" --password-stdin >/dev/null 2>&1; then
+            login="LOGIN_OK"
           else
-            echo "::warning::当前 registry 登录失败，等待 login-action 复现"
+            login="LOGIN_FAIL"
+          fi
+
+          # 期望：用户名 9（hongch666）、密码 11（csc20040312）；多 1 位通常是尾部空格或换行
+          {
+            echo "### ACR 诊断"
+            echo ""
+            echo "| 项 | 值 |"
+            echo "| --- | --- |"
+            echo "| registry | \`$REG\` |"
+            echo "| 用户名长度 | ${#ACR_USER}（期望 9） |"
+            echo "| 密码长度 | ${#ACR_PASS}（期望 11） |"
+            echo "| 当前 registry /v2/ | $v2（401=域名正常） |"
+            echo "| 老域名 /v2/ | $v2old |"
+            echo "| docker login | $login |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "用户名长度=${#ACR_USER} 密码长度=${#ACR_PASS} v2=$v2 v2old=$v2old login=$login"
+          if [ "$login" != "LOGIN_OK" ]; then
+            echo "::error::ACR 登录失败｜registry=$REG｜用户名长度=${#ACR_USER}｜密码长度=${#ACR_PASS}｜当前域名 /v2/ = $v2｜老域名 /v2/ = $v2old"
+            exit 1
           fi
 
       - uses: docker/setup-buildx-action@v3
