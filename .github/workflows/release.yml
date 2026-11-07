@@ -46,14 +46,15 @@ jobs:
 
       - name: 校验镜像仓库配置
         env:
+          REG: ${{ vars.DOCKER_REGISTRY }}
           ACR_USER: ${{ secrets.ACR_USERNAME }}
           ACR_PASS: ${{ secrets.ACR_PASSWORD }}
         run: |
           # 变量用方括号包裹打印，便于看出首尾空格/换行等隐藏字符（变量非机密可直接打印）
-          echo "registry=[${{ vars.DOCKER_REGISTRY }}]"
+          echo "registry=[$REG]"
           echo "prefix=[${{ vars.DOCKER_IMAGE_PREFIX }}]"
-          if [ -z "${{ vars.DOCKER_IMAGE_PREFIX }}" ]; then
-            echo "::error::仓库变量 DOCKER_IMAGE_PREFIX 未配置（示例：crpi-xxx.cn-guangzhou.personal.cr.aliyuncs.com/mix-web-demo/，以 / 结尾）"
+          if [ -z "$REG" ] || [ -z "${{ vars.DOCKER_IMAGE_PREFIX }}" ]; then
+            echo "::error::仓库变量 DOCKER_REGISTRY / DOCKER_IMAGE_PREFIX 未配置"
             exit 1
           fi
           # 凭据为空时 docker login 只会返回含糊的 400 Bad Request，
@@ -64,7 +65,19 @@ jobs:
           fi
           # 期望：用户名长度 9（hongch666）、密码长度 11（csc20040312）；多 1 位通常是尾部空格或换行
           echo "凭据长度 用户名=${#ACR_USER} 密码=${#ACR_PASS}"
-          echo "用户名原样=[${ACR_USER}]"
+
+          # 探针：/v2/ 返回 401 = 域名解析到真实 registry（正常，需鉴权）；
+          # 返回 400 = 主机名/实例 ID 不对，ACR 边缘直接拒绝，与凭据无关
+          echo "=== /v2/ 探测 ==="
+          curl -sS -o /dev/null -m 10 -w "当前 registry: %{http_code}\n" "https://$REG/v2/" || true
+          curl -sS -o /dev/null -m 10 -w "老域名 registry.cn-guangzhou.aliyuncs.com: %{http_code}\n" "https://registry.cn-guangzhou.aliyuncs.com/v2/" || true
+
+          echo "=== 当前 registry 登录测试（与下一步 login-action 等价） ==="
+          if echo "$ACR_PASS" | docker login "$REG" -u "$ACR_USER" --password-stdin; then
+            echo "LOGIN_OK"
+          else
+            echo "::warning::当前 registry 登录失败，等待 login-action 复现"
+          fi
 
       - uses: docker/setup-buildx-action@v3
 
