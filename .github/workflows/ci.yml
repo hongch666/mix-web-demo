@@ -34,16 +34,14 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # 变更检测：把受影响服务算成 JSON 数组喂给 matrix，未变更的服务不占 job
-  # （4 语言全量矩阵很贵，路径过滤是必须项而不是优化项）
+  # 变更检测：算出每个服务是否受影响（JSON），供 quality matrix 判定快速通过或真实执行
   # ---------------------------------------------------------------------------
   changes:
     name: 变更检测
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      services: ${{ steps.plan.outputs.services }}
-      count: ${{ steps.plan.outputs.count }}
+      affected: ${{ steps.plan.outputs.affected }}
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +67,7 @@ jobs:
               - '.github/workflows/ci.yml'
 
       - id: plan
-        name: 计算参与门禁的服务
+        name: 计算各服务是否受影响
         env:
           MANUAL: ${{ inputs.services }}
           CHANGED_SPRING: ${{ steps.filter.outputs.spring }}
@@ -78,45 +76,57 @@ jobs:
           CHANGED_FASTAPI: ${{ steps.filter.outputs.fastapi }}
         run: |
           set -euo pipefail
-          list=()
+          # 手工触发时以参数为准，否则以路径过滤结果为准
           if [ -n "${MANUAL:-}" ]; then
-            for svc in $MANUAL; do list+=("$svc"); done
-          else
-            if [ "$CHANGED_SPRING" = "true" ]; then list+=(spring); fi
-            if [ "$CHANGED_GOZERO" = "true" ]; then list+=(gozero); fi
-            if [ "$CHANGED_NESTJS" = "true" ]; then list+=(nestjs); fi
-            if [ "$CHANGED_FASTAPI" = "true" ]; then list+=(fastapi); fi
+            CHANGED_SPRING=false; CHANGED_GOZERO=false; CHANGED_NESTJS=false; CHANGED_FASTAPI=false
+            for svc in $MANUAL; do
+              case "$svc" in
+                spring)  CHANGED_SPRING=true ;;
+                gozero)  CHANGED_GOZERO=true ;;
+                nestjs)  CHANGED_NESTJS=true ;;
+                fastapi) CHANGED_FASTAPI=true ;;
+              esac
+            done
           fi
-
-          count=${#list[@]}
-          echo "count=$count" >> "$GITHUB_OUTPUT"
-          if [ "$count" -eq 0 ]; then
-            echo "services=[]" >> "$GITHUB_OUTPUT"
-            echo "::notice::未检测到服务代码变更，跳过质量门禁"
-            exit 0
-          fi
-          json="$(printf '%s\n' "${list[@]}" | jq -R . | jq -cs .)"
-          echo "services=$json" >> "$GITHUB_OUTPUT"
-          echo "::notice::参与门禁的服务: ${list[*]}"
+          flag() { [ "$1" = "true" ] && echo true || echo false; }
+          affected="$(printf '{"spring":%s,"gozero":%s,"nestjs":%s,"fastapi":%s}' \
+            "$(flag "$CHANGED_SPRING")" "$(flag "$CHANGED_GOZERO")" \
+            "$(flag "$CHANGED_NESTJS")" "$(flag "$CHANGED_FASTAPI")")"
+          echo "affected=$affected" >> "$GITHUB_OUTPUT"
+          echo "::notice::受影响情况: $affected"
 
   # ---------------------------------------------------------------------------
   # 质量门禁：复用本地同一套脚本（lint.sh / compile.sh / test.sh），判据完全一致
+  # 固定产出 4 个检查结果——未变更的服务快速通过（秒级 no-op），
+  # 否则分支保护的 required checks 会永远停留在 Expected，PR 无法合并
   # ---------------------------------------------------------------------------
   quality:
     name: Quality / ${{ matrix.service }}
     needs: changes
-    if: needs.changes.outputs.count != '0'
+    if: always() && needs.changes.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
-        service: ${{ fromJson(needs.changes.outputs.services) }}
+        service: [spring, gozero, nestjs, fastapi]
     steps:
       - uses: actions/checkout@v4
 
+      - name: 变更判定
+        id: gate
+        env:
+          AFFECTED: ${{ fromJson(needs.changes.outputs.affected)[matrix.service] }}
+        run: |
+          if [ "$AFFECTED" != "true" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::${{ matrix.service }} 无代码变更，本次门禁快速通过"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       # ---------- spring：JDK 17 + Maven ----------
-      - if: matrix.service == 'spring'
+      - if: steps.gate.outputs.run == 'true' && matrix.service == 'spring'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -125,13 +135,13 @@ jobs:
           cache-dependency-path: spring/pom.xml
 
       # ---------- gozero：Go + golangci-lint + goctl ----------
-      - if: matrix.service == 'gozero'
+      - if: steps.gate.outputs.run == 'true' && matrix.service == 'gozero'
         uses: actions/setup-go@v5
         with:
           go-version-file: gozero/app/go.mod
           cache-dependency-path: gozero/app/go.sum
 
-      - if: matrix.service == 'gozero'
+      - if: steps.gate.outputs.run == 'true' && matrix.service == 'gozero'
         name: 安装 golangci-lint 与 goctl
         run: |
           set -euo pipefail
@@ -146,37 +156,38 @@ jobs:
           goctl --version
 
       # ---------- nestjs：Node 20 + npm（脚本走 npm run lint / tsc，不用 bun） ----------
-      - if: matrix.service == 'nestjs'
+      - if: steps.gate.outputs.run == 'true' && matrix.service == 'nestjs'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
           cache-dependency-path: nestjs/package-lock.json
 
-      - if: matrix.service == 'nestjs'
+      - if: steps.gate.outputs.run == 'true' && matrix.service == 'nestjs'
         name: 安装依赖（npm ci）
         working-directory: nestjs
         run: npm ci --no-audit --no-fund
 
       # ---------- fastapi：Python 3.12 + uv（dev 组含 ruff/pyright） ----------
-      - if: matrix.service == 'fastapi'
+      - if: steps.gate.outputs.run == 'true' && matrix.service == 'fastapi'
         uses: astral-sh/setup-uv@v5
         with:
           python-version: '3.12'
           enable-cache: true
           cache-dependency-glob: fastapi/uv.lock
 
-      - if: matrix.service == 'fastapi'
+      - if: steps.gate.outputs.run == 'true' && matrix.service == 'fastapi'
         name: 安装依赖（uv sync --frozen）
         working-directory: fastapi
         run: uv sync --frozen
 
-      - if: matrix.service == 'fastapi'
+      - if: steps.gate.outputs.run == 'true' && matrix.service == 'fastapi'
         name: 将 venv 加入 PATH（lint.sh 通过 command -v 探测 ruff/pyright）
         run: echo "$PWD/fastapi/.venv/bin" >> "$GITHUB_PATH"
 
       # ---------- 统一门禁 ----------
       - name: lint → compile → test
+        if: steps.gate.outputs.run == 'true'
         run: |
           set -euo pipefail
           SVC="${{ matrix.service }}"
