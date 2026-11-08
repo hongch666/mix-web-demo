@@ -75,10 +75,11 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 	from := (page - 1) * size
 
 	// 脚本模板与权重齐备时走 ScriptScoreQuery 复合打分，任一缺失说明 FastAPI 侧脚本三件套获取失败，此处退化为普通条件查询，只依赖 BM25 相关度
+	scriptScoring := esScript != "" && weights != nil
 	var finalQuery elastic.Query = boolQuery
-	if esScript != "" && weights != nil {
+	if scriptScoring {
 		scoreScript := elastic.NewScript(esScript).
-			Param(getParamName(paramMap, "es_score_weight"), weights.ESScoreWeight).
+			Param(getParamName(paramMap, "es_score_weight"), effectiveEsScoreWeight(searchDTO.Keyword, weights)).
 			Param(getParamName(paramMap, "ai_rating_weight"), weights.AIRatingWeight).
 			Param(getParamName(paramMap, "user_rating_weight"), weights.UserRatingWeight).
 			Param(getParamName(paramMap, "views_weight"), weights.ViewsWeight).
@@ -101,10 +102,15 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 		Size(size).
 		RequestCache(true)
 
-	// 无关键词时 boolQuery 只含过滤条件，_score 恒为 0，需显式按创建时间倒序保证顺序确定
+	// 无关键词时 boolQuery 只含过滤条件，_score 恒为 0，需显式按创建时间倒序保证顺序确定；
+	// 该场景下脚本里的业务与时效分量是唯一有效信号，而按字段排序默认不计算分数（hit.Score 为 nil），必须开启 track_scores 才能取回脚本分参与融合排序
 	sortByCreateAt := searchDTO.Keyword == ""
+	trackScores := scriptScoring && sortByCreateAt
 	if sortByCreateAt {
 		searchService = searchService.Sort("create_at", false)
+	}
+	if trackScores {
+		searchService = searchService.TrackScores(true)
 	}
 
 	var highlight *elastic.Highlight
@@ -120,7 +126,7 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 	}
 
 	// DSL 日志开关关闭时该调用直接返回，不产生任何序列化开销
-	m.logSearchDSL(ctx, finalQuery, from, size, sortByCreateAt, highlight)
+	m.logSearchDSL(ctx, finalQuery, from, size, sortByCreateAt, trackScores, highlight)
 
 	searchResult, err := searchService.Do(ctx)
 	if err != nil {
@@ -256,6 +262,16 @@ func (m *searchModel) fillArticleStats(ctx context.Context, articles []ArticleES
 		}
 		applyCommentScores(&articles[i], stats.CommentScores[articles[i].ID])
 	}
+}
+
+// effectiveEsScoreWeight 计算脚本里 ES 相关度分量的实际权重
+// 无关键词时 boolQuery 只有过滤条件，_score 恒为 0，脚本中的 sigmoid(_score) 会退化成 0.5 的常数项，
+// 保留该权重等于给所有候选加同一个固定分，既抬高 es_score 又不产生任何排序区分度，故置 0，只保留业务与时效分量
+func effectiveEsScoreWeight(keyword string, weights *SearchWeights) float64 {
+	if weights == nil || keyword == "" {
+		return 0
+	}
+	return weights.ESScoreWeight
 }
 
 // getParamName 从脚本参数映射中获取参数名，返回 FastAPI 定义的脚本参数名，paramMap: 从 FastAPI 获取的 weight_key → param_name 映射，weightKey: FastAPI 定义的权重 key

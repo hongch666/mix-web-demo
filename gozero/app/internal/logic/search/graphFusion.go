@@ -219,16 +219,14 @@ func MergeAndRerank(
 		article.Relations = relations
 		article.MatchedChunks = matchedChunks
 		article.ScoreDetails = types.ScoreDetails{
-			EsScore:       roundTo4(normalizedEsScore),
-			VectorScore:   roundTo4(vectorScore),
-			GraphScore:    roundTo4(graphScore),
-			BusinessScore: 0,
-			RecencyScore:  0,
+			EsScore:     roundTo4(normalizedEsScore),
+			VectorScore: roundTo4(vectorScore),
+			GraphScore:  roundTo4(graphScore),
 		}
 	}
 
-	// 按 finalScore 降序排序
-	sort.Slice(articles, func(i, j int) bool {
+	// 按 finalScore 降序排序；稳定排序保证并列分（无关键词时大量候选同为 0）沿用召回顺序，避免切页时同分项漂移
+	sort.SliceStable(articles, func(i, j int) bool {
 		return articles[i].FinalScore > articles[j].FinalScore
 	})
 
@@ -260,11 +258,9 @@ func FillDefaultScores(articles []types.ArticleEsItem) {
 			articles[i].MatchedChunks = make([]types.VectorMatchedChunk, 0)
 		}
 		articles[i].ScoreDetails = types.ScoreDetails{
-			EsScore:       roundTo4(normalizedEsScore),
-			VectorScore:   roundTo4(articles[i].VectorScore),
-			GraphScore:    roundTo4(articles[i].GraphScore),
-			BusinessScore: 0,
-			RecencyScore:  0,
+			EsScore:     roundTo4(normalizedEsScore),
+			VectorScore: roundTo4(articles[i].VectorScore),
+			GraphScore:  roundTo4(articles[i].GraphScore),
 		}
 	}
 }

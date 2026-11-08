@@ -119,3 +119,26 @@ func TestApplyCommentScoresFromSpringResponse(t *testing.T) {
 		t.Fatalf("用户评分解析回填结果 = (%v, %d)，期望 (6, 2)", article.UserScore, article.UserCommentCount)
 	}
 }
+
+// TestEffectiveEsScoreWeight 校验脚本里 ES 相关度分量的实际权重取值
+// 无关键词时 _score 恒为 0，sigmoid(_score) 退化成常数项，保留权重只会给所有候选加同一个固定分，故必须归零
+func TestEffectiveEsScoreWeight(t *testing.T) {
+	cases := []struct {
+		name    string
+		keyword string
+		weights *SearchWeights
+		want    float64
+	}{
+		{name: "有关键词保留配置权重", keyword: "mysql", weights: &SearchWeights{ESScoreWeight: 0.25}, want: 0.25},
+		{name: "无关键词权重归零", keyword: "", weights: &SearchWeights{ESScoreWeight: 0.25}, want: 0},
+		{name: "权重缺失返回零", keyword: "mysql", weights: nil, want: 0},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := effectiveEsScoreWeight(c.keyword, c.weights); got != c.want {
+				t.Fatalf("effectiveEsScoreWeight(%q) = %v，期望 %v", c.keyword, got, c.want)
+			}
+		})
+	}
+}
