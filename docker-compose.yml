@@ -277,7 +277,7 @@ services:
   # Compose 默认 pull_policy: missing：本地已有同名镜像直接使用，缺失才从远程仓库拉取
   # 配合构建脚本给本地构建镜像补打同名标签，实现「本地构建优先，远程镜像兜底」
   spring:
-    image: ${DOCKER_IMAGE_PREFIX:-}mix-spring:${DOCKER_IMAGE_TAG:-latest}
+    image: ${DOCKER_IMAGE_PREFIX:-}mix-spring:${DOCKER_IMAGE_TAG_SPRING:-${DOCKER_IMAGE_TAG:-latest}}
     container_name: mix-spring
     restart: unless-stopped
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
@@ -333,7 +333,7 @@ services:
       start_period: 60s
 
   gozero:
-    image: ${DOCKER_IMAGE_PREFIX:-}mix-gozero:${DOCKER_IMAGE_TAG:-latest}
+    image: ${DOCKER_IMAGE_PREFIX:-}mix-gozero:${DOCKER_IMAGE_TAG_GOZERO:-${DOCKER_IMAGE_TAG:-latest}}
     container_name: mix-gozero
     restart: unless-stopped
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
@@ -389,7 +389,7 @@ services:
       start_period: 30s
 
   nestjs:
-    image: ${DOCKER_IMAGE_PREFIX:-}mix-nestjs:${DOCKER_IMAGE_TAG:-latest}
+    image: ${DOCKER_IMAGE_PREFIX:-}mix-nestjs:${DOCKER_IMAGE_TAG_NESTJS:-${DOCKER_IMAGE_TAG:-latest}}
     container_name: mix-nestjs
     restart: unless-stopped
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
@@ -443,7 +443,7 @@ services:
       start_period: 40s
 
   fastapi:
-    image: ${DOCKER_IMAGE_PREFIX:-}mix-fastapi:${DOCKER_IMAGE_TAG:-latest}
+    image: ${DOCKER_IMAGE_PREFIX:-}mix-fastapi:${DOCKER_IMAGE_TAG_FASTAPI:-${DOCKER_IMAGE_TAG:-latest}}
     container_name: mix-fastapi
     restart: unless-stopped
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"

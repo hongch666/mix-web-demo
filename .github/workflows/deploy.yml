@@ -71,17 +71,27 @@ jobs:
             exit 1
           fi
           cd "$DEPLOY_DIR"
+          # 每次部署都先从远端拉取（等价于 git fetch + 检查最新 prod），不再依赖人工去 WSL 手动 pull
           git fetch origin --prune --tags
+          prod_head="$(git rev-parse origin/prod)"
+
           if [ -n "${INPUT_TAG:-}" ]; then
+            # 手工指定版本（部署/回滚到某个具体镜像）
             tag="$INPUT_TAG"
             if [[ "$tag" == v* ]]; then
               commit="$(git rev-list -n 1 "refs/tags/$tag")"
             else
               commit="$tag"
             fi
-          else
-            commit="${WORKFLOW_SHA:-$GITHUB_SHA}"
+          elif [ -n "${WORKFLOW_SHA:-}" ]; then
+            # 自动部署：跟随「触发构建的那个提交」，保证部署的就是构建出来的
+            commit="$WORKFLOW_SHA"
             tag="${commit:0:7}"
+          else
+            # 手工触发且未指定 image_tag：直接跟 prod 最新提交，把 compose / workflow 等改动一并同步下来
+            commit="$prod_head"
+            tag="${commit:0:7}"
+            echo "::notice::未指定 image_tag，同步到 prod 最新提交 ${commit:0:7}"
           fi
           git cat-file -e "${commit}^{commit}" 2>/dev/null \
             || { echo "::error::提交不存在: $commit（在部署目录执行 git fetch origin main 后重试）"; exit 1; }
@@ -159,14 +169,9 @@ jobs:
         run: |
           set -euo pipefail
           cd "${{ steps.sync.outputs.deploy_dir }}"
-          # 本次提交未改动任何服务代码（只改了 compose/CI 等）：没有新镜像可拉，跳过容器更新
-          if [ "$PLAN" = "none" ]; then
-            echo "::notice::本次提交没有服务代码变更，跳过容器更新（compose 变更将在下次业务发布时生效）"
-            exit 0
-          fi
           state_dir="${RUNNER_WORKSPACE}/mix-deploy-state"
           mkdir -p "$state_dir"
-          # 状态文件按服务记录当前运行的 tag（每行 "服务=tag"），供精准回滚使用
+          # 状态文件按服务记录当前运行的 tag（每行 "服务=tag"），供精准部署与回滚使用
           state_file="$state_dir/last-deploy.txt"
           prev_tag() { grep -E "^$1=" "$state_file" 2>/dev/null | head -1 | cut -d= -f2 || true; }
           set_tag() {
@@ -176,94 +181,118 @@ jobs:
           }
 
           BUSINESS="spring gozero nestjs fastapi"
-          if [ "$PLAN" = "all" ]; then
-            CANDIDATES="$BUSINESS gateway"
+
+          # 各服务目标 tag：本次变更的服务用新 TAG，其余沿用已部署版本
+          t_spring=""; t_gozero=""; t_nestjs=""; t_fastapi=""
+          set_t() { case $1 in spring) t_spring=$2;; gozero) t_gozero=$2;; nestjs) t_nestjs=$2;; fastapi) t_fastapi=$2;; esac; }
+          get_t() { case $1 in spring) echo "$t_spring";; gozero) echo "$t_gozero";; nestjs) echo "$t_nestjs";; fastapi) echo "$t_fastapi";; esac; }
+
+          # 通过 compose 的分服务变量逐个指定版本，避免「一个 tag 覆盖全部服务」
+          dc() {
+            DOCKER_IMAGE_TAG_SPRING="$t_spring" \
+            DOCKER_IMAGE_TAG_GOZERO="$t_gozero" \
+            DOCKER_IMAGE_TAG_NESTJS="$t_nestjs" \
+            DOCKER_IMAGE_TAG_FASTAPI="$t_fastapi" \
+              docker compose "$@"
+          }
+
+          PREFIX="${{ vars.DOCKER_IMAGE_PREFIX }}"
+
+          # CONFIG_ONLY=true：没有新镜像，只同步代码与配置（compose / restart 策略 / env 等）
+          if [ "$PLAN" = "none" ]; then
+            CONFIG_ONLY=true
           else
-            CANDIDATES="$PLAN"
+            if [ "$PLAN" = "all" ]; then CANDIDATES="$BUSINESS gateway"; else CANDIDATES="$PLAN"; fi
+            # 预检：过滤掉仓库里不存在该 tag 的服务（清单缺失走 all 兜底 / 某服务构建失败时）
+            CHANGED=""
+            for svc in $CANDIDATES; do
+              if [ "$svc" = "gateway" ] || docker manifest inspect "${PREFIX}mix-${svc}:${TAG}" >/dev/null 2>&1; then
+                CHANGED="$CHANGED $svc"
+              else
+                echo "::warning::${PREFIX}mix-${svc}:${TAG} 不存在，跳过该服务"
+              fi
+            done
+            CHANGED="$(echo $CHANGED)"
+            if [ -z "$CHANGED" ]; then
+              # 例如只改了 .github/ 或 compose：没有镜像，退化为配置同步
+              CONFIG_ONLY=true
+            else
+              CONFIG_ONLY=false
+            fi
           fi
 
-          # 预检：过滤掉仓库里不存在该 tag 的服务。
-          # 作用一：清单制品缺失走到 all 兜底时，不会去拉根本没构建的镜像（manifest unknown）；
-          # 作用二：打 tag 发布但某服务构建失败时，只部署成功的部分而不是整体失败。
-          PREFIX="${{ vars.DOCKER_IMAGE_PREFIX }}"
-          TARGETS=""
-          for svc in $CANDIDATES; do
-            if [ "$svc" = "gateway" ] || docker manifest inspect "${PREFIX}mix-${svc}:${TAG}" >/dev/null 2>&1; then
-              TARGETS="$TARGETS $svc"
-            else
-              echo "::warning::${PREFIX}mix-${svc}:${TAG} 不存在，跳过该服务"
+          if [ "$CONFIG_ONLY" = true ]; then
+            CHANGED=""
+            for svc in $BUSINESS; do set_t "$svc" "$(prev_tag "$svc")"; done
+            echo "::notice::本次没有可部署的新镜像，按已部署版本重建以应用配置变更"
+          else
+            for svc in $BUSINESS; do
+              case " $CHANGED " in
+                *" $svc "*) set_t "$svc" "$TAG" ;;
+                *) set_t "$svc" "$(prev_tag "$svc")" ;;
+              esac
+            done
+          fi
+
+          # 既不在本次变更内、又没有部署记录的服务无法确定版本，直接失败（避免误用 latest）
+          for svc in $BUSINESS; do
+            if [ -z "$(get_t "$svc")" ]; then
+              echo "::error::$svc 不在本次变更内且没有部署记录，无法确定运行版本（先做一次全量部署）"
+              exit 1
             fi
           done
-          TARGETS="$(echo $TARGETS)"
-          if [ -z "$TARGETS" ]; then
-            echo "::error::tag=$TAG 下没有任何可用镜像，无可部署内容"
-            exit 1
+          echo "本次部署: 新tag=$TAG 变更=[${CHANGED:-无}] 版本: spring=$(get_t spring) gozero=$(get_t gozero) nestjs=$(get_t nestjs) fastapi=$(get_t fastapi)"
+
+          # 拉取变更服务的镜像，并二次确认已在本地：
+          # compose 在 up 阶段才发现缺镜像时，会先把旧容器停掉再失败，造成「服务全停但没人拉起」
+          if [ -n "$CHANGED" ]; then
+            dc pull $CHANGED
+            for svc in $CHANGED; do
+              [ "$svc" = "gateway" ] && continue
+              if ! docker image inspect "${PREFIX}mix-${svc}:${TAG}" >/dev/null 2>&1; then
+                echo "::error::本地缺少镜像 ${PREFIX}mix-${svc}:${TAG}，已中止部署（容器未改动）"
+                exit 1
+              fi
+            done
           fi
 
-          # 只有「全量且 4 个业务镜像齐全」才做全栈 up（含可观测组件），否则只动目标服务
-          if [ "$PLAN" = "all" ] && [ "$(echo "$TARGETS" | wc -w)" -ge 5 ]; then
+          # up 的两种模式：
+          #   全量（4 个业务镜像齐全）→ 全栈 up，含可观测组件
+          #   局部 / 仅配置变更 → --no-deps --pull never，只动目标服务
+          #   --no-deps 必须加：实测 compose v2.36 会忽略单服务参数、把项目内所有服务一起重建
+          if [ "$PLAN" = "all" ] && [ "$(echo "$CHANGED" | wc -w)" -ge 5 ]; then
             UP_ARGS=""
+          elif [ "$CONFIG_ONLY" = true ]; then
+            UP_ARGS="$BUSINESS gateway"
           else
-            UP_ARGS="$TARGETS"
+            UP_ARGS="$CHANGED"
           fi
-          PULL_ARGS="$TARGETS"
-          echo "本次部署: tag=$TAG 服务=[$TARGETS]"
 
-          # 启动指定服务；不传服务名表示全栈启动（含可观测组件）
-          # --no-deps 必须加：实测 compose v2.36 会忽略单服务参数、把项目内所有服务一起重建
-          # --pull never 防止 up 阶段再去拉根本没构建的 tag（镜像已在上一步显式 pull 过）
-          up_services() {
-            local t="$1"; shift
-            if [ $# -eq 0 ]; then
-              DOCKER_IMAGE_TAG="$t" docker compose up -d --wait --wait-timeout 300
-            else
-              DOCKER_IMAGE_TAG="$t" docker compose up -d --wait --wait-timeout 300 --no-deps --pull never "$@"
-            fi
-          }
-
-          deploy_stack() {
-            local t="$1"
-            DOCKER_IMAGE_TAG="$t" docker compose pull $PULL_ARGS
-            # 二次确认镜像已在本地：compose 在 up 阶段才发现缺镜像时，会先把旧容器停掉再失败，
-            # 造成「服务全停但没人拉起」的事故，这里提前拦住（此时容器尚未被改动）
-            for svc in $PULL_ARGS; do
+          if [ -z "$UP_ARGS" ]; then
+            dc up -d --wait --wait-timeout 300
+          else
+            dc up -d --wait --wait-timeout 300 --no-deps --pull never $UP_ARGS
+          fi || {
+            echo "::error::部署失败（新 tag=$TAG）"
+            for svc in $CHANGED; do
               [ "$svc" = "gateway" ] && continue
-              if ! docker image inspect "${PREFIX}mix-${svc}:${t}" >/dev/null 2>&1; then
-                echo "::error::本地缺少镜像 ${PREFIX}mix-${svc}:${t}，已中止部署（容器未改动）"
-                return 1
-              fi
-            done
-            up_services "$t" $UP_ARGS
-          }
-
-          rollback_stack() {
-            local ok=1
-            for svc in $TARGETS; do
-              [ "$svc" = "gateway" ] && continue
-              local prev; prev="$(prev_tag "$svc")"
-              if [ -z "$prev" ]; then
-                echo "::warning::$svc 无历史版本记录，跳过回滚"
-                continue
-              fi
+              prev="$(prev_tag "$svc")"
+              if [ -z "$prev" ] || [ "$prev" = "$TAG" ]; then continue; fi
               echo "回滚 $svc → $prev"
-              DOCKER_IMAGE_TAG="$prev" docker compose pull "$svc" || true
-              up_services "$prev" "$svc" || ok=0
+              set_t "$svc" "$prev"
+              dc pull "$svc" || true
+              dc up -d --wait --wait-timeout 300 --no-deps --pull never "$svc" \
+                || echo "::warning::$svc 回滚失败，需要人工介入"
             done
-            [ "$ok" = "1" ]
+            exit 1
           }
 
-          if deploy_stack "$TAG"; then
-            for svc in $TARGETS; do
-              [ "$svc" = "gateway" ] && continue
-              set_tag "$svc" "$TAG"
-            done
-            set_tag "__commit__" "$COMMIT"
-            echo "::notice::部署成功: tag=$TAG 服务=[$TARGETS]"
-          else
-            echo "::error::部署失败（tag=$TAG）"
-            rollback_stack || echo "::warning::回滚未完全成功，需要人工介入"
-            exit 1
-          fi
+          for svc in $CHANGED; do
+            [ "$svc" = "gateway" ] && continue
+            set_tag "$svc" "$TAG"
+          done
+          set_tag "__commit__" "$COMMIT"
+          echo "::notice::部署完成: 新tag=$TAG 变更=[${CHANGED:-无}]"
 
       - name: 网关配置变更时重启 APISIX
         if: steps.sync.outputs.tag
