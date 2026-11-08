@@ -256,23 +256,10 @@ jobs:
             done
           fi
 
-          # up 的两种模式：
-          #   全量（4 个业务镜像齐全）→ 全栈 up，含可观测组件
-          #   局部 / 仅配置变更 → --no-deps --pull never，只动目标服务
-          #   --no-deps 必须加：实测 compose v2.36 会忽略单服务参数、把项目内所有服务一起重建
-          if [ "$PLAN" = "all" ] && [ "$(echo "$CHANGED" | wc -w)" -ge 5 ]; then
-            UP_ARGS=""
-          elif [ "$CONFIG_ONLY" = true ]; then
-            UP_ARGS="$BUSINESS gateway"
-          else
-            UP_ARGS="$CHANGED"
-          fi
-
-          if [ -z "$UP_ARGS" ]; then
-            dc up -d --wait --wait-timeout 300
-          else
-            dc up -d --wait --wait-timeout 300 --no-deps --pull never $UP_ARGS
-          fi || {
+          # 统一走「全栈 up」：compose 只会重建 tag 发生变化的容器（已实测），
+          # 未变更的服务保持 Running，缺失的服务（如被误删的可观测组件）会被重新创建。
+          # 这样既不会牵连无关服务，也不会漏掉整套栈。
+          if ! dc up -d --wait --wait-timeout 300; then
             echo "::error::部署失败（新 tag=$TAG）"
             for svc in $CHANGED; do
               [ "$svc" = "gateway" ] && continue
@@ -281,11 +268,11 @@ jobs:
               echo "回滚 $svc → $prev"
               set_t "$svc" "$prev"
               dc pull "$svc" || true
-              dc up -d --wait --wait-timeout 300 --no-deps --pull never "$svc" \
+              dc up -d --wait --wait-timeout 300 \
                 || echo "::warning::$svc 回滚失败，需要人工介入"
             done
             exit 1
-          }
+          fi
 
           for svc in $CHANGED; do
             [ "$svc" = "gateway" ] && continue
