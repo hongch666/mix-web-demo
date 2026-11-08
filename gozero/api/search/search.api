@@ -94,9 +94,9 @@ type (
 		Reason string  `json:"reason"` // 命中原因
 	}
 	ScoreDetails {
-		EsScore       float64 `json:"es_score"` // ES 检索综合分项，含关键词相关度与业务、时效加权
-		VectorScore   float64 `json:"vector_score"` // 向量检索分项
-		GraphScore    float64 `json:"graph_score"` // 图谱检索分项
+		EsScore     float64 `json:"es_score"` // ES 检索综合分项，含关键词相关度与业务、时效加权
+		VectorScore float64 `json:"vector_score"` // 向量检索分项
+		GraphScore  float64 `json:"graph_score"` // 图谱检索分项
 	}
 )
 
