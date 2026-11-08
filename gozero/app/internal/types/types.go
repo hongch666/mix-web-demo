@@ -22,7 +22,7 @@ type ArticleEsItem struct {
 	UserScore         float64              `json:"user_score"`          // 用户评分
 	AiCommentCount    int                  `json:"ai_comment_count"`    // AI 评论数
 	UserCommentCount  int                  `json:"user_comment_count"`  // 用户评论数
-	EsScore           float64              `json:"es_score"`            // 关键词检索得分
+	EsScore           float64              `json:"es_score"`            // ES 检索综合得分，含关键词相关度与业务、时效加权
 	VectorScore       float64              `json:"vector_score"`        // 向量检索得分
 	GraphScore        float64              `json:"graph_score"`         // 图谱检索得分
 	FinalScore        float64              `json:"final_score"`         // 综合得分
@@ -144,11 +144,9 @@ type GraphRelation struct {
 }
 
 type ScoreDetails struct {
-	EsScore       float64 `json:"es_score"`       // 关键词检索分项
-	VectorScore   float64 `json:"vector_score"`   // 向量检索分项
-	GraphScore    float64 `json:"graph_score"`    // 图谱检索分项
-	BusinessScore float64 `json:"business_score"` // 业务特征分项
-	RecencyScore  float64 `json:"recency_score"`  // 时效分项
+	EsScore     float64 `json:"es_score"`     // ES 检索综合分项，含关键词相关度与业务、时效加权
+	VectorScore float64 `json:"vector_score"` // 向量检索分项
+	GraphScore  float64 `json:"graph_score"`  // 图谱检索分项
 }
 
 type SearchArticlesReq struct {

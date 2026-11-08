@@ -17,7 +17,7 @@ import (
 func TestBuildSearchDSLContainsQueryAndPaging(t *testing.T) {
 	query := elastic.NewBoolQuery().Must(elastic.NewMatchQuery("title", "golang"))
 
-	dsl, err := buildSearchDSL(query, 20, 10, false, nil)
+	dsl, err := buildSearchDSL(query, 20, 10, false, false, nil)
 	if err != nil {
 		t.Fatalf("拼装 DSL 失败: %v", err)
 	}
@@ -31,11 +31,31 @@ func TestBuildSearchDSLContainsQueryAndPaging(t *testing.T) {
 	if strings.Contains(dsl, `"sort"`) {
 		t.Fatalf("无关键词时不应带排序，实际内容: %s", dsl)
 	}
+
+	if strings.Contains(dsl, `"track_scores"`) {
+		t.Fatalf("无需取回分数时不应带 track_scores，实际内容: %s", dsl)
+	}
+}
+
+// TestBuildSearchDSLContainsTrackScoresWhenScriptScoring 校验按创建时间排序且脚本打分时 DSL 带 track_scores
+// 按字段排序默认丢弃分数，缺少该参数会让脚本里的业务与时效分量全部作废
+func TestBuildSearchDSLContainsTrackScoresWhenScriptScoring(t *testing.T) {
+	dsl, err := buildSearchDSL(elastic.NewBoolQuery(), 0, 10, true, true, nil)
+	if err != nil {
+		t.Fatalf("拼装 DSL 失败: %v", err)
+	}
+
+	if !strings.Contains(dsl, `"track_scores":true`) {
+		t.Fatalf("DSL 缺少 track_scores，实际内容: %s", dsl)
+	}
+	if !strings.Contains(dsl, `"sort"`) {
+		t.Fatalf("track_scores 场景仍应保留创建时间倒序，实际内容: %s", dsl)
+	}
 }
 
 // TestBuildSearchDSLContainsSortWhenSortByCreateAt 校验按创建时间倒序时 DSL 带 sort
 func TestBuildSearchDSLContainsSortWhenSortByCreateAt(t *testing.T) {
-	dsl, err := buildSearchDSL(elastic.NewBoolQuery(), 0, 10, true, nil)
+	dsl, err := buildSearchDSL(elastic.NewBoolQuery(), 0, 10, true, false, nil)
 	if err != nil {
 		t.Fatalf("拼装 DSL 失败: %v", err)
 	}
@@ -51,7 +71,7 @@ func TestBuildSearchDSLContainsHighlight(t *testing.T) {
 		Fields(elastic.NewHighlighterField("title")).
 		FragmentSize(150)
 
-	dsl, err := buildSearchDSL(elastic.NewBoolQuery(), 0, 10, false, highlight)
+	dsl, err := buildSearchDSL(elastic.NewBoolQuery(), 0, 10, false, false, highlight)
 	if err != nil {
 		t.Fatalf("拼装 DSL 失败: %v", err)
 	}
@@ -71,7 +91,7 @@ func TestLogSearchDSLDisabledWritesNothing(t *testing.T) {
 	defer logger.Close()
 
 	model := &searchModel{dslLogEnabled: false, logger: logger}
-	model.logSearchDSL(context.Background(), elastic.NewBoolQuery(), 0, 10, false, nil)
+	model.logSearchDSL(context.Background(), elastic.NewBoolQuery(), 0, 10, false, false, nil)
 
 	entries, err := os.ReadDir(logDir)
 	if err != nil {
@@ -92,7 +112,7 @@ func TestLogSearchDSLEnabledWritesDSL(t *testing.T) {
 	defer logger.Close()
 
 	model := &searchModel{dslLogEnabled: true, logger: logger}
-	model.logSearchDSL(context.Background(), elastic.NewMatchQuery("title", "golang"), 0, 10, false, nil)
+	model.logSearchDSL(context.Background(), elastic.NewMatchQuery("title", "golang"), 0, 10, false, false, nil)
 
 	logFile := filepath.Join(logDir, "app_"+time.Now().Format("2006-01-02")+".log")
 	content, err := os.ReadFile(logFile)
@@ -115,5 +135,5 @@ func TestLogSearchDSLEnabledWritesDSL(t *testing.T) {
 // TestLogSearchDSLWithoutLoggerIsSafe 校验未装配日志实例时开启开关也不会 panic
 func TestLogSearchDSLWithoutLoggerIsSafe(t *testing.T) {
 	model := &searchModel{dslLogEnabled: true}
-	model.logSearchDSL(context.Background(), elastic.NewBoolQuery(), 0, 10, false, nil)
+	model.logSearchDSL(context.Background(), elastic.NewBoolQuery(), 0, 10, true, true, nil)
 }

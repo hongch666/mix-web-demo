@@ -977,7 +977,7 @@
                       "type": "string"
                     },
                     "es_score": {
-                      "description": "关键词检索得分",
+                      "description": "ES 检索综合得分，含关键词相关度与业务、时效加权",
                       "type": "number"
                     },
                     "final_score": {
@@ -1073,25 +1073,15 @@
                       "required": [
                         "es_score",
                         "vector_score",
-                        "graph_score",
-                        "business_score",
-                        "recency_score"
+                        "graph_score"
                       ],
                       "properties": {
-                        "business_score": {
-                          "description": "业务特征分项",
-                          "type": "number"
-                        },
                         "es_score": {
-                          "description": "关键词检索分项",
+                          "description": "ES 检索综合分项，含关键词相关度与业务、时效加权",
                           "type": "number"
                         },
                         "graph_score": {
                           "description": "图谱检索分项",
-                          "type": "number"
-                        },
-                        "recency_score": {
-                          "description": "时效分项",
                           "type": "number"
                         },
                         "vector_score": {
