@@ -131,8 +131,6 @@ class NestjsClient:
             timeout=upload_timeout,
         )
 
-    # ==================== SQL 代理接口（供 FastAPI Agent 远程调用） ====================
-
     async def get_tables(self, table: Optional[str] = None) -> Any:
         """获取 MySQL 表结构信息"""
         params = {"table": table} if table else None
