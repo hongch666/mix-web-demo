@@ -41,4 +41,6 @@ test/
 **/*-spec.ts
 docs/
 coverage/
+# Jest 转译缓存由根目录 .gitignore 忽略，但仍会被打进构建上下文
+.jest-cache/
 *.md
