@@ -22,6 +22,7 @@ nestjs/.DS_Store
 # Tests
 nestjs/coverage
 nestjs/.nyc_output
+nestjs/.jest-cache/
 
 # IDEs and editors
 nestjs/.idea
