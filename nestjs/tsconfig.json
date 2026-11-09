@@ -14,6 +14,7 @@
       "src/*": ["./src/*"]
     },
     "incremental": true,
+    "isolatedModules": true,
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,

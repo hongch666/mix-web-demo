@@ -178,9 +178,9 @@ lint_nestjs() {
     print_info "检查 NestJS 代码（ESLint + Prettier）..."
     (cd "$WORKDIR/nestjs" && npm run lint && npm run format:check) || return 1
 
-    # TypeScript 编译类型检查
+    # TypeScript 编译类型检查（含 spec，ts-jest 走单文件转译后不再做类型检查）
     print_info "检查 NestJS 类型（tsc --noEmit）..."
-    (cd "$WORKDIR/nestjs" && ./node_modules/.bin/tsc --noEmit -p tsconfig.build.json) || return 1
+    (cd "$WORKDIR/nestjs" && ./node_modules/.bin/tsc --noEmit -p tsconfig.json) || return 1
 
     print_info "检查 NestJS 常量文件规范（成员注释、分类注释、函数成员在前）..."
     lint_constants "$WORKDIR/nestjs/src/common/constants"
