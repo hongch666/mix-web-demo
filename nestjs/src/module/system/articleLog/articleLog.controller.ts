@@ -30,7 +30,8 @@ export class ArticleLogController {
   @Get("list")
   @ApiOperation({
     summary: "查询文章日志",
-    description: "可根据用户ID、文章ID、操作类型查询，支持分页",
+    description:
+      "可根据用户ID、文章ID、操作类型查询，支持 page 分页与 nextCursor 游标翻页，无过滤条件时 total 为集合估算值",
   })
   @ApiLog("查询文章日志")
   @RequireAdmin()

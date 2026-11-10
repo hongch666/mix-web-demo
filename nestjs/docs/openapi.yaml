@@ -128,7 +128,7 @@ paths:
         - 测试模块
   /article-logs/list:
     get:
-      description: 可根据用户ID、文章ID、操作类型查询，支持分页
+      description: 可根据用户ID、文章ID、操作类型查询，支持 page 分页与 nextCursor 游标翻页，无过滤条件时 total 为集合估算值
       operationId: ArticleLogController_findByFilter
       parameters:
         - name: user_id
@@ -199,6 +199,12 @@ paths:
           description: 每页条数
           schema:
             example: '10'
+            type: string
+        - name: cursor
+          required: false
+          in: query
+          description: 翻页游标，传上一页返回的 nextCursor 时忽略 page 并按 createdAt + _id 顺序取下一页
+          schema:
             type: string
       responses:
         '200':
@@ -377,7 +383,7 @@ paths:
         - 文章日志模块
   /api-logs/list:
     get:
-      description: 可根据用户ID、用户名、API路径等条件查询，支持分页
+      description: 可根据用户ID、用户名、API路径等条件查询，支持 page 分页与 nextCursor 游标翻页，无过滤条件时 total 为集合估算值
       operationId: ApiLogController_findByFilter
       parameters:
         - name: user_id
@@ -443,6 +449,12 @@ paths:
           description: 每页条数
           schema:
             example: '10'
+            type: string
+        - name: cursor
+          required: false
+          in: query
+          description: 翻页游标，传上一页返回的 nextCursor 时忽略 page 并按 createdAt + _id 顺序取下一页
+          schema:
             type: string
       responses:
         '200':
@@ -1394,6 +1406,9 @@ components:
                   updated_at:
                     type: string
                     description: 更新时间
+            next_cursor:
+              type: string
+              description: 下一页游标，为空时表示没有更多数据
       required:
         - code
         - msg
@@ -1652,6 +1667,9 @@ components:
                   updated_at:
                     type: string
                     description: 更新时间
+            next_cursor:
+              type: string
+              description: 下一页游标，为空时表示没有更多数据
       required:
         - code
         - msg

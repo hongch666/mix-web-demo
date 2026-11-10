@@ -151,4 +151,12 @@ export class QueryApiLogDto {
   @IsOptional()
   @IsNumberString({}, { message: "每页条数必须是数字字符串" })
   size?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "翻页游标，传上一页返回的 nextCursor 时忽略 page 并按 createdAt + _id 顺序取下一页",
+  })
+  @IsOptional()
+  @IsString({ message: "翻页游标必须是字符串" })
+  cursor?: string;
 }

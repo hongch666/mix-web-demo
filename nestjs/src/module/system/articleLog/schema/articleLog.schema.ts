@@ -47,3 +47,8 @@ ArticleLogSchema.index({ action: 1, createdAt: -1 });
 ArticleLogSchema.index({ userId: 1, action: 1, createdAt: -1 });
 // userId 与 articleId 同时过滤（$in）时按时间倒序取最近记录
 ArticleLogSchema.index({ userId: 1, articleId: 1, createdAt: -1 });
+// 深分页改走 createdAt + _id 游标，排序键必须进复合索引才能避免同毫秒内的内存排序
+ArticleLogSchema.index(
+  { createdAt: -1, _id: -1 },
+  { name: "createdAt_-1__id_-1" },
+);

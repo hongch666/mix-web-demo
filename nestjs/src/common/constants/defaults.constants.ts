@@ -56,4 +56,10 @@ export class Defaults {
 
   /** L1 本地缓存最大条目数，超出后淘汰最早写入的条目 */
   static readonly CACHE_LOCAL_MAX_ENTRIES = 1000;
+
+  /** 文章日志名称映射的 L1 本地缓存有效期（秒），只用于单实例内合并并发翻页，不追求跨实例实时 */
+  static readonly ARTICLE_LOG_MAPPING_LOCAL_TTL_SECONDS = 10;
+
+  /** 文章日志名称映射的 L2 Redis 缓存有效期（秒），5 分钟内复用一次远程批量查询结果 */
+  static readonly ARTICLE_LOG_MAPPING_REDIS_TTL_SECONDS = 300;
 }
