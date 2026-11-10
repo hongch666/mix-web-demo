@@ -19,3 +19,5 @@ apiLogs.createIndex(
   { apiMethod: 1, createdAt: -1 },
   { name: 'apiMethod_1_createdAt_-1' },
 );
+// 深分页走 createdAt + _id 游标，排序键必须进复合索引否则会在同毫秒内退化为内存排序
+apiLogs.createIndex({ createdAt: -1, _id: -1 }, { name: 'createdAt_-1__id_-1' });
