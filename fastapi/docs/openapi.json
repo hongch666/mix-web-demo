@@ -2980,7 +2980,7 @@
           "mode": {
             "type": "string",
             "title": "Mode",
-            "description": "搜索模式，keyword、hybrid、graph，默认 hybrid",
+            "description": "搜索模式，keyword、hybrid，默认 hybrid",
             "default": "hybrid"
           }
         },
@@ -3703,7 +3703,7 @@
           "mode": {
             "type": "string",
             "title": "Mode",
-            "description": "搜索模式，keyword、hybrid、graph，默认 hybrid",
+            "description": "搜索模式，keyword、hybrid，默认 hybrid",
             "default": "hybrid"
           }
         },

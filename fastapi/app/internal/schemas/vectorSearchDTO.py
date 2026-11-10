@@ -25,7 +25,7 @@ class VectorSearchEnhanceReq(BaseModel):
     limit: int = Field(default=50, description="返回条数上限")
     topK: int = Alias("topK", default=50, description="向量召回条数")
     mode: str = Field(
-        default="hybrid", description="搜索模式，keyword、hybrid、graph，默认 hybrid"
+        default="hybrid", description="搜索模式，keyword、hybrid，默认 hybrid"
     )
 
 

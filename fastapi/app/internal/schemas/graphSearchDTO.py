@@ -24,7 +24,7 @@ class GraphSearchEnhanceReq(BaseModel):
     tags: list[str] = Field(default_factory=list, description="标签列表")
     limit: int = Field(default=50, description="返回条数上限")
     mode: str = Field(
-        default="hybrid", description="搜索模式，keyword、hybrid、graph，默认 hybrid"
+        default="hybrid", description="搜索模式，keyword、hybrid，默认 hybrid"
     )
 
 

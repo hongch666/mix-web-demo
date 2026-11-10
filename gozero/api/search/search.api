@@ -41,7 +41,7 @@ type (
 		EndDate         *string `form:"end_date,optional" validate:"omitempty,notblank,datetime,notbefore=StartDate"` // 发布时间止，可选，不得早于开始时间
 		Page            int     `form:"page,optional,default=1" validate:"gt=0"` // 页码，默认 1，须为正整数
 		Size            int     `form:"size,optional,default=10" validate:"gt=0"` // 每页条数，默认 10，须为正整数
-		Mode            *string `form:"mode,optional" validate:"omitempty,searchmode"` // 搜索模式，可选：keyword、hybrid、graph，缺省 hybrid
+		Mode            *string `form:"mode,optional" validate:"omitempty,searchmode"` // 搜索模式，可选：keyword、hybrid，缺省 hybrid
 		EnableVector    *bool   `form:"enable_vector,optional"` // 是否启用向量增强，可选，缺省开启
 		EnableGraph     *bool   `form:"enable_graph,optional"` // 是否启用图谱增强，可选，缺省开启
 		Explain         *bool   `form:"explain,optional"` // 是否返回评分与命中说明，可选

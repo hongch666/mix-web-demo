@@ -40,7 +40,8 @@ func NewSearchArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Se
 // SearchArticles 处理搜索文章接口请求，相同用户与相同查询条件在缓存 TTL 内直接复用检索结果，未命中时执行 ES 检索、向量与图谱增强融合重排，并记录搜索日志
 func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp *types.SearchArticlesResp, err error) {
 	startedAt := time.Now()
-	mode := "hybrid"
+	// 命中缓存时不回源，指标按请求参数归因，避免 keyword 模式被统一记成 hybrid
+	mode := normalizeSearchMode(req)
 	defer func() {
 		result := "success"
 		if err != nil {
@@ -182,7 +183,8 @@ func (l *SearchArticlesLogic) search(
 	if len(items) > 0 {
 		searchMode := normalizeSearchMode(req)
 		vectorEnabled := isVectorEnhanceEnabled(req, keyword)
-		graphEnabled := isGraphEnhanceEnabled(req)
+		// 未登录时融合引擎会把图谱权重置零，图谱增强只剩一次远程调用开销，直接跳过
+		graphEnabled := currentUserID > 0 && isGraphEnhanceEnabled(req)
 
 		articleIDs := extractArticleIDsFromItems(items)
 		tagList := extractTagsFromItems(items)

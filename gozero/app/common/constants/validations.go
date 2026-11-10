@@ -27,7 +27,7 @@ const (
 	// maxrunes 标签的中文消息
 	VALIDATOR_MAX_RUNES_MESSAGE = "{0}长度不能超过{1}个字符"
 	// searchmode 标签的中文消息
-	VALIDATOR_SEARCH_MODE_MESSAGE = "搜索模式参数无效，仅支持 keyword/hybrid/graph"
+	VALIDATOR_SEARCH_MODE_MESSAGE = "搜索模式参数无效，仅支持 keyword/hybrid"
 	// notbefore 标签的中文消息
 	VALIDATOR_NOT_BEFORE_MESSAGE = "开始时间不能晚于结束时间"
 )

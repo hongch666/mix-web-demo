@@ -80,6 +80,7 @@ func TestRequestValidatorCustomRules(t *testing.T) {
 
 	blankMode := "  "
 	keywordMode := " KEYWORD "
+	graphMode := "graph"
 	invalidMode := "SEMANTIC"
 	validStart := "2026-09-01 00:00:00"
 	validEnd := "2026-09-02 00:00:00"
@@ -163,6 +164,13 @@ func TestRequestValidatorCustomRules(t *testing.T) {
 			data: struct {
 				Mode *string `json:"mode" validate:"omitempty,searchmode"`
 			}{Mode: &blankMode},
+		},
+		{
+			name: "已移除的 graph 模式被拒绝",
+			data: struct {
+				Mode *string `json:"mode" validate:"omitempty,searchmode"`
+			}{Mode: &graphMode},
+			wantMsg: "搜索模式参数无效",
 		},
 		{
 			name: "搜索模式非法被拒绝",
