@@ -1946,7 +1946,7 @@ components:
         mode:
           type: string
           title: Mode
-          description: 搜索模式，keyword、hybrid、graph，默认 hybrid
+          description: 搜索模式，keyword、hybrid，默认 hybrid
           default: hybrid
       type: object
       title: GraphSearchEnhanceReq
@@ -2469,7 +2469,7 @@ components:
         mode:
           type: string
           title: Mode
-          description: 搜索模式，keyword、hybrid、graph，默认 hybrid
+          description: 搜索模式，keyword、hybrid，默认 hybrid
           default: hybrid
       type: object
       title: VectorSearchEnhanceReq
