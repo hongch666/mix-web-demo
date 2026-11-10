@@ -26,6 +26,7 @@ func isVectorEnhanceEnabled(req *types.SearchArticlesReq, keyword string) bool {
 }
 
 // isGraphEnhanceEnabled 判断本次搜索是否启用图谱增强，与向量增强不同，图谱按文章关系扩召回，不依赖关键词
+// 未登录时调用方会跳过图谱增强，此处只负责参数与模式判断
 func isGraphEnhanceEnabled(req *types.SearchArticlesReq) bool {
 	if normalizeSearchMode(req) == "keyword" {
 		return false

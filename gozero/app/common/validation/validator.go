@@ -169,7 +169,7 @@ func validateDateTime(fl validator.FieldLevel) bool {
 // validateSearchMode 搜索模式枚举，空值放行，大小写与首尾空白不敏感
 func validateSearchMode(fl validator.FieldLevel) bool {
 	switch strings.ToLower(strings.TrimSpace(fl.Field().String())) {
-	case "", "keyword", "hybrid", "graph":
+	case "", "keyword", "hybrid":
 		return true
 	default:
 		return false

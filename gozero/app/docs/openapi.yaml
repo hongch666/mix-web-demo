@@ -69,7 +69,7 @@ paths:
         schema:
           type: integer
           default: 10
-      - description: 搜索模式，可选：keyword、hybrid、graph，缺省 hybrid
+      - description: 搜索模式，可选：keyword、hybrid，缺省 hybrid
         name: mode
         in: query
         allowEmptyValue: true
