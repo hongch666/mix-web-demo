@@ -29,7 +29,8 @@ export class ApiLogController {
   @Get("list")
   @ApiOperation({
     summary: "查询API日志",
-    description: "可根据用户ID、用户名、API路径等条件查询，支持分页",
+    description:
+      "可根据用户ID、用户名、API路径等条件查询，支持 page 分页与 nextCursor 游标翻页，无过滤条件时 total 为集合估算值",
   })
   @ApiLog("查询API日志")
   @RequireAdmin()

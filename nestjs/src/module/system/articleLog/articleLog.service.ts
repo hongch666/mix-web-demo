@@ -5,8 +5,16 @@ import isLeapYear from "dayjs/plugin/isLeapYear";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { DeleteResult, Model, Types } from "mongoose";
-import { Messages } from "src/common/constants";
+import { Defaults, Messages, RedisKeys } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
+import type { CreatedAtCursor } from "src/common/utils/createdAtCursor.util";
+import {
+  CREATED_AT_DESC_SORT,
+  buildCreatedAtSeekFilter,
+  encodeCreatedAtCursor,
+  parseCreatedAtCursor,
+} from "src/common/utils/createdAtCursor.util";
+import { Cacheable } from "src/framework/decorators/cache.decorator";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { SpringClientService } from "src/module/common/client/springClient.service";
 import {
@@ -46,12 +54,16 @@ interface ArticleLogListItem {
 }
 
 /**
- * 文章日志分页查询结果，含总数与列表
+ * 文章日志分页查询结果，含总数、列表与下一页游标
  */
 interface ArticleLogPageResult {
   total: number;
   list: ArticleLogListItem[];
+  nextCursor: string | null;
 }
+
+/** lean 查询返回的纯对象结构，_id 直接透传给前端 */
+type LeanArticleLog = ArticleLog & { _id: Types.ObjectId };
 
 /**
  * 文章日志游标同步返回的单条数据结构
@@ -120,6 +132,10 @@ export class ArticleLogService {
       {
         spec: { userId: 1, articleId: 1, createdAt: -1 },
         options: { name: "userId_1_articleId_1_createdAt_-1" },
+      },
+      {
+        spec: { createdAt: -1, _id: -1 },
+        options: { name: "createdAt_-1__id_-1" },
       },
     ];
 
@@ -235,7 +251,7 @@ export class ArticleLogService {
       if (username) {
         const userIds = users.map((user) => user.id);
         if (userIds.length === 0) {
-          return { total: 0, list: [] };
+          return { total: 0, list: [], nextCursor: null };
         }
         filters.userId = { $in: userIds };
       }
@@ -243,7 +259,7 @@ export class ArticleLogService {
       if (articleTitle) {
         const articleIds = articles.map((article) => article.id);
         if (articleIds.length === 0) {
-          return { total: 0, list: [] };
+          return { total: 0, list: [], nextCursor: null };
         }
         filters.articleId = { $in: articleIds };
       }
@@ -258,71 +274,64 @@ export class ArticleLogService {
       filters.createdAt = createdAtFilter;
     }
 
-    const pageNum: number = parseInt(page);
     const take: number = parseInt(size);
+    const cursor: CreatedAtCursor | null = parseCreatedAtCursor(query.cursor);
+    // 带游标时按 createdAt + _id 做 seek 翻页，只有首页或未带游标才退回 skip
+    const pageFilters: Record<string, unknown> = cursor
+      ? { ...filters, ...buildCreatedAtSeekFilter(cursor) }
+      : filters;
 
-    const [total, list] = await Promise.all([
-      this.logModel.countDocuments(filters),
-      // 优化大分页查询：当page > 100时，使用hint强制使用索引避免扫描全表
-      pageNum > 100
-        ? this.logModel
-            .find(filters)
-            .sort({ createdAt: -1 })
-            .hint({ createdAt: -1 })
-            .skip((pageNum - 1) * take)
-            .limit(take)
-            .exec()
-        : this.logModel
-            .find(filters)
-            .sort({ createdAt: -1 })
-            .skip((pageNum - 1) * take)
-            .limit(take)
-            .exec(),
-    ]);
-    // 收集所有不重复的 userId 和 articleId，批量查询（消除 N+1）
+    const listQuery = this.logModel
+      .find(pageFilters)
+      .sort(CREATED_AT_DESC_SORT)
+      .limit(take)
+      .lean<LeanArticleLog[]>();
+    if (!cursor) {
+      listQuery.skip((parseInt(page) - 1) * take);
+    }
+
+    // 无过滤条件时用 estimatedDocumentCount 读集合元数据，避免全集合计数随日志量线性变慢
+    const countTask: Promise<number> =
+      Object.keys(filters).length > 0
+        ? this.logModel.countDocuments(filters).exec()
+        : this.logModel.estimatedDocumentCount().exec();
+
+    const [total, list] = await Promise.all([countTask, listQuery.exec()]);
+
+    const lastLog: LeanArticleLog | undefined = list[list.length - 1];
+    const nextCursor: string | null =
+      list.length === take && lastLog?.createdAt
+        ? encodeCreatedAtCursor(lastLog.createdAt, lastLog._id)
+        : null;
+
+    // 收集所有不重复的 userId 和 articleId，按批解析显示名以消除 N+1
     const userIds: number[] = [
-      ...new Set(list.map((log: ArticleLogDocument) => log.userId)),
+      ...new Set(list.map((log: LeanArticleLog) => log.userId)),
     ];
     const articleIds: number[] = [
-      ...new Set(list.map((log: ArticleLogDocument) => log.articleId)),
+      ...new Set(list.map((log: LeanArticleLog) => log.articleId)),
     ];
 
-    const [userResult, articleResult] = await Promise.all([
+    const [userMap, articleMap]: [
+      Record<number, string>,
+      Record<number, string>,
+    ] = await Promise.all([
       userIds.length > 0
-        ? this.springClient.getUserByIds(userIds)
-        : Promise.resolve(null),
+        ? this.loadUserNameMap(userIds)
+        : Promise.resolve<Record<number, string>>({}),
       articleIds.length > 0
-        ? this.springClient.getArticleByIds(articleIds)
-        : Promise.resolve(null),
+        ? this.loadArticleTitleMap(articleIds)
+        : Promise.resolve<Record<number, string>>({}),
     ]);
-
-    const users: Array<{ id: number; name: string }> = userResult
-      ? (SpringClientService.extractData<Array<{ id: number; name: string }>>(
-          userResult,
-        ) ?? [])
-      : [];
-    const articles: Array<{ id: number; title: string }> = articleResult
-      ? (SpringClientService.extractData<Array<{ id: number; title: string }>>(
-          articleResult,
-        ) ?? [])
-      : [];
-
-    // 构建 userId → username 和 articleId → title 的映射表
-    const userMap: Map<number, string> = new Map(
-      users.map((user) => [user.id, user.name]),
-    );
-    const articleMap: Map<number, string> = new Map(
-      articles.map((article) => [article.id, article.title]),
-    );
 
     // 组装结果列表（内存映射，不再逐条查库）
     const resultList: ArticleLogListItem[] = list.map(
-      (log: ArticleLogDocument): ArticleLogListItem => ({
+      (log: LeanArticleLog): ArticleLogListItem => ({
         _id: log._id,
         userId: log.userId,
-        username: userMap.get(log.userId) || "",
+        username: userMap[log.userId] ?? "",
         articleId: log.articleId,
-        articleTitle: articleMap.get(log.articleId) || "",
+        articleTitle: articleMap[log.articleId] ?? "",
         action: log.action,
         content: log.content,
         msg: log.msg,
@@ -334,7 +343,54 @@ export class ArticleLogService {
           : undefined,
       }),
     );
-    return { total, list: resultList };
+    return { total, list: resultList, nextCursor };
+  }
+
+  /**
+   * 批量解析用户 ID 到用户名的映射
+   * L1 10 秒只服务单实例内的并发翻页，L2 5 分钟覆盖多实例与连续刷新，过期后自然回源
+   */
+  @Cacheable<[number[]]>({
+    key: (userIds: number[]): string =>
+      RedisKeys.CACHE_ARTICLE_LOG_USER_NAMES(userIds),
+    localTtl: Defaults.ARTICLE_LOG_MAPPING_LOCAL_TTL_SECONDS,
+    redisTtl: Defaults.ARTICLE_LOG_MAPPING_REDIS_TTL_SECONDS,
+  })
+  async loadUserNameMap(userIds: number[]): Promise<Record<number, string>> {
+    const result: Record<string, unknown> =
+      await this.springClient.getUserByIds(userIds);
+    const users: Array<{ id: number; name: string }> =
+      SpringClientService.extractData<Array<{ id: number; name: string }>>(
+        result,
+      ) ?? [];
+    return users.reduce<Record<number, string>>((acc, user) => {
+      acc[user.id] = user.name;
+      return acc;
+    }, {});
+  }
+
+  /**
+   * 批量解析文章 ID 到标题的映射，缓存策略与用户名映射保持一致
+   */
+  @Cacheable<[number[]]>({
+    key: (articleIds: number[]): string =>
+      RedisKeys.CACHE_ARTICLE_LOG_ARTICLE_TITLES(articleIds),
+    localTtl: Defaults.ARTICLE_LOG_MAPPING_LOCAL_TTL_SECONDS,
+    redisTtl: Defaults.ARTICLE_LOG_MAPPING_REDIS_TTL_SECONDS,
+  })
+  async loadArticleTitleMap(
+    articleIds: number[],
+  ): Promise<Record<number, string>> {
+    const result: Record<string, unknown> =
+      await this.springClient.getArticleByIds(articleIds);
+    const articles: Array<{ id: number; title: string }> =
+      SpringClientService.extractData<Array<{ id: number; title: string }>>(
+        result,
+      ) ?? [];
+    return articles.reduce<Record<number, string>>((acc, article) => {
+      acc[article.id] = article.title;
+      return acc;
+    }, {});
   }
 
   /**

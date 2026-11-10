@@ -7,6 +7,13 @@ import utc from "dayjs/plugin/utc";
 import { Model, Types } from "mongoose";
 import { Defaults, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
+import type { CreatedAtCursor } from "src/common/utils/createdAtCursor.util";
+import {
+  CREATED_AT_DESC_SORT,
+  buildCreatedAtSeekFilter,
+  encodeCreatedAtCursor,
+  parseCreatedAtCursor,
+} from "src/common/utils/createdAtCursor.util";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { CreateApiLogDto, QueryApiLogDto } from "./dto/apiLog.dto";
 import { ApiLog, ApiLogDocument } from "./schema/apiLog.schema";
@@ -49,12 +56,16 @@ interface ApiLogListItem {
 }
 
 /**
- * API 日志分页查询结果，含总数与列表
+ * API 日志分页查询结果，含总数、列表与下一页游标
  */
 interface ApiLogPageResult {
   total: number;
   list: ApiLogListItem[];
+  nextCursor: string | null;
 }
+
+/** lean 查询返回的纯对象结构，_id 直接透传给前端 */
+type LeanApiLog = ApiLog & { _id: Types.ObjectId };
 
 /**
  * API 日志游标同步返回的单条数据结构
@@ -120,6 +131,10 @@ export class ApiLogService {
       {
         spec: { apiMethod: 1, createdAt: -1 },
         options: { name: "apiMethod_1_createdAt_-1" },
+      },
+      {
+        spec: { createdAt: -1, _id: -1 },
+        options: { name: "createdAt_-1__id_-1" },
       },
     ];
 
@@ -229,21 +244,38 @@ export class ApiLogService {
       filters.createdAt = createdAtFilter;
     }
 
-    const skip: number = (parseInt(page) - 1) * parseInt(size);
     const take: number = parseInt(size);
+    const cursor: CreatedAtCursor | null = parseCreatedAtCursor(query.cursor);
+    // 带游标时按 createdAt + _id 做 seek 翻页，只有首页或未带游标才退回 skip
+    const pageFilters: Record<string, unknown> = cursor
+      ? { ...filters, ...buildCreatedAtSeekFilter(cursor) }
+      : filters;
 
-    const [total, list] = await Promise.all([
-      this.apiLogModel.countDocuments(filters),
-      this.apiLogModel
-        .find(filters)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(take)
-        .exec(),
-    ]);
+    const listQuery = this.apiLogModel
+      .find(pageFilters)
+      .sort(CREATED_AT_DESC_SORT)
+      .limit(take)
+      .lean<LeanApiLog[]>();
+    if (!cursor) {
+      listQuery.skip((parseInt(page) - 1) * take);
+    }
+
+    // 无过滤条件时用 estimatedDocumentCount 读集合元数据，避免全集合计数随日志量线性变慢
+    const countTask: Promise<number> =
+      Object.keys(filters).length > 0
+        ? this.apiLogModel.countDocuments(filters).exec()
+        : this.apiLogModel.estimatedDocumentCount().exec();
+
+    const [total, list] = await Promise.all([countTask, listQuery.exec()]);
+
+    const lastLog: LeanApiLog | undefined = list[list.length - 1];
+    const nextCursor: string | null =
+      list.length === take && lastLog?.createdAt
+        ? encodeCreatedAtCursor(lastLog.createdAt, lastLog._id)
+        : null;
 
     // 格式化返回数据
-    const resultList: ApiLogListItem[] = list.map((log: ApiLogDocument) => ({
+    const resultList: ApiLogListItem[] = list.map((log: LeanApiLog) => ({
       _id: log._id,
       userId: log.userId,
       username: log.username,
@@ -262,7 +294,7 @@ export class ApiLogService {
         : undefined,
     }));
 
-    return { total, list: resultList };
+    return { total, list: resultList, nextCursor };
   }
 
   /**

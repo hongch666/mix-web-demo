@@ -179,6 +179,7 @@ export const SwaggerArticleLogPageData: SchemaObject = {
   properties: {
     total: numberField("日志总数"),
     list: { type: "array", description: "日志列表", items: articleLogItem },
+    nextCursor: stringField("下一页游标，为空时表示没有更多数据"),
   },
 };
 
@@ -236,6 +237,7 @@ export const SwaggerApiLogPageData: SchemaObject = {
   properties: {
     total: numberField("日志总数"),
     list: { type: "array", description: "日志列表", items: apiLogItem },
+    nextCursor: stringField("下一页游标，为空时表示没有更多数据"),
   },
 };
 

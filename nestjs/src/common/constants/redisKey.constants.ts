@@ -14,6 +14,16 @@ export class RedisKeys {
   static readonly CACHE_TABLE_SETTINGS_LIST = (userId: number): string =>
     `table:settings:${userId}:all`;
 
+  /** 构造文章日志用户名映射的缓存 key 主体，userId 升序拼接保证同一批用户命中同一 key */
+  static readonly CACHE_ARTICLE_LOG_USER_NAMES = (userIds: number[]): string =>
+    `article:log:user:${[...userIds].sort((a: number, b: number): number => a - b).join(",")}`;
+
+  /** 构造文章日志文章标题映射的缓存 key 主体，articleId 升序拼接保证同一批文章命中同一 key */
+  static readonly CACHE_ARTICLE_LOG_ARTICLE_TITLES = (
+    articleIds: number[],
+  ): string =>
+    `article:log:article:${[...articleIds].sort((a: number, b: number): number => a - b).join(",")}`;
+
   // ===== GitHub OAuth =====
 
   // ===== OAuth 状态 Key =====
