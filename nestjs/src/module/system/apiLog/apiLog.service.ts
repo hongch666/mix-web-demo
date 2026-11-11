@@ -9,6 +9,7 @@ import { Defaults, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import type { CreatedAtCursor } from "src/common/utils/createdAtCursor.util";
 import {
+  CREATED_AT_CURSOR_INDEX,
   CREATED_AT_DESC_SORT,
   buildCreatedAtSeekFilter,
   encodeCreatedAtCursor,
@@ -134,7 +135,7 @@ export class ApiLogService {
       },
       {
         spec: { createdAt: -1, _id: -1 },
-        options: { name: "createdAt_-1__id_-1" },
+        options: { name: CREATED_AT_CURSOR_INDEX },
       },
     ];
 
@@ -250,23 +251,31 @@ export class ApiLogService {
     const pageFilters: Record<string, unknown> = cursor
       ? { ...filters, ...buildCreatedAtSeekFilter(cursor) }
       : filters;
+    const skip: number = cursor ? 0 : (parseInt(page) - 1) * take;
+    const hasFilter: boolean = Object.keys(filters).length > 0;
 
-    const listQuery = this.apiLogModel
-      .find(pageFilters)
-      .sort(CREATED_AT_DESC_SORT)
-      .limit(take)
-      .lean<LeanApiLog[]>();
-    if (!cursor) {
-      listQuery.skip((parseInt(page) - 1) * take);
-    }
+    // 首页与游标翻页本身没有 skip 成本走单阶段查询，跳页才用两阶段减少 skip 阶段的文档回表
+    const listTask: Promise<LeanApiLog[]> =
+      skip > 0
+        ? this.findPageBySkip(
+            pageFilters,
+            skip,
+            take,
+            hasFilter ? undefined : CREATED_AT_CURSOR_INDEX,
+          )
+        : this.apiLogModel
+            .find(pageFilters)
+            .sort(CREATED_AT_DESC_SORT)
+            .limit(take)
+            .lean<LeanApiLog[]>()
+            .exec();
 
     // 无过滤条件时用 estimatedDocumentCount 读集合元数据，避免全集合计数随日志量线性变慢
-    const countTask: Promise<number> =
-      Object.keys(filters).length > 0
-        ? this.apiLogModel.countDocuments(filters).exec()
-        : this.apiLogModel.estimatedDocumentCount().exec();
+    const countTask: Promise<number> = hasFilter
+      ? this.apiLogModel.countDocuments(filters).exec()
+      : this.apiLogModel.estimatedDocumentCount().exec();
 
-    const [total, list] = await Promise.all([countTask, listQuery.exec()]);
+    const [total, list] = await Promise.all([countTask, listTask]);
 
     const lastLog: LeanApiLog | undefined = list[list.length - 1];
     const nextCursor: string | null =
@@ -295,6 +304,48 @@ export class ApiLogService {
     }));
 
     return { total, list: resultList, nextCursor };
+  }
+
+  /**
+   * 跳页的两阶段查询，第一阶段只按索引取一页 _id，第二阶段按 _id 回表，让 skip 丢弃的记录不产生文档读取
+   * @param filters 查询条件，必须与首页请求保持一致
+   * @param skip 跳过的条数
+   * @param take 每页条数
+   * @param hint 无过滤条件时强制使用覆盖索引，避免优化器改选其他索引
+   */
+  private async findPageBySkip(
+    filters: Record<string, unknown>,
+    skip: number,
+    take: number,
+    hint?: string,
+  ): Promise<LeanApiLog[]> {
+    const idQuery = this.apiLogModel
+      .find(filters, { _id: 1 })
+      .sort(CREATED_AT_DESC_SORT)
+      .skip(skip)
+      .limit(take)
+      .lean<Array<{ _id: Types.ObjectId }>>();
+    if (hint) {
+      idQuery.hint(hint);
+    }
+
+    const idDocs: Array<{ _id: Types.ObjectId }> = await idQuery.exec();
+    const ids: Types.ObjectId[] = idDocs.map((doc) => doc._id);
+    if (ids.length === 0) {
+      return [];
+    }
+
+    // 回表不保证返回顺序，按第一阶段取到的 _id 顺序还原
+    const docs: LeanApiLog[] = await this.apiLogModel
+      .find({ _id: { $in: ids } })
+      .lean<LeanApiLog[]>()
+      .exec();
+    const byId: Map<string, LeanApiLog> = new Map(
+      docs.map((doc): [string, LeanApiLog] => [String(doc._id), doc]),
+    );
+    return ids
+      .map((id) => byId.get(String(id)))
+      .filter((doc): doc is LeanApiLog => doc !== undefined);
   }
 
   /**

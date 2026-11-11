@@ -20,6 +20,9 @@ export const CREATED_AT_DESC_SORT: Record<string, -1> = {
   _id: -1,
 };
 
+/** 游标与跳页共用的复合索引名，schema、启动期索引检查与 db/mongodb 脚本三处必须一致 */
+export const CREATED_AT_CURSOR_INDEX: string = "createdAt_-1__id_-1";
+
 /**
  * 把列表最后一条记录编码为下一页游标
  */

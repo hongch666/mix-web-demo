@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document } from "mongoose";
+import { CREATED_AT_CURSOR_INDEX } from "src/common/utils/createdAtCursor.util";
 
 export type ApiLogDocument = ApiLog & Document;
 
@@ -68,4 +69,7 @@ ApiLogSchema.index({ userId: 1, apiMethod: 1, createdAt: -1 });
 // 只按 apiMethod 过滤时上面的复合索引以 userId 打头用不上，单独补一条
 ApiLogSchema.index({ apiMethod: 1, createdAt: -1 });
 // 深分页改走 createdAt + _id 游标，排序键必须进复合索引才能避免同毫秒内的内存排序
-ApiLogSchema.index({ createdAt: -1, _id: -1 }, { name: "createdAt_-1__id_-1" });
+ApiLogSchema.index(
+  { createdAt: -1, _id: -1 },
+  { name: CREATED_AT_CURSOR_INDEX },
+);
