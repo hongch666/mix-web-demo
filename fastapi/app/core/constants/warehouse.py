@@ -330,6 +330,7 @@ class WarehouseScripts:
         INSERT INTO warehouse.dws_article_day
         -- 行为按日聚合为主驱动（不依赖文章发布日），文章维度 LEFT JOIN 补齐
         -- views 为文章当前累计浏览量冗余；每日新增浏览由 view_count 列体现
+        -- 文章维度缺失说明文章已删除或从未入仓，这类浏览记录不再计入 view_count
         SELECT
             x.stat_date,
             x.article_id,
@@ -339,7 +340,7 @@ class WarehouseScripts:
             x.like_count,
             x.collect_count,
             x.comment_count,
-            x.view_count
+            if(a.id > 0, x.view_count, 0) AS view_count
         FROM
         (
             SELECT action_date AS stat_date, article_id,
@@ -402,19 +403,22 @@ class WarehouseScripts:
 
     REFRESH_ADS_USER_DAY: Final[str] = """
         INSERT INTO warehouse.ads_user_day
-        SELECT action_date, user_id,
-               countIf(action_type = 'like'), countIf(action_type = 'collect'),
-               countIf(action_type = 'comment'), countIf(action_type = 'focus'),
-               countIf(action_type = 'view'), max(action_time), now()
-        FROM warehouse.dwd_user_action FINAL
-        WHERE toString(toYYYYMM(action_date)) = %(partition)s
-        GROUP BY action_date, user_id
+        -- 文章维度缺失说明文章已删除或从未入仓，这类浏览记录不再计入 view_count
+        SELECT ua.action_date, ua.user_id,
+               countIf(ua.action_type = 'like'), countIf(ua.action_type = 'collect'),
+               countIf(ua.action_type = 'comment'), countIf(ua.action_type = 'focus'),
+               countIf(ua.action_type = 'view' AND a.id > 0), max(ua.action_time), now()
+        FROM warehouse.dwd_user_action AS ua FINAL
+        LEFT JOIN warehouse.dwd_article_event AS a FINAL ON ua.article_id = a.id
+        WHERE toString(toYYYYMM(ua.action_date)) = %(partition)s
+        GROUP BY ua.action_date, ua.user_id
     """
     """刷新用户日活应用层表的 SQL"""
 
     REFRESH_ADS_USER_VIEW_ARTICLES: Final[str] = """
         INSERT INTO warehouse.ads_user_view_articles
-        SELECT v.user_id, v.article_id, ifNull(a.title, ''), v.view_count, now()
+        -- 内连接只保留能关联到文章维度的浏览记录，文章已删除或从未入仓的记录直接丢弃
+        SELECT v.user_id, v.article_id, a.title, v.view_count, now()
         FROM
         (
             SELECT user_id, article_id, count() AS view_count
@@ -422,7 +426,7 @@ class WarehouseScripts:
             WHERE action_type = 'view' AND article_id > 0
             GROUP BY user_id, article_id
         ) AS v
-        LEFT JOIN warehouse.dwd_article_event AS a FINAL ON v.article_id = a.id
+        INNER JOIN warehouse.dwd_article_event AS a FINAL ON v.article_id = a.id
     """
     """刷新用户浏览文章应用层表的 SQL"""
 
@@ -445,15 +449,17 @@ class WarehouseScripts:
         FROM warehouse.dim_user AS u FINAL
         LEFT JOIN
         (
-            SELECT user_id,
-                   countIf(action_type = 'like') AS total_likes_given,
-                   countIf(action_type = 'collect') AS total_collects_given,
-                   countIf(action_type = 'comment') AS total_comments,
-                   countIf(action_type = 'focus') AS total_focus,
-                   countIf(action_type = 'view') AS total_views_given,
-                   max(action_time) AS last_active_time
-            FROM warehouse.dwd_user_action FINAL
-            GROUP BY user_id
+            -- 文章维度缺失说明文章已删除或从未入仓，这类浏览记录不再计入 total_views_given
+            SELECT ua.user_id,
+                   countIf(ua.action_type = 'like') AS total_likes_given,
+                   countIf(ua.action_type = 'collect') AS total_collects_given,
+                   countIf(ua.action_type = 'comment') AS total_comments,
+                   countIf(ua.action_type = 'focus') AS total_focus,
+                   countIf(ua.action_type = 'view' AND a.id > 0) AS total_views_given,
+                   max(ua.action_time) AS last_active_time
+            FROM warehouse.dwd_user_action AS ua FINAL
+            LEFT JOIN warehouse.dwd_article_event AS a FINAL ON ua.article_id = a.id
+            GROUP BY ua.user_id
         ) AS g ON u.id = g.user_id
         LEFT JOIN
         (
