@@ -537,17 +537,16 @@ export class ArticleLogService {
       articles.map((article) => [article.id, article.title]),
     );
 
-    let totalViews = 0;
-    const list = results.map((doc) => {
-      const views = doc.views as number;
-      totalViews += views;
-      return {
+    // 文章已删除或查不到标题的浏览记录直接丢弃，与数仓 ADS 层口径保持一致
+    const list = results
+      .map((doc) => ({
         article_id: doc._id as number,
-        title: articleMap.get(doc._id as number) || Messages.UNKNOWN_ARTICLE,
-        views,
-      };
-    });
+        title: articleMap.get(doc._id as number) ?? "",
+        views: doc.views as number,
+      }))
+      .filter((item) => item.title !== "");
 
+    const totalViews = list.reduce((sum, item) => sum + item.views, 0);
     return { total_views: totalViews, articles: list };
   }
 
