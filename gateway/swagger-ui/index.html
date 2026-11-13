@@ -7,11 +7,19 @@
     <link rel="icon" type="image/png" href="/swagger-ui/favicon-32x32.png" />
     <link rel="stylesheet" type="text/css" href="/swagger-ui/swagger-ui.css" />
     <style>
+      :root {
+        /* 顶部导航实际高度，由脚本随换行同步，避免换行后侧边栏顶距错位 */
+        --navbar-h: 56px;
+      }
+
       /* ============== 全局重置 ============== */
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
       }
       body {
         font-family:
@@ -64,6 +72,33 @@
         color: #fff;
         border-color: #3b82f6;
         box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+      }
+      .swagger-navbar .nav-tabs {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .swagger-navbar .menu-toggle {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        padding: 0;
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        color: #64748b;
+        font-size: 15px;
+        line-height: 1;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .swagger-navbar .menu-toggle:hover {
+        background: #e5e7eb;
+        color: #374151;
       }
       .swagger-navbar .tab .dot {
         display: inline-block;
@@ -130,7 +165,7 @@
         box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
       }
       #swagger-ui {
-        min-height: calc(100vh - 56px);
+        min-height: calc(100vh - var(--navbar-h));
         padding: 0;
       }
 
@@ -583,7 +618,7 @@
       /* —— 应用主布局 (侧边栏 + 内容区) —— */
       .app-layout {
         display: flex;
-        min-height: calc(100vh - 56px);
+        min-height: calc(100vh - var(--navbar-h));
       }
 
       /* —— 左侧侧边栏 —— */
@@ -594,8 +629,8 @@
         border-right: 1px solid #eef0f4;
         overflow-y: auto;
         position: sticky;
-        top: 56px;
-        height: calc(100vh - 56px);
+        top: var(--navbar-h);
+        height: calc(100vh - var(--navbar-h));
         padding: 20px 12px;
         z-index: 10;
         display: none;
@@ -603,15 +638,43 @@
       .sidebar.visible {
         display: block;
       }
+      .sidebar-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0 8px 12px;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 8px;
+      }
+      .sidebar-close {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        flex-shrink: 0;
+        padding: 0;
+        background: #eef0f4;
+        border: none;
+        border-radius: 6px;
+        color: #64748b;
+        font-size: 15px;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .sidebar-backdrop {
+        display: none;
+      }
       .sidebar .sidebar-title {
         font-size: 12px;
         font-weight: 700;
         color: #9ca3af;
         text-transform: uppercase;
         letter-spacing: 1px;
-        padding: 0 8px 14px 8px;
-        border-bottom: 1px solid #e5e7eb;
-        margin-bottom: 8px;
+        padding: 0;
+        border-bottom: none;
+        margin-bottom: 0;
       }
       .sidebar .tag-item {
         display: flex;
@@ -726,25 +789,115 @@
         margin-right: 0 !important;
       }
 
-      /* —— 移动端适配 —— */
+      /* ============== 移动端适配 ============== */
       @media (max-width: 768px) {
+        /* —— 顶部导航：紧凑换行，服务 Tab 横向滚动，不再吃掉半屏 —— */
         .swagger-navbar {
-          padding: 10px 12px;
+          padding: 8px 12px;
+          gap: 8px;
+          position: static;
+        }
+        body.has-sidebar .menu-toggle {
+          display: inline-flex;
         }
         .swagger-navbar .brand {
           font-size: 15px;
-          margin-right: 8px;
+          margin-right: 0;
+          flex: 1 1 auto;
+          width: auto;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .swagger-navbar .nav-tabs {
+          order: 3;
+          flex: 1 0 100%;
           width: 100%;
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding-bottom: 2px;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+        .swagger-navbar .nav-tabs::-webkit-scrollbar {
+          display: none;
+        }
+        .swagger-navbar .nav-tabs .tab {
+          flex: 0 0 auto;
+          padding: 6px 12px;
+          white-space: nowrap;
         }
         .swagger-navbar .token-area {
+          order: 4;
+          flex: 1 0 100%;
           margin-left: 0;
           width: 100%;
         }
         .swagger-navbar .token-area input {
+          flex: 1 1 auto;
           width: 100%;
+          /* 16px 以上避免 iOS 聚焦输入框时自动放大页面 */
+          font-size: 16px;
         }
-        .sidebar {
-          display: none !important;
+        .swagger-navbar .export-md,
+        .swagger-navbar .theme-toggle {
+          order: 2;
+          margin-left: 0;
+          padding: 6px 10px;
+          font-size: 12px;
+          line-height: 1.4;
+          white-space: nowrap;
+        }
+        .swagger-navbar .theme-toggle {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 32px;
+          padding: 6px 8px;
+        }
+
+        /* —— 退出桌面布局的侧边栏，改为可滑出的抽屉 —— */
+        .sidebar.visible {
+          display: block;
+          position: fixed;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          height: 100vh;
+          height: 100dvh;
+          width: 82vw;
+          max-width: 320px;
+          padding: 16px 12px;
+          padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+          box-shadow: 4px 0 18px rgba(15, 23, 42, 0.18);
+          transform: translateX(-100%);
+          transition: transform 0.25s ease;
+          z-index: 200;
+        }
+        .sidebar.visible.mobile-open {
+          transform: translateX(0);
+        }
+        .sidebar.visible .sidebar-close {
+          display: inline-flex;
+        }
+        .sidebar-backdrop.show {
+          display: block;
+          position: fixed;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          background: rgba(15, 23, 42, 0.45);
+          z-index: 150;
+        }
+        body.drawer-open {
+          overflow: hidden;
+        }
+
+        /* —— 内容区间距 —— */
+        .main-content {
+          overflow: visible;
         }
         .swagger-ui .info {
           margin: 16px 12px !important;
@@ -753,9 +906,82 @@
         .swagger-ui .wrapper {
           padding: 0 12px !important;
         }
-        .sidebar-visible + .main-content .swagger-ui .info {
-          margin-left: 12px !important;
-          margin-right: 12px !important;
+        .sidebar.visible + .main-content .swagger-ui .info {
+          margin: 12px 12px !important;
+        }
+        .sidebar.visible + .main-content .swagger-ui .wrapper {
+          padding: 0 !important;
+        }
+        .sidebar.visible + .main-content .swagger-ui .opblock-tag-section {
+          margin: 10px 12px !important;
+        }
+
+        /* —— 参数表格、代码块：横向滚动或自动换行，避免被裁切 —— */
+        .swagger-ui .opblock-body,
+        .swagger-ui .markdown {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        .swagger-ui .parameters,
+        .swagger-ui .responses-table {
+          min-width: 460px;
+        }
+        .swagger-ui pre,
+        .swagger-ui .highlight-code pre,
+        .swagger-ui .markdown pre {
+          white-space: pre-wrap;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+        }
+        .swagger-ui .opblock-summary-path {
+          word-break: break-all;
+        }
+      }
+
+      /* —— 小屏手机竖屏 —— */
+      @media (max-width: 480px) {
+        .swagger-navbar .brand {
+          font-size: 14px;
+        }
+        .swagger-navbar .export-md,
+        .swagger-navbar .theme-toggle {
+          padding: 6px 8px;
+          font-size: 11px;
+        }
+        .swagger-ui .info {
+          margin: 12px 8px !important;
+          padding: 16px !important;
+        }
+        .swagger-ui .info .title {
+          font-size: 20px !important;
+        }
+        .swagger-ui .wrapper {
+          padding: 0 8px !important;
+        }
+        .sidebar.visible + .main-content .swagger-ui .info {
+          margin: 12px 8px !important;
+        }
+        .sidebar.visible + .main-content .swagger-ui .opblock-tag-section {
+          margin: 8px 8px !important;
+        }
+        .swagger-ui .opblock-tag {
+          padding: 12px !important;
+          font-size: 15px !important;
+        }
+        .swagger-ui .opblock .opblock-summary {
+          padding: 8px 10px !important;
+        }
+        .swagger-ui .opblock-summary-method {
+          min-width: 0 !important;
+          padding: 3px 7px !important;
+          font-size: 11px !important;
+        }
+        .swagger-ui .opblock-body {
+          padding: 0 10px 12px !important;
+        }
+        .swagger-ui .parameters,
+        .swagger-ui .responses-table {
+          min-width: 400px;
         }
       }
 
@@ -842,6 +1068,22 @@
       body[data-theme="dark"] .sidebar .tag-item.active .tag-count {
         background: #312e81;
         color: #818cf8;
+      }
+      body[data-theme="dark"] .sidebar-header {
+        border-bottom-color: #334155;
+      }
+      body[data-theme="dark"] .sidebar-close {
+        background: #334155;
+        color: #94a3b8;
+      }
+      body[data-theme="dark"] .swagger-navbar .menu-toggle {
+        background: #334155;
+        border-color: #475569;
+        color: #94a3b8;
+      }
+      body[data-theme="dark"] .swagger-navbar .menu-toggle:hover {
+        background: #475569;
+        color: #cbd5e1;
       }
 
       body[data-theme="dark"] .swagger-ui {
@@ -1055,31 +1297,42 @@
   <body>
     <!-- 自定义顶部 Tab 导航 -->
     <div class="swagger-navbar">
+      <button
+        class="menu-toggle"
+        id="menuToggle"
+        type="button"
+        aria-label="打开模块列表"
+        aria-controls="sidebar"
+        aria-expanded="false">
+        &#x2630;
+      </button>
       <span class="brand">Swagger 文档</span>
-      <button
-        class="tab active"
-        data-url="/swagger/spring.json"
-        data-name="Spring 服务">
-        <span class="dot ok"></span>Spring 服务
-      </button>
-      <button
-        class="tab"
-        data-url="/swagger/gozero.json"
-        data-name="GoZero 服务">
-        <span class="dot ok"></span>GoZero 服务
-      </button>
-      <button
-        class="tab"
-        data-url="/swagger/nestjs.json"
-        data-name="NestJS 服务">
-        <span class="dot ok"></span>NestJS 服务
-      </button>
-      <button
-        class="tab"
-        data-url="/swagger/fastapi.json"
-        data-name="FastAPI 服务">
-        <span class="dot ok"></span>FastAPI 服务
-      </button>
+      <div class="nav-tabs">
+        <button
+          class="tab active"
+          data-url="/swagger/spring.json"
+          data-name="Spring 服务">
+          <span class="dot ok"></span>Spring 服务
+        </button>
+        <button
+          class="tab"
+          data-url="/swagger/gozero.json"
+          data-name="GoZero 服务">
+          <span class="dot ok"></span>GoZero 服务
+        </button>
+        <button
+          class="tab"
+          data-url="/swagger/nestjs.json"
+          data-name="NestJS 服务">
+          <span class="dot ok"></span>NestJS 服务
+        </button>
+        <button
+          class="tab"
+          data-url="/swagger/fastapi.json"
+          data-name="FastAPI 服务">
+          <span class="dot ok"></span>FastAPI 服务
+        </button>
+      </div>
       <div class="token-area">
         <label>Token</label>
         <input
@@ -1098,12 +1351,22 @@
     </div>
     <div class="app-layout">
       <nav class="sidebar" id="sidebar">
-        <div class="sidebar-title">模块列表</div>
+        <div class="sidebar-header">
+          <div class="sidebar-title">模块列表</div>
+          <button
+            class="sidebar-close"
+            id="sidebarClose"
+            type="button"
+            aria-label="关闭模块列表">
+            &#x2715;
+          </button>
+        </div>
         <div id="sidebarTagList"></div>
       </nav>
       <div class="main-content">
         <div id="swagger-ui"></div>
       </div>
+      <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
     </div>
 
     <script src="/swagger-ui/swagger-ui-bundle.js" charset="UTF-8"></script>
@@ -1150,6 +1413,54 @@
         var sidebarTagList = document.getElementById("sidebarTagList");
         var currentToken = "";
         var scrollTimer = null;
+        var navbar = document.querySelector(".swagger-navbar");
+        var backdrop = document.getElementById("sidebarBackdrop");
+        var menuToggle = document.getElementById("menuToggle");
+        var sidebarClose = document.getElementById("sidebarClose");
+
+        // 顶部导航换行后高度会变，同步给 CSS 变量供侧边栏与内容区使用
+        function syncNavbarHeight() {
+          if (!navbar) return;
+          document.documentElement.style.setProperty(
+            "--navbar-h",
+            navbar.offsetHeight + "px",
+          );
+        }
+
+        function isMobileView() {
+          return window.matchMedia("(max-width: 768px)").matches;
+        }
+
+        // 移动端：侧边栏以抽屉形式滑出
+        function openDrawer() {
+          if (!isMobileView() || !sidebar.classList.contains("visible")) return;
+          sidebar.classList.add("mobile-open");
+          if (backdrop) backdrop.classList.add("show");
+          if (menuToggle) menuToggle.setAttribute("aria-expanded", "true");
+          document.body.classList.add("drawer-open");
+        }
+
+        function closeDrawer() {
+          sidebar.classList.remove("mobile-open");
+          if (backdrop) backdrop.classList.remove("show");
+          if (menuToggle) menuToggle.setAttribute("aria-expanded", "false");
+          document.body.classList.remove("drawer-open");
+        }
+
+        syncNavbarHeight();
+        if (navbar && typeof ResizeObserver !== "undefined") {
+          new ResizeObserver(syncNavbarHeight).observe(navbar);
+        }
+        window.addEventListener("resize", function () {
+          syncNavbarHeight();
+          if (!isMobileView()) closeDrawer();
+        });
+        if (menuToggle) menuToggle.addEventListener("click", openDrawer);
+        if (sidebarClose) sidebarClose.addEventListener("click", closeDrawer);
+        if (backdrop) backdrop.addEventListener("click", closeDrawer);
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" || e.keyCode === 27) closeDrawer();
+        });
 
         // 从 paths 中收集所有 unique tag（备用）
         function collectTagsFromPaths(paths) {
@@ -1188,10 +1499,13 @@
 
           if (tags.length === 0) {
             sidebar.classList.remove("visible");
+            closeDrawer();
+            document.body.classList.remove("has-sidebar");
             return;
           }
 
           sidebar.classList.add("visible");
+          document.body.classList.add("has-sidebar");
           tags.forEach(function (tag) {
             var tagName = typeof tag === "string" ? tag : tag.name;
             if (!tagName) return;
@@ -1239,6 +1553,8 @@
                 el.classList.remove("active");
               });
               btn.classList.add("active");
+              // 移动端先收起抽屉再滚动，避免滚动被 body 的 overflow 锁住
+              closeDrawer();
               scrollToTag(tagName);
             });
             sidebarTagList.appendChild(btn);
@@ -1313,6 +1629,9 @@
             '<div style="padding: 40px; text-align: center; color: #666; font-size: 16px;">加载中...</div>';
           sidebar.classList.remove("visible");
           sidebarTagList.innerHTML = "";
+          closeDrawer();
+          document.body.classList.remove("has-sidebar");
+          syncNavbarHeight();
 
           if (currentUI) {
             try {
@@ -1332,6 +1651,8 @@
             })
             .catch(function () {
               sidebar.classList.remove("visible");
+              closeDrawer();
+              document.body.classList.remove("has-sidebar");
             });
 
           currentUI = SwaggerUIBundle({
