@@ -2,7 +2,7 @@
   "openapi" : "3.1.0",
   "info" : {
     "title" : "Spring部分的Swagger文档",
-    "description" : "这是项目的Spring部分的Swagger文档",
+    "description" : "**服务职责**：用户与登录认证、文章与分类、评论、点赞、收藏、关注，以及供 FastAPI Agent 调用的 SQL 工具和定时任务手动触发入口；对外统一经 APISIX 网关（8080）访问。\n\n**统一响应**：所有接口返回 `{\"code\": 200, \"msg\": \"...\", \"data\": ...}`，code 与 HTTP 状态码一致；无返回数据的接口 data 为 null。\n\n**字段命名**：请求参数、响应字段与示例统一 snake_case，与网关及下游服务的约定保持一致。\n\n**认证方式**：需登录的接口由网关透传的用户身份校验，未登录或令牌失效返回 401；服务间调用使用 X-Internal-Token 请求头。\n\n**文档来源**：springdoc 从控制器注解生成（OpenAPI 3.1），docs/openapi.json 与 openapi.yaml 为离线产物。\n",
     "version" : "1.0.0"
   },
   "tags" : [
@@ -739,7 +739,7 @@
           "文章模块"
         ],
         "summary" : "增加文章阅读量",
-        "description" : "增加文章阅读量",
+        "description" : "将指定文章的阅读量加一并写入浏览日志，同时触发下游服务的浏览数据同步；同一用户重复调用会重复累加",
         "operationId" : "addViewArticle",
         "parameters" : [
           {
@@ -3415,7 +3415,7 @@
           "评论模块"
         ],
         "summary" : "根据id查询评论",
-        "description" : "根据id查询评论",
+        "description" : "按评论ID返回单条评论详情，包含评论内容、所属文章、评论用户与评分信息；评论不存在时返回 404",
         "operationId" : "getCommentsById",
         "parameters" : [
           {
@@ -3499,7 +3499,7 @@
           "评论模块"
         ],
         "summary" : "根据用户id分页获取评论",
-        "description" : "根据用户id分页获取评论",
+        "description" : "分页返回指定用户发表的评论列表，含评论内容与所属文章信息；page 从 1 开始，size 为每页条数",
         "operationId" : "listCommentsByUserId",
         "parameters" : [
           {
@@ -3690,7 +3690,7 @@
           "评论模块"
         ],
         "summary" : "根据文章id分页获取评论",
-        "description" : "根据文章id分页获取评论",
+        "description" : "分页返回指定文章的评论，支持按创建时间或评分排序；排序参数非法时返回 400",
         "operationId" : "listCommentsByArticleId",
         "parameters" : [
           {
@@ -3762,7 +3762,7 @@
           "评论模块"
         ],
         "summary" : "根据文章id获取AI评论",
-        "description" : "根据文章id获取AI评论",
+        "description" : "返回指定文章下的全部 AI 评论（由 FastAPI 生成并写入），不含普通用户评论；分页列表请用 /comments/article/{id}",
         "operationId" : "listAICommentsByArticleId",
         "parameters" : [
           {
@@ -7379,12 +7379,14 @@
         ]
       },
       "SyncPage" : {
+        "description" : "数仓同步的分页结果，按增量水位线分页返回",
         "properties" : {
           "list" : {
             "type" : [
               "array",
               "null"
             ],
+            "description" : "当前页的数据行，每行为一张表的字段到取值的映射",
             "items" : {
               "type" : "object",
               "additionalProperties" : { }
@@ -7395,27 +7397,31 @@
               "integer",
               "null"
             ],
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "当前页码，从 1 开始"
           },
           "size" : {
             "type" : [
               "integer",
               "null"
             ],
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "每页条数"
           },
           "has_more" : {
             "type" : [
               "boolean",
               "null"
-            ]
+            ],
+            "description" : "是否还有下一页，可据此继续翻页"
           },
           "upper_watermark" : {
             "type" : [
               "string",
               "null"
             ],
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "本次返回数据的上界水位时间，下次增量同步以它为 updatedAfter"
           }
         }
       },

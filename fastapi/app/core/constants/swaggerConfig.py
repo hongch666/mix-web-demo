@@ -10,7 +10,24 @@ class SwaggerConfig:
 
     SWAGGER_TITLE: str = "FastAPI部分的Swagger文档"
     """文档标题"""
-    SWAGGER_DESCRIPTION: str = "这是项目的FastAPI部分的Swagger文档"
+    SWAGGER_DESCRIPTION: str = (
+        "**服务职责**：AI 聊天（含 SSE 流式）、LangChain RAG 与 Agent 工具调用、知识图谱查询、"
+        "向量搜索增强、文章与用户行为数据分析（ClickHouse）、Excel 导出与定时任务；"
+        "对外统一经 APISIX 网关（8080）访问。\n"
+        "\n"
+        '**统一响应**：除流式接口外，所有接口返回 `{"code": 200, "msg": "...", "data": ...}`，'
+        "code 与 HTTP 状态码一致；无返回数据的接口 data 为 null。\n"
+        "\n"
+        "**流式接口**：/chat/stream 的 200 响应同时声明 text/event-stream 与 JSON 视图，"
+        "文档中可展开查看帧结构。\n"
+        "\n"
+        "**字段命名**：请求与响应字段统一 snake_case。\n"
+        "\n"
+        "**认证方式**：需登录的接口由网关透传的用户身份校验，未登录或令牌失效返回 401；"
+        "服务间调用使用 X-Internal-Token 请求头。\n"
+        "\n"
+        "**文档来源**：由 FastAPI 应用内 OpenAPI 描述离线导出（OpenAPI 3.1），模型取自 Pydantic。"
+    )
     """文档描述"""
     SWAGGER_VERSION: str = "1.0.0"
     """接口版本号"""

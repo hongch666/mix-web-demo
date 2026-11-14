@@ -62,6 +62,20 @@ NON_HOISTED_MEDIA_TYPES = ("text/event-stream",)
 # 这里统一固定，顺带消除 swagger2openapi 版本差异造成的产物抖动
 OPENAPI_VERSION = "3.1.0"
 
+# 文档描述：服务定位、统一响应、命名与认证约定，展示在 Apifox 项目文档页顶部
+# .api 里的 title/desc 只给开发者看，产物里的 info 由这里统一替换
+INFO_DESCRIPTION = """**服务职责**：文章搜索（Elasticsearch 关键词 + pgvector 语义 + Neo4j 图谱融合）、用户实时聊天（WebSocket）与消息通知（SSE）、ES 数据同步任务、SQL 执行工具；对外统一经 APISIX 网关（8080）访问。
+
+**统一响应**：所有 HTTP 接口返回 `{"code": 200, "msg": "...", "data": ...}`，code 与 HTTP 状态码一致；无返回数据的接口 data 为 null。
+
+**实时接口**：聊天走 WebSocket（OpenAPI 无法表达，单独的 websocket.json 同步到 Apifox）；SSE 接口的 200 响应同时声明 text/event-stream 与 JSON 视图，便于在文档中查看帧结构。
+
+**字段命名**：请求与响应字段统一 snake_case。
+
+**认证方式**：需登录的接口由网关透传的用户身份校验，未登录或令牌失效返回 401；服务间调用使用 X-Internal-Token 请求头。
+
+**文档来源**：goctl 由 api 定义生成 swagger 后转换为 OpenAPI 3.1，docs/openapi.json 与 openapi.yaml 为离线产物。"""
+
 
 def mark_schema_nullable(schema):
     """递归标记 schema 里可空的属性
@@ -179,7 +193,7 @@ def add_chinese_tags_to_dict(swagger_data):
     if "info" not in swagger_data:
         swagger_data["info"] = {}
     swagger_data["info"]["title"] = "GoZero部分的Swagger文档"
-    swagger_data["info"]["description"] = "这是项目的GoZero部分的Swagger文档"
+    swagger_data["info"]["description"] = INFO_DESCRIPTION
     swagger_data["info"]["version"] = "1.0.0"
     swagger_data["info"]["x-author"] = "hongch666"
 
@@ -315,6 +329,10 @@ def wrap_unified_responses(swagger_data):
                     payload_schema
                 ):
                     payload_schema = dict(EMPTY_DATA_SCHEMA)
+                elif "description" not in payload_schema:
+                    # data 的内联结构没有说明时补一句，避免 Apifox 里该字段显示为空说明；
+                    # 复制而不是原地改，properties["data"] 可能是多个接口共用的同一个对象
+                    payload_schema = {**payload_schema, "description": "响应数据"}
 
                 json_media["schema"] = {
                     "type": "object",

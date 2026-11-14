@@ -14,7 +14,7 @@ router: APIRouter = APIRouter(
 @router.get(
     "/fastapi",
     summary="测试FastAPI服务",
-    description="测试FastAPI服务",
+    description="验证 FastAPI 服务是否正常运行，成功时返回欢迎文案 Hello, I am FastAPI!",
     response_model=ApiResponse[str],
 )
 @log("测试FastAPI服务")

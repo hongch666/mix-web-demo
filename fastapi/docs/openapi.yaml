@@ -1,7 +1,24 @@
 openapi: 3.1.0
 info:
   title: FastAPI部分的Swagger文档
-  description: 这是项目的FastAPI部分的Swagger文档
+  description: '**服务职责**：AI 聊天（含 SSE 流式）、LangChain RAG 与 Agent 工具调用、知识图谱查询、向量搜索增强、文章与用户行为数据分析（ClickHouse）、Excel
+    导出与定时任务；对外统一经 APISIX 网关（8080）访问。
+
+
+    **统一响应**：除流式接口外，所有接口返回 `{"code": 200, "msg": "...", "data": ...}`，code 与 HTTP
+    状态码一致；无返回数据的接口 data 为 null。
+
+
+    **流式接口**：/chat/stream 的 200 响应同时声明 text/event-stream 与 JSON 视图，文档中可展开查看帧结构。
+
+
+    **字段命名**：请求与响应字段统一 snake_case。
+
+
+    **认证方式**：需登录的接口由网关透传的用户身份校验，未登录或令牌失效返回 401；服务间调用使用 X-Internal-Token 请求头。
+
+
+    **文档来源**：由 FastAPI 应用内 OpenAPI 描述离线导出（OpenAPI 3.1），模型取自 Pydantic。'
   version: 1.0.0
 paths:
   /analyze/top10:
@@ -69,7 +86,7 @@ paths:
       tags:
       - 文章分析模块
       summary: 获取文章统计信息
-      description: 获取文章统计信息
+      description: 返回平台文章的阅读量、文章数、活跃作者数、点赞与收藏的汇总值及平均值
       operationId: get_article_statistics_analyze_statistics_get
       responses:
         '200':
@@ -129,7 +146,7 @@ paths:
       tags:
       - API日志分析模块
       summary: 获取所有接口的平均响应速度
-      description: 获取所有接口的平均响应速度
+      description: 返回各接口的平均响应耗时与调用次数，数据来自 ClickHouse 的 API 日志聚合，未命中缓存时回退到 NestJS 实时查询
       operationId: get_api_average_speed_analyze_api_average_speed_get
       responses:
         '200':
@@ -149,7 +166,7 @@ paths:
       tags:
       - API日志分析模块
       summary: 获取接口调用次数
-      description: 获取接口调用次数
+      description: 返回各接口的调用次数（同时带出平均响应耗时），数据来源与平均响应速度接口一致
       operationId: get_called_count_apis_analyze_api_called_count_get
       responses:
         '200':
@@ -361,7 +378,7 @@ paths:
       tags:
       - 测试模块
       summary: 测试FastAPI服务
-      description: 测试FastAPI服务
+      description: 验证 FastAPI 服务是否正常运行，成功时返回欢迎文案 Hello, I am FastAPI!
       operationId: testFastapi_test_fastapi_get
       responses:
         '200':

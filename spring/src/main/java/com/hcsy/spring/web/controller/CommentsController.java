@@ -116,7 +116,8 @@ public class CommentsController {
      * GET /comments/{id} 接口，按ID返回评论详情，不存在时返回404
      */
     @GetMapping("/{id}")
-    @Operation(summary = "根据id查询评论", description = "根据id查询评论")
+    @Operation(summary = "根据id查询评论",
+        description = "按评论ID返回单条评论详情，包含评论内容、所属文章、评论用户与评分信息；评论不存在时返回 404")
     @ApiLog("根据id查询评论")
     public Mono<Result<CommentsVO>> getCommentsById(@PathVariable Long id) {
         return commentsService.getCommentDetail(id)
@@ -154,7 +155,8 @@ public class CommentsController {
      * GET /comments/user/{id} 接口，分页返回指定用户发表的评论列表
      */
     @GetMapping("/user/{id}")
-    @Operation(summary = "根据用户id分页获取评论", description = "根据用户id分页获取评论")
+    @Operation(summary = "根据用户id分页获取评论",
+        description = "分页返回指定用户发表的评论列表，含评论内容与所属文章信息；page 从 1 开始，size 为每页条数")
     @ApiLog("根据用户id分页获取评论")
     public Mono<Result<PageVO<CommentsVO>>> listCommentsByUserId(
         @PathVariable Long id,
@@ -169,7 +171,8 @@ public class CommentsController {
      * GET /comments/article/{id} 接口，分页返回指定文章的评论，支持按创建时间或评分排序，排序参数非法时返回400
      */
     @GetMapping("/article/{id}")
-    @Operation(summary = "根据文章id分页获取评论", description = "根据文章id分页获取评论")
+    @Operation(summary = "根据文章id分页获取评论",
+        description = "分页返回指定文章的评论，支持按创建时间或评分排序；排序参数非法时返回 400")
     @ApiLog("根据文章id分页获取评论")
     public Mono<Result<PageVO<CommentsVO>>> listCommentsByArticleId(
         @PathVariable Long id,
@@ -188,7 +191,8 @@ public class CommentsController {
      * GET /comments/article/ai/{id} 接口，返回指定文章的全部AI评论列表
      */
     @GetMapping("/article/ai/{id}")
-    @Operation(summary = "根据文章id获取AI评论", description = "根据文章id获取AI评论")
+    @Operation(summary = "根据文章id获取AI评论",
+        description = "返回指定文章下的全部 AI 评论（由 FastAPI 生成并写入），不含普通用户评论；分页列表请用 /comments/article/{id}")
     @ApiLog("根据文章id获取AI评论")
     public Mono<Result<List<AICommentsVO>>> listAICommentsByArticleId(@PathVariable Long id) {
         return commentsService.listAICommentDetailsByArticleId(id).map(Result::success);

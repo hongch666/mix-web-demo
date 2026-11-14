@@ -6,8 +6,18 @@ export class SwaggerConfig {
 
   /** 文档标题 */
   static readonly SWAGGER_TITLE = "NestJS部分的Swagger文档";
-  /** 文档描述 */
-  static readonly SWAGGER_DESCRIPTION = "这是项目的NestJS部分的Swagger文档";
+  /** 文档描述：服务定位、统一响应、命名与认证约定，展示在 Apifox 项目文档页顶部 */
+  static readonly SWAGGER_DESCRIPTION = [
+    "**服务职责**：文章操作日志与 API 日志的查询分析、Word/PDF 下载、文件上传、GitHub OAuth 回调、邮件发送、MongoDB 与 SQL 只读工具、定时任务管理、用户表格列设置；对外统一经 APISIX 网关（8080）访问。",
+    "",
+    '**统一响应**：除 OAuth 重定向类接口外，所有接口返回 `{"code": 200, "msg": "...", "data": ...}`，code 与 HTTP 状态码一致；无返回数据的接口 data 为 null。',
+    "",
+    "**字段命名**：路径参数、查询参数与响应字段统一 snake_case，并与路由声明保持一致。",
+    "",
+    "**认证方式**：需登录的接口由网关透传的用户身份校验，未登录或令牌失效返回 401；服务间调用使用 X-Internal-Token 请求头。",
+    "",
+    "**文档来源**：@nestjs/swagger 从控制器与 DTO 生成（OpenAPI 3.1），内联请求与响应在构建阶段提升为 components.schemas 下以 Nestjs 开头的具名模型。",
+  ].join("\n");
   /** 接口版本号 */
   static readonly SWAGGER_VERSION = "1.0.0";
   /** 产物的 OpenAPI 规范版本，3.1 才能表达空值响应 */

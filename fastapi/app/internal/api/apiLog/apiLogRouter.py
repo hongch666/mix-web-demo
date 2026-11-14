@@ -16,7 +16,7 @@ router: APIRouter = APIRouter(
 @router.get(
     "/average-speed",
     summary="获取所有接口的平均响应速度",
-    description="获取所有接口的平均响应速度",
+    description="返回各接口的平均响应耗时与调用次数，数据来自 ClickHouse 的 API 日志聚合，未命中缓存时回退到 NestJS 实时查询",
     response_model=ApiResponse[list[ApiLogAverageResponse]],
 )
 @log("获取所有接口的平均响应速度")
@@ -35,7 +35,7 @@ async def get_api_average_speed(
 @router.get(
     "/called-count",
     summary="获取接口调用次数",
-    description="获取接口调用次数",
+    description="返回各接口的调用次数（同时带出平均响应耗时），数据来源与平均响应速度接口一致",
     response_model=ApiResponse[list[ApiLogCalledCountResponse]],
 )
 @log("获取接口调用次数")

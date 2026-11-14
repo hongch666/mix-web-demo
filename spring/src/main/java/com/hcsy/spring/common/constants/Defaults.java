@@ -94,8 +94,18 @@ public class Defaults {
     public static final String SWAGGER_TITLE = "Spring部分的Swagger文档";
     /** 接口版本号 */
     public static final String SWAGGER_VERSION = "1.0.0";
-    /** 文档描述 */
-    public static final String SWAGGER_DESC = "这是项目的Spring部分的Swagger文档";
+    /** 文档描述：服务定位、统一响应、命名与认证约定，展示在 Apifox 项目文档页顶部 */
+    public static final String SWAGGER_DESC = """
+        **服务职责**：用户与登录认证、文章与分类、评论、点赞、收藏、关注，以及供 FastAPI Agent 调用的 SQL 工具和定时任务手动触发入口；对外统一经 APISIX 网关（8080）访问。
+
+        **统一响应**：所有接口返回 `{"code": 200, "msg": "...", "data": ...}`，code 与 HTTP 状态码一致；无返回数据的接口 data 为 null。
+
+        **字段命名**：请求参数、响应字段与示例统一 snake_case，与网关及下游服务的约定保持一致。
+
+        **认证方式**：需登录的接口由网关透传的用户身份校验，未登录或令牌失效返回 401；服务间调用使用 X-Internal-Token 请求头。
+
+        **文档来源**：springdoc 从控制器注解生成（OpenAPI 3.1），docs/openapi.json 与 openapi.yaml 为离线产物。
+        """;
     /** 文档中服务地址的固定前缀 */
     public static final String SWAGGER_URL_PREFIX = "http://localhost:";
 
