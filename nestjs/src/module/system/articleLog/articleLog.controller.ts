@@ -140,12 +140,13 @@ export class ArticleLogController {
   }
 
   /**
-   * 获取所有去重搜索关键词，供 FastAPI 词云功能内部远程调用
+   * 获取所有去重搜索关键词及搜索次数，供 FastAPI 词云功能内部远程调用
    */
   @Get("search-keywords")
   @ApiOperation({
     summary: "获取搜索关键词",
-    description: "获取所有去重的搜索关键词，供 FastAPI 词云功能内部远程调用",
+    description:
+      "获取所有去重的搜索关键词及搜索次数（按次数降序），供 FastAPI 词云功能内部远程调用",
   })
   @RequireInternalToken()
   @ApiResponseModel({ data: SwaggerSearchKeywordsData })
