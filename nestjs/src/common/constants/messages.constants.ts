@@ -736,9 +736,6 @@ export class Messages {
   /** 未知异常的兜底文案 */
   static readonly UNKNOWN_ERROR = "未知错误";
 
-  /** 文章信息缺失时的兜底名称 */
-  static readonly UNKNOWN_ARTICLE = "未知文章";
-
   // ===== 日志模块消息 =====
 
   /** 文章日志记录不存在的错误消息 */
