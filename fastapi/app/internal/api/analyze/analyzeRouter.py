@@ -75,7 +75,7 @@ async def get_excel(
 @router.get(
     "/statistics",
     summary="获取文章统计信息",
-    description="获取文章统计信息",
+    description="返回平台文章的阅读量、文章数、活跃作者数、点赞与收藏的汇总值及平均值",
     response_model=ApiResponse[ArticleStatisticsResponse],
 )
 @log("获取文章统计信息")
