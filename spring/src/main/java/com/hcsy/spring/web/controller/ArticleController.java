@@ -173,7 +173,8 @@ public class ArticleController {
      * PUT /articles/view/{id} 接口，将指定文章阅读量加一并触发浏览日志与下游同步
      */
     @PutMapping("/view/{id}")
-    @Operation(summary = "增加文章阅读量", description = "增加文章阅读量")
+    @Operation(summary = "增加文章阅读量",
+        description = "将指定文章的阅读量加一并写入浏览日志，同时触发下游服务的浏览数据同步；同一用户重复调用会重复累加")
     @ArticleSync(action = SyncAction.VIEW, description = "浏览了1篇文章")
     @ApiLog("增加文章阅读量")
     public Mono<Result<Void>> addViewArticle(@PathVariable Long id) {
