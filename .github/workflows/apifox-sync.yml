@@ -1,0 +1,318 @@
+name: Apifox Sync
+
+# 触发：
+#   push prod 且任一服务的 docs/openapi.json | openapi.yaml 变更
+#                   → 只同步「文档真正变了的服务」的接口（脚本/工作流本身改动时全量四服务）
+#   push prod 且 README.md 变更
+#                   → 只同步 README 文档，与接口同步分别判断、互不牵连
+#   workflow_dispatch → 手工指定服务、只校验不写入（dry-run）、或强制同步 README
+#   main 为开发分支，不触发（中间态文档不推送，只在合并到 prod 后同步一次）
+#
+# 接口与 README 是两条独立通道，任一侧变更只跑对应那一步：
+#   接口走 Apifox 开放 API（import-openapi），由 scripts/apifox-sync.sh 执行（固定 --no-readme）
+#   README 走 Apifox CLI 的 doc update，由 scripts/apifox-readme-sync.sh 执行
+#
+# 只读取仓库内的静态产物，不生成文档：产物由 ./mix swag 在本地生成后与服务代码同一次提交，
+# 所以这里不需要 Maven / Go / Bun / uv，只要 Node（Apifox CLI：WebSocket 接口、模型引用自检、
+# README 文档）与 python3（责任人差集、模型指纹、引用自检），GitHub 托管 runner 自带 python3
+#
+# 配置来源（与本地根目录 .env 的 APIFOX_* 一一对应，只是把机密项放进 Secret）：
+#   仓库 Secret   APIFOX_ACCESS_TOKEN                      ← .env 的 APIFOX_ACCESS_TOKEN
+#   仓库 Variable APIFOX_PROJECT_ID / APIFOX_FOLDER_<服务> / APIFOX_SCHEMA_FOLDER_<服务> /
+#                 APIFOX_README_DOC_ID                    ← .env 里同名变量
+#   详见 README「Apifox 文档同步 → GitHub Actions 自动同步」
+on:
+  push:
+    branches: [prod]
+    paths:
+      - 'spring/docs/openapi.json'
+      - 'spring/docs/openapi.yaml'
+      - 'gozero/app/docs/openapi.json'
+      - 'gozero/app/docs/openapi.yaml'
+      - 'gozero/app/docs/websocket.json'
+      - 'nestjs/docs/openapi.json'
+      - 'nestjs/docs/openapi.yaml'
+      - 'fastapi/docs/openapi.json'
+      - 'fastapi/docs/openapi.yaml'
+      - 'README.md'
+      # 同步脚本或工作流自身改动时，重新跑一次，避免改动只在本地生效
+      - 'scripts/apifox-sync.sh'
+      - 'scripts/apifox-readme-sync.sh'
+      - 'scripts/apifox-schema-refs.py'
+      - '.github/workflows/apifox-sync.yml'
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 只同步指定服务（空格分隔：spring gozero nestjs fastapi），留空不同步接口
+        required: false
+        type: string
+      dry_run:
+        description: 只校验产物与配置，不发起导入请求
+        required: false
+        type: boolean
+        default: false
+      sync_readme:
+        description: 强制同步 README 文档（平时由 README.md 变更自动判断）
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Apifox 同一项目不允许并发导入：全局串行，不做 cancel-in-progress
+concurrency:
+  group: apifox-sync
+  cancel-in-progress: false
+
+env:
+  # 令牌只注入到 sync 任务（见该任务的 env），变更检测任务拿不到它
+  # 这里只映射「必须按服务区分」的目录 ID 与 README 目标文档（其余行为开关走脚本默认值，
+  # 见文件末尾注释）；变量未创建时 GitHub 解析为空串，脚本会退回内置默认值
+  # 各服务目标接口目录（留空导入项目根目录）
+  APIFOX_FOLDER_SPRING: ${{ vars.APIFOX_FOLDER_SPRING }}
+  APIFOX_FOLDER_GOZERO: ${{ vars.APIFOX_FOLDER_GOZERO }}
+  APIFOX_FOLDER_NESTJS: ${{ vars.APIFOX_FOLDER_NESTJS }}
+  APIFOX_FOLDER_FASTAPI: ${{ vars.APIFOX_FOLDER_FASTAPI }}
+  # 各服务数据模型目录：全量对齐下必须按服务分开，共用目录会互删模型导致 $ref 断链
+  APIFOX_SCHEMA_FOLDER_SPRING: ${{ vars.APIFOX_SCHEMA_FOLDER_SPRING }}
+  APIFOX_SCHEMA_FOLDER_GOZERO: ${{ vars.APIFOX_SCHEMA_FOLDER_GOZERO }}
+  APIFOX_SCHEMA_FOLDER_NESTJS: ${{ vars.APIFOX_SCHEMA_FOLDER_NESTJS }}
+  APIFOX_SCHEMA_FOLDER_FASTAPI: ${{ vars.APIFOX_SCHEMA_FOLDER_FASTAPI }}
+  # README 目标 Markdown 文档
+  APIFOX_README_DOC_ID: ${{ vars.APIFOX_README_DOC_ID }}
+  # CLI 已在工作流内装好，禁止脚本再自行 npm 安装
+  APIFOX_CLI_AUTO_INSTALL: 'false'
+  # 可选开关不映射，需要时按下面格式加一行再到仓库建同名 Variable：
+  #   APIFOX_DELETE_UNMATCHED_RESOURCES: ${{ vars.APIFOX_DELETE_UNMATCHED_RESOURCES }}
+  #   APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR: ${{ vars.APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR }}
+  #   APIFOX_SCHEMA_OVERWRITE_BEHAVIOR: ${{ vars.APIFOX_SCHEMA_OVERWRITE_BEHAVIOR }}
+  #   APIFOX_VERIFY_SCHEMA_REFS: ${{ vars.APIFOX_VERIFY_SCHEMA_REFS }}
+  #   APIFOX_MAINTAINER: ${{ vars.APIFOX_MAINTAINER }}
+  #   APIFOX_README_BRANCH / APIFOX_BRANCH_ID / APIFOX_MODULE_ID
+  #   APIFOX_BASE_URL / APIFOX_API_VERSION / APIFOX_LOCALE
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 变更检测：分别算出「接口要同步哪些服务」与「README 是否要同步」
+  # ---------------------------------------------------------------------------
+  changes:
+    name: 变更检测
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      services: ${{ steps.plan.outputs.services }}
+      count: ${{ steps.plan.outputs.count }}
+      readme: ${{ steps.plan.outputs.readme }}
+      dry_run: ${{ steps.plan.outputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # 只用 paths-filter 判断「哪个服务的文档变了、README 有没有变」，push 之外的场景不跑
+      - id: filter
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            spring:
+              - 'spring/docs/openapi.json'
+              - 'spring/docs/openapi.yaml'
+            gozero:
+              - 'gozero/app/docs/openapi.json'
+              - 'gozero/app/docs/openapi.yaml'
+              - 'gozero/app/docs/websocket.json'
+            nestjs:
+              - 'nestjs/docs/openapi.json'
+              - 'nestjs/docs/openapi.yaml'
+            fastapi:
+              - 'fastapi/docs/openapi.json'
+              - 'fastapi/docs/openapi.yaml'
+            shared:
+              - 'scripts/apifox-sync.sh'
+              - 'scripts/apifox-schema-refs.py'
+              - '.github/workflows/apifox-sync.yml'
+            readme:
+              - 'README.md'
+              - 'scripts/apifox-readme-sync.sh'
+
+      - id: plan
+        name: 计算本次需要同步的内容
+        env:
+          MANUAL: ${{ inputs.services }}
+          FORCE_README: ${{ inputs.sync_readme }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          SHARED: ${{ steps.filter.outputs.shared }}
+          CHANGED_README: ${{ steps.filter.outputs.readme }}
+          CHANGED_SPRING: ${{ steps.filter.outputs.spring }}
+          CHANGED_GOZERO: ${{ steps.filter.outputs.gozero }}
+          CHANGED_NESTJS: ${{ steps.filter.outputs.nestjs }}
+          CHANGED_FASTAPI: ${{ steps.filter.outputs.fastapi }}
+        run: |
+          set -euo pipefail
+          list=()
+          if [ -n "${MANUAL:-}" ]; then
+            # 手工触发：以输入为准
+            for svc in $MANUAL; do
+              case "$svc" in
+                spring|gozero|nestjs|fastapi) list+=("$svc") ;;
+                *) echo "::error::未知服务: $svc（可选 spring gozero nestjs fastapi）"; exit 1 ;;
+              esac
+            done
+          elif [ "${SHARED:-false}" = "true" ]; then
+            # 接口同步脚本本身改了：四个服务全量重跑
+            list=(spring gozero nestjs fastapi)
+          else
+            if [ "${CHANGED_SPRING:-false}" = "true" ]; then list+=(spring); fi
+            if [ "${CHANGED_GOZERO:-false}" = "true" ]; then list+=(gozero); fi
+            if [ "${CHANGED_NESTJS:-false}" = "true" ]; then list+=(nestjs); fi
+            if [ "${CHANGED_FASTAPI:-false}" = "true" ]; then list+=(fastapi); fi
+          fi
+
+          # README 与接口独立判断：README.md（或 readme 同步脚本）变了才跑，手工可强制
+          readme="false"
+          if [ "${CHANGED_README:-false}" = "true" ] || [ "${FORCE_README:-false}" = "true" ]; then
+            readme="true"
+          fi
+
+          dry_run="false"
+          if [ "${DRY_RUN:-false}" = "true" ]; then dry_run="true"; fi
+
+          echo "services=${list[*]:-}" >> "$GITHUB_OUTPUT"
+          echo "count=${#list[@]}" >> "$GITHUB_OUTPUT"
+          echo "readme=$readme" >> "$GITHUB_OUTPUT"
+          echo "dry_run=$dry_run" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Apifox 同步计划"
+            echo ""
+            echo "| 项 | 值 |"
+            echo "| --- | --- |"
+            echo "| 触发 | \`${{ github.event_name }}\`（\`${{ github.ref_name }}\`）|"
+            echo "| 接口服务 | \`${list[*]:-无}\` |"
+            echo "| 同步 README | $readme |"
+            echo "| dry-run | $dry_run |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${#list[@]}" -eq 0 ] && [ "$readme" != "true" ]; then
+            echo "::notice::OpenAPI 产物与 README 都没有变更，跳过同步"
+          else
+            echo "::notice::本次同步：接口 [${list[*]:-无}]，README $readme"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # 同步：复用本地同一套脚本（apifox-sync.sh / apifox-readme-sync.sh），判据与本地一致
+  # 接口与 README 拆成两个步骤，各自按变更结果执行
+  # ---------------------------------------------------------------------------
+  sync:
+    name: 同步到 Apifox
+    needs: changes
+    if: needs.changes.result == 'success' && (needs.changes.outputs.count != '0' || needs.changes.outputs.readme == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # 回写 .apifox-state/ 的数据模型指纹基线需要写权限；
+    # 置仓库变量 APIFOX_COMMIT_STATE=false 可关闭回写（此时基线只随 artifact 保留）
+    permissions:
+      contents: write
+    env:
+      # ---- 必填：Secret（访问令牌等同账号密码，只放 Secret）----
+      APIFOX_ACCESS_TOKEN: ${{ secrets.APIFOX_ACCESS_TOKEN }}
+      # ---- 必填：仓库 Variable ----
+      APIFOX_PROJECT_ID: ${{ vars.APIFOX_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 回写 .apifox-state 需要可推送的凭据，默认 fetch-depth 足够
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 校验 Apifox 配置
+        run: |
+          set -euo pipefail
+          missing=0
+          if [ -z "${APIFOX_ACCESS_TOKEN:-}" ]; then
+            echo "::error::缺少 Secret APIFOX_ACCESS_TOKEN（Apifox → 头像 → 账号设置 → API 访问令牌）"
+            missing=1
+          fi
+          if [ -z "${APIFOX_PROJECT_ID:-}" ]; then
+            echo "::error::缺少仓库 Variable APIFOX_PROJECT_ID（项目 URL 形如 https://app.apifox.com/project/<项目ID>/xxx）"
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::请在仓库 Settings → Secrets and variables → Actions 中补齐后重跑"
+            exit 1
+          fi
+          # 全量对齐会删除文档里没有的接口与模型，模型目录必须按服务隔离，这里只做提醒
+          for svc in SPRING GOZERO NESTJS FASTAPI; do
+            name="APIFOX_SCHEMA_FOLDER_$svc"
+            if [ -z "${!name:-}" ]; then
+              echo "::warning::未配置 $name，$svc 的数据模型会落到项目根目录，全量对齐可能删掉其它服务的模型"
+            fi
+          done
+
+      - name: 安装 Apifox CLI
+        run: |
+          set -euo pipefail
+          npm i -g apifox-cli@latest --no-audit --no-fund
+          apifox --version || true
+          python3 --version
+
+      # 接口：只处理 HTTP 接口与数据模型，固定 --no-readme（README 由下一步单独负责）
+      - name: 同步接口文档
+        if: needs.changes.outputs.count != '0'
+        env:
+          SERVICES: ${{ needs.changes.outputs.services }}
+          DRY_RUN: ${{ needs.changes.outputs.dry_run }}
+        run: |
+          set -euo pipefail
+          read -r -a svcs <<< "$SERVICES"
+          args=( "${svcs[@]}" --no-readme )
+          if [ "$DRY_RUN" = "true" ]; then
+            args+=( --dry-run )
+          fi
+          echo "执行: bash scripts/apifox-sync.sh ${args[*]}"
+          bash scripts/apifox-sync.sh "${args[@]}"
+
+      # README：独立通道，只有 README.md（或 readme 同步脚本）变更、或手工强制时才跑
+      - name: 同步 README 文档
+        if: needs.changes.outputs.readme == 'true'
+        env:
+          DRY_RUN: ${{ needs.changes.outputs.dry_run }}
+        run: |
+          set -euo pipefail
+          args=( --skip-if-unset )
+          if [ "$DRY_RUN" = "true" ]; then
+            args+=( --dry-run )
+          fi
+          echo "执行: bash scripts/apifox-readme-sync.sh ${args[*]}"
+          bash scripts/apifox-readme-sync.sh "${args[@]}"
+
+      # 数据模型指纹是「Apifox 项目已同步到哪个模型版本」的共享基线，
+      # 不回写的话下次 CI 会一直误判为「模型有变」而按覆盖模式同步（冲掉手工 Mock 与示例）
+      # 不想让 CI 提交：删掉本步骤即可（基线届时只随 artifact 保留）
+      - name: 回写数据模型基线
+        if: needs.changes.outputs.count != '0' && needs.changes.outputs.dry_run != 'true'
+        run: |
+          set -euo pipefail
+          # 用 status 而不是 diff：新建服务的指纹文件是未跟踪文件，diff 看不到
+          if [ -z "$(git status --porcelain -- .apifox-state)" ]; then
+            echo "数据模型基线无变化，无需回写"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .apifox-state
+          git commit -m "chore(apifox): 同步数据模型指纹基线"
+          # 主干开分支保护时会被拒绝：只告警，基线仍随 artifact 保留
+          git push || echo "::warning::基线回写被拒绝（可能是分支保护），请本地执行 ./mix apifox 后提交 .apifox-state/"
+
+      - name: 上传基线 artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apifox-state
+          path: .apifox-state
+          retention-days: 7
+          if-no-files-found: ignore
