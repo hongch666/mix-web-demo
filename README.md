@@ -2433,7 +2433,9 @@ gh variable set APIFOX_README_DOC_ID --body "<文档ID>"
 2. 令牌或项目 ID 缺失时工作流**直接失败**并给出 `::error::` 提示，不做静默跳过，避免门禁假绿
 3. `concurrency: apifox-sync` 全局串行：Apifox 同一项目不允许并发导入，连续推送时排队执行而不是并发覆盖
 4. 接口同步固定带 `--no-readme`：README 由独立步骤（`scripts/apifox-readme-sync.sh --skip-if-unset`）负责，两边都改了就先后各跑一次，只改 README 时不会触发接口导入
-5. 同步成功后把 `.apifox-state/*.schemas.sha256` 数据模型指纹提交回当前分支（提交信息 `chore(apifox): 同步数据模型指纹基线`，用 `GITHUB_TOKEN` 推送不会再次触发工作流）。**这一步很关键**：指纹是「Apifox 项目已同步到哪个模型版本」的共享基线，不回写会让每次 CI 都误判为模型变更而走覆盖模式，冲掉手工维护的 Mock 与示例。分支保护拒绝直推时只告警，基线仍保留在 `apifox-state` artifact 里；不想让 CI 提交就删掉「回写数据模型基线」步骤
+5. 同步成功后把 `.apifox-state/*.schemas.sha256` 数据模型指纹提交回当前分支（提交信息 `chore(apifox): 同步数据模型指纹基线`，用 `GITHUB_TOKEN` 推送不会再次触发工作流）。**这一步很关键**：指纹是「Apifox 项目已同步到哪个模型版本」的共享基线，不回写会让每次 CI 都误判为模型变更而走覆盖模式，冲掉手工维护的 Mock 与示例
+   - `prod` 若开了分支保护（必须走 PR），`GITHUB_TOKEN` 直推会被拒，步骤只打 `::warning::` 不失败：此时下载本次运行的 `apifox-state` 制品，解压覆盖仓库里的 `.apifox-state/` 再提交即可（该制品用 `include-hidden-files: true` 上传，点开头的隐藏目录也能取到）
+   - 不想让 CI 提交就删掉「回写数据模型基线」步骤，改由本地 `./mix apifox` 后提交指纹
 6. 只想跑单服务时用 `workflow_dispatch` 的 `services` 输入（空格分隔）；`main` 上的中间态提交不会推送，文档只在合并进 `prod` 后同步一次
 
 手工验证一次（不写入 Apifox）：

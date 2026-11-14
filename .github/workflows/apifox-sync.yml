@@ -305,14 +305,17 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .apifox-state
           git commit -m "chore(apifox): 同步数据模型指纹基线"
-          # 主干开分支保护时会被拒绝：只告警，基线仍随 artifact 保留
-          git push || echo "::warning::基线回写被拒绝（可能是分支保护），请本地执行 ./mix apifox 后提交 .apifox-state/"
+          # 主干开分支保护时会被拒绝：只告警，新指纹仍在 artifact（apifox-state）里，可下载后直接提交
+          git push || echo "::warning::基线回写被拒绝（prod 开了分支保护，GITHUB_TOKEN 无法直推）。请下载本次运行的 apifox-state 制品解压覆盖 .apifox-state/ 后提交，或本地执行 ./mix apifox 让指纹自然更新；不修的话下次 CI 仍会按覆盖模式同步"
 
+      # 基线目录以点开头，属于隐藏目录：upload-artifact v4 默认跳过，
+      # 必须显式 include-hidden-files，否则会出现「No files were found with the provided path」
       - name: 上传基线 artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: apifox-state
           path: .apifox-state
+          include-hidden-files: true
           retention-days: 7
           if-no-files-found: ignore
