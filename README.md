@@ -36,6 +36,7 @@
 - [环境变量配置文件](#环境变量配置文件)
 - [Swagger 说明](#swagger-说明)
 - [Apifox 文档同步](#apifox-文档同步)
+- [CI/CD 工作流](#cicd-工作流)
 - [项目规范说明](#项目规范说明)
 - [代码规范与格式化工具](#代码规范与格式化工具)
 - [Git 提交钩子](#git-提交钩子)
@@ -81,6 +82,9 @@
 19. 基于 FastAPI 的上下文预算与用户级记忆摘要实现 Agent 上下文压缩：按模型窗口与提示词推导历史预算，超出预算的更早轮次由模型折叠进 `ai_user_summary` 摘要，通过水位线增量推进，压缩失败时保留原摘要不丢历史
 20. 基于 OpenTelemetry 实现网关与四个服务的全链路追踪：APISIX、Spring、GoZero、NestJS、FastAPI 统一上报 OTLP，经 OpenTelemetry Collector 脱敏后写入 Grafana Tempo，日志由 Promtail 提取 `trace_id` 写入 Loki，Grafana 中可在日志与 Trace 之间互跳
 21. 基于 Prometheus 采集四个业务的运行指标：Spring 输出 `/actuator/prometheus`，GoZero、NestJS、FastAPI 输出 `/metrics`，由 Prometheus 定期抓取后统一在 Grafana 中查询，并支持从指标 Exemplar 跳转到 Tempo
+22. 基于 OpenAPI 3.1 统一四个服务的接口文档：Spring 由 springdoc 生成、GoZero 由 goctl 的 swagger 产物转换、NestJS 由 `@nestjs/swagger` 生成、FastAPI 直接取应用内 OpenAPI 描述，离线产出静态文档并同步 Apifox；GitHub Actions 在文档产物变更后自动推送，接口与 README 分开判断，数据模型按服务隔离目录避免引用断链
+23. 基于 GitHub Actions 实现 CI/CD：`prod` 的 PR 复用本地 lint / compile / test 脚本按变更服务跑门禁，合并后构建镜像推送到 GHCR，自托管 runner 自动部署到部署机（只更新变更服务，失败按服务自动回滚）
+24. 基于 Docker Compose 一键拉起四个服务、APISIX 网关与基础中间件（MySQL、Redis、RabbitMQ、Nacos、MongoDB、ClickHouse、Elasticsearch、Neo4j、pgvector），并内置 Prometheus、Grafana、Loki、Tempo 可观测栈
 
 ## 服务说明
 
@@ -2375,6 +2379,75 @@ APIFOX_PROJECT_ID=你的项目ID
 
 执行时按服务逐个串行导入，并打印各服务的「新增 / 更新 / 忽略 / 失败」计数；任一服务产物缺失或导入失败都会以非零状态码退出。
 
+### GitHub Actions 自动同步（OpenAPI 产物与 README 变更触发）
+
+`.github/workflows/apifox-sync.yml` 在 `openapi.json` / `openapi.yaml` 提交后自动把接口推送到 Apifox，README.md 变更时单独同步 README 文档；两条通道分别判断、互不牵连，判据与本地 `./mix apifox` 一致。
+
+触发条件：
+
+| 事件 | 行为 |
+| ---- | ---- |
+| `push` 到 `prod`，改动任一服务的 `docs/openapi.json`、`docs/openapi.yaml`（GoZero 另含 `gozero/app/docs/websocket.json`） | 只同步「文档真正变了的服务」的**接口与数据模型**，用 `dorny/paths-filter` 判定；`main` 是开发分支，不触发 |
+| `push` 到 `prod`，改动 `README.md` | 只同步**README 文档**（走 Apifox CLI 的 `doc update`），不碰接口 |
+| `push` 改动 `scripts/apifox-sync.sh`、`scripts/apifox-schema-refs.py`、本工作流文件 | 四个服务接口全量重跑一次，避免脚本改动只在本地生效 |
+| `push` 改动 `scripts/apifox-readme-sync.sh` | 只重跑 README 同步 |
+| `workflow_dispatch` | 可指定服务列表、`dry-run`（只校验不写入）、强制同步 README |
+| PR | **不触发**：多个 PR 写同一个 Apifox 项目会互相覆盖，只在合并后由 `push` 触发 |
+
+需要的仓库配置（`Settings → Secrets and variables → Actions`），与本地根目录 `.env` 的 `APIFOX_*` 一一对应：
+
+| 名称 | 类型 | 必填 | 对应 `.env` 中的项 | 说明 |
+| ---- | ---- | ---- | ---- | ---- |
+| `APIFOX_ACCESS_TOKEN` | Secret | 是 | `APIFOX_ACCESS_TOKEN` | 访问令牌，等同账号密码，只能放 Secret |
+| `APIFOX_PROJECT_ID` | Variable | 是 | `APIFOX_PROJECT_ID` | 项目 ID，形如 `https://app.apifox.com/project/<项目ID>/xxx` |
+| `APIFOX_FOLDER_SPRING`<br/>`APIFOX_FOLDER_GOZERO`<br/>`APIFOX_FOLDER_NESTJS`<br/>`APIFOX_FOLDER_FASTAPI` | Variable | 否 | 同名 | 各服务接口目录 ID，留空导入项目根目录 |
+| `APIFOX_SCHEMA_FOLDER_SPRING`<br/>`APIFOX_SCHEMA_FOLDER_GOZERO`<br/>`APIFOX_SCHEMA_FOLDER_NESTJS`<br/>`APIFOX_SCHEMA_FOLDER_FASTAPI` | Variable | 强烈建议 | 同名 | 各服务数据模型目录 ID。全量对齐下不配会互删模型导致 `can't resolve reference`；未配置时工作流给出 `::warning::` |
+| `APIFOX_README_DOC_ID` | Variable | 否 | `APIFOX_README_DOC_ID` | README 目标 Markdown 文档 ID；不配则 README 那一步跳过并提示 |
+
+配置方式（二选一）：
+
+```bash
+# 方式 1：GitHub CLI（在仓库根目录执行，避免手工点选）
+gh secret set APIFOX_ACCESS_TOKEN --body "<访问令牌>"
+gh variable set APIFOX_PROJECT_ID --body "<项目ID>"
+gh variable set APIFOX_FOLDER_SPRING --body "<目录ID>"
+gh variable set APIFOX_FOLDER_GOZERO --body "<目录ID>"
+gh variable set APIFOX_FOLDER_NESTJS --body "<目录ID>"
+gh variable set APIFOX_FOLDER_FASTAPI --body "<目录ID>"
+gh variable set APIFOX_SCHEMA_FOLDER_SPRING --body "<目录ID>"
+gh variable set APIFOX_SCHEMA_FOLDER_GOZERO --body "<目录ID>"
+gh variable set APIFOX_SCHEMA_FOLDER_NESTJS --body "<目录ID>"
+gh variable set APIFOX_SCHEMA_FOLDER_FASTAPI --body "<目录ID>"
+gh variable set APIFOX_README_DOC_ID --body "<文档ID>"
+```
+
+方式 2：仓库页面 → `Settings` → `Secrets and variables` → `Actions`，在 `Secrets` 页签加 `APIFOX_ACCESS_TOKEN`，在 `Variables` 页签加其余项。
+
+其余行为开关不映射、由脚本走内置默认值（与本地 `.env` 不配置它们时一致）：`APIFOX_DELETE_UNMATCHED_RESOURCES`（默认 `true`）、`APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR` / `APIFOX_SCHEMA_OVERWRITE_BEHAVIOR`（默认 `AUTO_MERGE`，指纹变化时自动切覆盖）、`APIFOX_VERIFY_SCHEMA_REFS`（默认 `true`）、`APIFOX_MAINTAINER` / `APIFOX_MAINTAINER_AUTO`（默认取令牌账号用户名）、`APIFOX_README_BRANCH`、`APIFOX_BRANCH_ID` / `APIFOX_MODULE_ID` / `APIFOX_BASE_URL` / `APIFOX_API_VERSION` / `APIFOX_LOCALE`。需要从 CI 侧覆盖某项时，在工作流 `env:` 里加一行 `APIFOX_XXX: ${{ vars.APIFOX_XXX }}` 再到仓库建同名 Variable。
+
+> 编辑器（VS Code 的 GitHub Actions 扩展）会给未创建的 `${{ vars.XXX }}` / `${{ secrets.XXX }}` 报 `Context access might be invalid: XXX`：它拿仓库里**已存在**的清单做比对。把上表配置建出来（或在 VS Code 里登录该仓库对应的 GitHub 账号）后提示即消失，不影响运行——未定义变量会被解析成空串。
+
+行为要点：
+
+1. 只在 CI 里装 Node 20 与 `apifox-cli`（WebSocket 接口同步、模型引用自检、README 文档同步依赖它），**不生成文档**：产物必须由本地 `./mix swag <service>` 生成后与服务代码同一次提交，工作流只做推送
+2. 令牌或项目 ID 缺失时工作流**直接失败**并给出 `::error::` 提示，不做静默跳过，避免门禁假绿
+3. `concurrency: apifox-sync` 全局串行：Apifox 同一项目不允许并发导入，连续推送时排队执行而不是并发覆盖
+4. 接口同步固定带 `--no-readme`：README 由独立步骤（`scripts/apifox-readme-sync.sh --skip-if-unset`）负责，两边都改了就先后各跑一次，只改 README 时不会触发接口导入
+5. 同步成功后把 `.apifox-state/*.schemas.sha256` 数据模型指纹提交回当前分支（提交信息 `chore(apifox): 同步数据模型指纹基线`，用 `GITHUB_TOKEN` 推送不会再次触发工作流）。**这一步很关键**：指纹是「Apifox 项目已同步到哪个模型版本」的共享基线，不回写会让每次 CI 都误判为模型变更而走覆盖模式，冲掉手工维护的 Mock 与示例。分支保护拒绝直推时只告警，基线仍保留在 `apifox-state` artifact 里；不想让 CI 提交就删掉「回写数据模型基线」步骤
+6. 只想跑单服务时用 `workflow_dispatch` 的 `services` 输入（空格分隔）；`main` 上的中间态提交不会推送，文档只在合并进 `prod` 后同步一次
+
+手工验证一次（不写入 Apifox）：
+
+```bash
+# 只校验接口，不写入
+gh workflow run apifox-sync.yml -f services="spring nestjs" -f dry_run=true
+
+# 校验 README 同步内容（不写入）
+gh workflow run apifox-sync.yml -f sync_readme=true -f dry_run=true
+gh run watch
+```
+
+
 ### 注意事项
 
 1. 只读取仓库内的静态产物，产物缺失时提示先执行 `./mix swag <service>`
@@ -2474,6 +2547,66 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 4. 脚本依赖 `apifox`（缺失时自动安装）、`sed`、`tr`、`grep`、`awk`、`mktemp`，传给 CLI 的路径先经 `cygpath` 转成 Windows 原生路径
 5. README 的「## 目录」章节只在 Apifox 文档内被剔除，仓库里的 `README.md` 不做任何改写
 6. Apifox CLI 会在仓库根目录生成 `.apifox/` 本地状态目录（记录分支与守卫错误等），已加入 `.gitignore`，不要提交
+
+## CI/CD 工作流
+
+全部流水线都在 `.github/workflows/` 下，固定用 GitHub 托管 runner 构建、自托管 runner（WSL）部署。
+
+### 分支与触发
+
+| 事件 | 触发的工作流 | 说明 |
+| ---- | ---- | ---- |
+| `pull_request` → `prod` | `CI` | 合并前质量门禁，必须全绿 |
+| `push` → `prod` | `CI`、`Release Images`、`Apifox Sync` | CI 复验一次；镜像构建；文档/README 变更时同步 Apifox |
+| `push` → `main` | 无 | `main` 是开发分支，不触发任何 CI/CD |
+| tag `vX.Y.Z` | `Release Images`、`Deploy` | 追加 `X.Y.Z` 版本号镜像，并按 tag 部署 |
+| 手动 `workflow_dispatch` | 全部 | 单服务门禁、补建镜像、手工部署/回滚、Apifox 干跑 |
+
+### 工作流清单
+
+| 文件 | 作用 |
+| ---- | ---- |
+| `ci.yml` | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/lint.sh` / `compile.sh` / `test.sh`；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿 |
+| `release.yml` | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断） |
+| `deploy.yml` | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/` 有变更时额外重启 APISIX |
+| `smoke.yml` | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪 |
+| `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步) |
+
+### 需要的仓库配置
+
+| 名称 | 类型 | 用途 |
+| ---- | ---- | ---- |
+| `DOCKER_IMAGE_PREFIX` | Variable | 镜像前缀，形如 `ghcr.io/<owner>/<repo>/`（**以 `/` 结尾**），构建与部署都依赖它 |
+| `DEPLOY_DIR` | Variable | 部署机上的仓库目录（如 `/home/hongch666/mix-web-demo`），必须是 git 仓库且已备好 `.env` |
+| `production` | Environment | `deploy.yml` 的部署环境，可在此配置审批人与保护规则 |
+| `APIFOX_ACCESS_TOKEN` / `APIFOX_*` | Secret / Variable | 仅 `apifox-sync.yml` 需要，见 Apifox 章节 |
+| `GITHUB_TOKEN` | 内置 | 推拉 GHCR 镜像、上传 SARIF、回写基线，无需自建 |
+
+### 常用操作
+
+```bash
+# 只跑某个服务的门禁
+gh workflow run ci.yml -f services="spring"
+
+# 补建镜像（tag 或手动触发时四服务全量构建）
+gh workflow run release.yml
+
+# 手工部署 / 回滚到指定版本
+gh workflow run deploy.yml -f image_tag="7ea6e37"     # 短 sha
+gh workflow run deploy.yml -f image_tag="v0.36.0"     # tag 形式
+
+# runner 冒烟
+gh workflow run smoke.yml
+```
+
+### 注意事项
+
+1. 只改 `**.md`、`docs/**`、`db/**`、`scripts/**`、`skills/**`、配置文件目录时不会触发镜像构建（`release.yml` 的 `paths-ignore`），部署侧会以 `CONFIG_ONLY` 方式只同步代码与配置并重建已部署版本
+2. 部署机是「一次配置、长期复用」：runner 以 systemd 服务注册，仓库目录里的 `.env`、四个 `.env.docker` 都不随 `checkout` 重置；`docker compose` 需要 runner 用户具备 docker 权限
+3. 部署失败会自动按服务回滚到上一版本（状态记录在 `${RUNNER_WORKSPACE}/mix-deploy-state/last-deploy.txt`）；若回滚也失败会打出 `::warning::` 并要求人工介入
+4. 部署目录用 `git checkout -f -B prod <commit>` 而不是 detached HEAD，运维仍可直接在该目录 `git pull` 排查
+5. 任意服务缺少部署记录且不在本次变更内会直接失败，避免误用 `latest` 掩盖版本漂移（先做一次全量部署即可补齐）
+6. 本地等价命令：`./mix lint|compile|test <service>`、`./mix docker build <service>`、`./scripts/docker-push-images.sh`、`./mix docker up`
 
 ## 项目规范说明
 
