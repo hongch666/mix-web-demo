@@ -556,7 +556,7 @@
     },
     "/article-logs/search-keywords": {
       "get": {
-        "description": "获取所有去重的搜索关键词，供 FastAPI 词云功能内部远程调用",
+        "description": "获取所有去重的搜索关键词及搜索次数（按次数降序），供 FastAPI 词云功能内部远程调用",
         "operationId": "ArticleLogController_getSearchKeywords",
         "parameters": [],
         "responses": {
@@ -2387,10 +2387,20 @@
           },
           "data": {
             "type": "array",
-            "description": "所有去重后的搜索关键词",
+            "description": "所有去重后的搜索关键词及搜索次数，按次数降序",
             "items": {
-              "type": "string",
-              "description": "搜索关键词"
+              "type": "object",
+              "properties": {
+                "keyword": {
+                  "type": "string",
+                  "description": "搜索关键词"
+                },
+                "count": {
+                  "type": "integer",
+                  "description": "该关键词的搜索次数"
+                }
+              },
+              "description": "列表项"
             }
           }
         },

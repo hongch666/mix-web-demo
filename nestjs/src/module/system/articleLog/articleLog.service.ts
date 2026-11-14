@@ -79,6 +79,14 @@ interface ArticleLogSyncItem {
 }
 
 /**
+ * 搜索关键词及其搜索次数
+ */
+interface SearchKeywordCount {
+  keyword: string;
+  count: number;
+}
+
+/**
  * 文章日志服务，负责日志写入、条件分页查询、删除及搜索关键词与浏览分布的聚合统计
  */
 @Injectable()
@@ -551,20 +559,26 @@ export class ArticleLogService {
   }
 
   /**
-   * 获取所有搜索关键词（供 FastAPI 词云功能内部远程调用）
-   * 从 articlelogs 集合中提取所有 action=search 的去重关键词
+   * 获取搜索关键词及搜索次数（供 FastAPI 词云功能内部远程调用）
+   * 从 articlelogs 集合中按 action=search 聚合关键词出现次数，按次数降序、同次数按关键词升序
    */
-  async getSearchKeywords(): Promise<string[]> {
+  async getSearchKeywords(): Promise<SearchKeywordCount[]> {
     const results = await this.logModel
-      .aggregate([
+      .aggregate<{
+        _id: string;
+        count: number;
+      }>([
         { $match: { action: ArticleAction.SEARCH } },
         { $project: { keyword: "$content.Keyword" } },
         { $match: { keyword: { $ne: "", $exists: true } } },
-        { $group: { _id: "$keyword" } },
-        { $sort: { _id: 1 } },
+        { $group: { _id: "$keyword", count: { $sum: 1 } } },
+        { $sort: { count: -1, _id: 1 } },
       ])
       .exec();
 
-    return results.map((doc) => doc._id as string);
+    return results.map((doc) => ({
+      keyword: doc._id,
+      count: doc.count,
+    }));
   }
 }

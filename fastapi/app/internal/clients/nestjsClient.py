@@ -37,8 +37,8 @@ class NestjsClient:
         )
         return result.get("data", {"total_views": 0, "articles": []})
 
-    async def get_search_keywords(self) -> Any:
-        """远程调用 NestJS 获取所有搜索关键词"""
+    async def get_search_keywords(self) -> list[dict[str, Any]]:
+        """远程调用 NestJS 获取搜索关键词及搜索次数，按次数降序返回"""
         result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/article-logs/search-keywords",

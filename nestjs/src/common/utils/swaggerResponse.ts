@@ -129,8 +129,14 @@ export const SwaggerArticleSearchHistoryData: SchemaObject = {
 
 export const SwaggerSearchKeywordsData: SchemaObject = {
   type: "array",
-  description: "所有去重后的搜索关键词",
-  items: { type: "string", description: "搜索关键词" },
+  description: "所有去重后的搜索关键词及搜索次数，按次数降序",
+  items: {
+    type: "object",
+    properties: {
+      keyword: { type: "string", description: "搜索关键词" },
+      count: { type: "integer", description: "该关键词的搜索次数" },
+    },
+  },
 };
 
 export const SwaggerTableSettingsListData: SchemaObject = {

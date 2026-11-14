@@ -45,11 +45,20 @@ class ArticleMapper:
         statement = select(*columns).order_by(desc(AdsTop10Article.views)).limit(10)
         return await self._execute_mappings(statement)
 
-    async def get_search_keywords_clickhouse_mapper_async(self) -> list[str]:
-        """查询全部搜索关键词，过滤空值后返回字符串列表"""
-        statement = select(AdsSearchKeyword.keyword).order_by(AdsSearchKeyword.keyword)
+    async def get_search_keywords_clickhouse_mapper_async(
+        self,
+    ) -> list[dict[str, Any]]:
+        """查询全部搜索关键词及搜索次数，按次数降序返回并过滤空关键词"""
+        statement = select(
+            AdsSearchKeyword.keyword,
+            AdsSearchKeyword.search_count,
+        ).order_by(desc(AdsSearchKeyword.search_count), AdsSearchKeyword.keyword)
         rows = await self._execute_mappings(statement)
-        return [str(row["keyword"]) for row in rows if row.get("keyword")]
+        return [
+            {"keyword": str(row["keyword"]), "count": int(row.get("search_count") or 0)}
+            for row in rows
+            if row.get("keyword")
+        ]
 
     async def get_category_article_count_clickhouse_mapper_async(
         self,

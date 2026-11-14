@@ -6,7 +6,7 @@ import { ArticleLogService } from "./articleLog.service";
  * @param articles Spring 批量查询返回的文章
  */
 function createService(
-  aggregated: Array<{ _id: number; views: number }>,
+  aggregated: Array<Record<string, unknown>>,
   articles: Array<{ id: number; title: string }>,
 ): { service: ArticleLogService; aggregate: jest.Mock } {
   const aggregate = jest.fn().mockReturnValue({
@@ -57,5 +57,40 @@ describe("ArticleLogService.getViewDistribution", () => {
     const result = await service.getViewDistribution(1);
 
     expect(result).toEqual({ total_views: 0, articles: [] });
+  });
+});
+
+describe("ArticleLogService.getSearchKeywords", () => {
+  // 验证返回关键词及搜索次数，名次由次数决定而不是关键词字典序
+  it("验证返回关键词及搜索次数", async () => {
+    const { service } = createService(
+      [
+        { _id: "python", count: 9 },
+        { _id: "1. Spring2. Gin3. NestJS4. FastAPI", count: 1 },
+      ],
+      [],
+    );
+
+    const result = await service.getSearchKeywords();
+
+    expect(result).toEqual([
+      { keyword: "python", count: 9 },
+      { keyword: "1. Spring2. Gin3. NestJS4. FastAPI", count: 1 },
+    ]);
+  });
+
+  // 验证聚合按关键词计数并按次数倒序，避免退化成字典序排名
+  it("验证聚合按次数统计并倒序排序", async () => {
+    const { service, aggregate } = createService([], []);
+
+    await service.getSearchKeywords();
+
+    const pipeline = aggregate.mock.calls[0][0] as Array<
+      Record<string, unknown>
+    >;
+    expect(pipeline).toContainEqual({
+      $group: { _id: "$keyword", count: { $sum: 1 } },
+    });
+    expect(pipeline).toContainEqual({ $sort: { count: -1, _id: 1 } });
   });
 });
