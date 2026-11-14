@@ -185,8 +185,11 @@ NestJS 模块按职责划分为两层：
 - `otel-config/otel-collector.yaml`：Receiver、脱敏动作、导出到 Tempo
 - `otel-config/tempo.yaml`：Tempo 存储与保留策略（block 保留 168 小时）
 - `loki-config/`：Loki、Promtail（`promtail.yaml` / `promtail-dist.yaml`）与 Grafana 数据源
-- `prometheus-config/`：指标抓取配置，容器编排用 `prometheus.yml`，独立观测栈用 `prometheus-host.yml`
+- `loki-config/loki.yaml`：Loki 存储与保留策略（compactor 按 `retention_period` 回收，默认 720 小时）
+- `prometheus-config/`：指标抓取配置，容器编排用 `prometheus.yml`，独立观测栈用 `prometheus-host.yml`；指标保留期由 `--storage.tsdb.retention.time` 控制（默认 30 天）
 - `gateway/apisix/config.yaml`：APISIX 开启 `opentelemetry` 插件并调整 access log 格式
+
+观测数据保留：日志、链路、指标与 Grafana 配置分别落在命名卷 `loki-data`、`tempo-data`、`prometheus-data`、`grafana-data` 上，重启容器、重新部署、`./mix compose down` 都不会清空历史数据；过期数据由各自保留策略回收，需要彻底清空时显式执行 `./mix compose down --volumes`（或 `./mix loki delete`）
 
 ### 链路与日志关联
 
@@ -1969,7 +1972,11 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 ### 停止服务
 
 ```bash
+# 停止并删除容器，保留 Loki/Tempo/Prometheus/Grafana 数据卷
 ./mix compose down
+
+# 连数据卷一起删除（日志、链路、指标历史全部清空）
+./mix compose down --volumes
 ```
 
 ### 状态查看
@@ -1989,7 +1996,8 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 ```bash
 ./mix docker build spring gozero nestjs fastapi
 docker compose up -d
-docker compose down -v
+docker compose down          # 保留 loki-data / tempo-data / prometheus-data / grafana-data
+docker compose down -v       # 需要彻底重置观测历史时才用
 ```
 
 ### 文件说明

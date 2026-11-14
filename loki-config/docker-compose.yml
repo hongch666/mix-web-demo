@@ -67,7 +67,13 @@ services:
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: prometheus
-    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    command:
+      [
+        "--config.file=/etc/prometheus/prometheus.yml",
+        "--storage.tsdb.path=/prometheus",
+        # 与根目录 docker-compose.yml 保持一致：指标保留 30 天，数据落卷 prometheus-data
+        "--storage.tsdb.retention.time=30d",
+      ]
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

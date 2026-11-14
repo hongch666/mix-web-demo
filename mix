@@ -69,7 +69,7 @@ show_help() {
     echo "Docker Compose Commands (容器编排):"
     echo "  compose [command]        - Manage Docker Compose stack"
     echo "    up                     - 通过 docker-compose 构建并启动服务"
-    echo "    down                   - 停止并删除 docker-compose 服务及卷"
+    echo "    down [--volumes]       - 停止并删除服务（默认保留数据卷，--volumes 一并删除）"
     echo "    status                 - 查看 docker-compose 服务状态 (docker-compose ps)"
     echo "    logs <service>         - 查看指定服务日志 (docker-compose logs -f <service>)"
     echo "    help                   - 显示 docker-compose 帮助"
@@ -489,7 +489,7 @@ case $COMMAND in
                 bash "$SCRIPTS_DIR/docker-compose-up.sh"
                 ;;
             down)
-                bash "$SCRIPTS_DIR/docker-compose-down.sh"
+                bash "$SCRIPTS_DIR/docker-compose-down.sh" "${@:3}"
                 ;;
             status)
                 $COMPOSE_CMD -f "$WORKDIR/docker-compose.yml" ps

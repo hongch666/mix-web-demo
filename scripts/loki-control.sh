@@ -278,7 +278,7 @@ start_all() {
 
 # 停止观测栈，保留数据卷（Grafana 面板与 Loki 索引数据不丢失）
 stop_all() {
-    log_info "停止观测组件（保留 Loki、Tempo 与 Grafana 数据卷）..."
+    log_info "停止观测组件（保留 Loki、Tempo、Prometheus 与 Grafana 数据卷）..."
     compose down --remove-orphans || log_warn "停止过程中出现异常，请检查容器状态"
     disable_optional_telemetry
 
@@ -294,13 +294,13 @@ stop_all() {
         log_warn "同名容器仍由其他编排栈持有: ${remaining[*]}，请改为执行 ./mix compose down"
     fi
 
-    log_info "观测组件已停止，Loki、Tempo 与 Grafana 数据卷保留"
+    log_info "观测组件已停止，Loki、Tempo、Prometheus 与 Grafana 数据卷保留"
 }
 
 # 删除观测栈及其数据卷
 delete_all() {
     log_warn "停止并删除观测组件及其数据卷..."
-    read -p "确认删除 Loki/Tempo/Grafana 数据卷? (y/n): " confirm
+    read -p "确认删除 Loki/Tempo/Prometheus/Grafana 数据卷? (y/n): " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         log_warn "已取消删除操作"
         return 0
