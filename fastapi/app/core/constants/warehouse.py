@@ -57,9 +57,9 @@ class WarehouseScripts:
             LIMIT %(limit)s
         """,
         "search_keywords": """
-            SELECT keyword
+            SELECT keyword, search_count
             FROM warehouse.ads_search_keywords FINAL
-            ORDER BY keyword
+            ORDER BY search_count DESC, keyword
             LIMIT %(limit)s
         """,
         "user_profile": """
@@ -108,7 +108,7 @@ class WarehouseScripts:
         "monthly_publish": "月度文章发布趋势",
         "api_average_speed": "接口平均响应时间",
         "api_called_count": "接口调用次数",
-        "search_keywords": "搜索关键词集合",
+        "search_keywords": "搜索关键词及搜索次数，按次数降序",
         "user_profile": "指定用户的累计画像指标",
         "user_daily_actions": "指定用户的日行为汇总",
         "user_view_articles": "指定用户浏览文章及次数",
@@ -152,7 +152,7 @@ class WarehouseScripts:
             "call_count",
             "avg_response_time",
         ],
-        "search_keywords": ["keyword"],
+        "search_keywords": ["keyword", "search_count"],
         "user_profile": [
             "user_id",
             "user_name",
@@ -554,8 +554,8 @@ class WarehouseScripts:
     """刷新 API 分析应用层表的 SQL 列表"""
 
     REFRESH_ADS_SEARCH_KEYWORDS: Final[str] = """
-        INSERT INTO warehouse.ads_search_keywords
-        SELECT keyword, now()
+        INSERT INTO warehouse.ads_search_keywords (keyword, search_count, stat_time)
+        SELECT keyword, count(), now()
         FROM
         (
             SELECT if(
@@ -569,7 +569,7 @@ class WarehouseScripts:
         WHERE keyword != ''
         GROUP BY keyword
     """
-    """刷新搜索关键词应用层表的 SQL"""
+    """刷新搜索关键词应用层表的 SQL，按关键词聚合搜索次数供词云按热度排序"""
 
     # ========== 派生层刷新执行顺序 ==========
 

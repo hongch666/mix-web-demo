@@ -315,21 +315,28 @@ class AnalyzeService:
         return result
 
     async def get_keywords_dic(self) -> dict[str, int]:
-        """优先从数仓 ADS 层获取搜索关键词，失败或无数据时降级 NestJS"""
-        all_keywords: list[str]
+        """优先从数仓 ADS 层取关键词与搜索次数，失败或无数据时降级 NestJS
+
+        词频直接使用统计出的搜索次数，词云字号与名次才反映真实热度，
+        不能退化成统一的 1：那样任何字典序靠前的脏词都会稳居第一
+        """
+        keyword_rows: list[dict[str, Any]]
         try:
-            all_keywords = (
+            keyword_rows = (
                 await self.articleMapper.get_search_keywords_clickhouse_mapper_async()
             )
-            if all_keywords:
+            if keyword_rows:
                 self._logger.info(Messages.WORDCLOUD_ADS_SOURCE)
-                return {keyword: 1 for keyword in all_keywords}
+                return {
+                    str(row["keyword"]): int(row.get("count") or 0)
+                    for row in keyword_rows
+                }
             self._logger.info(Messages.WORDCLOUD_ADS_EMPTY_FALLBACK_NESTJS)
         except Exception as error:
             self._logger.warning(Messages.WORDCLOUD_ADS_QUERY_FAILED(error))
 
-        all_keywords = await self._nestjs_client.get_search_keywords()
-        return {keyword: 1 for keyword in all_keywords}
+        keyword_rows = await self._nestjs_client.get_search_keywords()
+        return {str(row["keyword"]): int(row.get("count") or 0) for row in keyword_rows}
 
     def generate_wordcloud(self, keywords_dic: dict[str, int]) -> None:
         """按配置生成搜索关键词词云图并写入本地图片文件，关键词为空时抛业务异常"""

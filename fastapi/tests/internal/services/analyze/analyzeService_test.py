@@ -235,32 +235,40 @@ async def test_top10_returns_result_when_cache_update_fails() -> None:
 # ===== 搜索关键词 =====
 
 
-# 关键词优先取 ClickHouse 结果并统计词频，不调用 NestJS
+# 关键词优先取 ClickHouse 结果并保留真实搜索次数，不调用 NestJS
 @pytest.mark.anyio
-async def test_keywords_dic_prefers_ads_source() -> None:
+async def test_keywords_dic_uses_search_count_from_ads() -> None:
+    dirty_keyword = "1. Spring2. Gin3. NestJS4. FastAPI"
     mapper = AsyncMock()
     mapper.get_search_keywords_clickhouse_mapper_async = AsyncMock(
-        return_value=["python", "ai"]
+        return_value=[
+            {"keyword": "python", "count": 9},
+            {"keyword": dirty_keyword, "count": 1},
+        ]
     )
     service = _make_service(articleMapper=mapper)
 
-    assert await service.get_keywords_dic() == {"python": 1, "ai": 1}
+    keywords = await service.get_keywords_dic()
+
+    assert keywords == {"python": 9, dirty_keyword: 1}
+    # 名次由搜索次数决定，字典序靠前的脏词只能排在后面
+    assert list(keywords) == ["python", dirty_keyword]
     service._nestjs_client.get_search_keywords.assert_not_awaited()
 
 
-# ClickHouse 关键词为空时降级调用 NestJS 获取
+# ClickHouse 关键词为空时降级调用 NestJS 获取并沿用其搜索次数
 @pytest.mark.anyio
 async def test_keywords_dic_falls_back_to_nestjs_when_ads_empty() -> None:
     mapper = AsyncMock()
     mapper.get_search_keywords_clickhouse_mapper_async = AsyncMock(return_value=[])
     nestjs = AsyncMock()
-    nestjs.get_search_keywords.return_value = ["x"]
+    nestjs.get_search_keywords.return_value = [{"keyword": "x", "count": 3}]
     service = _make_service(articleMapper=mapper, nestjs_client=nestjs)
 
-    assert await service.get_keywords_dic() == {"x": 1}
+    assert await service.get_keywords_dic() == {"x": 3}
 
 
-# ClickHouse 关键词查询异常时降级调用 NestJS
+# ClickHouse 关键词查询异常时降级调用 NestJS 获取并沿用其搜索次数
 @pytest.mark.anyio
 async def test_keywords_dic_falls_back_to_nestjs_when_ads_raises() -> None:
     mapper = AsyncMock()
@@ -268,10 +276,10 @@ async def test_keywords_dic_falls_back_to_nestjs_when_ads_raises() -> None:
         side_effect=RuntimeError("ch down")
     )
     nestjs = AsyncMock()
-    nestjs.get_search_keywords.return_value = ["y"]
+    nestjs.get_search_keywords.return_value = [{"keyword": "y", "count": 2}]
     service = _make_service(articleMapper=mapper, nestjs_client=nestjs)
 
-    assert await service.get_keywords_dic() == {"y": 1}
+    assert await service.get_keywords_dic() == {"y": 2}
 
 
 # ===== OSS 上传 =====
