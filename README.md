@@ -121,7 +121,7 @@
 | 项目     | 说明                                                                                                 |
 | -------- | ---------------------------------------------------------------------------------------------------- |
 | 框架     | NestJS + Fastify                                                                                     |
-| 数据库   | MySQL（TypeORM user_table_settings）、MongoDB（Mongoose 文章日志/API 日志）                          |
+| 数据库   | MySQL（TypeORM user_table_settings）、MongoDB（Mongoose 文章日志/API 日志/日志删除墓碑）             |
 | 缓存     | Redis（ioredis）                                                                                     |
 | 消息队列 | RabbitMQ                                                                                             |
 | 注册中心 | Nacos                                                                                                |
@@ -160,7 +160,7 @@ NestJS 模块按职责划分为两层：
 网关的几条关键约束：
 
 1. **认证外置**：业务路由统一挂 `forward-auth`，回调 Spring 的 `/users/internal/auth/validate`，由网关注入 `X-User-Id`、`X-Username`、`X-Session-Id`，下游服务不自行解析 JWT。
-2. **内部接口黑名单**：`block-internal` 路由用 `mocking` 插件对内部接口直接返回 403，覆盖 `/articles/list`、`/comments/batch`、`/task/*`、`/logs`、`/ai_history`、`/upload`、`/users/github/token-ticket`、`/email/send-code`。该路由的 `uri` 按精确匹配处理（只有以 `*` 结尾才是前缀匹配），新增内部接口时要确认黑名单条目能覆盖实际访问路径。
+2. **内部接口黑名单**：`block-internal` 路由用 `mocking` 插件对内部接口直接返回 403，覆盖 `/articles/list`、`/comments/batch`、`/task/*`、`/log-deletions/*`、`/logs`、`/ai_history`、`/upload`、`/users/github/token-ticket`、`/email/send-code`。该路由的 `uri` 按精确匹配处理（只有以 `*` 结尾才是前缀匹配），新增内部接口时要确认黑名单条目能覆盖实际访问路径。
 3. **长连接**：`/ws/*`、`/sse/*` 与 `/chat/stream` 使用独立 upstream，读超时放宽到 3600 秒。
 4. **业务服务端口收敛**：根 `docker-compose.yml` 只给网关映射宿主机端口，四个业务服务只在容器网络内可达。
 5. **限流不依赖 Redis**：`limit-req` 用 `policy: local`，与 `nginx_config.worker_processes: 1` 配套，进程内计数即全局配额；扩多 worker 或多副本时配额会按实例数放大，须改回 `policy: redis` 并补齐 `redis_*` 与密码配置。
@@ -457,6 +457,9 @@ Body 参数：
       ARTICLE ||--o{ COMMENTS : "被评论"
       ARTICLE ||--o{ ARTICLELOG : "被记录"
 
+      APILOGS ||--o| LOGDELETION : "删除墓碑"
+      ARTICLELOG ||--o| LOGDELETION : "删除墓碑"
+
       CATEGORY ||--o{ SUB_CATEGORY : "包含"
       SUB_CATEGORY ||--o{ ARTICLE : "归属"
       SUB_CATEGORY ||--|| CATEGORY_REFERENCE : "权威文章"
@@ -592,6 +595,14 @@ Body 参数：
           string action
           object content
           string msg
+          date createdAt
+          date updatedAt
+      }
+      LOGDELETION {
+          objectid _id PK
+          string logType
+          string eventId
+          date logCreatedAt
           date createdAt
           date updatedAt
       }
@@ -2089,7 +2100,9 @@ LangChain 会自动创建，但需要先在目标库里执行 `db/postgresql/ext
 
 ### MongoDB 表创建
 
-集合为 `articlelogs` 和 `apilogs`，系统会自动创建，库名以 `DB_MONGODB_DATABASE` 配置项为准（默认 `demo`）；如需手动初始化索引，可执行 `db/mongodb/articlelogs.js` 与 `db/mongodb/apilogs.js`
+集合为 `articlelogs`、`apilogs` 和 `logdeletions`，系统会自动创建，库名以 `DB_MONGODB_DATABASE` 配置项为准（默认 `demo`）；如需手动初始化索引，可执行 `db/mongodb/articlelogs.js`、`db/mongodb/apilogs.js` 与 `db/mongodb/logdeletions.js`
+
+`logdeletions` 是日志删除墓碑：`apilogs` / `articlelogs` 的删除动作先写一条 `{logType, eventId, logCreatedAt}` 再真正删除，供数仓按游标拉取后清除 ClickHouse 中已删除的日志；`eventId + logType` 唯一索引保证重复删除幂等，`createdAt` 的 90 天 TTL 索引自动回收已同步的墓碑
 
 ### ElasticSearch 索引创建
 
