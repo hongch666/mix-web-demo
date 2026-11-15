@@ -114,6 +114,18 @@ class NestjsClient:
         )
         return result.get("data", {"list": [], "nextCursor": None})
 
+    async def sync_log_deletions(
+        self, cursor: str = "", limit: int = 1000
+    ) -> dict[str, Any]:
+        """通过 NestJS 内部接口按 MongoDB ID 游标同步日志删除墓碑"""
+        result: dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/log-deletions/sync",
+            method="GET",
+            params={"cursor": cursor, "limit": limit},
+        )
+        return result.get("data", {"list": [], "nextCursor": None})
+
     async def upload_file(self, file_path: str, oss_path: str) -> dict[str, Any]:
         """远程调用 NestJS 上传文件到 OSS"""
         remote_call_config: dict[str, Any] = load_config("remote_call")

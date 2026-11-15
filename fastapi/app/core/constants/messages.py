@@ -2160,6 +2160,16 @@ class Messages:
         return f"ClickHouse 数仓本次受影响分区: {partitions}"
 
     @staticmethod
+    def WAREHOUSE_LOG_DELETION_SYNC_SUCCESS(count: int) -> str:
+        """构造数仓按删除墓碑清除日志的日志消息"""
+        return f"ClickHouse 数仓已按删除墓碑清除业务库已删除的日志: rows={count}"
+
+    @staticmethod
+    def WAREHOUSE_API_LOG_PURGED(partitions: list[str]) -> str:
+        """构造数仓清理超过保留期 API 日志的日志消息"""
+        return f"ClickHouse 数仓已清理超过保留期的 API 日志分区: {partitions}"
+
+    @staticmethod
     def WAREHOUSE_AFFECTED_SNAPSHOTS(tables: list[str]) -> str:
         """构造数仓本次受影响快照表的日志消息"""
         return f"ClickHouse 数仓本次受影响快照表: {tables}"

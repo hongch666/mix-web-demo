@@ -13,6 +13,53 @@ class WarehouseScripts:
     ODS_API_LOG_TABLE: Final[str] = "ods_api_log"
     """API 日志的 ODS 表名"""
 
+    API_LOG_RETENTION_MONTHS: Final[int] = 3
+    """API 日志在数仓的保留月数，须与 NestJS 侧 Defaults.LOG_RETENTION_MONTHS 保持一致"""
+
+    API_LOG_TIMEZONE: Final[str] = "Asia/Shanghai"
+    """API 日志的时间基准时区，与 NestJS 落库时格式化 created_at 使用的时区一致"""
+
+    ODS_API_LOG_EXPIRED_PARTITIONS: Final[str] = (
+        "SELECT DISTINCT toString(toYYYYMM(created_at)) FROM warehouse.ods_api_log "
+        "WHERE created_at < %(cutoff)s"
+    )
+    """查询数仓中已超过保留期的 API 日志月份分区"""
+
+    ODS_API_LOG_DELETE_EXPIRED: Final[str] = (
+        "ALTER TABLE warehouse.ods_api_log DELETE IN PARTITION %(partition)s "
+        "WHERE created_at < %(cutoff)s SETTINGS mutations_sync = 2"
+    )
+    """删除保留期截止点之前的 API 日志，限定边界分区并同步等待 mutation 完成，避免重建分区读回已删数据"""
+
+    LOG_DELETION_TABLE: Final[str] = "log_deletions"
+    """日志删除墓碑的同步水位标识，对应 NestJS 侧 /log-deletions/sync 接口"""
+
+    LOG_DELETION_ODS_TABLES: Final[dict[str, str]] = {
+        "api": "ods_api_log",
+        "article": "ods_article_log",
+    }
+    """墓碑日志类型到数仓 ODS 表的映射，取值与 NestJS 侧 LogTypes 对齐"""
+
+    LOG_DELETION_BATCH_SIZE: Final[int] = 1000
+    """墓碑同步的单页条数"""
+
+    LOG_PARTITION_IDS: Final[str] = (
+        "SELECT DISTINCT partition_id FROM system.parts "
+        "WHERE database = 'warehouse' AND table = %(table)s AND active"
+    )
+    """查询指定数仓表当前存在的分区编号，用于跳过已被保留期清理删除的分区"""
+
+    ODS_LOG_DELETE_BY_IDS: Final[str] = (
+        "DELETE IN PARTITION %(partition)s WHERE event_id IN %(event_ids)s "
+        "SETTINGS mutations_sync = 2"
+    )
+    """按主键删除 ODS 日志的语句片段，调用方在其前面拼上 ALTER TABLE warehouse.<表名>"""
+
+    ODS_LOG_DELETE_BY_IDS_UNPARTITIONED: Final[str] = (
+        "DELETE WHERE event_id IN %(event_ids)s SETTINGS mutations_sync = 2"
+    )
+    """墓碑缺少原日志时间时的删除语句片段，退化为不限定分区"""
+
     WATERMARK_DELETE_BY_TABLE: Final[str] = (
         "ALTER TABLE warehouse.sync_watermark DELETE WHERE table_name = %(table_name)s"
     )

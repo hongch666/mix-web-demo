@@ -4,7 +4,9 @@ import traceback
 from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, Optional
+from zoneinfo import ZoneInfo
 
+from dateutil.relativedelta import relativedelta
 from sqlalchemy import desc, insert, select
 
 from app.core.base import Logger
@@ -12,6 +14,7 @@ from app.core.constants import Messages, RedisKeys, WarehouseScripts
 from app.core.db import (
     clickhouse_async_engine,
     create_warehouse_tables_async,
+    execute_clickhouse_query,
     execute_clickhouse_sql,
     get_redis_client,
 )
@@ -332,6 +335,139 @@ async def _sync_article_logs(nestjs_client: NestjsClient) -> tuple[bool, set[str
     return total > 0, dirty_partitions
 
 
+async def _existing_log_partitions(table_name: str) -> set[str]:
+    """查询指定数仓表当前存在的分区编号"""
+    rows = await execute_clickhouse_query(
+        WarehouseScripts.LOG_PARTITION_IDS, {"table": table_name}
+    )
+    return {str(row[0]) for row in rows if row and row[0]}
+
+
+async def _apply_log_deletions(
+    items: list[dict[str, Any]],
+) -> tuple[set[str], set[str]]:
+    """把一批删除墓碑按日志类型与月份分组后从对应 ODS 表删除
+
+    返回 (受影响的 ODS 表, 受影响的分区值集合)
+    带原日志时间的墓碑按月份分区删除，缺少时间的墓碑退化为不限定分区删除；
+    分区已被保留期清理删除时直接跳过，避免对不存在的分区执行删除
+    """
+    grouped: dict[tuple[str, str], list[str]] = {}
+    unpartitioned: dict[str, list[str]] = {}
+    for item in items:
+        log_type = str(item.get("logType") or item.get("log_type") or "")
+        table_name = WarehouseScripts.LOG_DELETION_ODS_TABLES.get(log_type)
+        event_id = str(item.get("eventId") or item.get("event_id") or "")
+        if not table_name or not event_id:
+            continue
+        moment = _to_datetime(item.get("logCreatedAt") or item.get("log_created_at"))
+        if moment == WarehouseScripts.EPOCH_DATETIME:
+            unpartitioned.setdefault(table_name, []).append(event_id)
+            continue
+        grouped.setdefault((table_name, moment.strftime("%Y%m")), []).append(event_id)
+    changed_sources: set[str] = set()
+    dirty_partitions: set[str] = set()
+    existing_partitions: dict[str, set[str]] = {}
+    for (table_name, partition), event_ids in grouped.items():
+        if table_name not in existing_partitions:
+            existing_partitions[table_name] = await _existing_log_partitions(table_name)
+        if partition not in existing_partitions[table_name]:
+            continue
+        await execute_clickhouse_sql(
+            f"ALTER TABLE warehouse.{table_name} "
+            f"{WarehouseScripts.ODS_LOG_DELETE_BY_IDS}",
+            {"partition": partition, "event_ids": event_ids},
+        )
+        changed_sources.add(table_name)
+        dirty_partitions.add(partition)
+    for table_name, event_ids in unpartitioned.items():
+        await execute_clickhouse_sql(
+            f"ALTER TABLE warehouse.{table_name} "
+            f"{WarehouseScripts.ODS_LOG_DELETE_BY_IDS_UNPARTITIONED}",
+            {"event_ids": event_ids},
+        )
+        changed_sources.add(table_name)
+    return changed_sources, dirty_partitions
+
+
+async def _sync_log_deletions(
+    nestjs_client: NestjsClient,
+) -> tuple[set[str], set[str]]:
+    """按墓碑游标把业务库的日志删除动作同步到数仓
+
+    返回 (受影响的 ODS 表, 受影响的分区值集合)
+    删除只发生在业务库，日志增量同步看不到删除动作，因此由 NestJS 记录墓碑，
+    这里按游标拉取并清除 ODS 对应行，再由脏分区触发派生层重建
+    """
+    stored_cursor = await _read_watermark_value(WarehouseScripts.LOG_DELETION_TABLE)
+    cursor = stored_cursor if _is_mongo_cursor(stored_cursor) else ""
+    changed_sources: set[str] = set()
+    dirty_partitions: set[str] = set()
+    total = 0
+    while True:
+        page = await nestjs_client.sync_log_deletions(
+            cursor, WarehouseScripts.LOG_DELETION_BATCH_SIZE
+        )
+        items = page.get("list", []) if isinstance(page, dict) else []
+        if not items:
+            break
+        changed, partitions = await _apply_log_deletions(items)
+        changed_sources |= changed
+        dirty_partitions |= partitions
+        total += len(items)
+        next_cursor = page.get("nextCursor") or page.get("next_cursor")
+        if next_cursor:
+            cursor = next_cursor
+        else:
+            cursor = str(items[-1].get("_id") or items[-1].get("id") or "")
+            break
+    if cursor:
+        await _write_watermark_value(WarehouseScripts.LOG_DELETION_TABLE, cursor)
+    if total:
+        Logger.info(Messages.WAREHOUSE_LOG_DELETION_SYNC_SUCCESS(total))
+    return changed_sources, dirty_partitions
+
+
+async def _expired_api_log_partitions(cutoff: datetime) -> list[str]:
+    """查询数仓中产生时间早于保留期截止点的 API 日志月份分区"""
+    rows = await execute_clickhouse_query(
+        WarehouseScripts.ODS_API_LOG_EXPIRED_PARTITIONS, {"cutoff": cutoff}
+    )
+    return [str(row[0]) for row in rows if row and row[0]]
+
+
+async def _purge_expired_api_logs(
+    current: Optional[datetime] = None,
+) -> tuple[bool, set[str]]:
+    """按业务库的保留期清理数仓中已被删除的 API 日志
+
+    返回 (本次是否清理过数据, 受影响的分区值集合)
+    NestJS 定时任务每天删除超过保留期的 MongoDB 日志，数仓没有对应的删除动作，
+    已删除的日志会继续计入 ADS 接口分析，因此按同一保留期对齐：
+    整月过期的分区直接 DROP（同步且廉价），跨过截止点的边界月份用 DELETE 精确删除
+    """
+    moment = current or datetime.now(
+        ZoneInfo(WarehouseScripts.API_LOG_TIMEZONE)
+    ).replace(tzinfo=None)
+    cutoff = moment - relativedelta(months=WarehouseScripts.API_LOG_RETENTION_MONTHS)
+    partitions = await _expired_api_log_partitions(cutoff)
+    if not partitions:
+        return False, set()
+    cutoff_month = cutoff.strftime("%Y%m")
+    for partition in partitions:
+        if partition < cutoff_month:
+            await _drop_partition_if_exists(
+                WarehouseScripts.ODS_API_LOG_TABLE, partition
+            )
+    if cutoff_month in partitions:
+        await execute_clickhouse_sql(
+            WarehouseScripts.ODS_API_LOG_DELETE_EXPIRED,
+            {"partition": cutoff_month, "cutoff": cutoff},
+        )
+    Logger.info(Messages.WAREHOUSE_API_LOG_PURGED(sorted(partitions)))
+    return True, set(partitions)
+
+
 def _resolve_affected_snapshots(changed_sources: set[str]) -> set[str]:
     """
     按依赖图推导受影响的快照表集合
@@ -459,6 +595,18 @@ async def _sync_warehouse(
                 changed_sources.add(WarehouseScripts.ODS_API_LOG_TABLE)
             dirty_partitions |= event_partitions
             dirty_partitions |= api_partitions
+            # 业务库已按保留期删除的日志同步从数仓清除，否则 ADS 接口分析会继续统计已删除数据
+            purged, purged_partitions = await _purge_expired_api_logs()
+            if purged:
+                changed_sources.add(WarehouseScripts.ODS_API_LOG_TABLE)
+                dirty_partitions |= purged_partitions
+            # 单条与批量删除只发生在业务库，按墓碑补齐数仓侧的删除动作
+            deleted_sources, deleted_partitions = await _sync_log_deletions(
+                nestjs_client
+            )
+            if deleted_sources:
+                changed_sources |= deleted_sources
+                dirty_partitions |= deleted_partitions
         if dirty_partitions or changed_sources:
             if dirty_partitions:
                 Logger.info(

@@ -301,6 +301,12 @@ async def test_sync_warehouse_skips_refresh_when_nothing_changed(
         task, "_sync_article_logs", AsyncMock(return_value=(False, set()))
     )
     monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=(False, set())))
+    monkeypatch.setattr(
+        task, "_purge_expired_api_logs", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(
+        task, "_sync_log_deletions", AsyncMock(return_value=(set(), set()))
+    )
     refresh = AsyncMock()
     monkeypatch.setattr(task, "_refresh_warehouse", refresh)
 
@@ -325,6 +331,12 @@ async def test_sync_warehouse_refreshes_when_dirty_partitions_exist(
         task, "_sync_article_logs", AsyncMock(return_value=(False, set()))
     )
     monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=(False, set())))
+    monkeypatch.setattr(
+        task, "_purge_expired_api_logs", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(
+        task, "_sync_log_deletions", AsyncMock(return_value=(set(), set()))
+    )
     refresh = AsyncMock()
     monkeypatch.setattr(task, "_refresh_warehouse", refresh)
 
@@ -352,6 +364,12 @@ async def test_sync_warehouse_refreshes_snapshots_when_mysql_source_changed(
         task, "_sync_article_logs", AsyncMock(return_value=(False, set()))
     )
     monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=(False, set())))
+    monkeypatch.setattr(
+        task, "_purge_expired_api_logs", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(
+        task, "_sync_log_deletions", AsyncMock(return_value=(set(), set()))
+    )
     refresh = AsyncMock()
     monkeypatch.setattr(task, "_refresh_warehouse", refresh)
 
@@ -506,3 +524,310 @@ async def test_sync_warehouse_async_forwards_resources(
 
     sync.assert_awaited_once()
     assert sync.await_args.args[2] == {"comments"}
+
+
+# 数仓没有超过保留期的日志时不执行任何删除
+@pytest.mark.anyio
+async def test_purge_expired_api_logs_skips_when_nothing_expired(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    partitions = AsyncMock(return_value=[])
+    execute = AsyncMock()
+    monkeypatch.setattr(task, "_expired_api_log_partitions", partitions)
+    monkeypatch.setattr(task, "execute_clickhouse_sql", execute)
+
+    purged, dirty = await task._purge_expired_api_logs(datetime(2026, 11, 15, 2, 0, 0))
+
+    assert purged is False
+    assert dirty == set()
+    execute.assert_not_awaited()
+
+
+# 整月过期的分区直接 DROP，跨过截止点的边界月份按截止点精确删除
+@pytest.mark.anyio
+async def test_purge_expired_api_logs_drops_whole_months_and_deletes_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executed: list[tuple[str, dict | None]] = []
+
+    async def fake_execute(sql: str, parameters: dict | None = None) -> None:
+        executed.append((sql, parameters))
+
+    monkeypatch.setattr(
+        task,
+        "_expired_api_log_partitions",
+        AsyncMock(return_value=["202606", "202607", "202608"]),
+    )
+    monkeypatch.setattr(task, "execute_clickhouse_sql", fake_execute)
+
+    purged, dirty = await task._purge_expired_api_logs(datetime(2026, 11, 15, 2, 0, 0))
+
+    assert purged is True
+    assert dirty == {"202606", "202607", "202608"}
+    # 保留期截止点为 2026-08-15，6 月与 7 月整月过期走 DROP，8 月为边界月份走 DELETE
+    drops = [sql for sql, _ in executed if "DROP PARTITION" in sql]
+    assert drops == [
+        "ALTER TABLE warehouse.ods_api_log DROP PARTITION 202606",
+        "ALTER TABLE warehouse.ods_api_log DROP PARTITION 202607",
+    ]
+    deletes = [(sql, parameters) for sql, parameters in executed if "DELETE" in sql]
+    assert deletes == [
+        (
+            task.WarehouseScripts.ODS_API_LOG_DELETE_EXPIRED,
+            {"partition": "202608", "cutoff": datetime(2026, 8, 15, 2, 0, 0)},
+        )
+    ]
+
+
+# 清理过期日志产生的分区并入脏分区，并登记 ods_api_log 变更以刷新 ADS 接口分析快照
+@pytest.mark.anyio
+async def test_sync_warehouse_merges_purged_partitions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        task, "_sync_remote_source", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(task, "create_warehouse_tables_async", AsyncMock())
+    monkeypatch.setattr(
+        task, "_sync_article_logs", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=(False, set())))
+    monkeypatch.setattr(
+        task, "_purge_expired_api_logs", AsyncMock(return_value=(True, {"202605"}))
+    )
+    monkeypatch.setattr(
+        task, "_sync_log_deletions", AsyncMock(return_value=(set(), set()))
+    )
+    refresh = AsyncMock()
+    monkeypatch.setattr(task, "_refresh_warehouse", refresh)
+
+    await task._sync_warehouse(AsyncMock(), AsyncMock())
+
+    refresh.assert_awaited_once_with({"202605"}, {"ods_api_log"})
+
+
+# 按资源名精确同步的实时轮次不执行保留期清理
+@pytest.mark.anyio
+async def test_sync_warehouse_skips_purge_on_targeted_sync(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(task, "create_warehouse_tables_async", AsyncMock())
+    monkeypatch.setattr(
+        task, "_sync_remote_source", AsyncMock(return_value=(False, set()))
+    )
+    purge = AsyncMock(return_value=(False, set()))
+    monkeypatch.setattr(task, "_purge_expired_api_logs", purge)
+
+    await task._sync_warehouse(AsyncMock(), AsyncMock(), {"articles"})
+
+    purge.assert_not_awaited()
+
+
+# 墓碑按日志类型与月份分组后分别从对应 ODS 表删除
+@pytest.mark.anyio
+async def test_apply_log_deletions_groups_by_log_type_and_month(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executed: list[tuple[str, dict | None]] = []
+
+    async def fake_execute(sql: str, parameters: dict | None = None) -> None:
+        executed.append((sql, parameters))
+
+    monkeypatch.setattr(task, "execute_clickhouse_sql", fake_execute)
+    monkeypatch.setattr(
+        task,
+        "execute_clickhouse_query",
+        AsyncMock(return_value=[("202609",), ("202610",)]),
+    )
+
+    changed, partitions = await task._apply_log_deletions(
+        [
+            {
+                "logType": "api",
+                "eventId": "event-1",
+                "logCreatedAt": "2026-09-01 10:00:00",
+            },
+            {
+                "logType": "api",
+                "eventId": "event-2",
+                "logCreatedAt": "2026-09-20 10:00:00",
+            },
+            {
+                "logType": "article",
+                "eventId": "event-3",
+                "logCreatedAt": "2026-10-01 10:00:00",
+            },
+        ]
+    )
+
+    assert changed == {"ods_api_log", "ods_article_log"}
+    assert partitions == {"202609", "202610"}
+    assert executed == [
+        (
+            "ALTER TABLE warehouse.ods_api_log "
+            f"{task.WarehouseScripts.ODS_LOG_DELETE_BY_IDS}",
+            {"partition": "202609", "event_ids": ["event-1", "event-2"]},
+        ),
+        (
+            "ALTER TABLE warehouse.ods_article_log "
+            f"{task.WarehouseScripts.ODS_LOG_DELETE_BY_IDS}",
+            {"partition": "202610", "event_ids": ["event-3"]},
+        ),
+    ]
+
+
+# 未知日志类型与缺少主键的墓碑直接跳过，不产生任何删除语句
+@pytest.mark.anyio
+async def test_apply_log_deletions_skips_unknown_or_invalid_items(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execute = AsyncMock()
+    monkeypatch.setattr(task, "execute_clickhouse_sql", execute)
+    monkeypatch.setattr(task, "execute_clickhouse_query", AsyncMock(return_value=[]))
+
+    changed, partitions = await task._apply_log_deletions(
+        [
+            {"logType": "unknown", "eventId": "event-1", "logCreatedAt": "2026-09-01"},
+            {"logType": "api", "eventId": "", "logCreatedAt": "2026-09-01"},
+        ]
+    )
+
+    assert changed == set()
+    assert partitions == set()
+    execute.assert_not_awaited()
+
+
+# 墓碑缺少原日志时间时退化为不限定分区删除，仍会登记源表变更
+@pytest.mark.anyio
+async def test_apply_log_deletions_falls_back_without_log_time(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executed: list[tuple[str, dict | None]] = []
+
+    async def fake_execute(sql: str, parameters: dict | None = None) -> None:
+        executed.append((sql, parameters))
+
+    monkeypatch.setattr(task, "execute_clickhouse_sql", fake_execute)
+    monkeypatch.setattr(task, "execute_clickhouse_query", AsyncMock(return_value=[]))
+
+    changed, partitions = await task._apply_log_deletions(
+        [{"logType": "article", "eventId": "event-1"}]
+    )
+
+    assert changed == {"ods_article_log"}
+    assert partitions == set()
+    assert executed == [
+        (
+            "ALTER TABLE warehouse.ods_article_log "
+            f"{task.WarehouseScripts.ODS_LOG_DELETE_BY_IDS_UNPARTITIONED}",
+            {"event_ids": ["event-1"]},
+        )
+    ]
+
+
+# 墓碑同步按游标推进水位，并把处理结果汇总为受影响的表与分区
+@pytest.mark.anyio
+async def test_sync_log_deletions_advances_watermark(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nestjs_client = AsyncMock()
+    nestjs_client.sync_log_deletions.return_value = {
+        "list": [
+            {
+                "_id": "651f1a2b3c4d5e6f708192a3",
+                "logType": "api",
+                "eventId": "event-1",
+                "logCreatedAt": "2026-09-01 10:00:00",
+            }
+        ],
+        "nextCursor": None,
+    }
+    write_watermark = AsyncMock()
+    monkeypatch.setattr(task, "_read_watermark_value", AsyncMock(return_value=""))
+    monkeypatch.setattr(task, "_write_watermark_value", write_watermark)
+    monkeypatch.setattr(
+        task,
+        "_apply_log_deletions",
+        AsyncMock(return_value=({"ods_api_log"}, {"202609"})),
+    )
+
+    changed, partitions = await task._sync_log_deletions(nestjs_client)
+
+    assert changed == {"ods_api_log"}
+    assert partitions == {"202609"}
+    write_watermark.assert_awaited_once_with(
+        task.WarehouseScripts.LOG_DELETION_TABLE, "651f1a2b3c4d5e6f708192a3"
+    )
+
+
+# 没有墓碑时不写入水位，避免把空游标落成同步进度
+@pytest.mark.anyio
+async def test_sync_log_deletions_skips_empty_page(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nestjs_client = AsyncMock()
+    nestjs_client.sync_log_deletions.return_value = {"list": [], "nextCursor": None}
+    write_watermark = AsyncMock()
+    monkeypatch.setattr(task, "_read_watermark_value", AsyncMock(return_value=""))
+    monkeypatch.setattr(task, "_write_watermark_value", write_watermark)
+
+    changed, partitions = await task._sync_log_deletions(nestjs_client)
+
+    assert changed == set()
+    assert partitions == set()
+    write_watermark.assert_not_awaited()
+
+
+# 墓碑删除结果并入脏分区，并登记被删日志所在的源表以刷新派生层
+@pytest.mark.anyio
+async def test_sync_warehouse_merges_log_deletion_results(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        task, "_sync_remote_source", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(task, "create_warehouse_tables_async", AsyncMock())
+    monkeypatch.setattr(
+        task, "_sync_article_logs", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=(False, set())))
+    monkeypatch.setattr(
+        task, "_purge_expired_api_logs", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(
+        task,
+        "_sync_log_deletions",
+        AsyncMock(return_value=({"ods_article_log"}, {"202609"})),
+    )
+    refresh = AsyncMock()
+    monkeypatch.setattr(task, "_refresh_warehouse", refresh)
+
+    await task._sync_warehouse(AsyncMock(), AsyncMock())
+
+    refresh.assert_awaited_once_with({"202609"}, {"ods_article_log"})
+
+
+# 分区已被保留期清理删除时跳过该墓碑，避免对不存在的分区执行删除
+@pytest.mark.anyio
+async def test_apply_log_deletions_skips_missing_partition(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execute = AsyncMock()
+    monkeypatch.setattr(task, "execute_clickhouse_sql", execute)
+    monkeypatch.setattr(
+        task, "execute_clickhouse_query", AsyncMock(return_value=[("202610",)])
+    )
+
+    changed, partitions = await task._apply_log_deletions(
+        [
+            {
+                "logType": "api",
+                "eventId": "event-1",
+                "logCreatedAt": "2026-09-01 10:00:00",
+            }
+        ]
+    )
+
+    assert changed == set()
+    assert partitions == set()
+    execute.assert_not_awaited()
