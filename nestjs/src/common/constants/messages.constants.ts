@@ -81,6 +81,14 @@ export class Messages {
   static readonly ARTICLE_LOG_INDEX_INIT_FAILED = (message: string): string =>
     `文章日志索引初始化失败: ${message}`;
 
+  /** 构造日志删除墓碑索引创建成功的日志消息 */
+  static readonly LOG_DELETION_INDEX_CREATED = (indexName: string): string =>
+    `日志删除墓碑索引已创建: ${indexName}`;
+
+  /** 构造日志删除墓碑索引初始化失败的错误消息 */
+  static readonly LOG_DELETION_INDEX_INIT_FAILED = (message: string): string =>
+    `日志删除墓碑索引初始化失败: ${message}`;
+
   // ===== 异常与请求日志 =====
 
   /** 构造全局异常日志的结构化消息 */

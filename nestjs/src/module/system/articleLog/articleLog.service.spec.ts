@@ -23,9 +23,13 @@ function createService(
     getArticleByIds: jest.fn().mockResolvedValue({ data: articles }),
   };
   const logger = { info: jest.fn(), error: jest.fn(), warning: jest.fn() };
+  const logDeletion = {
+    recordDeletions: jest.fn().mockResolvedValue(undefined),
+  };
   const service = new ArticleLogService(
     logModel as never,
     springClient as never,
+    logDeletion as never,
     logger as never,
   );
   return { service, aggregate };
