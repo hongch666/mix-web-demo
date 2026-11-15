@@ -78,6 +78,10 @@ routes:
   - id: auth-public-login
     uri: /users/login
     upstream_id: spring
+    # 限流用 local 策略：nginx_config.worker_processes 已收敛到 1，进程内计数即全局计数
+    # 因此不接 Redis，也不需要 redis_host / redis_password / redis_database 一组配置
+    # 网关扩多 worker 或多副本时配额会按实例数放大，届时须改回 policy: redis 并补齐 redis_* 配置
+    # 登录类路由共用该锚点，新增同类路由直接引用 *login_limit
     plugins: &login_limit
       limit-req:
         {
@@ -88,11 +92,7 @@ routes:
           key: "$remote_addr$uri",
           rejected_code: 429,
           rejected_msg: '{"code":429,"msg":"登录请求过于频繁，请稍后再试","data":null}',
-          policy: redis,
-          redis_host: redis,
-          redis_port: 6379,
-          redis_database: 5,
-          redis_timeout: 1000,
+          policy: local,
         }
   - id: auth-public-register
     uri: /users/register

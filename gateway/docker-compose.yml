@@ -19,7 +19,6 @@ services:
         condition: service_completed_successfully
     extra_hosts:
       - "nacos:host-gateway"
-      - "redis:host-gateway"
       - "spring:host-gateway"
     ports:
       - "${GATEWAY_PORT:-8080}:9080"
