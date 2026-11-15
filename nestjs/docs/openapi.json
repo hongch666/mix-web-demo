@@ -587,6 +587,56 @@
         ]
       }
     },
+    "/log-deletions/sync": {
+      "get": {
+        "description": "供 FastAPI 数仓按 MongoDB ID 游标拉取被删除的 API 日志与文章日志墓碑，用于清除数仓中已删除的数据",
+        "operationId": "LogDeletionController_sync",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NestjsLogDeletionsSyncGetResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "游标同步日志删除墓碑",
+        "tags": [
+          "日志删除同步模块"
+        ]
+      }
+    },
     "/api-logs/list": {
       "get": {
         "description": "可根据用户ID、用户名、API路径等条件查询，支持 page 分页与 nextCursor 游标翻页，无过滤条件时 total 为集合估算值",
@@ -2401,6 +2451,64 @@
                 }
               },
               "description": "列表项"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "msg",
+          "data"
+        ]
+      },
+      "NestjsLogDeletionsSyncGetResponse": {
+        "type": "object",
+        "description": "统一接口响应体",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 200,
+            "description": "响应码，与 HTTP 状态码一致"
+          },
+          "msg": {
+            "type": "string",
+            "example": "success",
+            "description": "响应消息"
+          },
+          "data": {
+            "type": "object",
+            "description": "日志删除墓碑增量同步结果",
+            "properties": {
+              "list": {
+                "type": "array",
+                "description": "墓碑列表",
+                "items": {
+                  "type": "object",
+                  "description": "日志删除墓碑记录",
+                  "properties": {
+                    "_id": {
+                      "type": "string",
+                      "description": "墓碑 ID"
+                    },
+                    "log_type": {
+                      "type": "string",
+                      "description": "日志类型，api 或 article"
+                    },
+                    "event_id": {
+                      "type": "string",
+                      "description": "被删除日志的 MongoDB 主键"
+                    },
+                    "log_created_at": {
+                      "type": "string",
+                      "description": "原日志产生时间"
+                    }
+                  }
+                }
+              },
+              "next_cursor": {
+                "type": "string",
+                "description": "下一页游标"
+              }
             }
           }
         },

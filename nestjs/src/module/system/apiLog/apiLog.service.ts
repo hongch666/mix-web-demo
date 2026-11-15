@@ -5,7 +5,7 @@ import isLeapYear from "dayjs/plugin/isLeapYear";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { Model, Types } from "mongoose";
-import { Defaults, Messages } from "src/common/constants";
+import { Defaults, LogTypes, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import type { CreatedAtCursor } from "src/common/utils/createdAtCursor.util";
 import {
@@ -16,6 +16,7 @@ import {
   parseCreatedAtCursor,
 } from "src/common/utils/createdAtCursor.util";
 import { LoggerService } from "src/module/common/logger/logger.service";
+import { LogDeletionService } from "src/module/system/logDeletion/logDeletion.service";
 import { CreateApiLogDto, QueryApiLogDto } from "./dto/apiLog.dto";
 import { ApiLog, ApiLogDocument } from "./schema/apiLog.schema";
 
@@ -90,6 +91,7 @@ export class ApiLogService {
   constructor(
     @InjectModel(ApiLog.name)
     private readonly apiLogModel: Model<ApiLogDocument>,
+    private readonly logDeletionService: LogDeletionService,
     private readonly logger: LoggerService,
   ) {
     // 索引初始化属于启动期尽力而为的操作，失败只记录日志，不阻塞服务启动
@@ -183,6 +185,10 @@ export class ApiLogService {
     if (!existingLog) {
       throw BusinessException.notFound(Messages.API_LOG_NOT_FOUND);
     }
+    // 先记录删除墓碑，数仓据此清除已删除的日志，写入失败时不删除以免删除无法传播
+    await this.logDeletionService.recordDeletions(LogTypes.API, [
+      { id: existingLog.id, createdAt: existingLog.createdAt },
+    ]);
     await this.apiLogModel.findByIdAndDelete(id).exec();
   }
 
@@ -203,6 +209,11 @@ export class ApiLogService {
       throw BusinessException.notFound(Messages.API_LOG_PARTIAL_NOT_FOUND);
     }
 
+    // 先记录删除墓碑，数仓据此清除已删除的日志，写入失败时不删除以免删除无法传播
+    await this.logDeletionService.recordDeletions(
+      LogTypes.API,
+      existingLogs.map((log) => ({ id: log.id, createdAt: log.createdAt })),
+    );
     await this.apiLogModel.deleteMany({ _id: { $in: ids } }).exec();
   }
 
@@ -357,10 +368,10 @@ export class ApiLogService {
   async cleanupOldLogs(before: Date): Promise<number> {
     let total: number = 0;
     for (;;) {
-      // 每轮按批次查出待删文档的 _id，再用 deleteMany 按主键删除，避免单次大事务
+      // 每轮按批次查出待删文档的 _id 与产生时间，再用 deleteMany 按主键删除，避免单次大事务
       const batch: ApiLogDocument[] = await this.apiLogModel
         .find({ createdAt: { $lt: before } })
-        .select("_id")
+        .select("_id createdAt")
         .limit(Defaults.LOG_CLEANUP_BATCH_SIZE)
         .lean()
         .exec();
@@ -369,6 +380,14 @@ export class ApiLogService {
       }
       const ids: Types.ObjectId[] = batch.map(
         (item) => item._id as Types.ObjectId,
+      );
+      // 每批删除前先记录墓碑，数仓按墓碑与月份分区清除对应日志
+      await this.logDeletionService.recordDeletions(
+        LogTypes.API,
+        batch.map((item) => ({
+          id: String(item._id),
+          createdAt: item.createdAt,
+        })),
       );
       const result = await this.apiLogModel
         .deleteMany({ _id: { $in: ids } })

@@ -5,7 +5,7 @@ import isLeapYear from "dayjs/plugin/isLeapYear";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { DeleteResult, Model, Types } from "mongoose";
-import { Defaults, Messages, RedisKeys } from "src/common/constants";
+import { Defaults, LogTypes, Messages, RedisKeys } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import type { CreatedAtCursor } from "src/common/utils/createdAtCursor.util";
 import {
@@ -18,6 +18,7 @@ import {
 import { Cacheable } from "src/framework/decorators/cache.decorator";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { SpringClientService } from "src/module/common/client/springClient.service";
+import { LogDeletionService } from "src/module/system/logDeletion/logDeletion.service";
 import {
   ArticleAction,
   CreateArticleLogDto,
@@ -95,6 +96,7 @@ export class ArticleLogService {
     @InjectModel(ArticleLog.name)
     private readonly logModel: Model<ArticleLogDocument>,
     private readonly springClient: SpringClientService,
+    private readonly logDeletionService: LogDeletionService,
     private readonly logger: LoggerService,
   ) {
     // 索引初始化属于启动期尽力而为的操作，失败只记录日志，不阻塞服务启动
@@ -189,6 +191,10 @@ export class ArticleLogService {
     if (!existingLog) {
       throw BusinessException.notFound(Messages.ARTICLE_LOG_NOT_FOUND);
     }
+    // 先记录删除墓碑，数仓据此清除已删除的日志，写入失败时不删除以免删除无法传播
+    await this.logDeletionService.recordDeletions(LogTypes.ARTICLE, [
+      { id: existingLog.id, createdAt: existingLog.createdAt },
+    ]);
     return this.logModel.findByIdAndDelete(id).exec();
   }
 
@@ -212,6 +218,14 @@ export class ArticleLogService {
       throw BusinessException.notFound(Messages.ARTICLE_LOG_PARTIAL_NOT_FOUND);
     }
 
+    // 先记录删除墓碑，数仓据此清除已删除的日志，写入失败时不删除以免删除无法传播
+    await this.logDeletionService.recordDeletions(
+      LogTypes.ARTICLE,
+      existingLogs.map((log: ArticleLogDocument) => ({
+        id: log.id,
+        createdAt: log.createdAt,
+      })),
+    );
     return this.logModel.deleteMany({ _id: { $in: ids } }).exec();
   }
 

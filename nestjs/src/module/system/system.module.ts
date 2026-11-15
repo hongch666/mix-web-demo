@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ApiLogModule } from "./apiLog/apiLog.module";
 import { ArticleLogModule } from "./articleLog/articleLog.module";
 import { DownloadModule } from "./download/download.module";
+import { LogDeletionModule } from "./logDeletion/logDeletion.module";
 import { MongoToolsModule } from "./mongoTools/mongoTools.module";
 import { SqlToolsModule } from "./sqlTools/sqlTools.module";
 import { TableSettingsModule } from "./tableSettings/tableSettings.module";
@@ -18,6 +19,7 @@ import { UploadModule } from "./upload/upload.module";
     ArticleLogModule,
     ApiLogModule,
     DownloadModule,
+    LogDeletionModule,
     MongoToolsModule,
     UploadModule,
     TableSettingsModule,

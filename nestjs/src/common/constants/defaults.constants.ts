@@ -21,7 +21,7 @@ export class Defaults {
 
   // ===== 日志保留期限 =====
 
-  /** 日志保留月数：API 日志与文章日志超过该期限后由定时任务分批清理 */
+  /** 日志保留月数：API 日志与文章日志超过该期限后由定时任务分批清理，数仓按同一保留期清理已过期日志 */
   static readonly LOG_RETENTION_MONTHS = 3;
 
   // ===== RabbitMQ 日志攒批配置 =====
@@ -34,6 +34,14 @@ export class Defaults {
   static readonly LOG_BATCH_MAX_BUFFER_SIZE = 5000;
   /** 日志清理单批删除上限：分批执行 deleteMany，避免一次性删除整月数据造成数据库压力尖峰 */
   static readonly LOG_CLEANUP_BATCH_SIZE = 5000;
+
+  // ===== 日志删除墓碑 =====
+
+  /** 删除墓碑的保留秒数（90 天）：数仓同步后墓碑即可回收，超出该窗口仍未被同步的删除会由数仓保留期清理兜底 */
+  static readonly LOG_DELETION_TTL_SECONDS = 7776000;
+
+  /** 删除墓碑单页返回上限：供数仓按游标拉取，与日志同步接口的单页上限保持一致 */
+  static readonly LOG_DELETION_SYNC_MAX_LIMIT = 5000;
 
   // ===== 远程调用连接池 =====
 

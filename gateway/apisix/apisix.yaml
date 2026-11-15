@@ -62,6 +62,7 @@ routes:
         /articles/stats/batch,
         /comments/batch,
         /task/*,
+        /log-deletions/*,
         /logs,
         /ai_history,
         /upload,

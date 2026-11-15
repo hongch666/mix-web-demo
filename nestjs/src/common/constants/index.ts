@@ -3,6 +3,7 @@ export { Defaults } from "./defaults.constants";
 export { ErrorIds } from "./errorIds.constants";
 export { ExportTemplate } from "./exportTemplate.constants";
 export { HttpCode } from "./httpCode.constants";
+export { LogTypes } from "./logType.constants";
 export { Messages } from "./messages.constants";
 export { MetricNames } from "./metricNames.constants";
 export { MongoTools } from "./mongoTools.constants";

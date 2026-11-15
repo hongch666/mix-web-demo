@@ -256,6 +256,26 @@ export const SwaggerApiLogSyncData: SchemaObject = {
   },
 };
 
+const logDeletionItem: SchemaObject = {
+  type: "object",
+  description: "日志删除墓碑记录",
+  properties: {
+    _id: stringField("墓碑 ID"),
+    logType: stringField("日志类型，api 或 article"),
+    eventId: stringField("被删除日志的 MongoDB 主键"),
+    logCreatedAt: stringField("原日志产生时间"),
+  },
+};
+
+export const SwaggerLogDeletionSyncData: SchemaObject = {
+  type: "object",
+  description: "日志删除墓碑增量同步结果",
+  properties: {
+    list: { type: "array", description: "墓碑列表", items: logDeletionItem },
+    nextCursor: stringField("下一页游标"),
+  },
+};
+
 export const SwaggerApiLogAverageData: SchemaObject = {
   type: "array",
   description: "接口平均响应时间统计",
