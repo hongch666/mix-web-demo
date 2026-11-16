@@ -54,11 +54,11 @@ func (l *ChatGetHistoryLogic) ChatGetHistory(req *types.ChatGetHistoryReq) (resp
 	_ = mr.Finish(
 		func() error {
 			messages, total, getErr = l.svcCtx.ChatMessagesModel.GetChatHistory(l.ctx, req.UserId, req.OtherId, offset, size)
-			return getErr
+			return nil
 		},
 		func() error {
 			markErr = l.svcCtx.ChatMessagesModel.MarkChatHistoryAsRead(l.ctx, req.UserId, req.OtherId)
-			return markErr
+			return nil
 		},
 	)
 
