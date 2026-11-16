@@ -448,9 +448,9 @@ public class UserController {
     }
 
     /**
-     * GET /users/{id}/is-admin 内部接口，判断指定用户是否为管理员并返回布尔结果
+     * GET /users/is-admin/{id} 内部接口，判断指定用户是否为管理员并返回布尔结果
      */
-    @GetMapping("/{id}/is-admin")
+    @GetMapping("/is-admin/{id}")
     @Operation(summary = "判断用户是否为管理员（内部）", description = "根据用户ID判断是否为管理员，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部判断管理员")
