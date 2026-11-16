@@ -59,12 +59,12 @@ describe("SpringClientService", () => {
         },
       },
       {
-        name: "isAdminUser 按 /users/{id}/is-admin 发起 GET",
+        name: "isAdminUser 按 /users/is-admin/{id} 发起 GET",
         invoke: (service) => service.isAdminUser(7),
         expected: {
           serviceName: "spring",
           method: "GET",
-          path: "/users/7/is-admin",
+          path: "/users/is-admin/7",
         },
       },
       {
