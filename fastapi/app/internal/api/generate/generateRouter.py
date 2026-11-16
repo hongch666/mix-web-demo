@@ -3,7 +3,7 @@ from fastapi import APIRouter, BackgroundTasks, Path, Request
 from app.core.base import ApiResponse, success
 from app.core.constants import Messages
 from app.core.decorators import log
-from app.dependencies import GenerateServiceDep
+from app.dependencies import GenerateServiceDep, TagGenerateServiceDep
 from app.internal.schemas import GenerateCommentTaskResponse, GenerateDTO
 
 router: APIRouter = APIRouter(
@@ -22,11 +22,11 @@ router: APIRouter = APIRouter(
 async def generate_tags(
     request: Request,
     data: GenerateDTO,
-    generateService: GenerateServiceDep,
+    tagService: TagGenerateServiceDep,
 ) -> ApiResponse[list[str]]:
     """生成tags接口"""
 
-    tags: list[str] = await generateService.extract_tags(data.text)
+    tags: list[str] = await tagService.extract_tags(data.text)
     return success(tags)
 
 

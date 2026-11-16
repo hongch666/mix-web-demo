@@ -29,6 +29,7 @@ from app.internal.services import (
     get_chat_service,
     get_generate_service,
     get_graph_search_service,
+    get_tag_service,
     get_task_service,
     get_user_service,
     get_vector_search_service,
@@ -151,6 +152,14 @@ def provide_generate_service(
     )
 
 
+def provide_tag_generate_service(
+    spring_client: SpringClientDep,
+    logger: LoggerDep,
+) -> GenerateService:
+    """装配仅含关键词提取能力的轻量生成服务单例，跳过六个大模型依赖"""
+    return get_tag_service(spring_client, logger)
+
+
 def provide_ai_history_service(
     ai_history_mapper: AiHistoryMapperDep,
     spring_client: SpringClientDep,
@@ -258,6 +267,9 @@ ChatApplicationServiceDep = Annotated[
 ]
 ChatServiceDep = Annotated[ChatService, Depends(provide_chat_service)]
 GenerateServiceDep = Annotated[GenerateService, Depends(provide_generate_service)]
+TagGenerateServiceDep = Annotated[
+    GenerateService, Depends(provide_tag_generate_service)
+]
 GraphSearchServiceDep = Annotated[
     GraphSearchService, Depends(provide_graph_search_service)
 ]

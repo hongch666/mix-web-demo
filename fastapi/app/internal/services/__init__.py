@@ -9,7 +9,7 @@ from .chat import (
     get_chat_application_service,
     get_chat_service,
 )
-from .generate import GenerateService, get_generate_service
+from .generate import GenerateService, get_generate_service, get_tag_service
 from .graphSearch import GraphSearchService, get_graph_search_service
 from .task import TaskService, get_task_service
 from .llm import (
@@ -39,6 +39,7 @@ __all__: list[str] = [
     "get_analyze_service",
     "GenerateService",
     "get_generate_service",
+    "get_tag_service",
     "AiHistoryService",
     "get_ai_history_service",
     "ApiLogService",

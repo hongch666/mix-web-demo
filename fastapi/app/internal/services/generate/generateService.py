@@ -653,3 +653,12 @@ def get_generate_service(
         spring_client,
         logger,
     )
+
+
+@lru_cache
+def get_tag_service(
+    spring_client: Optional[SpringClient] = None,
+    logger: Optional[LoggerProtocol] = None,
+) -> GenerateService:
+    """装配仅含关键词提取能力的轻量生成服务单例，不引入大模型依赖"""
+    return GenerateService(spring_client=spring_client, logger=logger)
