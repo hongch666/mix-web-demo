@@ -4,18 +4,18 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from app.core.constants import ErrorCodes, HttpCode, Messages
+from app.core.constants import ErrorCodes, HttpCode
 from app.core.decorators import requireAdmin
 from app.core.errors import BusinessException
 
 admin_check_module = importlib.import_module("app.core.decorators.adminCheck")
 
 
-def _build_spring_client(users: list[dict[str, object]]) -> tuple[Mock, AsyncMock]:
-    get_users_by_ids = AsyncMock(return_value=users)
+def _build_spring_client(is_admin: bool) -> tuple[Mock, AsyncMock]:
+    is_admin_user = AsyncMock(return_value=is_admin)
     spring_client = Mock()
-    spring_client.get_users_by_ids = get_users_by_ids
-    return spring_client, get_users_by_ids
+    spring_client.is_admin_user = is_admin_user
+    return spring_client, is_admin_user
 
 
 def _patch_dependencies(
@@ -32,11 +32,9 @@ def _patch_dependencies(
         )
 
 
-# 管理员角色放行请求并按当前用户 id 查询角色
+# 管理员放行请求并按当前用户 id 查询
 def test_grants_access_for_admin_role(monkeypatch: pytest.MonkeyPatch) -> None:
-    spring_client, get_users_by_ids = _build_spring_client(
-        [{"id": 7, "role": Messages.ROLE_ADMIN}]
-    )
+    spring_client, is_admin_user = _build_spring_client(True)
     _patch_dependencies(monkeypatch, user_id=7, spring_client=spring_client)
 
     @requireAdmin
@@ -44,12 +42,12 @@ def test_grants_access_for_admin_role(monkeypatch: pytest.MonkeyPatch) -> None:
         return article_id
 
     assert asyncio.run(endpoint(article_id=117)) == 117
-    get_users_by_ids.assert_awaited_once_with([7])
+    is_admin_user.assert_awaited_once_with(7)
 
 
-# 普通用户角色被拒返回 403 无管理员权限
+# 非管理员被拒返回 403 无管理员权限
 def test_denies_regular_user_role(monkeypatch: pytest.MonkeyPatch) -> None:
-    spring_client, _ = _build_spring_client([{"id": 7, "role": Messages.ROLE_USER}])
+    spring_client, _ = _build_spring_client(False)
     _patch_dependencies(monkeypatch, user_id=7, spring_client=spring_client)
 
     @requireAdmin
@@ -63,31 +61,12 @@ def test_denies_regular_user_role(monkeypatch: pytest.MonkeyPatch) -> None:
     assert error.value.error == ErrorCodes.ERROR_USER_NO_ADMIN_PERMISSION
 
 
-# 查询结果为空或角色缺失时按普通用户拒绝返回 403
-@pytest.mark.parametrize("users", [[], [{"id": 7}], [{"id": 7, "role": ""}]])
-def test_missing_role_falls_back_to_regular_user(
-    monkeypatch: pytest.MonkeyPatch, users: list[dict[str, object]]
-) -> None:
-    spring_client, _ = _build_spring_client(users)
-    _patch_dependencies(monkeypatch, user_id=7, spring_client=spring_client)
-
-    @requireAdmin
-    async def endpoint() -> str:
-        return "ok"
-
-    with pytest.raises(BusinessException) as error:
-        asyncio.run(endpoint())
-
-    assert error.value.status_code == HttpCode.FORBIDDEN
-    assert error.value.error == ErrorCodes.ERROR_USER_NO_ADMIN_PERMISSION
-
-
-# 未登录或用户 id 为 0 时返回 401 且不查询管理员角色
+# 未登录或用户 id 为 0 时返回 401 且不查询管理员身份
 @pytest.mark.parametrize("user_id", [None, 0])
 def test_missing_current_user_is_rejected(
     monkeypatch: pytest.MonkeyPatch, user_id: int | None
 ) -> None:
-    spring_client, get_users_by_ids = _build_spring_client([])
+    spring_client, is_admin_user = _build_spring_client(False)
     _patch_dependencies(monkeypatch, user_id=user_id, spring_client=spring_client)
 
     @requireAdmin
@@ -99,13 +78,13 @@ def test_missing_current_user_is_rejected(
 
     assert error.value.status_code == HttpCode.UNAUTHORIZED
     assert error.value.error == ErrorCodes.ERROR_USER_NOT_LOGIN
-    get_users_by_ids.assert_not_awaited()
+    is_admin_user.assert_not_awaited()
 
 
 # 管理员校验服务异常时 fail-closed 返回 403
 def test_admin_lookup_failure_is_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     spring_client = Mock()
-    spring_client.get_users_by_ids = AsyncMock(side_effect=RuntimeError("unavailable"))
+    spring_client.is_admin_user = AsyncMock(side_effect=RuntimeError("unavailable"))
     _patch_dependencies(monkeypatch, user_id=7, spring_client=spring_client)
 
     @requireAdmin
@@ -123,7 +102,7 @@ def test_admin_lookup_failure_is_fail_closed(monkeypatch: pytest.MonkeyPatch) ->
 def test_business_exception_from_endpoint_propagates(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    spring_client, _ = _build_spring_client([{"id": 7, "role": Messages.ROLE_ADMIN}])
+    spring_client, _ = _build_spring_client(True)
     _patch_dependencies(monkeypatch, user_id=7, spring_client=spring_client)
 
     @requireAdmin

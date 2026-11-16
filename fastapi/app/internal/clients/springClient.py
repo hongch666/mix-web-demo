@@ -53,6 +53,15 @@ class SpringClient:
         )
         return result.get("data", [])
 
+    async def is_admin_user(self, user_id: int) -> bool:
+        """判断指定用户是否为管理员"""
+        result: dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path=f"/users/is-admin/{user_id}",
+            method="GET",
+        )
+        return bool(result.get("data", False))
+
     async def get_categories_by_ids(self, ids: list[int]) -> list[dict[str, Any]]:
         """批量查询分类"""
         if not ids:
