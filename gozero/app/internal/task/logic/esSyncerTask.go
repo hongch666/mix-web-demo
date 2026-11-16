@@ -241,14 +241,14 @@ func buildArticleESBatchFromRemote(
 				getUserCalled = true
 				userResult, userErr = springCli.GetUsersByIDs(ctx, missingUserIDs)
 			}
-			return userErr
+			return nil
 		},
 		func() error {
 			if len(missingSubCategoryIDs) > 0 {
 				getSubCategoryCalled = true
 				subCategoryResult, subCategoryErr = springCli.GetSubCategoriesByIDs(ctx, missingSubCategoryIDs)
 			}
-			return subCategoryErr
+			return nil
 		},
 	)
 

@@ -73,7 +73,7 @@ def test_admin_lookup_failure_is_fail_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     spring_client = Mock()
-    spring_client.get_users_by_ids = AsyncMock(side_effect=RuntimeError("unavailable"))
+    spring_client.is_admin_user = AsyncMock(side_effect=RuntimeError("unavailable"))
     monkeypatch.setattr(require_self_module, "get_current_user_id", lambda: 7)
     # 装饰器在模块级绑定了客户端工厂，打桩必须对准被测模块的引用，否则会真实拨号并触发重试退避
     monkeypatch.setattr(require_self_module, "get_spring_client", lambda: spring_client)
@@ -86,7 +86,7 @@ def test_admin_lookup_failure_is_fail_closed(
         asyncio.run(endpoint(user_id=8))
 
     assert error.value.status_code == 403
-    spring_client.get_users_by_ids.assert_awaited_once_with([7])
+    spring_client.is_admin_user.assert_awaited_once_with(7)
 
 
 # 同步接口被装饰时抛 TypeError

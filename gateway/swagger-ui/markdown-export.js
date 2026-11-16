@@ -15,6 +15,51 @@
   var METHODS = ["get", "post", "put", "patch", "delete", "head", "options"];
   var MAX_DEPTH = 3;
 
+  // 公共请求头在展示层的声明，不写回仓库里的 OpenAPI 产物，避免 Apifox 侧重复定义
+  var COMMON_HEADERS = [
+    {
+      name: "Authorization",
+      description: "用户登录令牌，格式 Bearer <token>，由页面 Token 输入框提供",
+    },
+    {
+      name: "X-Internal-Token",
+      description: "服务间调用令牌，格式 Bearer <token>，值由调用方签发，不由网关注入",
+    },
+    {
+      name: "X-User-Id",
+      description: "用户 ID，网关校验通过后注入，调用方无需传",
+    },
+    {
+      name: "X-Username",
+      description: "用户名，网关校验通过后注入，调用方无需传",
+    },
+    {
+      name: "X-Session-Id",
+      description: "会话 ID，网关校验通过后注入，调用方无需传",
+    },
+  ];
+
+  // 给规范注入展示用的 securitySchemes，方便在 Swagger UI 与导出文档中看到公共请求头
+  function injectSecurity(spec) {
+    if (!isObject(spec)) {
+      return spec;
+    }
+    var enhanced = Object.assign({}, spec);
+    var components = Object.assign({}, spec.components || {});
+    var schemes = Object.assign({}, components.securitySchemes || {});
+    COMMON_HEADERS.forEach(function (header) {
+      schemes[header.name] = {
+        type: "apiKey",
+        in: "header",
+        name: header.name,
+        description: header.description,
+      };
+    });
+    components.securitySchemes = schemes;
+    enhanced.components = components;
+    return enhanced;
+  }
+
   function isObject(value) {
     return value && typeof value === "object" && !Array.isArray(value);
   }
@@ -513,18 +558,28 @@
       "",
       "> 由网关 Swagger 页面导出（" + timestamp + "），数据来源为各服务实时 OpenAPI 规范",
       ">",
-      "> 统一入口：网关地址，除公开接口外请求头需要 `Authorization: Bearer <token>`",
+      "> 统一入口：网关地址，认证相关请求头见下方「公共请求头」",
       "",
       "## 使用说明",
       "",
       "1. 所有请求走网关统一入口，按各接口路径直接拼接网关地址。",
-      "2. 除登录、注册、验证码等公开接口外，请求头需携带 `Authorization: Bearer <token>`；网关校验通过后向下游透传 `X-User-Id`、`X-Username`、`X-Session-Id`。",
-      "3. 响应统一为 `{\"code\": 200, \"msg\": \"success\", \"data\": ...}`，`code` 为 3 位 HTTP 状态码。",
-      "4. 字段类型若显示为 `` `XxxVO`（对象） ``，表示引用规范 `components/schemas` 中的结构，字段表已展开常用层级。",
+      "2. 响应统一为 `{\"code\": 200, \"msg\": \"success\", \"data\": ...}`，`code` 为 3 位 HTTP 状态码。",
+      "3. 字段类型若显示为 `` `XxxVO`（对象） ``，表示引用规范 `components/schemas` 中的结构，字段表已展开常用层级。",
       "",
-      "## 服务概览",
+      "## 公共请求头",
+      "",
+      "调用方只需传 `Authorization`；`X-Internal-Token` 用于服务间调用；`X-User-Id` 等身份头由网关注入，调用方无需传。",
       "",
     ];
+    header = header.concat(
+      table(
+        ["请求头", "说明"],
+        COMMON_HEADERS.map(function (item) {
+          return ["`" + item.name + "`", escapeCell(item.description)];
+        }),
+      ),
+    );
+    header.push("", "## 服务概览", "");
     header = header.concat(table(["服务", "标识", "接口数"], overview));
     header.push("", "合计 " + total + " 个接口。", "", "---", "");
     return header.concat(body).join("\n") + "\n";
@@ -545,5 +600,9 @@
     );
   }
 
-  root.SwaggerMarkdownExport = { build: build, fileName: fileName };
+  root.SwaggerMarkdownExport = {
+    build: build,
+    fileName: fileName,
+    injectSecurity: injectSecurity,
+  };
 })(typeof window !== "undefined" ? window : globalThis);

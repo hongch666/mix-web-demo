@@ -1409,33 +1409,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UnauthorizedResponse"
-  /users/{id}/is-admin:
-    get:
-      tags:
-      - "用户模块"
-      summary: "判断用户是否为管理员（内部）"
-      description: "根据用户ID判断是否为管理员，供内部服务远程调用"
-      operationId: "isAdminUser"
-      parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        schema:
-          type: "integer"
-          format: "int64"
-      responses:
-        "200":
-          description: "OK"
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ResultBoolean"
-        "401":
-          description: "用户未登录或登录已失效"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/neo4j-sync:
     get:
       tags:
@@ -1456,6 +1429,33 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListUserSyncVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+  /users/is-admin/{id}:
+    get:
+      tags:
+      - "用户模块"
+      summary: "判断用户是否为管理员（内部）"
+      description: "根据用户ID判断是否为管理员，供内部服务远程调用"
+      operationId: "isAdminUser"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultBoolean"
         "401":
           description: "用户未登录或登录已失效"
           content:
@@ -4933,24 +4933,6 @@ components:
           description: "用户列表"
           items:
             $ref: "#/components/schemas/UserVO"
-    ResultBoolean:
-      description: "统一响应"
-      properties:
-        code:
-          type: "integer"
-          format: "int32"
-          description: "响应码"
-        msg:
-          type: "string"
-          description: "响应信息"
-        data:
-          type:
-          - "boolean"
-          - "null"
-          description: "返回数据"
-      required:
-      - "code"
-      - "msg"
     ResultListUserSyncVO:
       description: "统一响应"
       properties:
@@ -5017,6 +4999,24 @@ components:
           - "null"
           format: "date-time"
           description: "更新时间"
+    ResultBoolean:
+      description: "统一响应"
+      properties:
+        code:
+          type: "integer"
+          format: "int32"
+          description: "响应码"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type:
+          - "boolean"
+          - "null"
+          description: "返回数据"
+      required:
+      - "code"
+      - "msg"
     ImageCaptchaVO:
       description: "图形验证码"
       properties:

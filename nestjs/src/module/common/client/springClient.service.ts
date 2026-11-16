@@ -74,7 +74,7 @@ export class SpringClientService {
     return await this.nacosService.call({
       serviceName: "spring",
       method: "GET",
-      path: `/users/${userId}/is-admin`,
+      path: `/users/is-admin/${userId}`,
     });
   }
 

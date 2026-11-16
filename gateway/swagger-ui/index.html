@@ -117,6 +117,39 @@
       .swagger-navbar .tab .dot.err {
         background: #ef4444;
       }
+      .swagger-navbar .mode-switch {
+        display: flex;
+        align-items: center;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .swagger-navbar .mode-switch button {
+        background: #f9fafb;
+        border: none;
+        cursor: pointer;
+        padding: 7px 12px;
+        font-size: 13px;
+        color: #6b7280;
+        font-family: inherit;
+        white-space: nowrap;
+      }
+      .swagger-navbar .mode-switch button.active {
+        background: #2563eb;
+        color: #fff;
+        font-weight: 600;
+      }
+      body[data-theme="dark"] .swagger-navbar .mode-switch {
+        border-color: #475569;
+      }
+      body[data-theme="dark"] .swagger-navbar .mode-switch button {
+        background: #334155;
+        color: #94a3b8;
+      }
+      body[data-theme="dark"] .swagger-navbar .mode-switch button.active {
+        background: #3b82f6;
+        color: #f8fafc;
+      }
       .swagger-navbar .token-area {
         margin-left: auto;
         display: flex;
@@ -615,6 +648,340 @@
         border-color: #2563eb;
       }
 
+      /* —— 令牌校验入口按钮 —— */
+      .verify-toggle {
+        background: #7c3aed;
+        border: 1px solid #7c3aed;
+        border-radius: 6px;
+        padding: 7px 14px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #fff;
+        font-weight: 500;
+        transition: all 0.25s ease;
+        margin-left: 8px;
+        font-family: inherit;
+        white-space: nowrap;
+      }
+      .verify-toggle:hover {
+        background: #6d28d9;
+        border-color: #6d28d9;
+      }
+      body[data-theme="dark"] .verify-toggle {
+        background: #8b5cf6;
+        border-color: #8b5cf6;
+        color: #f8fafc;
+      }
+      body[data-theme="dark"] .verify-toggle:hover {
+        background: #7c3aed;
+        border-color: #7c3aed;
+      }
+
+      /* —— 令牌校验抽屉面板 —— */
+      .verify-panel {
+        position: fixed;
+        top: var(--navbar-h);
+        right: 0;
+        width: 480px;
+        max-width: 100vw;
+        height: calc(100vh - var(--navbar-h));
+        height: calc(100dvh - var(--navbar-h));
+        background: #fff;
+        border-left: 1px solid #e5e7eb;
+        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+        z-index: 60;
+        display: none;
+        flex-direction: column;
+      }
+      .verify-panel.open {
+        display: flex;
+      }
+      .verify-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .verify-panel-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      .verify-panel-close {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        color: #94a3b8;
+        padding: 0 4px;
+        font-family: inherit;
+      }
+      .verify-panel-close:hover {
+        color: #475569;
+      }
+      .verify-panel-body {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 16px 20px 24px;
+      }
+      .verify-field {
+        margin-bottom: 14px;
+      }
+      .verify-field-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 6px;
+      }
+      .verify-field input,
+      .verify-field select,
+      .verify-field textarea {
+        width: 100%;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 8px 10px;
+        color: #1e293b;
+        font-size: 13px;
+        outline: none;
+        font-family: inherit;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+      .verify-field input:focus,
+      .verify-field select:focus,
+      .verify-field textarea:focus {
+        border-color: #7c3aed;
+        background: #fff;
+      }
+      .verify-field textarea {
+        resize: vertical;
+        min-height: 64px;
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+      }
+      .verify-presets {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      .verify-preset {
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 12px;
+        color: #475569;
+        font-family: inherit;
+      }
+      .verify-preset:hover {
+        background: #ede9fe;
+        border-color: #c4b5fd;
+        color: #5b21b6;
+      }
+      .verify-headers-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+      .verify-header-row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .verify-header-row input {
+        flex: 1 1 0;
+        min-width: 0;
+      }
+      .verify-header-remove {
+        flex: 0 0 30px;
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        color: #ef4444;
+        font-size: 15px;
+        font-family: inherit;
+      }
+      .verify-header-remove:hover {
+        background: #fee2e2;
+      }
+      .verify-add-header {
+        background: transparent;
+        border: 1px dashed #c4b5fd;
+        border-radius: 6px;
+        padding: 6px 10px;
+        cursor: pointer;
+        font-size: 12px;
+        color: #7c3aed;
+        font-family: inherit;
+      }
+      .verify-add-header:hover {
+        background: #f5f3ff;
+      }
+      .verify-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .verify-send {
+        flex: 1 1 auto;
+        background: #7c3aed;
+        border: 1px solid #7c3aed;
+        border-radius: 6px;
+        padding: 9px 14px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #fff;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      .verify-send:hover {
+        background: #6d28d9;
+      }
+      .verify-send:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .verify-clear {
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 9px 14px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #475569;
+        font-family: inherit;
+      }
+      .verify-clear:hover {
+        background: #e5e7eb;
+      }
+      .verify-result {
+        margin-top: 18px;
+      }
+      .verify-result-status {
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .verify-result-status.ok {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .verify-result-status.warn {
+        background: #fef9c3;
+        color: #854d0e;
+      }
+      .verify-result-status.err {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .verify-result-subtitle {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        margin: 10px 0 4px;
+      }
+      .verify-result-pre {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 12px;
+        color: #334155;
+        white-space: pre-wrap;
+        word-break: break-all;
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        max-height: 240px;
+        overflow-y: auto;
+      }
+      .verify-tip {
+        font-size: 12px;
+        line-height: 1.6;
+        color: #94a3b8;
+        margin-top: 16px;
+        border-top: 1px solid #e5e7eb;
+        padding-top: 12px;
+      }
+      .verify-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.35);
+        z-index: 55;
+        display: none;
+      }
+      .verify-backdrop.show {
+        display: block;
+      }
+      body[data-theme="dark"] .verify-panel {
+        background: #1e293b;
+        border-left-color: #334155;
+      }
+      body[data-theme="dark"] .verify-panel-header {
+        border-bottom-color: #334155;
+      }
+      body[data-theme="dark"] .verify-panel-title {
+        color: #e2e8f0;
+      }
+      body[data-theme="dark"] .verify-panel-close {
+        color: #94a3b8;
+      }
+      body[data-theme="dark"] .verify-field-label,
+      body[data-theme="dark"] .verify-result-subtitle {
+        color: #94a3b8;
+      }
+      body[data-theme="dark"] .verify-field input,
+      body[data-theme="dark"] .verify-field select,
+      body[data-theme="dark"] .verify-field textarea {
+        background: #0f172a;
+        border-color: #334155;
+        color: #e2e8f0;
+      }
+      body[data-theme="dark"] .verify-field input:focus,
+      body[data-theme="dark"] .verify-field select:focus,
+      body[data-theme="dark"] .verify-field textarea:focus {
+        background: #1e293b;
+        border-color: #8b5cf6;
+      }
+      body[data-theme="dark"] .verify-preset,
+      body[data-theme="dark"] .verify-header-remove,
+      body[data-theme="dark"] .verify-clear {
+        background: #334155;
+        border-color: #475569;
+        color: #cbd5e1;
+      }
+      body[data-theme="dark"] .verify-result-pre {
+        background: #0f172a;
+        border-color: #334155;
+        color: #cbd5e1;
+      }
+      body[data-theme="dark"] .verify-tip {
+        border-top-color: #334155;
+        color: #64748b;
+      }
+      @media (max-width: 768px) {
+        .verify-panel {
+          width: 100vw;
+          top: 0;
+          height: 100vh;
+          height: 100dvh;
+        }
+        .swagger-navbar .verify-toggle {
+          order: 2;
+          margin-left: 0;
+          padding: 6px 10px;
+          font-size: 12px;
+        }
+      }
+
       /* —— 应用主布局 (侧边栏 + 内容区) —— */
       .app-layout {
         display: flex;
@@ -839,6 +1206,14 @@
           width: 100%;
           /* 16px 以上避免 iOS 聚焦输入框时自动放大页面 */
           font-size: 16px;
+        }
+        .swagger-navbar .mode-switch {
+          order: 3;
+          margin-left: 0;
+        }
+        .swagger-navbar .mode-switch button {
+          padding: 6px 10px;
+          font-size: 12px;
         }
         .swagger-navbar .export-md,
         .swagger-navbar .theme-toggle {
@@ -1333,12 +1708,16 @@
           <span class="dot ok"></span>FastAPI 服务
         </button>
       </div>
+      <div class="mode-switch" id="modeSwitch" title="外部模式走网关地址，内部模式直连 localhost 对应服务端口（配合 ./mix dev seq 使用）">
+        <button type="button" class="active" data-mode="external">外部接口</button>
+        <button type="button" data-mode="internal">内部接口</button>
+      </div>
       <div class="token-area">
-        <label>Token</label>
+        <label id="tokenLabel">网关 Token</label>
         <input
           type="text"
           id="tokenInput"
-          placeholder="输入 Token 后回车生效" />
+          placeholder="粘贴 ./mix token 生成的令牌后回车" />
         <span class="token-status empty" id="tokenStatus"></span>
       </div>
       <button
@@ -1347,7 +1726,82 @@
         title="按当前加载的 OpenAPI 规范实时导出 Markdown 文档">
         导出 Markdown
       </button>
+      <button
+        class="verify-toggle"
+        id="verifyToggle"
+        title="打开令牌校验面板，可自定义请求地址与请求头">
+        令牌校验
+      </button>
       <button class="theme-toggle" id="themeToggle" title="切换主题">&#x263E;</button>
+    </div>
+
+    <div class="verify-backdrop" id="verifyBackdrop"></div>
+    <div class="verify-panel" id="verifyPanel" role="dialog" aria-label="令牌校验">
+      <div class="verify-panel-header">
+        <span class="verify-panel-title">令牌校验</span>
+        <button class="verify-panel-close" id="verifyClose" type="button" aria-label="关闭令牌校验面板">
+          &#x2715;
+        </button>
+      </div>
+      <div class="verify-panel-body">
+        <div class="verify-presets">
+          <button class="verify-preset" type="button" data-preset="gateway-token">网关令牌校验</button>
+          <button class="verify-preset" type="button" data-preset="internal-token">内部令牌校验</button>
+          <button class="verify-preset" type="button" data-preset="health">网关存活探针</button>
+        </div>
+
+        <div class="verify-field">
+          <label class="verify-field-label" for="verifyMethod">请求方法</label>
+          <select id="verifyMethod">
+            <option>GET</option>
+            <option>POST</option>
+            <option>PUT</option>
+            <option>PATCH</option>
+            <option>DELETE</option>
+          </select>
+        </div>
+        <div class="verify-field">
+          <label class="verify-field-label" for="verifyUrl">请求地址</label>
+          <input
+            type="text"
+            id="verifyUrl"
+            value="/test/spring"
+            placeholder="相对路径或完整 URL" />
+        </div>
+
+        <div class="verify-headers-title">
+          <span class="verify-field-label">请求头</span>
+          <button class="verify-add-header" id="verifyAddHeader" type="button">+ 添加请求头</button>
+        </div>
+        <div id="verifyHeaderList"></div>
+
+        <div class="verify-field">
+          <label class="verify-field-label" for="verifyBody">请求体（可选，非 GET 时发送）</label>
+          <textarea id="verifyBody" placeholder='{"key": "value"}'></textarea>
+        </div>
+
+        <div class="verify-actions">
+          <button class="verify-send" id="verifySend" type="button">发送校验</button>
+          <button class="verify-clear" id="verifyClear" type="button">清空结果</button>
+        </div>
+
+        <div class="verify-result" id="verifyResult" style="display: none">
+          <div class="verify-result-status" id="verifyStatus"></div>
+          <div class="verify-result-subtitle">响应头</div>
+          <pre class="verify-result-pre" id="verifyRespHeaders"></pre>
+          <div class="verify-result-subtitle">响应体</div>
+          <pre class="verify-result-pre" id="verifyRespBody"></pre>
+        </div>
+
+        <div class="verify-tip">
+          相对路径发往当前网关，完整 URL 则直连目标地址。网关令牌校验用
+          <code>Authorization: Bearer &lt;token&gt;</code>；内部令牌用
+          <code>X-Internal-Token: Bearer &lt;token&gt;</code>，且没有独立校验接口，用受保护接口的
+          200 / 401 判断有效性。内部接口在网关黑名单中被拦截，调试时需切到「内部接口」模式
+          （localhost + 服务端口，配合 ./mix dev seq 使用）或在此处直接填写 localhost 地址。
+          改动地址或请求头后直接重新发送即可，无需改动仓库文件或重新生成文档。
+        </div>
+      </div>
     </div>
     <div class="app-layout">
       <nav class="sidebar" id="sidebar">
@@ -1412,11 +1866,30 @@
         var sidebar = document.getElementById("sidebar");
         var sidebarTagList = document.getElementById("sidebarTagList");
         var currentToken = "";
+        var currentMode = "external";
+        var modeSwitch = document.getElementById("modeSwitch");
+        var tokenLabel = document.getElementById("tokenLabel");
+        var servicePorts = { spring: 8081, gozero: 8082, nestjs: 8083, fastapi: 8084 };
         var scrollTimer = null;
         var navbar = document.querySelector(".swagger-navbar");
         var backdrop = document.getElementById("sidebarBackdrop");
         var menuToggle = document.getElementById("menuToggle");
         var sidebarClose = document.getElementById("sidebarClose");
+        var verifyToggle = document.getElementById("verifyToggle");
+        var verifyPanel = document.getElementById("verifyPanel");
+        var verifyBackdrop = document.getElementById("verifyBackdrop");
+        var verifyClose = document.getElementById("verifyClose");
+        var verifyMethod = document.getElementById("verifyMethod");
+        var verifyUrl = document.getElementById("verifyUrl");
+        var verifyBody = document.getElementById("verifyBody");
+        var verifyHeaderList = document.getElementById("verifyHeaderList");
+        var verifyAddHeader = document.getElementById("verifyAddHeader");
+        var verifySend = document.getElementById("verifySend");
+        var verifyClear = document.getElementById("verifyClear");
+        var verifyResult = document.getElementById("verifyResult");
+        var verifyStatus = document.getElementById("verifyStatus");
+        var verifyRespHeaders = document.getElementById("verifyRespHeaders");
+        var verifyRespBody = document.getElementById("verifyRespBody");
 
         // 顶部导航换行后高度会变，同步给 CSS 变量供侧边栏与内容区使用
         function syncNavbarHeight() {
@@ -1640,44 +2113,56 @@
             currentUI = null;
           }
 
-          // 先获取 spec JSON 提取 tags
-          fetch(url)
-            .then(function (res) {
-              if (!res.ok) throw new Error("HTTP " + res.status);
-              return res.json();
-            })
-            .then(function (json) {
-              buildSidebar(json);
+          // 规范统一经 fetchSpec 注入公共请求头声明，Swagger UI 与 Markdown 导出共用同一份定义
+          fetchSpec(url)
+            .then(function (spec) {
+              var displaySpec = spec;
+              if (currentMode === "internal") {
+                var match = /\/swagger\/([^.]+)\.json/.exec(url);
+                var service = match ? match[1] : null;
+                var port = service ? servicePorts[service] : null;
+                if (port) {
+                  displaySpec = Object.assign({}, spec, {
+                    servers: [{ url: "http://localhost:" + port }],
+                  });
+                }
+              }
+              buildSidebar(displaySpec);
+              currentUI = SwaggerUIBundle({
+                spec: displaySpec,
+                dom_id: "#swagger-ui",
+                deepLinking: true,
+                presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+                plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+                layout: "StandaloneLayout",
+                validatorUrl: null,
+                requestInterceptor: function (req) {
+                  if (currentToken) {
+                    if (currentMode === "internal") {
+                      req.headers["X-Internal-Token"] = "Bearer " + currentToken;
+                    } else {
+                      req.headers["Authorization"] = "Bearer " + currentToken;
+                    }
+                  }
+                  return req;
+                },
+                onComplete: function () {
+                  // Swagger UI 渲染完成后，绑定滚动监听
+                  setupScrollSpy();
+                  // 覆盖 deepLinking 可能触发的自动滚动，确保页面在最顶部
+                  setTimeout(function () {
+                    window.scrollTo(0, 0);
+                  }, 100);
+                },
+              });
             })
             .catch(function () {
+              container.innerHTML =
+                '<div style="padding: 40px; text-align: center; color: #999; font-size: 16px;">规范加载失败，请检查对应 /swagger/*.json 是否可访问</div>';
               sidebar.classList.remove("visible");
               closeDrawer();
               document.body.classList.remove("has-sidebar");
             });
-
-          currentUI = SwaggerUIBundle({
-            url: url,
-            dom_id: "#swagger-ui",
-            deepLinking: true,
-            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-            layout: "StandaloneLayout",
-            validatorUrl: null,
-            requestInterceptor: function (req) {
-              if (currentToken) {
-                req.headers["Authorization"] = "Bearer " + currentToken;
-              }
-              return req;
-            },
-            onComplete: function () {
-              // Swagger UI 渲染完成后，绑定滚动监听
-              setupScrollSpy();
-              // 覆盖 deepLinking 可能触发的自动滚动，确保页面在最顶部
-              setTimeout(function () {
-                window.scrollTo(0, 0);
-              }, 100);
-            },
-          });
         }
 
         // 更新 token 状态显示
@@ -1687,6 +2172,27 @@
           } else {
             tokenStatus.className = "token-status empty";
           }
+        }
+
+        // 切换外部/内部模式，更新标签并重新加载当前规范
+        if (modeSwitch) {
+          Array.prototype.forEach.call(modeSwitch.querySelectorAll("button"), function (btn) {
+            btn.addEventListener("click", function () {
+              var mode = btn.getAttribute("data-mode");
+              if (mode === currentMode) return;
+              currentMode = mode;
+              Array.prototype.forEach.call(modeSwitch.querySelectorAll("button"), function (item) {
+                item.classList.toggle("active", item === btn);
+              });
+              if (tokenLabel) {
+                tokenLabel.textContent = mode === "internal" ? "内部令牌" : "网关 Token";
+              }
+              var activeTab = document.querySelector(".tab.active");
+              if (activeTab) {
+                loadSpec(activeTab.getAttribute("data-url"));
+              }
+            });
+          });
         }
 
         // Token 输入完成（回车键触发）
@@ -1712,6 +2218,181 @@
             tab.classList.add("active");
             loadSpec(tab.getAttribute("data-url"));
           });
+        });
+
+        // ============== 令牌校验面板 ==============
+        function openVerifyPanel() {
+          verifyPanel.classList.add("open");
+          verifyBackdrop.classList.add("show");
+          if (!verifyHeaderList.children.length) {
+            addVerifyHeader("Authorization", currentToken ? "Bearer " + currentToken : "");
+          }
+        }
+
+        function closeVerifyPanel() {
+          verifyPanel.classList.remove("open");
+          verifyBackdrop.classList.remove("show");
+        }
+
+        function addVerifyHeader(name, value) {
+          var row = document.createElement("div");
+          row.className = "verify-header-row";
+
+          var nameInput = document.createElement("input");
+          nameInput.type = "text";
+          nameInput.placeholder = "请求头名称";
+          nameInput.value = name || "";
+          nameInput.setAttribute("aria-label", "请求头名称");
+
+          var valueInput = document.createElement("input");
+          valueInput.type = "text";
+          valueInput.placeholder = "请求头值";
+          valueInput.value = value || "";
+          valueInput.setAttribute("aria-label", "请求头值");
+
+          var removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "verify-header-remove";
+          removeBtn.title = "删除该请求头";
+          removeBtn.textContent = "×";
+          removeBtn.addEventListener("click", function () {
+            verifyHeaderList.removeChild(row);
+          });
+
+          row.appendChild(nameInput);
+          row.appendChild(valueInput);
+          row.appendChild(removeBtn);
+          verifyHeaderList.appendChild(row);
+          nameInput.focus();
+        }
+
+        function collectVerifyHeaders() {
+          var headers = {};
+          Array.prototype.forEach.call(verifyHeaderList.children, function (row) {
+            var inputs = row.querySelectorAll("input");
+            var name = inputs[0] ? inputs[0].value.trim() : "";
+            var value = inputs[1] ? inputs[1].value : "";
+            if (name) {
+              headers[name] = value;
+            }
+          });
+          return headers;
+        }
+
+        var verifyPresets = {
+          "gateway-token": function () {
+            verifyMethod.value = "GET";
+            verifyUrl.value = "/test/spring";
+            verifyBody.value = "";
+            verifyHeaderList.innerHTML = "";
+            addVerifyHeader("Authorization", currentToken ? "Bearer " + currentToken : "");
+          },
+          "internal-token": function () {
+            verifyMethod.value = "POST";
+            verifyUrl.value = "http://localhost:8081/users/batch";
+            verifyBody.value = '{"ids":[1]}';
+            verifyHeaderList.innerHTML = "";
+            addVerifyHeader("X-Internal-Token", currentToken ? "Bearer " + currentToken : "Bearer ");
+          },
+          health: function () {
+            verifyMethod.value = "GET";
+            verifyUrl.value = "/healthz";
+            verifyBody.value = "";
+            verifyHeaderList.innerHTML = "";
+          },
+        };
+
+        function renderVerifyResult(statusClass, statusText, headersText, bodyText) {
+          verifyResult.style.display = "block";
+          verifyStatus.className = "verify-result-status " + statusClass;
+          verifyStatus.textContent = statusText;
+          verifyRespHeaders.textContent = headersText || "（无）";
+          verifyRespBody.textContent = bodyText || "（空）";
+        }
+
+        function sendVerifyRequest() {
+          var url = verifyUrl.value.trim();
+          if (!url) {
+            renderVerifyResult("err", "请求地址不能为空", "", "");
+            return;
+          }
+          var method = verifyMethod.value;
+          var headers = collectVerifyHeaders();
+          var bodyText = verifyBody.value;
+
+          var options = { method: method, headers: headers };
+          if (bodyText.trim()) {
+            options.body = bodyText;
+            if (!Object.keys(headers).some(function (key) {
+              return key.toLowerCase() === "content-type";
+            })) {
+              headers["Content-Type"] = "application/json";
+            }
+          }
+
+          verifySend.disabled = true;
+          verifySend.textContent = "校验中...";
+          var controller =
+            typeof AbortController !== "undefined" ? new AbortController() : null;
+          var timer = controller
+            ? setTimeout(function () { controller.abort(); }, 20000)
+            : null;
+          if (controller) options.signal = controller.signal;
+
+          fetch(url, options)
+            .then(function (res) {
+              if (timer) clearTimeout(timer);
+              var headersText = "";
+              if (res.headers && typeof res.headers.forEach === "function") {
+                res.headers.forEach(function (value, name) {
+                  headersText += name + ": " + value + "\n";
+                });
+              }
+              return res.text().then(function (text) {
+                var statusText = "HTTP " + res.status + " " + (res.statusText || "");
+                if (res.status >= 200 && res.status < 300) {
+                  renderVerifyResult("ok", "校验通过 · " + statusText, headersText, text);
+                } else if (res.status === 401 || res.status === 403) {
+                  renderVerifyResult("warn", "令牌无效或缺失 · " + statusText, headersText, text);
+                } else {
+                  renderVerifyResult("warn", "请求已响应 · " + statusText, headersText, text);
+                }
+              });
+            })
+            .catch(function (error) {
+              if (timer) clearTimeout(timer);
+              var message = error && error.name === "AbortError"
+                ? "请求超时（20s）"
+                : error && error.message ? error.message : String(error);
+              renderVerifyResult("err", "请求失败 · " + message, "", "");
+            })
+            .then(function () {
+              verifySend.disabled = false;
+              verifySend.textContent = "发送校验";
+            });
+        }
+
+        verifyToggle.addEventListener("click", openVerifyPanel);
+        verifyClose.addEventListener("click", closeVerifyPanel);
+        verifyBackdrop.addEventListener("click", closeVerifyPanel);
+        verifyAddHeader.addEventListener("click", function () { addVerifyHeader("", ""); });
+        verifySend.addEventListener("click", sendVerifyRequest);
+        verifyClear.addEventListener("click", function () {
+          verifyResult.style.display = "none";
+          verifyStatus.textContent = "";
+          verifyRespHeaders.textContent = "";
+          verifyRespBody.textContent = "";
+        });
+        Array.prototype.forEach.call(document.querySelectorAll(".verify-preset"), function (preset) {
+          preset.addEventListener("click", function () {
+            var handler = verifyPresets[preset.getAttribute("data-preset")];
+            if (handler) handler();
+          });
+        });
+        document.addEventListener("keydown", function (e) {
+          if ((e.key === "Escape" || e.keyCode === 27) && verifyPanel.classList.contains("open")) {
+            closeVerifyPanel();
+          }
         });
 
         // ============== Markdown 导出 ==============
@@ -1769,7 +2450,10 @@
                 .then(
                   function (spec) {
                     clearTimer();
-                    return spec;
+                    // 展示层注入公共请求头声明，仓库产物与 Apifox 全局参数保持原样
+                    return window.SwaggerMarkdownExport
+                      ? window.SwaggerMarkdownExport.injectSecurity(spec)
+                      : spec;
                   },
                   function (error) {
                     clearTimer();
