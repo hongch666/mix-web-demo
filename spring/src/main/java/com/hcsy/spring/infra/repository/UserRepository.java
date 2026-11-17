@@ -92,4 +92,10 @@ public interface UserRepository extends ReactiveCrudRepository<User, Long> {
      */
     @Query("SELECT id, name FROM user ORDER BY id")
     Flux<User> findAllIdAndName();
+
+    /**
+     * 查询全部非空用户头像链接，供 OSS 清理任务判断在用引用
+     */
+    @Query("SELECT img FROM user WHERE img IS NOT NULL")
+    Flux<String> findAllImgs();
 }

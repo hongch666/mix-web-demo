@@ -2329,6 +2329,38 @@
         }
       }
     },
+    "/users/internal/oss-references" : {
+      "get" : {
+        "tags" : [
+          "oss-reference-controller"
+        ],
+        "summary" : "查询 OSS 在用引用 key",
+        "description" : "返回数据库中在用的 OSS 对象 key 列表，供清理任务排除",
+        "operationId" : "listOssReferenceUrls",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ResultListString"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "用户未登录或登录已失效",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/users/internal/auth/validate" : {
       "get" : {
         "tags" : [
@@ -7580,6 +7612,34 @@
               "null"
             ],
             "description" : "返回数据"
+          }
+        },
+        "required" : [
+          "code",
+          "msg"
+        ]
+      },
+      "ResultListString" : {
+        "description" : "统一响应",
+        "properties" : {
+          "code" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "响应码"
+          },
+          "msg" : {
+            "type" : "string",
+            "description" : "响应信息"
+          },
+          "data" : {
+            "type" : [
+              "array",
+              "null"
+            ],
+            "description" : "返回数据",
+            "items" : {
+              "type" : "string"
+            }
           }
         },
         "required" : [
