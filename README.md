@@ -2579,7 +2579,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 | 事件                     | 触发的工作流                          | 说明                                                 |
 | ------------------------ | ------------------------------------- | ---------------------------------------------------- |
 | `pull_request` → `prod`  | `CI`                                  | 合并前质量门禁，必须全绿                             |
-| `push` → `prod`          | `CI`、`Release Images`、`Apifox Sync` | CI 复验一次；镜像构建；文档/README 变更时同步 Apifox |
+| `push` → `prod`          | `CI`、`Release Images`、`Apifox Sync` | CI 复验一次；镜像构建（仅改观测配置时不构建，只触发配置部署）；文档/README 变更时同步 Apifox |
 | `push` → `main`          | 无                                    | `main` 是开发分支，不触发任何 CI/CD                  |
 | tag `vX.Y.Z`             | `Release Images`、`Deploy`            | 追加 `X.Y.Z` 版本号镜像，并按 tag 部署               |
 | 手动 `workflow_dispatch` | 全部                                  | 单服务门禁、补建镜像、手工部署/回滚、Apifox 干跑     |
@@ -2590,7 +2590,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/lint.sh` / `compile.sh` / `test.sh`；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿 |
 | `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                         |
-| `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/` 有变更时额外重启 APISIX                                                        |
+| `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`loki-config/`、`prometheus-config/`、`otel-config/` 有变更时按目录重启命中的容器（不重建业务服务）                                                        |
 | `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                  |
 | `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)                                                                                           |
 
@@ -2623,7 +2623,7 @@ gh workflow run smoke.yml
 
 ### 注意事项
 
-1. 只改 `**.md`、`docs/**`、`db/**`、`scripts/**`、`skills/**`、配置文件目录时不会触发镜像构建（`release.yml` 的 `paths-ignore`），部署侧会以 `CONFIG_ONLY` 方式只同步代码与配置并重建已部署版本
+1. 只改 `**.md`、`docs/**`、`db/**`、`scripts/**`、`skills/**`、`static/**`、`.github/**` 时不触发流水线；改 `loki-config/`、`prometheus-config/`、`otel-config/`（或根 `docker-compose.yml`）会触发一次 `Release Images`，但变更检测为 0、不构建任何镜像，部署侧走 `CONFIG_ONLY` 同步代码与配置，并按目录重启命中的容器（Grafana / Loki / Promtail / Prometheus / otel-collector / tempo / gateway），业务容器不重建
 2. 部署机是「一次配置、长期复用」：runner 以 systemd 服务注册，仓库目录里的 `.env`、四个 `.env.docker` 都不随 `checkout` 重置；`docker compose` 需要 runner 用户具备 docker 权限
 3. 部署失败会自动按服务回滚到上一版本（状态记录在 `${RUNNER_WORKSPACE}/mix-deploy-state/last-deploy.txt`）；若回滚也失败会打出 `::warning::` 并要求人工介入
 4. 部署目录用 `git checkout -f -B prod <commit>` 而不是 detached HEAD，运维仍可直接在该目录 `git pull` 排查
