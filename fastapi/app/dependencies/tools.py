@@ -1,4 +1,4 @@
-from functools import partial
+from functools import lru_cache, partial
 from typing import Annotated
 
 from fastapi import Depends
@@ -24,6 +24,8 @@ from app.internal.agents import (
     get_spring_sql_tool,
     get_warehouse_tools,
 )
+from app.internal.clients import GozeroClient, NestjsClient, SpringClient
+from app.internal.crud import VectorMapper
 
 from .clients import GozeroClientDep, NestjsClientDep, SpringClientDep
 from .mappers import VectorMapperDep
@@ -72,22 +74,19 @@ def provide_warehouse_tools() -> ClickHouseWarehouseTools:
 def provide_mcp_tools() -> MCPServerTools:
     """装配 MCP 工具组工厂，工具实例在 initialize_ai_tools 中延迟构造
 
-    构造与发现阶段读取 mcp_server_config 表，配置变更无需重启即可生效
+    构造与发现阶段读取 mcp_server_config 表；模型服务按单例复用后 MCP 工具在首次装配时发现，配置变更需清理工具工厂集合与模型服务的 lru_cache 才能重新发现
     """
     return get_mcp_tools()
 
 
-def provide_agent_tool_factories(
-    spring_client: SpringClientDep,
-    gozero_client: GozeroClientDep,
-    nestjs_client: NestjsClientDep,
-    vector_mapper: VectorMapperDep,
+@lru_cache
+def build_agent_tool_factories(
+    spring_client: SpringClient,
+    gozero_client: GozeroClient,
+    nestjs_client: NestjsClient,
+    vector_mapper: VectorMapper,
 ) -> AgentToolFactories:
-    """装配 agent 工具组工厂集合
-
-    只绑定已解析的客户端单例，工具实例延迟到 initialize_ai_tools 按组并行构造，
-    从而保留单组失败隔离
-    """
+    """按稳定依赖单例构造一次工具工厂集合，供六个模型服务的 lru_cache 命中"""
     return AgentToolFactories(
         sql_tools=(
             ("FastAPI", provide_fastapi_sql_tool),
@@ -100,6 +99,22 @@ def provide_agent_tool_factories(
         mongodb=("MongoDB 日志", partial(provide_mongodb_tools, nestjs_client)),
         warehouse=("ClickHouse 数仓", provide_warehouse_tools),
         mcp_servers=(("MCP 服务", provide_mcp_tools),),
+    )
+
+
+def provide_agent_tool_factories(
+    spring_client: SpringClientDep,
+    gozero_client: GozeroClientDep,
+    nestjs_client: NestjsClientDep,
+    vector_mapper: VectorMapperDep,
+) -> AgentToolFactories:
+    """装配 agent 工具组工厂集合
+
+    只绑定已解析的客户端单例，工具实例延迟到 initialize_ai_tools 按组并行构造，
+    从而保留单组失败隔离；集合本身按依赖单例缓存，避免每次请求新建 partial 破坏下游缓存
+    """
+    return build_agent_tool_factories(
+        spring_client, gozero_client, nestjs_client, vector_mapper
     )
 
 
