@@ -96,6 +96,9 @@ routes:
         /article-logs/search-keywords,
         /article-logs/search-history/*,
         /article-logs/view-distribution/*,
+        /users/internal/oss-references,
+        /analyze/internal/wordcloud-url,
+        /task/oss-cleanup,
       ]
     priority: 100
     plugins:
@@ -154,10 +157,24 @@ routes:
     uri: /users/github/token
     upstream_id: spring
     plugins: *login_limit
-  - id: auth-public-upload
-    uri: /upload/*
+  # 注册阶段匿名图片上传专用路由，不挂认证；限流比登录接口更严格
+  # 定义 &public_upload_limit 锚点供同类匿名上传路由复用（须定义在使用之前）
+  - id: auth-public-upload-image
+    uri: /upload/public-image
+    priority: 10
     upstream_id: nestjs
-    plugins: *login_limit
+    plugins: &public_upload_limit
+      limit-req:
+        {
+          rate: 1,
+          burst: 8,
+          nodelay: true,
+          key_type: var_combination,
+          key: "$remote_addr$uri",
+          rejected_code: 429,
+          rejected_msg: '{"code":429,"msg":"图片上传请求过于频繁，请稍后再试","data":null}',
+          policy: local,
+        }
   - id: swagger-spring
     uri: /swagger/spring.json
     upstream_id: spring
@@ -261,6 +278,8 @@ routes:
         /email/*,
         /table-settings,
         /table-settings/*,
+        /upload/image,
+        /upload/pdf,
       ]
     upstream_id: nestjs
     plugins: *auth
