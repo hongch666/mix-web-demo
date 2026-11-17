@@ -623,14 +623,16 @@ post_import_openapi() {
 # description 与 tags 再提交；接口名称、参数、公共参数与目录归属由 Apifox 侧手工维护
 
 resolve_python() {
-    if command -v python3 >/dev/null 2>&1; then
-        printf '%s' "python3"
-        return 0
-    fi
-    if command -v python >/dev/null 2>&1; then
-        printf '%s' "python"
-        return 0
-    fi
+    # 不能只看 command -v：Windows 上 python3 常指向 WindowsApps 的 Store 存根，
+    # 存在但执行即失败（退出码非 0），会让指纹计算与模型自检静默失效。逐个实际探测。
+    local candidate
+    for candidate in python3 python; do
+        if command -v "$candidate" >/dev/null 2>&1 \
+            && "$candidate" -c 'import hashlib, json' >/dev/null 2>&1; then
+            printf '%s' "$candidate"
+            return 0
+        fi
+    done
     return 1
 }
 

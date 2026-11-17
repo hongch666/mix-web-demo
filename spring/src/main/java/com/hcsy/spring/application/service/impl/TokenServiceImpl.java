@@ -2,6 +2,7 @@ package com.hcsy.spring.application.service.impl;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -31,6 +32,8 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
     private static final String BEARER_PREFIX = "Bearer ";
+    /** 允许从 query 读取 token 的路径前缀：仅浏览器无法设置自定义请求头的 WebSocket / SSE 长连接 */
+    private static final List<String> QUERY_TOKEN_PATH_PREFIXES = List.of("/ws/", "/sse/");
 
     private final RedisUtil redisUtil;
     private final RedisDistributedLock distributedLock;
@@ -369,6 +372,7 @@ public class TokenServiceImpl implements TokenService {
 
     /**
      * 依次从Authorization头、令牌参数及转发URI的token查询参数中提取并解码访问令牌
+     * query token 仅对 /ws/、/sse/ 长连接路径生效，其他路径必须携带请求头，否则返回 null 由调用方拒绝
      */
     private String extractGatewayAccessToken(String authorization, String accessToken, String forwardedUri) {
         if (authorization != null && !authorization.isBlank()) {
@@ -379,7 +383,7 @@ public class TokenServiceImpl implements TokenService {
         if (accessToken != null && !accessToken.isBlank()) {
             return accessToken.trim();
         }
-        if (forwardedUri == null) {
+        if (forwardedUri == null || !allowsQueryToken(extractPath(forwardedUri))) {
             return null;
         }
 
@@ -387,13 +391,41 @@ public class TokenServiceImpl implements TokenService {
         if (queryStart < 0 || queryStart == forwardedUri.length() - 1) {
             return null;
         }
-        for (String pair : forwardedUri.substring(queryStart + 1).split("&")) {
+        String query = forwardedUri.substring(queryStart + 1);
+        int fragmentStart = query.indexOf('#');
+        if (fragmentStart >= 0) {
+            query = query.substring(0, fragmentStart);
+        }
+        for (String pair : query.split("&")) {
             int separator = pair.indexOf('=');
             if (separator > 0 && "token".equals(pair.substring(0, separator))) {
                 return URLDecoder.decode(pair.substring(separator + 1), StandardCharsets.UTF_8);
             }
         }
         return null;
+    }
+
+    /**
+     * 从转发URI中提取不含查询串与片段的path，path 为空时返回空字符串
+     */
+    private String extractPath(String forwardedUri) {
+        String withoutQuery = forwardedUri;
+        int queryStart = withoutQuery.indexOf('?');
+        if (queryStart >= 0) {
+            withoutQuery = withoutQuery.substring(0, queryStart);
+        }
+        int fragmentStart = withoutQuery.indexOf('#');
+        if (fragmentStart >= 0) {
+            withoutQuery = withoutQuery.substring(0, fragmentStart);
+        }
+        return withoutQuery;
+    }
+
+    /**
+     * 判断path是否属于允许从query读取token的长连接路径
+     */
+    private boolean allowsQueryToken(String path) {
+        return QUERY_TOKEN_PATH_PREFIXES.stream().anyMatch(path::startsWith);
     }
 
     /**

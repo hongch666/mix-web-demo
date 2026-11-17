@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, ListResponse, success
-from app.core.decorators import log, requireAdmin
+from app.core.decorators import log, requireAdmin, requireInternalToken
 from app.dependencies import AnalyzeServiceDep, DbSession
 from app.internal.schemas import (
     ArticleStatisticsResponse,
@@ -51,6 +51,20 @@ async def get_wordcloud(
 
     oss_url: str = await analyzeService.get_wordcloud_service_sf()
     return success(oss_url)
+
+
+@router.get(
+    "/internal/wordcloud-url",
+    summary="查询当前词云 OSS 链接（内部）",
+    description="只读返回当前缓存中的词云链接，缓存过期返回 null 且不重新生成，供 OSS 清理任务判断在用引用",
+)
+@requireInternalToken
+async def get_current_wordcloud_url(
+    request: Request, analyzeService: AnalyzeServiceDep
+) -> ApiResponse:
+    """查询当前词云 OSS 链接供清理任务排除，不触发生成"""
+    url: str | None = await analyzeService.get_current_wordcloud_url()
+    return success(url)
 
 
 @router.post(

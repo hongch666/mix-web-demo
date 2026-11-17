@@ -156,8 +156,10 @@ services:
         condition: service_healthy
     environment:
       <<: *no-proxy-env
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      # 关闭匿名访问，改用账密登录；默认账号密码仅为占位，首次登录后请及时修改
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
     ports:
       - "3000:3000"
     volumes:

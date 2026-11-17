@@ -79,6 +79,17 @@ export class SpringClientService {
   }
 
   /**
+   * 查询 Spring 库中在用的 OSS 原始链接，供 OSS 清理任务排除；key 解析由调用方完成
+   */
+  async listOssReferenceUrls(): Promise<Record<string, unknown>> {
+    return await this.nacosService.call({
+      serviceName: "spring",
+      method: "GET",
+      path: "/users/internal/oss-references",
+    });
+  }
+
+  /**
    * 生成GitHub登录票据（已有接口）
    */
   async createTokenTicket(

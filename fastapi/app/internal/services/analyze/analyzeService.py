@@ -185,6 +185,10 @@ class AnalyzeService:
             self.get_wordcloud_service,
         )
 
+    async def get_current_wordcloud_url(self) -> Optional[str]:
+        """只读返回当前缓存中的词云 OSS URL，缓存过期时返回 None 且不触发生成，供 OSS 清理任务判断在用引用"""
+        return await self._get_wordcloud_cached()
+
     async def get_article_statistics_service_sf(
         self, db: AsyncSession
     ) -> dict[str, Any]:

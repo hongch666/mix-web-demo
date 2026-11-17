@@ -846,7 +846,7 @@ paths:
         - 文件上传
   /upload/pdf:
     post:
-      description: 通过 multipart/form-data 上传 PDF 到 OSS
+      description: 通过 multipart/form-data 上传 PDF 到 OSS，仅管理员可用
       operationId: UploadController_uploadPdf
       parameters:
         - name: custom_filename
@@ -880,7 +880,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnauthorizedResponse'
-      summary: 上传 PDF 到 OSS
+      summary: 上传 PDF 到 OSS（管理员）
+      tags:
+        - 文件上传
+  /upload/public-image:
+    post:
+      description: 注册阶段使用的匿名图片上传接口，仅图片格式，由网关限流
+      operationId: UploadController_uploadPublicImage
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NestjsUploadPublicImagePostResponse'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+      summary: 匿名上传图片到 OSS
       tags:
         - 文件上传
   /table-settings:
@@ -1094,6 +1127,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnauthorizedResponse'
       summary: 手动执行清理API日志任务
+      tags:
+        - 定时任务模块
+  /task/oss-cleanup:
+    post:
+      description: 手动触发无引用 OSS 对象清理任务
+      operationId: TaskController_executeOssCleanupTask
+      parameters: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NestjsTaskOssCleanupPostResponse'
+        '401':
+          description: 用户未登录或登录已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+      summary: 手动执行 OSS 对象清理任务
       tags:
         - 定时任务模块
 info:
@@ -2186,6 +2240,40 @@ components:
         - code
         - msg
         - data
+    NestjsUploadPublicImagePostResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: object
+          description: 上传文件结果
+          properties:
+            original_filename:
+              type: string
+              description: 原始文件名
+            oss_filename:
+              type: string
+              description: OSS 文件名
+            oss_url:
+              type: string
+              description: OSS 文件访问地址
+          required:
+            - original_filename
+            - oss_filename
+            - oss_url
+      required:
+        - code
+        - msg
+        - data
     NestjsTableSettingsGetResponse:
       type: object
       description: 统一接口响应体
@@ -2344,6 +2432,26 @@ components:
         - msg
         - data
     NestjsTaskApilogPostResponse:
+      type: object
+      description: 统一接口响应体
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+          description: 响应码，与 HTTP 状态码一致
+        msg:
+          type: string
+          example: success
+          description: 响应消息
+        data:
+          type: 'null'
+          description: 返回数据
+      required:
+        - code
+        - msg
+        - data
+    NestjsTaskOssCleanupPostResponse:
       type: object
       description: 统一接口响应体
       properties:

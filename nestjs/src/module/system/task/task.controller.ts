@@ -33,4 +33,20 @@ export class TaskController {
     await this.taskService.triggerApiLogCleanup();
     return success(null);
   }
+
+  /**
+   * 手动触发 OSS 对象清理任务，后台异步执行并立即返回
+   */
+  @Post("oss-cleanup")
+  @ApiOperation({
+    summary: "手动执行 OSS 对象清理任务",
+    description: "手动触发无引用 OSS 对象清理任务",
+  })
+  @RequireInternalToken()
+  @ApiLog("手动执行 OSS 对象清理任务")
+  @ApiResponseModel({ data: SwaggerNullData })
+  async executeOssCleanupTask(): Promise<ApiResponse<null>> {
+    void this.taskService.cleanupOssObjects().catch(() => undefined);
+    return success(null);
+  }
 }

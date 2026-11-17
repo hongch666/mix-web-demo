@@ -7,6 +7,7 @@ server:
 # 定时任务配置
 task:
   enabled: ${TASK_ENABLED:true} # 定时任务开关，false 时不注册本地 @Cron 任务（改由 Dolphin 调度器触发 /task/* 接口）
+  oss_cleanup_dry_run: ${OSS_CLEANUP_DRY_RUN:true} # OSS 清理默认只扫描不删除，确认无误后显式置 false 开启真实删除
 
 nacos:
   host: ${NACOS_SERVER:127.0.0.1}

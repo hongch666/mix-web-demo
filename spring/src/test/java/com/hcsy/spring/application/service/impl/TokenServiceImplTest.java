@@ -34,6 +34,7 @@ class TokenServiceImplTest {
     private static final String NEW_ACCESS_TOKEN = "new-access-token";
     private static final String NEW_REFRESH_TOKEN = "new-refresh-token";
     private static final String LOCK_VALUE = "lock-value";
+    private static final String ACCESS_TOKEN = "access-token-from-query";
 
     @Mock
     private RedisUtil redisUtil;
@@ -176,6 +177,114 @@ class TokenServiceImplTest {
 
         verify(redisUtil, never()).set(RedisKeys.userStatus(USER_ID), "0");
         verify(redisUtil, never()).delete(RedisKeys.userSessions(USER_ID));
+    }
+
+    // WebSocket 路径从 query 取 token 时放行并完成身份解析，验证该场景的预期行为
+    @Test
+    @DisplayName("WebSocket 路径允许从 query 读取 token 并解析身份")
+    void acceptsQueryTokenForWebSocketPath() {
+        stubValidAccessToken(ACCESS_TOKEN);
+
+        StepVerifier.create(tokenService.validateGatewayAccessToken(null, null, "/ws/chat?token=" + ACCESS_TOKEN))
+            .assertNext(identity -> {
+                org.junit.jupiter.api.Assertions.assertEquals(USER_ID, identity.getUserId());
+                org.junit.jupiter.api.Assertions.assertEquals("alice", identity.getUsername());
+                org.junit.jupiter.api.Assertions.assertEquals(SESSION_ID, identity.getSessionId());
+            })
+            .verifyComplete();
+
+        verify(jwtUtil).validateAccessToken(ACCESS_TOKEN);
+    }
+
+    // SSE 路径从 query 取 token 时放行，验证长连接白名单生效
+    @Test
+    @DisplayName("SSE 路径允许从 query 读取 token")
+    void acceptsQueryTokenForSsePath() {
+        stubValidAccessToken(ACCESS_TOKEN);
+
+        StepVerifier.create(tokenService.validateGatewayAccessToken(null, null, "/sse/notice?token=" + ACCESS_TOKEN))
+            .assertNext(identity -> org.junit.jupiter.api.Assertions.assertEquals(USER_ID, identity.getUserId()))
+            .verifyComplete();
+
+        verify(jwtUtil).validateAccessToken(ACCESS_TOKEN);
+    }
+
+    // 普通业务路径携带 query token 时拒绝，token 不得从 URL 绕过请求头校验
+    @Test
+    @DisplayName("普通路径的 query token 被拒绝并返回 401")
+    void rejectsQueryTokenOnRegularPath() {
+        StepVerifier.create(tokenService.validateGatewayAccessToken(null, null, "/articles/list?token=" + ACCESS_TOKEN))
+            .expectErrorMatches(this::isUnauthorized)
+            .verify();
+
+        verify(jwtUtil, never()).validateAccessToken(anyString());
+    }
+
+    // /chat/stream 不是 query token 白名单路径，携带时同样拒绝
+    @Test
+    @DisplayName("chat/stream 路径的 query token 被拒绝并返回 401")
+    void rejectsQueryTokenOnChatStreamPath() {
+        StepVerifier.create(tokenService.validateGatewayAccessToken(null, null, "/chat/stream?token=" + ACCESS_TOKEN))
+            .expectErrorMatches(this::isUnauthorized)
+            .verify();
+
+        verify(jwtUtil, never()).validateAccessToken(anyString());
+    }
+
+    // path 中含片段时仍能正确识别白名单前缀并取到 query token
+    @Test
+    @DisplayName("转发 URI 带片段时仍按 path 判断 query token 白名单")
+    void allowsQueryTokenWhenUriHasFragment() {
+        stubValidAccessToken(ACCESS_TOKEN);
+
+        StepVerifier
+            .create(tokenService.validateGatewayAccessToken(null, null, "/ws/chat?token=" + ACCESS_TOKEN + "#frag"))
+            .assertNext(identity -> org.junit.jupiter.api.Assertions.assertEquals(USER_ID, identity.getUserId()))
+            .verifyComplete();
+
+        verify(jwtUtil).validateAccessToken(ACCESS_TOKEN);
+    }
+
+    // 非白名单路径携带 Authorization 头时优先用请求头 token，忽略 query
+    @Test
+    @DisplayName("Authorization 头优先于 query token 且不受路径白名单限制")
+    void prefersAuthorizationHeaderOverQueryToken() {
+        String headerToken = "header-access-token";
+        stubValidAccessToken(headerToken);
+
+        StepVerifier.create(tokenService.validateGatewayAccessToken(
+            "Bearer " + headerToken, null, "/articles/list?token=" + ACCESS_TOKEN))
+            .assertNext(identity -> org.junit.jupiter.api.Assertions.assertEquals(USER_ID, identity.getUserId()))
+            .verifyComplete();
+
+        verify(jwtUtil).validateAccessToken(headerToken);
+        verify(jwtUtil, never()).validateAccessToken(ACCESS_TOKEN);
+    }
+
+    // X-Access-Token 头同样优先于 query，验证两种请求头来源都生效
+    @Test
+    @DisplayName("X-Access-Token 头优先于 query token")
+    void prefersAccessTokenHeaderOverQueryToken() {
+        String headerToken = "x-access-token";
+        stubValidAccessToken(headerToken);
+
+        StepVerifier
+            .create(tokenService.validateGatewayAccessToken(null, headerToken, "/ws/chat?token=" + ACCESS_TOKEN))
+            .assertNext(identity -> org.junit.jupiter.api.Assertions.assertEquals(USER_ID, identity.getUserId()))
+            .verifyComplete();
+
+        verify(jwtUtil).validateAccessToken(headerToken);
+        verify(jwtUtil, never()).validateAccessToken(ACCESS_TOKEN);
+    }
+
+    private void stubValidAccessToken(String token) {
+        String sessionKey = RedisKeys.userSession(USER_ID, SESSION_ID);
+        when(jwtUtil.extractUserId(token)).thenReturn(USER_ID);
+        when(jwtUtil.extractSessionId(token)).thenReturn(SESSION_ID);
+        when(redisUtil.get(RedisKeys.userAccess(token))).thenReturn(Mono.just(USER_ID + ":" + SESSION_ID));
+        when(redisUtil.getHash(sessionKey, "accessToken")).thenReturn(Mono.just(token));
+        when(redisUtil.getHash(sessionKey, "username")).thenReturn(Mono.just("alice"));
+        when(redisUtil.get(RedisKeys.userStatus(USER_ID))).thenReturn(Mono.just("1"));
     }
 
     private void stubLockAcquired() {

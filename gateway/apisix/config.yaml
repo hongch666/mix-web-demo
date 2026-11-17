@@ -41,10 +41,16 @@ nginx_config:
   worker_processes: 1
   http:
     enable_access_log: true
-    access_log_format: '{"time":"$time_iso8601","level":"INFO","trace_id":"$opentelemetry_trace_id","remote_addr":"$remote_addr","request":"$request","status":$status,"request_time":$request_time}'
+    access_log_format: '{"time":"$time_iso8601","level":"INFO","trace_id":"$opentelemetry_trace_id","remote_addr":"$remote_addr","request":"$masked_request","status":$status,"request_time":$request_time}'
     access_log_format_escape: json
   http_configuration_snippet: |
     proxy_buffering off;
+    # WS/SSE 无法自定义请求头，token 只能走 query；访问日志里将 token 值脱敏，避免明文令牌落盘并进入 Loki
+    # 非贪婪匹配第一个 token 参数，覆盖 /ws/*、/sse/*、/chat/stream 等场景；无 token 的请求原样记录
+    map $request $masked_request {
+        default $request;
+        "~^(?<masked_head>.*?[?&]token=)[^&\s]+(?<masked_tail>.*)$" "$masked_head***$masked_tail";
+    }
   http_server_configuration_snippet: |
     location /swagger-ui/ {
         alias /usr/local/apisix/html/swagger-ui/;
