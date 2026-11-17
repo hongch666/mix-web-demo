@@ -1,5 +1,13 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode as HttpCodeDecorator,
+  Post,
+  Query,
+} from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { HttpCode } from "src/common/constants";
 import { success } from "src/common/utils/response";
 import {
   SwaggerSqlQueryData,
@@ -45,6 +53,7 @@ export class SqlToolsController {
    * 在白名单表范围内执行参数化只读 SQL 查询并返回列与行数据
    */
   @Post("query")
+  @HttpCodeDecorator(HttpCode.OK)
   @ApiOperation({
     summary: "执行只读参数化SQL",
     description:

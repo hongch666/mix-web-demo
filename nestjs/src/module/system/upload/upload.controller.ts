@@ -1,4 +1,11 @@
-import { Body, Controller, Post, Query, Req } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  HttpCode as HttpCodeDecorator,
+  Post,
+  Query,
+  Req,
+} from "@nestjs/common";
 import {
   ApiBody,
   ApiConsumes,
@@ -12,7 +19,7 @@ import {
   SwaggerUploadResultData,
 } from "src/common/utils/swaggerResponse";
 import type { FastifyRequest } from "fastify";
-import { Messages } from "src/common/constants";
+import { HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { ApiResponse, success } from "src/common/utils/response";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
@@ -33,6 +40,7 @@ export class UploadController {
    * 根据本地文件路径上传文件到 OSS 并返回访问链接
    */
   @Post("")
+  @HttpCodeDecorator(HttpCode.OK)
   @ApiOperation({
     summary: "上传本地文件到 OSS",
     description: "通过本地文件路径上传文件到 OSS",
@@ -52,6 +60,7 @@ export class UploadController {
    * 通过 multipart/form-data 上传图片到 OSS，返回原始文件名与 OSS 信息
    */
   @Post("image")
+  @HttpCodeDecorator(HttpCode.OK)
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -90,6 +99,7 @@ export class UploadController {
    * 通过 multipart/form-data 上传 PDF 到 OSS，支持自定义文件名（不含扩展名）
    */
   @Post("pdf")
+  @HttpCodeDecorator(HttpCode.OK)
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -137,6 +147,7 @@ export class UploadController {
    * 匿名上传图片到 OSS，供注册阶段使用，仅由网关限流，不要求登录
    */
   @Post("public-image")
+  @HttpCodeDecorator(HttpCode.OK)
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {

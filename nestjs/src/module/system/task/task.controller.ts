@@ -1,5 +1,10 @@
-import { Controller, Post } from "@nestjs/common";
+import {
+  Controller,
+  HttpCode as HttpCodeDecorator,
+  Post,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { HttpCode } from "src/common/constants";
 import { ApiResponse, success } from "src/common/utils/response";
 import {
   ApiResponseModel,
@@ -21,6 +26,7 @@ export class TaskController {
    * 手动触发清理超过3个月的 API 日志任务，后台异步执行并立即返回
    */
   @Post("apilog")
+  @HttpCodeDecorator(HttpCode.OK)
   @ApiOperation({
     summary: "手动执行清理API日志任务",
     description: "手动触发清理超过3个月的API日志任务",
@@ -38,6 +44,7 @@ export class TaskController {
    * 手动触发 OSS 对象清理任务，后台异步执行并立即返回
    */
   @Post("oss-cleanup")
+  @HttpCodeDecorator(HttpCode.OK)
   @ApiOperation({
     summary: "手动执行 OSS 对象清理任务",
     description: "手动触发无引用 OSS 对象清理任务",

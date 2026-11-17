@@ -18,6 +18,8 @@ export class HttpCode {
   static readonly NOT_FOUND = 404;
   /** 资源状态冲突 */
   static readonly CONFLICT = 409;
+  /** 请求体体积超过服务端上限 */
+  static readonly PAYLOAD_TOO_LARGE = 413;
   /** 参数语义校验不通过 */
   static readonly UNPROCESSABLE_ENTITY = 422;
   /** 服务内部异常 */

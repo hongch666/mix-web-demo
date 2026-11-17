@@ -1,5 +1,12 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode as HttpCodeDecorator,
+  Post,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { HttpCode } from "src/common/constants";
 import { ApiResponse, success } from "src/common/utils/response";
 import {
   SwaggerMongoAggregateData,
@@ -38,6 +45,7 @@ export class MongoToolsController {
    * 对白名单内的日志集合执行只读 find 查询
    */
   @Post("query")
+  @HttpCodeDecorator(HttpCode.OK)
   @ApiOperation({
     summary: "查询日志文档",
     description: "对白名单内的日志集合执行只读查询，供 FastAPI 内部远程调用",
@@ -57,6 +65,7 @@ export class MongoToolsController {
    * 对白名单内的日志集合执行受限只读聚合管道
    */
   @Post("aggregate")
+  @HttpCodeDecorator(HttpCode.OK)
   @ApiOperation({
     summary: "聚合查询日志文档",
     description:

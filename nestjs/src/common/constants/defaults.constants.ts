@@ -23,6 +23,9 @@ export class Defaults {
   /** OSS 对象清理单次列取每批数量 */
   static readonly OSS_LIST_PAGE_SIZE = 1000;
 
+  /** multipart 单文件体积上限默认值（MB），可由配置 files.max_size 覆盖 */
+  static readonly MAX_UPLOAD_SIZE_MB = 5;
+
   /** OSS 清理允许操作的 key 前缀白名单，避免误删配置或其它业务对象 */
   static readonly OSS_CLEANUP_KEY_PREFIXES = [
     "pic/",

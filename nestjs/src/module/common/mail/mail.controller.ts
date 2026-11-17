@@ -1,5 +1,11 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  HttpCode as HttpCodeDecorator,
+  Post,
+} from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { HttpCode } from "src/common/constants";
 import { ApiResponse, success } from "src/common/utils/response";
 import {
   ApiResponseModel,
@@ -21,6 +27,7 @@ export class MailController {
    * 发送邮箱验证码接口，触发异步发信后立即返回成功，不阻塞响应
    */
   @Post("send-code")
+  @HttpCodeDecorator(HttpCode.OK)
   @RequireInternalToken("spring")
   @ApiOperation({
     summary: "发送邮箱验证码",
