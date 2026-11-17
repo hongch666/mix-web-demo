@@ -193,15 +193,29 @@ routes:
         upstream_headers: [X-User-Id, X-Username, X-Session-Id]
         timeout: 30000
 
+  # AI 类路由复用锚点：认证 + 按「token 或 IP」限流
+  # forward-auth 在 limit-req 之后执行，此时拿不到 X-User-Id，故用请求自带的 Authorization 头或 query token 作为 key
+  # 流式对话建连后长期占用 LLM，限制建连速率即可控制并发规模；扩容多副本时须改回 redis 策略
   - id: fastapi-chat-stream
     uri: /chat/stream
     upstream_id: fastapi-stream
-    plugins:
+    plugins: &ai_limit
       forward-auth:
         uri: http://spring:8081/users/internal/auth/validate
         request_headers: [Authorization, X-Access-Token]
         upstream_headers: [X-User-Id, X-Username, X-Session-Id]
         timeout: 30000
+      limit-req:
+        {
+          rate: 2,
+          burst: 8,
+          nodelay: true,
+          key_type: var_combination,
+          key: "$http_authorization$arg_token$remote_addr",
+          rejected_code: 429,
+          rejected_msg: '{"code":429,"msg":"请求过于频繁，请稍后再试","data":null}',
+          policy: local,
+        }
   - id: gozero-sse
     uri: /sse/*
     upstream_id: gozero-long
@@ -250,19 +264,13 @@ routes:
       ]
     upstream_id: nestjs
     plugins: *auth
+  # LLM/分析类接口消耗算力与外部模型额度，复用 *ai_limit 单独限流
+  - id: fastapi-ai
+    uris: [/analyze, /analyze/*, /generate, /generate/*, /chat, /chat/*]
+    upstream_id: fastapi
+    plugins: *ai_limit
   - id: fastapi
-    uris:
-      [
-        /test/fastapi,
-        /analyze,
-        /analyze/*,
-        /generate,
-        /generate/*,
-        /chat,
-        /chat/*,
-        /ai_history,
-        /ai_history/*,
-      ]
+    uris: [/test/fastapi, /ai_history, /ai_history/*]
     upstream_id: fastapi
     plugins: *auth
 
