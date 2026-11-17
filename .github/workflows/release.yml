@@ -5,6 +5,10 @@ name: Release Images
 #   push tag v*  → 追加 :vX.Y.Z（配合 GitHub Release）
 #   workflow_dispatch → 手工补建镜像
 #
+# 只改 loki-config/、prometheus-config/、otel-config/（观测组件配置）时也会跑一次：
+# 变更检测计为 0，不构建任何镜像，但 Release Images 的完成事件是 deploy.yml 的唯一自动触发源，
+# 少了这一次部署机就不会同步配置。这类运行会产出 deploy-plan=none，由部署侧走 CONFIG_ONLY。
+#
 # 构建位置：GitHub 托管 runner（ACR 个人版公网端点可达）。
 # 若镜像仓库换成企业版 VPC 端点或内网 Harbor，把 runs-on 改为 [self-hosted, linux, x64, builder]。
 on:
@@ -18,9 +22,6 @@ on:
       - 'scripts/**'
       - 'skills/**'
       - 'static/**'
-      - 'loki-config/**'
-      - 'otel-config/**'
-      - 'prometheus-config/**'
       - '.github/**'
   workflow_dispatch:
 
