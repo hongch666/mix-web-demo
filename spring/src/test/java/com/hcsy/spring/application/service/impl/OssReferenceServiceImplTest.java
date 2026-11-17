@@ -57,6 +57,27 @@ class OssReferenceServiceImplTest {
             .verifyComplete();
     }
 
+    // pdf 或 link 为 NULL 时只返回有值的链接，不能因 null 元素报错
+    @Test
+    @DisplayName("单列 NULL 的参考记录不报错且只返回有效链接")
+    void skipsNullColumnReferences() {
+        when(userRepository.findAllImgs()).thenReturn(Flux.empty());
+        when(categoryReferenceRepository.findAllWithPdfOrLink()).thenReturn(
+            Flux.just(
+                reference(null, "https://example.com/doc"),
+                reference("https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pdf/a.pdf", null),
+                reference(null, null)));
+
+        StepVerifier.create(service.listOssReferenceUrls())
+            .assertNext(urls -> {
+                org.junit.jupiter.api.Assertions.assertEquals(2, urls.size());
+                org.junit.jupiter.api.Assertions.assertTrue(urls.contains("https://example.com/doc"));
+                org.junit.jupiter.api.Assertions.assertTrue(
+                    urls.contains("https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pdf/a.pdf"));
+            })
+            .verifyComplete();
+    }
+
     // 两表均无数据时返回空列表
     @Test
     @DisplayName("无在用引用时返回空列表")

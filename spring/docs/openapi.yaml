@@ -29,6 +29,8 @@ tags:
   description: "文章收藏功能相关API，包括收藏、取消收藏、收藏列表查询、收藏统计等"
 - name: "文章模块"
   description: "文章管理功能相关API，包括文章增删改查、搜索排序等"
+- name: "OSS对象模块"
+  description: "OSS 对象在用引用查询相关API，供清理任务判断在用对象"
 - name: "测试模块"
   description: "服务测试相关API，用于验证各个微服务是否正常运行"
 paths:
@@ -1462,26 +1464,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UnauthorizedResponse"
-  /users/internal/oss-references:
-    get:
-      tags:
-      - "oss-reference-controller"
-      summary: "查询 OSS 在用引用 key"
-      description: "返回数据库中在用的 OSS 对象 key 列表，供清理任务排除"
-      operationId: "listOssReferenceUrls"
-      responses:
-        "200":
-          description: "OK"
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/ResultListString"
-        "401":
-          description: "用户未登录或登录已失效"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
   /users/internal/auth/validate:
     get:
       tags:
@@ -1656,6 +1638,26 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListSqlTableSchemaVO"
+        "401":
+          description: "用户未登录或登录已失效"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnauthorizedResponse"
+  /oss/internal/references:
+    get:
+      tags:
+      - "OSS对象模块"
+      summary: "查询 OSS 在用引用 key"
+      description: "返回数据库中在用的 OSS 对象 key 列表，供清理任务排除"
+      operationId: "listOssReferenceUrls"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListString"
         "401":
           description: "用户未登录或登录已失效"
           content:
@@ -5037,26 +5039,6 @@ components:
       required:
       - "code"
       - "msg"
-    ResultListString:
-      description: "统一响应"
-      properties:
-        code:
-          type: "integer"
-          format: "int32"
-          description: "响应码"
-        msg:
-          type: "string"
-          description: "响应信息"
-        data:
-          type:
-          - "array"
-          - "null"
-          description: "返回数据"
-          items:
-            type: "string"
-      required:
-      - "code"
-      - "msg"
     ImageCaptchaVO:
       description: "图形验证码"
       properties:
@@ -5168,6 +5150,26 @@ components:
           description: "列信息，仅在指定表名查询时返回"
           items:
             $ref: "#/components/schemas/SqlColumnInfoVO"
+    ResultListString:
+      description: "统一响应"
+      properties:
+        code:
+          type: "integer"
+          format: "int32"
+          description: "响应码"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type:
+          - "array"
+          - "null"
+          description: "返回数据"
+          items:
+            type: "string"
+      required:
+      - "code"
+      - "msg"
     ArticleLikeVO:
       description: "文章点赞视图"
       properties:

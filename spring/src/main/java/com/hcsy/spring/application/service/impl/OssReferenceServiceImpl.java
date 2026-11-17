@@ -1,7 +1,7 @@
 package com.hcsy.spring.application.service.impl;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 
@@ -31,11 +31,12 @@ public class OssReferenceServiceImpl implements OssReferenceService {
         Flux<String> fromUser = userRepository.findAllImgs()
             .filter(url -> url != null && !url.isBlank());
 
+        // pdf / link 两列均可为 NULL，必须先在流式构建阶段过滤掉 null，
+        // 否则 Flux 迭代到 null 元素会抛 "The iterator returned a null value" 导致接口 500
         Flux<String> fromReference = categoryReferenceRepository.findAllWithPdfOrLink()
-            .flatMap(reference -> Flux.fromIterable(Arrays.asList(
-                reference.getPdf(),
-                reference.getLink())))
-            .filter(url -> url != null && !url.isBlank());
+            .concatMap(reference -> Flux.fromStream(
+                Stream.of(reference.getPdf(), reference.getLink())
+                    .filter(url -> url != null && !url.isBlank())));
 
         return Flux.concat(fromUser, fromReference).distinct().collectList();
     }
