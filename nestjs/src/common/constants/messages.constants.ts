@@ -677,6 +677,69 @@ export class Messages {
   static readonly SQL_PROXY_TABLE_SCHEMA_FAILED = (message: string): string =>
     `获取表结构信息失败: ${message}`;
 
+  // ===== OSS 对象账本与清理 =====
+
+  /** OSS 列取开始的日志消息 */
+  static readonly OSS_LIST_START = (prefix: string): string =>
+    `开始列取 OSS 对象，前缀: ${prefix}`;
+
+  /** OSS 列取完成的日志消息 */
+  static readonly OSS_LIST_COMPLETED = (count: number): string =>
+    `OSS 对象列取完成，共 ${count} 个`;
+
+  /** OSS 删除开始的日志消息 */
+  static readonly OSS_DELETE_START = (count: number): string =>
+    `开始删除 ${count} 个 OSS 对象`;
+
+  /** OSS 删除完成的日志消息 */
+  static readonly OSS_DELETE_COMPLETED = (count: number): string =>
+    `OSS 对象删除完成，成功 ${count} 个`;
+
+  /** OSS 对象 key 不在白名单前缀时的跳过日志 */
+  static readonly OSS_KEY_PREFIX_SKIPPED = (key: string): string =>
+    `OSS 对象 key 不在清理白名单前缀内，跳过: ${key}`;
+
+  /** OSS URL 域名不属于当前 bucket 时的跳过日志 */
+  static readonly OSS_URL_HOST_SKIPPED = (url: string): string =>
+    `OSS URL 域名不属于当前 bucket，跳过: ${url}`;
+
+  /** 账本写入失败的日志消息 */
+  static readonly OSS_LEDGER_INSERT_FAILED = (key: string): string =>
+    `OSS 对象账本写入失败: ${key}`;
+
+  /** 账本写入失败后回滚删除 OSS 对象失败的日志 */
+  static readonly OSS_LEDGER_ROLLBACK_FAILED = (key: string): string =>
+    `OSS 对象账本写入失败后回滚删除 OSS 对象失败: ${key}`;
+
+  /** OSS 清理任务开始的日志 */
+  static readonly OSS_CLEANUP_START = (dryRun: boolean): string =>
+    `开始 OSS 对象清理任务，dry-run: ${dryRun}`;
+
+  /** OSS 清理任务补录数统计 */
+  static readonly OSS_CLEANUP_BACKFILLED = (count: number): string =>
+    `OSS 清理补录历史对象 ${count} 个`;
+
+  /** OSS 清理任务删除数统计 */
+  static readonly OSS_CLEANUP_DELETED = (count: number): string =>
+    `OSS 清理删除无引用对象 ${count} 个`;
+
+  /** OSS 清理任务完成的日志 */
+  static readonly OSS_CLEANUP_COMPLETED = (
+    scanned: number,
+    backfilled: number,
+    deleted: number,
+    failed: number,
+  ): string =>
+    `OSS 清理完成，扫描 ${scanned}，补录 ${backfilled}，删除 ${deleted}，失败 ${failed}`;
+
+  /** OSS 清理任务失败的日志 */
+  static readonly OSS_CLEANUP_FAILED = (message: string): string =>
+    `OSS 对象清理任务失败: ${message}`;
+
+  /** 在用引用来源查询不完整时跳过删除的日志消息 */
+  static readonly OSS_CLEANUP_SKIP_DELETE_ON_PARTIAL_SCAN =
+    "在用引用来源查询不完整，跳过本轮删除以避免误删";
+
   /** 聚合管道为空的校验消息 */
   static readonly MONGO_AGGREGATE_PIPELINE_EMPTY = "聚合管道不能为空";
 
@@ -878,69 +941,6 @@ export class Messages {
 
   /** OSS 响应正文的日志前缀 */
   static readonly OSS_RESPONSE_CONTENT_PREFIX = "响应内容:";
-
-  // ===== OSS 对象账本与清理 =====
-
-  /** OSS 列取开始的日志消息 */
-  static readonly OSS_LIST_START = (prefix: string): string =>
-    `开始列取 OSS 对象，前缀: ${prefix}`;
-
-  /** OSS 列取完成的日志消息 */
-  static readonly OSS_LIST_COMPLETED = (count: number): string =>
-    `OSS 对象列取完成，共 ${count} 个`;
-
-  /** OSS 删除开始的日志消息 */
-  static readonly OSS_DELETE_START = (count: number): string =>
-    `开始删除 ${count} 个 OSS 对象`;
-
-  /** OSS 删除完成的日志消息 */
-  static readonly OSS_DELETE_COMPLETED = (count: number): string =>
-    `OSS 对象删除完成，成功 ${count} 个`;
-
-  /** OSS 对象 key 不在白名单前缀时的跳过日志 */
-  static readonly OSS_KEY_PREFIX_SKIPPED = (key: string): string =>
-    `OSS 对象 key 不在清理白名单前缀内，跳过: ${key}`;
-
-  /** OSS URL 域名不属于当前 bucket 时的跳过日志 */
-  static readonly OSS_URL_HOST_SKIPPED = (url: string): string =>
-    `OSS URL 域名不属于当前 bucket，跳过: ${url}`;
-
-  /** 账本写入失败的日志消息 */
-  static readonly OSS_LEDGER_INSERT_FAILED = (key: string): string =>
-    `OSS 对象账本写入失败: ${key}`;
-
-  /** 账本写入失败后回滚删除 OSS 对象失败的日志 */
-  static readonly OSS_LEDGER_ROLLBACK_FAILED = (key: string): string =>
-    `OSS 对象账本写入失败后回滚删除 OSS 对象失败: ${key}`;
-
-  /** OSS 清理任务开始的日志 */
-  static readonly OSS_CLEANUP_START = (dryRun: boolean): string =>
-    `开始 OSS 对象清理任务，dry-run: ${dryRun}`;
-
-  /** OSS 清理任务补录数统计 */
-  static readonly OSS_CLEANUP_BACKFILLED = (count: number): string =>
-    `OSS 清理补录历史对象 ${count} 个`;
-
-  /** OSS 清理任务删除数统计 */
-  static readonly OSS_CLEANUP_DELETED = (count: number): string =>
-    `OSS 清理删除无引用对象 ${count} 个`;
-
-  /** OSS 清理任务完成的日志 */
-  static readonly OSS_CLEANUP_COMPLETED = (
-    scanned: number,
-    backfilled: number,
-    deleted: number,
-    failed: number,
-  ): string =>
-    `OSS 清理完成，扫描 ${scanned}，补录 ${backfilled}，删除 ${deleted}，失败 ${failed}`;
-
-  /** OSS 清理任务失败的日志 */
-  static readonly OSS_CLEANUP_FAILED = (message: string): string =>
-    `OSS 对象清理任务失败: ${message}`;
-
-  /** 在用引用来源查询不完整时跳过删除的日志 */
-  static readonly OSS_CLEANUP_SKIP_DELETE_ON_PARTIAL_SCAN =
-    "在用引用来源查询不完整，跳过本轮删除以避免误删";
 
   // ===== 文件上传 =====
 
