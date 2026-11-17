@@ -96,7 +96,7 @@ routes:
         /article-logs/search-keywords,
         /article-logs/search-history/*,
         /article-logs/view-distribution/*,
-        /users/internal/oss-references,
+        /oss/internal/references,
         /analyze/internal/wordcloud-url,
         /task/oss-cleanup,
       ]
