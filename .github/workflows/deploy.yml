@@ -7,6 +7,9 @@ name: Deploy
 #   2. release published：发布 GitHub Release 时部署对应 tag
 #   3. workflow_dispatch：手工部署 / 回滚，image_tag 填短 sha 或 vX.Y.Z
 #
+# 配置类变更（loki-config/、prometheus-config/、otel-config/、gateway/）不产生新镜像，
+# 走 CONFIG_ONLY：同步代码与配置后只重启命中目录的观测/网关容器（见最后一步），业务服务不动。
+#
 # 部署机要求（一次配置，见 README 或交接说明）：
 #   - 自托管 runner，labels 含 deploy（svc.sh 注册为 systemd 服务）
 #   - 仓库克隆于仓库变量 DEPLOY_DIR（如 /home/hongch666/mix-web-demo），
@@ -281,12 +284,49 @@ jobs:
           set_tag "__commit__" "$COMMIT"
           echo "::notice::部署完成: 新tag=$TAG 变更=[${CHANGED:-无}]"
 
-      - name: 网关配置变更时重启 APISIX
+      - name: 配置文件变更时重启对应容器
         if: steps.sync.outputs.tag
+        env:
+          PREV_COMMIT: ${{ steps.sync.outputs.prev_commit }}
+          TARGET_COMMIT: ${{ steps.sync.outputs.commit }}
         run: |
+          set -uo pipefail
           cd "${{ steps.sync.outputs.deploy_dir }}"
-          # APISIX 只在启动时读配置，bind mount 变更不会触发容器重建，需显式重启
-          if git diff --name-only "${{ steps.sync.outputs.prev_commit }}" "${{ steps.sync.outputs.commit }}" -- gateway/ | grep -q .; then
-            echo "检测到 gateway 配置变更，重启网关加载新配置..."
-            docker compose restart gateway
-          fi
+
+          # compose 只会把「服务定义变化」升级为重建；bind mount 里的配置文件内容变化不会让容器重启。
+          # 下面这些组件都是进程启动时读一次配置（APISIX / Grafana / Loki / Promtail / Prometheus /
+          # Collector / Tempo），所以按目录映射显式 restart：只重启命中的容器，业务服务与其它组件不受影响。
+          changed() {
+            [ -n "$(git diff --name-only "$PREV_COMMIT" "$TARGET_COMMIT" -- "$@")" ]
+          }
+
+          restart_svc() {
+            local svc="$1" cid st i
+            shift
+            changed "$@" || return 0
+            echo "检测到 $svc 配置变更，重启 $svc 加载新配置..."
+            if ! docker compose restart "$svc"; then
+              echo "::warning::$svc 重启失败（容器可能未运行），需人工确认"
+              return 0
+            fi
+            cid="$(docker compose ps -q "$svc" 2>/dev/null || true)"
+            for i in $(seq 1 30); do
+              st="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$cid" 2>/dev/null || true)"
+              case "$st" in
+                healthy | running)
+                  echo "$svc 已就绪（${st}）"
+                  return 0
+                  ;;
+              esac
+              sleep 2
+            done
+            echo "::warning::$svc 重启后 60s 内未就绪（当前状态: ${st:-unknown}）"
+          }
+
+          restart_svc gateway        gateway/
+          restart_svc grafana        loki-config/grafana/
+          restart_svc loki           loki-config/loki.yaml
+          restart_svc promtail       loki-config/promtail.yaml loki-config/promtail-dist.yaml
+          restart_svc prometheus     prometheus-config/
+          restart_svc otel-collector otel-config/otel-collector.yaml
+          restart_svc tempo          otel-config/tempo.yaml
