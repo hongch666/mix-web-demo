@@ -80,6 +80,16 @@ export class BusinessException extends HttpException {
   }
 
   /**
+   * 创建 413 Payload Too Large 业务异常
+   */
+  static payloadTooLarge(
+    message: string,
+    error: string = "PAYLOAD_TOO_LARGE",
+  ): BusinessException {
+    return new BusinessException(message, HttpCode.PAYLOAD_TOO_LARGE, error);
+  }
+
+  /**
    * 创建 422 Unprocessable Entity 业务异常
    */
   static unprocessableEntity(

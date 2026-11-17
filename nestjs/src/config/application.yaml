@@ -50,6 +50,8 @@ rabbitmq:
 files:
   word: ${FILES_WORD_PATH:../static/word}
   upload: ${FILES_UPLOAD_PATH:../static/upload}
+  # multipart 单文件体积上限（MB），同时作用于 /upload/image 与 /upload/pdf
+  max_size: ${FILES_MAX_SIZE_MB:5}
 
 logs:
   path: ${LOGS_PATH:../logs/nestjs}
@@ -72,14 +74,14 @@ mail:
   username: ${MAIL_USERNAME:}
   password: ${MAIL_PASSWORD:}
   from: ${MAIL_FROM:}
-  timeout: 5000
+  timeout: ${MAIL_TIMEOUT:5000}
 
 oss:
   bucket_name: ${OSS_BUCKET_NAME:mix-web-demo}
   endpoint: ${OSS_ENDPOINT:oss-cn-guangzhou.aliyuncs.com}
   access_key_id: ${OSS_ACCESS_KEY_ID:}
   access_key_secret: ${OSS_ACCESS_KEY_SECRET:}
-  put_timeout: 120 # 上传超时时间（秒）
+  put_timeout: ${OSS_PUT_TIMEOUT:120} # 上传超时时间（秒）
 
 github:
   oauth:

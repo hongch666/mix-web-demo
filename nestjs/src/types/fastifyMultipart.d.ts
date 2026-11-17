@@ -15,6 +15,8 @@ declare module "@fastify/multipart" {
 
   export interface MultipartOptions {
     attachFieldsToBody?: boolean;
+    /** 超过 limits.fileSize 时是否直接抛错，关闭后由业务层按 truncated 标记处理 */
+    throwFileSizeLimit?: boolean;
     limits?: {
       fileSize?: number;
       files?: number;

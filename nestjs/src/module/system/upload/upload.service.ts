@@ -4,7 +4,7 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import { ClsService } from "nestjs-cls";
-import { Messages } from "src/common/constants";
+import { Defaults, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { OssService } from "src/module/common/oss/oss.service";
@@ -22,7 +22,7 @@ export interface MultipartUploadFile {
   filename?: string;
   readable?: boolean;
   pipe?: unknown;
-  file?: Readable;
+  file?: Readable & { truncated?: boolean };
   toBuffer?: () => Promise<Buffer>;
 }
 
@@ -288,6 +288,19 @@ export class UploadService {
         ),
       );
       await pump(file.file, fs.createWriteStream(localPath));
+
+      // 插件关闭内置抛错后，超限只体现在流的 truncated 标记上，需在此显式拒绝
+      if (file.file.truncated) {
+        const maxSizeMb: number =
+          Number(this.configService.get<number>("files.max_size")) ||
+          Defaults.MAX_UPLOAD_SIZE_MB;
+        this.logger.error(Messages.UPLOAD_FILE_TOO_LARGE(maxSizeMb));
+        await this.cleanupTempFile(localPath);
+        throw BusinessException.payloadTooLarge(
+          Messages.UPLOAD_FILE_TOO_LARGE(maxSizeMb),
+        );
+      }
+
       this.logger.info(Messages.UPLOAD_FILE_SAVED_TO_TEMP(localPath));
       return localPath;
     } catch (error: unknown) {

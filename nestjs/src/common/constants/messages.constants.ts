@@ -270,6 +270,10 @@ export class Messages {
   static readonly UPLOAD_PDF_START = (filename: string | undefined): string =>
     `uploadPdf 开始，文件信息: filename=${filename}`;
 
+  /** 构造上传文件超过体积上限的提示 */
+  static readonly UPLOAD_FILE_TOO_LARGE = (maxSizeMb: number): string =>
+    `文件体积超过上限: 最大支持 ${maxSizeMb} MB`;
+
   /** 构造上传格式不支持的错误消息 */
   static readonly UPLOAD_UNSUPPORTED_FORMAT = (
     ext: string,

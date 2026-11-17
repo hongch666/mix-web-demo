@@ -10,6 +10,7 @@ import type { OpenAPIObject } from "@nestjs/swagger";
 import { SwaggerModule } from "@nestjs/swagger";
 import type { ValidationError } from "class-validator";
 import {
+  Defaults,
   ErrorIds,
   HttpCode,
   Messages,
@@ -62,11 +63,19 @@ export async function createApp(): Promise<NestFastifyApplication> {
     await NestFactory.create<NestFastifyApplication>(AppModule, fastifyAdapter);
   app.enableShutdownHooks();
 
+  // 读取配置以确定单文件上传体积上限，multipart 插件注册时就需要该值
+  const configService: ConfigService<unknown, boolean> = app.get(ConfigService);
+  const maxUploadSizeMb: number =
+    Number(configService.get<number>("files.max_size")) ||
+    Defaults.MAX_UPLOAD_SIZE_MB;
+
   // 支持 multipart/form-data 文件上传
   await app.register(multipart as unknown as FastifyRegisterPlugin, {
     attachFieldsToBody: false,
+    // 关闭插件内置抛错，改由业务层按 truncated 标记返回 413，避免超限被兜底成 500
+    throwFileSizeLimit: false,
     limits: {
-      fileSize: 20 * 1024 * 1024, // 最大 20MB，可根据需要调整
+      fileSize: maxUploadSizeMb * 1024 * 1024,
     },
   });
 
@@ -110,7 +119,6 @@ export async function createApp(): Promise<NestFastifyApplication> {
   );
 
   // 读取yaml文件中的端口和IP
-  const configService: ConfigService<unknown, boolean> = app.get(ConfigService);
   const port: number = configService.get<number>("server.port")!;
   const mode: string = configService.get<string>("server.mode")!;
   const ip: string = configService.get<string>("server.ip")!;
