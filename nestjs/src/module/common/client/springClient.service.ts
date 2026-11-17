@@ -85,7 +85,7 @@ export class SpringClientService {
     return await this.nacosService.call({
       serviceName: "spring",
       method: "GET",
-      path: "/users/internal/oss-references",
+      path: "/oss/internal/references",
     });
   }
 
