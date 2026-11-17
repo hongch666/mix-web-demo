@@ -32,7 +32,8 @@ const ossClientProvider: Provider = {
       secure: true,
       enableProxy: true,
     });
-    return client;
+    // ali-oss 未提供与 OssClient 对齐的类型声明，实例运行时具备 put/list/del，这里显式收窄
+    return client as unknown as OssClient;
   },
 };
 

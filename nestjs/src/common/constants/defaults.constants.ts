@@ -14,6 +14,23 @@ export class Defaults {
   /** API 日志清理任务的分布式锁过期秒数 */
   static readonly LOCK_TASK_API_LOG_CLEANUP_EXPIRE = 3600;
 
+  /** OSS 对象清理任务的分布式锁过期秒数 */
+  static readonly LOCK_TASK_OSS_CLEANUP_EXPIRE = 1800;
+
+  /** OSS 对象清理宽限期（毫秒）：创建未满 1h 的对象不清理，给业务建立引用的时间 */
+  static readonly OSS_CLEANUP_GRACE_MS = 60 * 60 * 1000;
+
+  /** OSS 对象清理单次列取每批数量 */
+  static readonly OSS_LIST_PAGE_SIZE = 1000;
+
+  /** OSS 清理允许操作的 key 前缀白名单，避免误删配置或其它业务对象 */
+  static readonly OSS_CLEANUP_KEY_PREFIXES = [
+    "pic/",
+    "pdf/",
+    "excel/",
+    "articles/",
+  ] as const;
+
   // ===== 链路追踪 =====
 
   /** 手动创建 span 时使用的 tracer 名称：定时任务等无请求入口的场景 */

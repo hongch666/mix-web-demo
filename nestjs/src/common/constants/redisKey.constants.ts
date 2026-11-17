@@ -44,6 +44,9 @@ export class RedisKeys {
   /** API 日志清理任务的分布式锁 key */
   static readonly LOCK_TASK_API_LOG_CLEANUP = "lock:task:api:log:cleanup";
 
+  /** OSS 对象清理任务的分布式锁 key */
+  static readonly LOCK_TASK_OSS_CLEANUP = "lock:task:oss:cleanup";
+
   // ===== Lua 脚本 =====
 
   /** 解锁脚本: 仅锁持有者可释放 */

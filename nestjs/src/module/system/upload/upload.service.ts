@@ -3,12 +3,14 @@ import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
+import { ClsService } from "nestjs-cls";
 import { Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { OssService } from "src/module/common/oss/oss.service";
 import { pipeline, Readable } from "stream";
 import { promisify } from "util";
+import { OssObjectService } from "src/module/system/ossObject/ossObject.service";
 import { UploadResult } from "./dto/upload.dto";
 
 const pump = promisify(pipeline);
@@ -33,19 +35,84 @@ export class UploadService {
     private readonly ossService: OssService,
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
+    private readonly ossObjectService: OssObjectService,
+    private readonly cls: ClsService,
   ) {}
 
   /**
-   * 上传本地文件到 OSS
+   * 上传本地文件到 OSS，成功后登记账本（内部调用来源）
    */
   async uploadFile(localFile: string, ossFile: string): Promise<string> {
-    return this.ossService.uploadFile(localFile, ossFile);
+    const url: string = await this.ossService.uploadFile(localFile, ossFile);
+    await this.registerObject(ossFile, url, "internal");
+    return url;
   }
 
   /**
-   * 上传图片到 OSS
+   * 当前登录用户ID，匿名上传或上下文缺失时返回 null
+   */
+  private currentUserId(): number | null {
+    const userId = this.cls?.get<number>("userId");
+    return typeof userId === "number" && userId > 0 ? userId : null;
+  }
+
+  /**
+   * 上传成功后登记账本；写账本失败时回滚删除刚上传的 OSS 对象，避免产生无主对象
+   */
+  private async registerObject(
+    ossKey: string,
+    ossUrl: string,
+    source: string,
+  ): Promise<void> {
+    const prefixType: string = ossKey.split("/")[0] ?? ossKey;
+    try {
+      await this.ossObjectService.register({
+        ossKey,
+        ossUrl,
+        prefixType,
+        source,
+        uploaderUserId: this.currentUserId(),
+      });
+    } catch (error: unknown) {
+      const message: string =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(Messages.OSS_LEDGER_INSERT_FAILED(ossKey));
+      try {
+        await this.ossService.deleteObjects([ossKey]);
+      } catch (rollbackError: unknown) {
+        const rollbackMessage: string =
+          rollbackError instanceof Error
+            ? rollbackError.message
+            : String(rollbackError);
+        this.logger.error(
+          `${Messages.OSS_LEDGER_ROLLBACK_FAILED(ossKey)}: ${rollbackMessage}`,
+        );
+      }
+      throw BusinessException.internalServerError(message);
+    }
+  }
+
+  /**
+   * 上传图片到 OSS，登录后上传来源记为 user_image
    */
   async uploadImage(file: MultipartUploadFile): Promise<UploadResult> {
+    return this.uploadImageWithSource(file, "user_image");
+  }
+
+  /**
+   * 匿名上传图片到 OSS（注册阶段使用），来源记为 public_image
+   */
+  async uploadPublicImage(file: MultipartUploadFile): Promise<UploadResult> {
+    return this.uploadImageWithSource(file, "public_image");
+  }
+
+  /**
+   * 上传图片到 OSS 并按来源登记账本
+   */
+  private async uploadImageWithSource(
+    file: MultipartUploadFile,
+    source: string,
+  ): Promise<UploadResult> {
     this.logger.info(Messages.UPLOAD_IMAGE_START(file?.filename));
     this.logger.info(
       Messages.UPLOAD_FILE_TYPE_INFO(
@@ -86,6 +153,7 @@ export class UploadService {
         ossPath,
       );
       this.logger.info(Messages.UPLOAD_OSS_COMPLETED(ossUrl));
+      await this.registerObject(ossPath, ossUrl, source);
 
       return {
         originalFilename,
@@ -101,7 +169,7 @@ export class UploadService {
   }
 
   /**
-   * 上传 PDF 到 OSS
+   * 上传 PDF 到 OSS，管理员上传来源记为 admin_pdf
    */
   async uploadPdf(
     file: MultipartUploadFile,
@@ -141,6 +209,7 @@ export class UploadService {
         ossPath,
       );
       this.logger.info(Messages.UPLOAD_OSS_COMPLETED(ossUrl));
+      await this.registerObject(ossPath, ossUrl, "admin_pdf");
 
       return {
         originalFilename,

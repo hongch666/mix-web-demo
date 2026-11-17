@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
 import { trace } from "@opentelemetry/api";
 import { Defaults, Messages, RedisKeys } from "src/common/constants";
@@ -6,6 +7,7 @@ import { LoggerService } from "src/module/common/logger/logger.service";
 import { taskDuration, taskRuns } from "src/module/common/telemetry/metrics";
 import { ApiLogService } from "src/module/system/apiLog/apiLog.service";
 import { RedisService } from "src/module/common/redis/redis.service";
+import { OssObjectService } from "src/module/system/ossObject/ossObject.service";
 
 /**
  * 定时任务服务，通过 Cron 定时并配合 Redis 分布式锁清理过期的 API 日志与文章日志
@@ -16,6 +18,8 @@ export class TaskService {
     private readonly apiLogService: ApiLogService,
     private readonly redisService: RedisService,
     private readonly logger: LoggerService,
+    private readonly ossObjectService: OssObjectService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -40,6 +44,80 @@ export class TaskService {
           span.end();
         }
       });
+  }
+
+  /**
+   * 每小时执行的 OSS 对象清理调度入口：清理无引用对象与 OSS 孤儿
+   * Cron 表达式: 秒 分 时 日 月 星期，'0 0 * * * *' 表示每小时整点执行
+   * 默认 dry-run 只扫描不删除，需通过 task.oss_cleanup_dry_run=false 显式开启删除
+   */
+  @Cron("0 0 * * * *")
+  async cleanupOssObjects(): Promise<void> {
+    await trace
+      .getTracer(Defaults.OTEL_TRACER_NAME)
+      .startActiveSpan("job:oss-cleanup", async (span) => {
+        try {
+          await this.runOssCleanupWithLock();
+        } catch (error: unknown) {
+          span.recordException(error as Error);
+          throw error;
+        } finally {
+          span.end();
+        }
+      });
+  }
+
+  /**
+   * OSS 清理的完整流程：读取 dry-run 开关、分布式锁、指标与异常处理
+   */
+  private async runOssCleanupWithLock(): Promise<void> {
+    const lockKey = RedisKeys.LOCK_TASK_OSS_CLEANUP;
+    const lockExpire = Defaults.LOCK_TASK_OSS_CLEANUP_EXPIRE;
+    const lockValue = await this.redisService.tryLock(lockKey, lockExpire);
+    if (lockValue === null) {
+      this.logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL.replace("%s", lockKey));
+      return;
+    }
+    this.logger.info(
+      Messages.REDIS_LOCK_ACQUIRE_SUCCESS.replace("%s", lockKey),
+    );
+    const startedAt: bigint = process.hrtime.bigint();
+    let result: string = "success";
+
+    try {
+      const dryRun: boolean = this.isOssCleanupDryRun();
+      this.logger.info(Messages.OSS_CLEANUP_START(dryRun));
+      await this.ossObjectService.cleanup(dryRun);
+    } catch (error: unknown) {
+      result = "failure";
+      const errorMessage: string =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(Messages.OSS_CLEANUP_FAILED(errorMessage));
+    } finally {
+      taskRuns.labels("oss-cleanup", result).inc();
+      taskDuration
+        .labels("oss-cleanup")
+        .observe(Number(process.hrtime.bigint() - startedAt) / 1_000_000_000);
+      const released = await this.redisService.unlock(lockKey, lockValue);
+      this.logger.info(
+        released
+          ? Messages.REDIS_LOCK_RELEASE_SUCCESS.replace("%s", lockKey)
+          : Messages.REDIS_LOCK_RELEASE_FAIL.replace("%s", lockKey),
+      );
+    }
+  }
+
+  /**
+   * 读取 OSS 清理 dry-run 开关，缺省为 true，仅显式配置为 false 才执行真实删除
+   */
+  private isOssCleanupDryRun(): boolean {
+    const value: unknown = this.configService.get<unknown>(
+      "task.oss_cleanup_dry_run",
+    );
+    if (value === false || value === "false" || value === 0 || value === "0") {
+      return false;
+    }
+    return true;
   }
 
   /**

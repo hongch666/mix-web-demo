@@ -16,6 +16,7 @@ import { Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { ApiResponse, success } from "src/common/utils/response";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
+import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
 import { UploadDto, UploadResult } from "./dto/upload.dto";
 import { MultipartUploadFile, UploadService } from "./upload.service";
@@ -109,9 +110,10 @@ export class UploadController {
     description: "自定义文件名（不包含扩展名）",
   })
   @ApiOperation({
-    summary: "上传 PDF 到 OSS",
-    description: "通过 multipart/form-data 上传 PDF 到 OSS",
+    summary: "上传 PDF 到 OSS（管理员）",
+    description: "通过 multipart/form-data 上传 PDF 到 OSS，仅管理员可用",
   })
+  @RequireAdmin()
   @ApiLog("上传 PDF 到 OSS")
   @ApiResponseModel({ data: SwaggerUploadResultData })
   async uploadPdf(
@@ -124,6 +126,44 @@ export class UploadController {
         const result: UploadResult = await this.uploadService.uploadPdf(
           part as MultipartUploadFile,
           customFilename,
+        );
+        return success(result);
+      }
+    }
+    throw BusinessException.notFound(Messages.FILE_PART_NOT_FOUND);
+  }
+
+  /**
+   * 匿名上传图片到 OSS，供注册阶段使用，仅由网关限流，不要求登录
+   */
+  @Post("public-image")
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        file: {
+          type: "string",
+          format: "binary",
+        },
+      },
+      required: ["file"],
+    },
+  })
+  @ApiOperation({
+    summary: "匿名上传图片到 OSS",
+    description: "注册阶段使用的匿名图片上传接口，仅图片格式，由网关限流",
+  })
+  @ApiLog("匿名上传图片到 OSS")
+  @ApiResponseModel({ data: SwaggerUploadResultData })
+  async uploadPublicImage(
+    @Req() req: FastifyRequest,
+  ): Promise<ApiResponse<UploadResult>> {
+    const parts = req.parts();
+    for await (const part of parts) {
+      if ("filename" in part && part.filename) {
+        const result: UploadResult = await this.uploadService.uploadPublicImage(
+          part as MultipartUploadFile,
         );
         return success(result);
       }
