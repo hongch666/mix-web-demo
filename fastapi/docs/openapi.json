@@ -70,6 +70,38 @@
         }
       }
     },
+    "/analyze/internal/wordcloud-url": {
+      "get": {
+        "tags": [
+          "文章分析模块"
+        ],
+        "summary": "查询当前词云 OSS 链接（内部）",
+        "description": "只读返回当前缓存中的词云链接，缓存过期返回 null 且不重新生成，供 OSS 清理任务判断在用引用",
+        "operationId": "get_current_wordcloud_url_analyze_internal_wordcloud_url_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "用户未登录或登录已失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/analyze/excel": {
       "post": {
         "tags": [
@@ -1750,6 +1782,37 @@
         ],
         "title": "ApiLogCalledCountResponse",
         "description": "单个接口调用次数与平均响应时间的响应模型"
+      },
+      "ApiResponse": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "响应码"
+          },
+          "data": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "返回数据"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "响应消息",
+            "default": "success"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "ApiResponse",
+        "description": "统一响应模型，data 的结构由泛型参数声明"
       },
       "ApiResponse_ActionTrendResponse_": {
         "properties": {
