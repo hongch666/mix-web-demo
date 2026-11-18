@@ -171,7 +171,7 @@ function buildCleanupService(
     wordcloudUrl?: string | null;
     ledgerKeys?: string[];
     staleKeys?: string[];
-    ossObjects?: Array<{ name: string }>;
+    ossObjects?: Array<{ name: string; lastModified?: number }>;
     springFails?: boolean;
     wordcloudFails?: boolean;
   } = {},
@@ -299,17 +299,37 @@ describe("OssObjectService 清理", () => {
     ]);
   });
 
-  // OSS 孤儿对象（不在账本）被直接删除
+  // OSS 孤儿对象（不在账本）超过宽限期后被删除
   it("删除 OSS 中不在账本的孤儿对象", async () => {
     const { service, oss } = buildCleanupService({
       usedKeys: [],
       ledgerKeys: [],
-      ossObjects: [{ name: "pdf/orphan.pdf" }],
+      ossObjects: [
+        { name: "pdf/orphan.pdf", lastModified: Date.now() - 2 * 3600 * 1000 },
+      ],
     });
 
     await service.cleanup(false);
 
     expect(oss.deleteObjects).toHaveBeenCalledWith(["pdf/orphan.pdf"]);
+  });
+
+  // 未满宽限期的孤儿对象不清理，避免刚导出的下载产物被删
+  it("孤儿对象未超过宽限期时不删除", async () => {
+    const { service, oss } = buildCleanupService({
+      usedKeys: [],
+      ledgerKeys: [],
+      ossObjects: [
+        {
+          name: "articles/article-1.docx",
+          lastModified: Date.now() - 60 * 1000,
+        },
+      ],
+    });
+
+    await service.cleanup(false);
+
+    expect(oss.deleteObjects).not.toHaveBeenCalled();
   });
 
   // 非白名单前缀对象被跳过

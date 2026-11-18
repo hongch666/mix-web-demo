@@ -213,12 +213,16 @@ export class OssObjectService {
 
     // 阶段 4：清理 OSS 里存在但账本中已无记录的对象
     const listed: OssObjectInfo[] = await this.ossService.listObjects("");
+    // 宽限期同样作用于孤儿对象：导出下载产物刚上传就未登记账本，未满 1h 或时间未知的对象本轮不清理
     const orphanKeys: string[] = listed
-      .map((item) => item.name)
+      .filter((item) => this.ossService.isAllowedCleanupKey(item.name))
       .filter(
-        (key) =>
-          this.ossService.isAllowedCleanupKey(key) && !existingKeys.has(key),
-      );
+        (item) =>
+          !existingKeys.has(item.name) &&
+          item.lastModified !== undefined &&
+          item.lastModified < cutoff.getTime(),
+      )
+      .map((item) => item.name);
     const orphanResult = await this.deleteKeys(orphanKeys, dryRun, false);
     result.deleted += orphanResult.deleted;
     result.failed += orphanResult.failed;
