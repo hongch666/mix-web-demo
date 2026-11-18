@@ -411,6 +411,8 @@ services:
       DB_MONGODB_HOST: mongodb
       RABBITMQ_HOST: mq
       LOGS_PATH: /app/logs/nestjs
+      # 模板与导出产物的落盘目录，固定为容器内绝对路径，避免 .env.docker 的相对路径拼出 /app/apps/... 这类不存在的目录
+      FILES_WORD_PATH: /app/static/word
       # 容器模式下日志行不带时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
       LOG_INCLUDE_TIMESTAMP: "false"
       OTEL_ENABLED: "true"
@@ -423,6 +425,7 @@ services:
       - ./static/pic:/app/static/pic
       - ./static/excel:/app/static/excel
       - ./static/upload:/app/static/upload
+      - ./static/word:/app/static/word
     networks:
       - hcsy
     expose:

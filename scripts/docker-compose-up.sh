@@ -31,8 +31,8 @@ for d in gateway spring gozero nestjs fastapi; do
         echo "警告：无法修改日志目录权限，将由容器初始化步骤处理: $WORKDIR/logs/$d"
 done
 
-# 预创建静态目录
-for d in pic excel upload; do
+# 预创建静态目录，word 目录存放 Word 模板与导出产物
+for d in pic excel upload word; do
     mkdir -p "$WORKDIR/static/$d"
     chmod -R 777 "$WORKDIR/static/$d"
 done
