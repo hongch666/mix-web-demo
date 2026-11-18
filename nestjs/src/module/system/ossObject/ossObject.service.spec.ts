@@ -126,22 +126,23 @@ describe("OssObjectService 账本读写", () => {
     ]);
   });
 
-  // 宽限期查询传入 cutoff 与前缀，空前缀返回空且不查库
-  it("宽限期查询传入 cutoff 与前缀，空前缀直接返回空", async () => {
+  // 宽限期查询按 key 前缀匹配并传入 cutoff，空前缀返回空且不查库
+  it("宽限期查询按 key 前缀匹配 cutoff，空前缀直接返回空", async () => {
     const qb = queryBuilder({ raw: [{ oss_key: "pic/a.png" }] });
     const { service, repository } = buildLedgerService(qb);
     const cutoff = new Date("2026-01-01T00:00:00Z");
 
     await expect(
-      service.listKeysOlderThan(cutoff, ["pic", "pdf"]),
+      service.listKeysOlderThan(cutoff, ["pic/", "pdf/"]),
     ).resolves.toEqual(["pic/a.png"]);
     expect(qb.where).toHaveBeenCalledWith("obj.create_at < :cutoff", {
       cutoff,
     });
     expect(qb.andWhere).toHaveBeenCalledWith(
-      "obj.prefix_type IN (:...prefixes)",
+      "(obj.oss_key LIKE :prefix0 OR obj.oss_key LIKE :prefix1)",
       {
-        prefixes: ["pic", "pdf"],
+        prefix0: "pic/%",
+        prefix1: "pdf/%",
       },
     );
 

@@ -116,7 +116,7 @@ export class OssObjectService {
   }
 
   /**
-   * 查询账本中在指定前缀下、创建时间早于 cutoff 的对象 key，用于宽限期清理
+   * 查询账本中在指定 key 前缀下、创建时间早于 cutoff 的对象 key，用于宽限期清理
    */
   async listKeysOlderThan(
     cutoff: Date,
@@ -125,13 +125,17 @@ export class OssObjectService {
     if (prefixes.length === 0) {
       return [];
     }
+    const conditions: string[] = [];
+    const parameters: Record<string, string> = {};
+    prefixes.forEach((prefix, index) => {
+      conditions.push(`obj.oss_key LIKE :prefix${index}`);
+      parameters[`prefix${index}`] = `${prefix}%`;
+    });
     const rows = await this.repository
       .createQueryBuilder("obj")
       .select("obj.oss_key", "oss_key")
       .where("obj.create_at < :cutoff", { cutoff })
-      .andWhere("obj.prefix_type IN (:...prefixes)", {
-        prefixes: [...prefixes],
-      })
+      .andWhere(`(${conditions.join(" OR ")})`, parameters)
       .getRawMany<{ oss_key: string }>();
     return rows.map((row) => row.oss_key);
   }
