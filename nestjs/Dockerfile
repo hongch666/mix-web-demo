@@ -24,8 +24,9 @@ RUN --mount=type=cache,target=/root/.npm \
 # 复制源代码
 COPY src ./src
 
-# 构建应用
-RUN npm run node:build && npm prune --omit=dev --no-audit --no-fund
+# 构建应用后混淆业务代码，抹除明文结构并清理类型声明与 sourcemap
+# 混淆脚本随 src 编译进 dist/script，混淆器是 devDependency，必须在 npm prune --omit=dev 之前执行
+RUN npm run node:build && npm run obfuscate && npm prune --omit=dev --no-audit --no-fund
 
 # 阶段2：运行阶段
 FROM node:20.20.2-alpine
