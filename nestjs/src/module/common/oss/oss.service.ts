@@ -25,6 +25,8 @@ export interface OssObjectInfo {
   name: string;
   /** 对象字节数 */
   size?: number;
+  /** 对象最后修改时间（毫秒时间戳），供清理任务判断宽限期 */
+  lastModified?: number;
 }
 
 /**
@@ -50,7 +52,11 @@ export interface OssListOptions {
  * ali-oss list 接口的原始返回结构
  */
 export interface OssListRawResult {
-  objects?: Array<{ name?: string; size?: number }>;
+  objects?: Array<{
+    name?: string;
+    size?: number;
+    lastModified?: string | Date;
+  }>;
   isTruncated?: boolean;
   nextMarker?: string;
 }
@@ -405,7 +411,13 @@ export class OssService implements OnModuleInit {
     });
     const objects: OssObjectInfo[] = (result.objects ?? [])
       .filter((item) => Boolean(item.name))
-      .map((item) => ({ name: item.name!, size: item.size }));
+      .map((item) => ({
+        name: item.name!,
+        size: item.size,
+        lastModified: item.lastModified
+          ? new Date(item.lastModified).getTime()
+          : undefined,
+      }));
     return {
       objects,
       nextMarker: result.isTruncated ? result.nextMarker || null : null,
@@ -520,9 +532,15 @@ export class OssService implements OnModuleInit {
           ? /<Size>([\s\S]*?)<\/Size>/.exec(content)
           : null;
         const size: string | undefined = sizeMatch?.[1];
+        const modifiedMatch = content
+          ? /<LastModified>([\s\S]*?)<\/LastModified>/.exec(content)
+          : null;
+        const modified: string | undefined = modifiedMatch?.[1];
+        const lastModified: number = modified ? Date.parse(modified) : NaN;
         objects.push({
           name: this.decodeXmlText(key),
           size: size ? Number(size) : undefined,
+          lastModified: Number.isNaN(lastModified) ? undefined : lastModified,
         });
       }
       matched = contentPattern.exec(xml);
