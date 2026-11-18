@@ -290,21 +290,11 @@ services:
       - ./spring/.env.docker
     # 业务服务不映射宿主机端口，容器间调用经 Nacos 服务发现与 hcsy 网络直连
     # 对外入口只有 gateway 的 8080，宿主机直连调试改用 docker exec 或 override 文件
+    # Nacos、数据库、日志与 OTel 配置统一由 ./spring/.env.docker 提供
     environment:
       <<: *no-proxy-env
       HOME: /tmp
       TZ: Asia/Shanghai
-      NACOS_SERVER: nacos:8848
-      DB_HOST: mysql
-      REDIS_HOST: redis
-      RABBITMQ_HOST: mq
-      # 容器模式下日志行不带时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
-      LOG_INCLUDE_TIMESTAMP: "false"
-      OTEL_ENABLED: "true"
-      OTEL_SERVICE_NAME: spring
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
-      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_TRACES_SAMPLER: always_on
       # 覆盖镜像默认 JAVA_OPTS：关闭 JMX 并限制 JIT 只编译到 C1，容器冷启动更快，代价是长跑吞吐略降
       JAVA_OPTS: "-Xms512m -Xmx1024m -XX:+UseG1GC -XX:TieredStopAtLevel=1 -Dspring.jmx.enabled=false"
     volumes:
@@ -344,25 +334,11 @@ services:
         condition: service_completed_successfully
     env_file:
       - ./gozero/app/.env.docker
+    # 服务发现、数据库、日志与 OTel 配置统一由 ./gozero/app/.env.docker 提供
     environment:
       <<: *no-proxy-env
       HOME: /tmp
       TZ: Asia/Shanghai
-      SERVER_IP: 0.0.0.0
-      NACOS_IP: nacos
-      # 容器以宿主机 UID 运行，Nacos SDK 的缓存与日志目录必须落在镜像内可写的 /app/tmp 下
-      # 从 .env.example 复制的相对路径（../../static/tmp/...）在容器内会解析到只读的 /static，导致 nacos-sdk.log permission denied
-      NACOS_CACHE_DIR: /app/tmp/nacos/cache
-      NACOS_LOG_DIR: /app/tmp/nacos/log
-      DB_MYSQL_HOST: mysql
-      DB_ES_HOST: es
-      DB_MONGODB_HOST: mongodb
-      RABBITMQ_HOST: mq
-      LOGS_PATH: /app/logs/gozero
-      # 容器模式下日志行不带时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
-      LOG_INCLUDE_TIMESTAMP: "false"
-      OTEL_ENABLED: "true"
-      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4318
     volumes:
       - ./gozero/app/etc:/app/etc:ro
       - ./logs/gozero:/app/logs/gozero
@@ -400,29 +376,18 @@ services:
         condition: service_completed_successfully
     env_file:
       - ./nestjs/.env.docker
+    # 服务发现、数据库、日志、文件目录与 OTel 配置统一由 ./nestjs/.env.docker 提供
     environment:
       <<: *no-proxy-env
       HOME: /tmp
       TZ: Asia/Shanghai
-      SERVER_IP: 0.0.0.0
-      NACOS_SERVER: nacos
-      NACOS_PORT: 8848
-      DB_HOST: mysql
-      DB_MONGODB_HOST: mongodb
-      RABBITMQ_HOST: mq
-      LOGS_PATH: /app/logs/nestjs
-      # 容器模式下日志行不带时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
-      LOG_INCLUDE_TIMESTAMP: "false"
-      OTEL_ENABLED: "true"
-      OTEL_SERVICE_NAME: nestjs
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
-      OTEL_TRACES_SAMPLER: always_on
     volumes:
       - ./nestjs/src/config/application.yaml:/app/dist/config/application.yaml:ro
       - ./logs/nestjs:/app/logs/nestjs
       - ./static/pic:/app/static/pic
       - ./static/excel:/app/static/excel
       - ./static/upload:/app/static/upload
+      - ./static/word:/app/static/word
     networks:
       - hcsy
     expose:
@@ -454,25 +419,11 @@ services:
         condition: service_completed_successfully
     env_file:
       - ./fastapi/.env.docker
+    # 服务发现、数据库、日志与 OTel 配置统一由 ./fastapi/.env.docker 提供
     environment:
       <<: *no-proxy-env
       HOME: /tmp
       TZ: Asia/Shanghai
-      SERVER_IP: 0.0.0.0
-      NACOS_SERVER: nacos:8848
-      RABBITMQ_HOST: mq
-      DB_MYSQL_HOST: mysql
-      DB_POSTGRES_HOST: pgvector-db
-      DB_MONGODB_HOST: mongodb
-      DB_REDIS_HOST: redis
-      DB_CLICKHOUSE_HOST: clickhouse
-      LOGS_PATH: /app/logs/fastapi
-      # 容器模式下日志行不带时间戳，时间由 Loki 采集侧提供，避免同一行出现两个日期
-      LOG_INCLUDE_TIMESTAMP: "false"
-      OTEL_ENABLED: "true"
-      OTEL_SERVICE_NAME: fastapi
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
-      OTEL_TRACES_SAMPLER: always_on
     volumes:
       - ./fastapi/application.yaml:/app/application.yaml:ro
       - ./logs/fastapi:/app/logs/fastapi

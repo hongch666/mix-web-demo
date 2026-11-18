@@ -49,6 +49,8 @@ export class ErrorIds {
   /** 错误标识：内部令牌密钥未配置 */
   static readonly INTERNAL_TOKEN_SECRET_NOT_NULL =
     "INTERNAL_TOKEN_SECRET_NOT_NULL";
+  /** 错误标识：Word 模板文件缺失 */
+  static readonly WORD_TEMPLATE_NOT_FOUND = "WORD_TEMPLATE_NOT_FOUND";
 
   // ===== 502 Bad Gateway =====
 

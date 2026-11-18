@@ -681,6 +681,12 @@ export class Messages {
   static readonly SQL_PROXY_TABLE_SCHEMA_FAILED = (message: string): string =>
     `获取表结构信息失败: ${message}`;
 
+  // ===== 文件导出 =====
+
+  /** 构造 Word 模板文件缺失的错误消息，附带已尝试的路径便于定位部署目录问题 */
+  static readonly WORD_TEMPLATE_NOT_FOUND = (paths: string): string =>
+    `Word 模板文件不存在，已尝试路径：${paths}`;
+
   // ===== OSS 对象账本与清理 =====
 
   /** OSS 列取开始的日志消息 */

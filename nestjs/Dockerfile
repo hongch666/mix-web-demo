@@ -36,10 +36,19 @@ WORKDIR /app
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 # 安装基础工具与时区数据：alpine 默认不带 tzdata，缺少时 TZ 环境变量会被忽略并回退 UTC
-RUN apk add --no-cache curl ca-certificates tzdata
+# chromium 供 puppeteer 生成 PDF（构建阶段跳过浏览器下载），font-noto-cjk 保证 PDF 中文正常渲染
+RUN apk add --no-cache curl ca-certificates tzdata chromium font-noto-cjk
+
+# 不同 alpine 版本的 chromium 可执行文件名不一致（chromium / chromium-browser），统一成稳定入口
+RUN CHROME_BIN="$(readlink -f /usr/bin/chromium-browser 2>/dev/null || readlink -f /usr/bin/chromium 2>/dev/null)" \
+    && test -n "$CHROME_BIN" \
+    && ln -sf "$CHROME_BIN" /usr/bin/puppeteer-chrome
 
 # 进程时区固定为东八区，保证日志行时间与 @Cron 表达式按本地时间触发
 ENV TZ=Asia/Shanghai
+
+# puppeteer 原生读取该变量，代码与 yaml 都不需要再配置浏览器路径
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/puppeteer-chrome
 
 # 复制生产依赖和package文件
 COPY --from=builder /app/package*.json ./
@@ -56,6 +65,7 @@ RUN mkdir -p /app/logs/nestjs && \
     mkdir -p /app/static/pic && \
     mkdir -p /app/static/excel && \
     mkdir -p /app/static/upload && \
+    mkdir -p /app/static/word && \
     chown -R node:node /app/logs/nestjs /app/static
 
 # 暴露端口（默认8083）
