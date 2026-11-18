@@ -49,11 +49,10 @@ describe("WordService", () => {
       ),
     ).resolves.toEqual(Buffer.from("docx"));
 
-    const readPath: string = (readFile.mock.calls[0][0] as string).replace(
-      /\\/g,
-      "/",
+    // 断言实际读取的是内置模板，正则同时兼容 Windows 与 Linux 的路径分隔符
+    expect(readFile).toHaveBeenCalledWith(
+      expect.stringMatching(/assets[\\/]word[\\/]template\.docx$/),
     );
-    expect(readPath).toMatch(/assets\/word\/template\.docx$/);
   });
 
   // 验证配置路径与内置模板都不可读时抛出带尝试路径的业务异常
