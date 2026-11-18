@@ -61,7 +61,7 @@ export interface OssListRawResult {
 export interface OssClient {
   put(name: string, file: string): Promise<unknown>;
   list(options: OssListOptions): Promise<OssListRawResult>;
-  del(keys: string[]): Promise<unknown>;
+  deleteMulti(keys: string[], options?: { quiet?: boolean }): Promise<unknown>;
 }
 
 /**
@@ -233,7 +233,13 @@ export class OssService implements OnModuleInit {
     if (this.isBunRuntime()) {
       await this.deleteObjectsWithBun(keys);
     } else {
-      await this.client.del(keys);
+      // ali-oss 6.x 只提供 deleteMulti，单次最多 1000 个 key，超出需分批
+      for (let i = 0; i < keys.length; i += Defaults.OSS_LIST_PAGE_SIZE) {
+        await this.client.deleteMulti(
+          keys.slice(i, i + Defaults.OSS_LIST_PAGE_SIZE),
+          { quiet: true },
+        );
+      }
     }
     this.logger.info(Messages.OSS_DELETE_COMPLETED(keys.length));
     return keys.length;
