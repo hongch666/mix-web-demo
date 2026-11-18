@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import dayjs from "dayjs";
 import * as fs from "fs";
 import * as marked from "marked";
+import * as os from "os";
 import * as path from "path";
 import { Browser, launch, Page } from "puppeteer";
 import { ErrorIds, ExportTemplate, Messages } from "src/common/constants";
@@ -35,6 +36,15 @@ interface RemoteUser {
   id: number;
   name: string;
 }
+
+/**
+ * 导出中间文件目录：文档生成后立即上传 OSS 并删除，落在系统临时目录，不依赖静态目录的写权限
+ */
+const EXPORT_TEMP_DIR: string = path.join(
+  os.tmpdir(),
+  "mix-web-demo",
+  "export",
+);
 
 /**
  * 文章导出服务，负责拉取文章与作者信息并生成 Word、Markdown、PDF 文件上传到 OSS 返回下载链接
@@ -85,16 +95,17 @@ export class DownloadService {
         ? dayjs(article.update_at).format("YYYY-MM-DD HH:mm:ss")
         : "",
     };
-    const wordDir: string = this.resolveWordDir(); // 模板与产物目录，绝对路径直接使用
+    const wordDir: string = this.resolveWordDir(); // 模板目录，仅用于读取模板
     const templatePath: string = path.join(wordDir, "template.docx"); // 模板文件路径
-    const savePath: string = path.join(wordDir, `article-${id}.docx`); // 保存路径
+    const savePath: string = path.join(
+      await this.prepareExportDir(),
+      `article-${id}.docx`,
+    ); // 保存路径
     // 调用 WordService 生成并保存 Word 文档
     const buffer: Buffer = await this.wordService.exportToWord(
       data,
       templatePath,
     );
-    // 确保保存目录存在
-    await fs.promises.mkdir(path.dirname(savePath), { recursive: true });
     // 保存文件到指定路径
     await fs.promises.writeFile(savePath, buffer);
     try {
@@ -105,6 +116,12 @@ export class DownloadService {
     } finally {
       await fs.promises.unlink(savePath).catch(() => undefined);
     }
+  }
+
+  // 准备导出中间目录，生成的文件上传后即删除，避免静态目录权限不足导致导出失败
+  private async prepareExportDir(): Promise<string> {
+    await fs.promises.mkdir(EXPORT_TEMP_DIR, { recursive: true });
+    return EXPORT_TEMP_DIR;
   }
 
   // 解析 Word 目录：绝对路径直接使用，相对路径基于进程工作目录，避免容器内工作目录与配置不一致时拼出错误路径
@@ -151,14 +168,7 @@ export class DownloadService {
       article.content || "",
     );
     // 保存到本地临时文件
-    const filePath: string = this.configService.get<string>("files.word")!;
-    if (!filePath) {
-      throw BusinessException.internalServerError(
-        Messages.WORD_FILE_PATH_NOT_CONFIGURED,
-      );
-    }
-    const saveDir: string = path.join(process.cwd(), filePath);
-    await fs.promises.mkdir(saveDir, { recursive: true });
+    const saveDir: string = await this.prepareExportDir();
     const savePath: string = path.join(saveDir, `article-${id}.md`);
     await fs.promises.writeFile(savePath, markdown, "utf8");
     try {
@@ -187,14 +197,7 @@ export class DownloadService {
       SpringClientService.extractData<RemoteUser | null>(userRes);
 
     // 获取文件保存路径
-    const filePath: string = this.configService.get<string>("files.word")!;
-    if (!filePath) {
-      throw BusinessException.internalServerError(
-        Messages.WORD_FILE_PATH_NOT_CONFIGURED,
-      );
-    }
-    const saveDir: string = path.join(process.cwd(), filePath);
-    await fs.promises.mkdir(saveDir, { recursive: true });
+    const saveDir: string = await this.prepareExportDir();
     const savePath: string = path.join(saveDir, `article-${id}.pdf`);
 
     // 创建 HTML 内容
@@ -203,10 +206,14 @@ export class DownloadService {
       user || { name: Messages.UNKNOWN_USER },
     );
 
-    // 使用 puppeteer 生成 PDF
+    // 使用 puppeteer 生成 PDF，容器内由镜像的 PUPPETEER_EXECUTABLE_PATH 指向系统 chromium
     const browser: Browser = await launch({
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+      ],
     });
 
     try {
