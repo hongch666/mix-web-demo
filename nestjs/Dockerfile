@@ -56,6 +56,7 @@ RUN mkdir -p /app/logs/nestjs && \
     mkdir -p /app/static/pic && \
     mkdir -p /app/static/excel && \
     mkdir -p /app/static/upload && \
+    mkdir -p /app/static/word && \
     chown -R node:node /app/logs/nestjs /app/static
 
 # 暴露端口（默认8083）

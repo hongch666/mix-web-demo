@@ -976,6 +976,10 @@ export class Messages {
   /** Word 文件保存路径未配置的错误消息 */
   static readonly WORD_FILE_PATH_NOT_CONFIGURED = "Word 文件保存路径未配置";
 
+  /** Word 模板文件缺失的错误消息，附带已尝试的路径便于定位部署目录问题 */
+  static readonly WORD_TEMPLATE_NOT_FOUND = (paths: string): string =>
+    `Word 模板文件不存在，已尝试路径：${paths}`;
+
   /** 未找到文件分片的错误消息 */
   static readonly FILE_PART_NOT_FOUND = "未找到文件部分";
 

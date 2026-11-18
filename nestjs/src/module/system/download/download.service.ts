@@ -85,24 +85,9 @@ export class DownloadService {
         ? dayjs(article.update_at).format("YYYY-MM-DD HH:mm:ss")
         : "",
     };
-    const filePath: string | undefined =
-      this.configService.get<string>("files.word"); // 获取配置中的模板路径
-    if (!filePath) {
-      throw BusinessException.notFound(
-        Messages.EMPTY_FILE_PATH,
-        ErrorIds.EMPTY_FILE_PATH,
-      );
-    }
-    const templatePath: string = path.join(
-      process.cwd(),
-      filePath,
-      "template.docx",
-    ); // 模板文件路径
-    const savePath: string = path.join(
-      process.cwd(),
-      filePath,
-      `article-${id}.docx`,
-    ); // 保存路径
+    const wordDir: string = this.resolveWordDir(); // 模板与产物目录，绝对路径直接使用
+    const templatePath: string = path.join(wordDir, "template.docx"); // 模板文件路径
+    const savePath: string = path.join(wordDir, `article-${id}.docx`); // 保存路径
     // 调用 WordService 生成并保存 Word 文档
     const buffer: Buffer = await this.wordService.exportToWord(
       data,
@@ -120,6 +105,21 @@ export class DownloadService {
     } finally {
       await fs.promises.unlink(savePath).catch(() => undefined);
     }
+  }
+
+  // 解析 Word 目录：绝对路径直接使用，相对路径基于进程工作目录，避免容器内工作目录与配置不一致时拼出错误路径
+  private resolveWordDir(): string {
+    const filePath: string | undefined =
+      this.configService.get<string>("files.word");
+    if (!filePath) {
+      throw BusinessException.notFound(
+        Messages.EMPTY_FILE_PATH,
+        ErrorIds.EMPTY_FILE_PATH,
+      );
+    }
+    return path.isAbsolute(filePath)
+      ? filePath
+      : path.resolve(process.cwd(), filePath);
   }
 
   // 生成markdown文件并上传到OSS，返回下载链接
