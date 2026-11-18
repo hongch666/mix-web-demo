@@ -207,7 +207,9 @@ export class OssObjectService {
     const staleKeys: string[] = (
       await this.listKeysOlderThan(cutoff, Defaults.OSS_CLEANUP_KEY_PREFIXES)
     ).filter((key) => !usedKeys.has(key));
-    result.deleted += await this.deleteKeys(staleKeys, dryRun, true);
+    const staleResult = await this.deleteKeys(staleKeys, dryRun, true);
+    result.deleted += staleResult.deleted;
+    result.failed += staleResult.failed;
 
     // 阶段 4：清理 OSS 里存在但账本中已无记录的对象
     const listed: OssObjectInfo[] = await this.ossService.listObjects("");
@@ -217,7 +219,9 @@ export class OssObjectService {
         (key) =>
           this.ossService.isAllowedCleanupKey(key) && !existingKeys.has(key),
       );
-    result.deleted += await this.deleteKeys(orphanKeys, dryRun, false);
+    const orphanResult = await this.deleteKeys(orphanKeys, dryRun, false);
+    result.deleted += orphanResult.deleted;
+    result.failed += orphanResult.failed;
 
     this.logger.info(
       Messages.OSS_CLEANUP_COMPLETED(
@@ -288,19 +292,21 @@ export class OssObjectService {
 
   /**
    * 批量删除对象：先删 OSS，成功后按需删账本；dry-run 时仅统计不删除
+   * 删除失败会计入 failed，避免任务日志显示"删除 0，失败 0"而掩盖删除环节异常
    */
   private async deleteKeys(
     keys: string[],
     dryRun: boolean,
     removeLedger: boolean,
-  ): Promise<number> {
+  ): Promise<{ deleted: number; failed: number }> {
     if (keys.length === 0) {
-      return 0;
+      return { deleted: 0, failed: 0 };
     }
     if (dryRun) {
-      return keys.length;
+      return { deleted: keys.length, failed: 0 };
     }
     let deleted = 0;
+    let failed = 0;
     for (const key of keys) {
       try {
         await this.ossService.deleteObjects([key]);
@@ -309,12 +315,13 @@ export class OssObjectService {
         }
         deleted += 1;
       } catch (error: unknown) {
+        failed += 1;
         const message: string =
           error instanceof Error ? error.message : String(error);
         this.logger.error(Messages.OSS_CLEANUP_FAILED(message));
       }
     }
-    return deleted;
+    return { deleted, failed };
   }
 
   /**

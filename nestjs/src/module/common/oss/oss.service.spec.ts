@@ -88,6 +88,42 @@ describe("OssService", () => {
       tCleanup(tempDir);
     }
   });
+
+  // 验证批量删除调用 ali-oss 的 deleteMulti：6.x 已移除 del，旧实现会抛 TypeError
+  it("验证批量删除调用 deleteMulti", async () => {
+    const service = createConfiguredService();
+    const deleteMulti = jest.fn().mockResolvedValue({ deleted: ["pic/a.png"] });
+    Object.assign(service as unknown as Record<string, unknown>, {
+      client: { put: jest.fn(), list: jest.fn(), deleteMulti },
+    });
+
+    await expect(service.deleteObjects(["pic/a.png"])).resolves.toBe(1);
+
+    expect(deleteMulti).toHaveBeenCalledWith(["pic/a.png"], { quiet: true });
+  });
+
+  // 验证超过单次上限时按 1000 个分片调用，避免触发 OSS 批量删除限制
+  it("验证批量删除按 1000 个分片调用", async () => {
+    const service = createConfiguredService();
+    const deleteMulti = jest.fn().mockResolvedValue({ deleted: [] });
+    Object.assign(service as unknown as Record<string, unknown>, {
+      client: { put: jest.fn(), list: jest.fn(), deleteMulti },
+    });
+    const keys: string[] = Array.from(
+      { length: 1001 },
+      (_, index) => `pic/${index}.png`,
+    );
+
+    await expect(service.deleteObjects(keys)).resolves.toBe(1001);
+
+    expect(deleteMulti).toHaveBeenCalledTimes(2);
+    expect(deleteMulti).toHaveBeenNthCalledWith(1, keys.slice(0, 1000), {
+      quiet: true,
+    });
+    expect(deleteMulti).toHaveBeenNthCalledWith(2, keys.slice(1000), {
+      quiet: true,
+    });
+  });
 });
 
 function createService(

@@ -47,11 +47,12 @@ export class TaskService {
   }
 
   /**
-   * 每小时执行的 OSS 对象清理调度入口：清理无引用对象与 OSS 孤儿
-   * Cron 表达式: 秒 分 时 日 月 星期，'0 0 * * * *' 表示每小时整点执行
+   * 每 10 分钟执行的 OSS 对象清理调度入口：清理无引用对象与 OSS 孤儿
+   * Cron 表达式: 秒 分 时 日 月 星期，分钟字段按 10 分钟步长，即每小时的第 0、10、20…50 分执行
+   * 对象仍受 1 小时宽限期保护（Defaults.OSS_CLEANUP_GRACE_MS），新建对象不会被立即清理
    * 默认 dry-run 只扫描不删除，需通过 task.oss_cleanup_dry_run=false 显式开启删除
    */
-  @Cron("0 0 * * * *")
+  @Cron("0 */10 * * * *")
   async cleanupOssObjects(): Promise<void> {
     await trace
       .getTracer(Defaults.OTEL_TRACER_NAME)
