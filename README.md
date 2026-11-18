@@ -1957,7 +1957,9 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 - `otel-config/otel-collector.yaml -> /etc/otel/config.yaml`
 - `otel-config/tempo.yaml -> /etc/tempo/tempo.yaml`
 - `prometheus-config/prometheus.yml -> /etc/prometheus/prometheus.yml`
-- `static/pic`, `static/excel`, `static/upload`
+- `static/pic`, `static/excel`, `static/upload`, `static/word`
+
+`static/word` 存放文章导出的 Word 模板 `template.docx`（本地开发与 Docker 共用同一份），NestJS 容器内挂载到 `/app/static/word`，并通过 `FILES_WORD_PATH` 固定为该路径。
 
 此外，`loki-config/` 提供 Loki、Promtail 与 Grafana（Loki/Tempo/Prometheus 数据源）配置，`otel-config/` 提供 Collector 与 Tempo 配置，`prometheus-config/` 提供指标抓取配置；日志由 Promtail 读取并写入 Loki，Span 经 Collector 脱敏后写入 Tempo，指标由 Prometheus 抓取。Loki、Tempo、Prometheus 与 Grafana 的数据均保存在 Compose 命名卷中。
 
@@ -2159,6 +2161,15 @@ Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关
 - `PROMETHEUS_PORT` / `PROMETHEUS_PATH`（GoZero）：go-zero 内置指标服务的端口（默认 9102）与路径（默认 `/metrics`）
 
 > `.env.docker` 不会被脚本自动创建，需要从对应的 `.env.example` 复制后按容器环境填写（容器内主机名与本地不同，如 `mysql`、`redis`、`nacos`、`pgvector-db`）。
+
+#### NestJS 文件目录解析（`FILES_WORD_PATH`）
+
+NestJS 的文章导出（Word / Markdown / PDF）以 `FILES_WORD_PATH` 作为模板与产物目录，路径解析规则：
+
+- **绝对路径直接使用**；相对路径基于**进程工作目录**展开，不是项目根目录。容器内工作目录是 `/app`，`../static/word` 会解析到 `/app/../static/word`，与挂载点不一致时导出会找不到模板
+- **目录或文件都可用**：传目录时自动补 `template.docx`，传 `.docx` 文件路径时按原样使用
+- **内置模板兜底**：配置路径不可读时回退到镜像内置模板 `dist/assets/word/template.docx`（源码位置 `nestjs/src/assets/word/template.docx`），两者都缺失才返回 `WORD_TEMPLATE_NOT_FOUND` 并列出尝试过的路径
+- **Docker 场景**由 `docker-compose.yml` 固定 `FILES_WORD_PATH=/app/static/word` 并挂载宿主 `static/word`，会覆盖 `nestjs/.env.docker` 中的同名字段；本地开发保持默认 `../static/word`（即仓库根目录的 `static/word`）即可
 
 使用方式保持一致：
 
