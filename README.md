@@ -2164,12 +2164,15 @@ Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关
 
 #### NestJS 文件目录解析（`FILES_WORD_PATH`）
 
-NestJS 的文章导出（Word / Markdown / PDF）以 `FILES_WORD_PATH` 作为模板与产物目录，路径解析规则：
+NestJS 的文章导出（Word / Markdown / PDF）以 `FILES_WORD_PATH` 作为 Word 模板目录，路径解析规则：
 
 - **绝对路径直接使用**；相对路径基于**进程工作目录**展开，不是项目根目录。容器内工作目录是 `/app`，`../static/word` 会解析到 `/app/../static/word`，与挂载点不一致时导出会找不到模板
 - **目录或文件都可用**：传目录时自动补 `template.docx`，传 `.docx` 文件路径时按原样使用
 - **内置模板兜底**：配置路径不可读时回退到镜像内置模板 `dist/assets/word/template.docx`（源码位置 `nestjs/src/assets/word/template.docx`），两者都缺失才返回 `WORD_TEMPLATE_NOT_FOUND` 并列出尝试过的路径
+- **导出产物不落静态目录**：Word / Markdown / PDF 的中间文件统一写到系统临时目录（`os.tmpdir()/mix-web-demo/export`），上传 OSS 后立即删除，因此静态目录没有写权限也不影响下载
 - **Docker 场景**在 `nestjs/.env.docker` 中设置 `FILES_WORD_PATH=/app/static/word` 并挂载宿主 `static/word`；本地开发保持默认 `../static/word`（即仓库根目录的 `static/word`）即可
+
+PDF 导出依赖 Chromium：运行镜像已安装 `chromium` + `font-noto-cjk`（保证中文渲染），并在 `nestjs/Dockerfile` 中把可执行文件统一成 `/usr/bin/puppeteer-chrome`，再用 `ENV PUPPETEER_EXECUTABLE_PATH` 指向它。puppeteer 原生读取该环境变量，因此 `application.yaml` 与 Compose 都不需要额外配置；本地不设置该变量时使用 puppeteer 自带浏览器。
 
 使用方式保持一致：
 
