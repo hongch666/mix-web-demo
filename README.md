@@ -66,9 +66,9 @@
 3. 基于 Spring Boot WebFlux 和响应式 Redis 进行文章分类缓存、用户状态和 Token 管理
 4. 基于 SpringBoot 和 AOP 技术权限校验实现用户端和管理端
 5. 基于 Apache APISIX 和 Spring 内部认证接口实现 API 网关的统一认证和用户信息透传
-6. 基于 APISIX `limit-req` 的本地计数策略实现网关层限流和防刷功能
+6. 基于 APISIX 的本地计数策略实现网关层限流和防刷功能
 7. 基于 WebClient、Nacos 服务发现和 Spring Cloud LoadBalancer 实现微服务间响应式 HTTP 调用
-8. 基于 GoZero 聚合 ElasticSearch、pgvector 向量检索和 Neo4j 图谱增强，实现关键词、语义和关系融合的文章搜索
+8. 基于 GoZero 聚合 ElasticSearch、PostgreSQL 向量检索和 Neo4j 图谱增强，实现关键词、语义和关系融合的文章搜索
 9. 基于 GoZero 和 sqlx 实现文章相关数据获取和同步
 10. 基于 GoZero 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
 11. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
@@ -77,14 +77,14 @@
 14. 基于 FastAPI、ClickHouse 和 SQLAlchemy ORM（clickhouse-sqlalchemy + asynch 异步驱动）实现系统数据的相关分析
 15. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
 16. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL、MongoDB、Neo4j 及 MCP 外部扩展工具，支持 **GPT/Gemini/GLM/DeepSeek/Claude/Qwen** 进行多模型选择
-17. 基于 FastAPI、Neo4j 和 neomodel（异步 OGM）实现文章、用户、分类、标签、点赞、收藏、评论、关注等实体关系图谱，用于关系查询和图谱推荐
+17. 基于 FastAPI、Neo4j 和 NeoModel（异步 OGM）实现文章、用户、分类、标签、点赞、收藏、评论、关注等实体关系图谱，用于关系查询和图谱推荐
 18. 基于 FastAPI 和 LangSmith 实现 LLM 链路可观测性，对 AI 聊天、RAG 检索、Agent Tools 调用和向量同步任务进行全链路 Trace，支持采样率控制与敏感数据脱敏
-19. 基于 FastAPI 的上下文预算与用户级记忆摘要实现 Agent 上下文压缩：按模型窗口与提示词推导历史预算，超出预算的更早轮次由模型折叠进 `ai_user_summary` 摘要，通过水位线增量推进，压缩失败时保留原摘要不丢历史
-20. 基于 OpenTelemetry 实现网关与四个服务的全链路追踪：APISIX、Spring、GoZero、NestJS、FastAPI 统一上报 OTLP，经 OpenTelemetry Collector 脱敏后写入 Grafana Tempo，日志由 Promtail 提取 `trace_id` 写入 Loki，Grafana 中可在日志与 Trace 之间互跳
-21. 基于 Prometheus 采集四个业务的运行指标：Spring 输出 `/actuator/prometheus`，GoZero、NestJS、FastAPI 输出 `/metrics`，由 Prometheus 定期抓取后统一在 Grafana 中查询，并支持从指标 Exemplar 跳转到 Tempo
-22. 基于 OpenAPI 3.1 统一四个服务的接口文档：Spring 由 springdoc 生成、GoZero 由 goctl 的 swagger 产物转换、NestJS 由 `@nestjs/swagger` 生成、FastAPI 直接取应用内 OpenAPI 描述，离线产出静态文档并同步 Apifox；GitHub Actions 在文档产物变更后自动推送，接口与 README 分开判断，数据模型按服务隔离目录避免引用断链
-23. 基于 GitHub Actions 实现 CI/CD：`prod` 的 PR 复用本地 lint / compile / test 脚本按变更服务跑门禁，合并后构建镜像推送到 GHCR，自托管 runner 自动部署到部署机（只更新变更服务，失败按服务自动回滚）
-24. 基于 Docker Compose 一键拉起四个服务、APISIX 网关与基础中间件（MySQL、Redis、RabbitMQ、Nacos、MongoDB、ClickHouse、Elasticsearch、Neo4j、pgvector），并内置 Prometheus、Grafana、Loki、Tempo 可观测栈
+19. 基于 FastAPI 的上下文预算与用户级记忆摘要实现 Agent 上下文压缩
+20. 基于 OpenTelemetry 实现网关与四个服务的全链路追踪
+21. 基于 Prometheus 采集四个业务的运行指标
+22. 基于 OpenAPI 3.1 统一四个服务的接口文档
+23. 基于 GitHub Actions 和 GHCR 实现 CI/CD
+24. 基于 Docker Compose 一键拉起四个服务、APISIX 网关与基础中间件，并内置 Prometheus、Grafana、Loki、Tempo 可观测栈
 
 ## 服务说明
 
@@ -109,7 +109,7 @@
 | -------- | ------------------------------------------------- |
 | 框架     | GoZero                                            |
 | 数据库   | MySQL（chat_messages 表，聊天消息存储）           |
-| 搜索引擎 | Elasticsearch（文章搜索）                         |
+| 搜索引擎 | ElasticSearch（文章搜索）                         |
 | 实时通信 | WebSocket（用户聊天）/ SSE（消息通知）            |
 | 注册中心 | Nacos                                             |
 | 构建工具 | Go Modules                                        |
@@ -139,11 +139,11 @@ NestJS 模块按职责划分为两层：
 | 项目     | 说明                                                                                                                                                                                                                                     |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 框架     | FastAPI + SQLAlchemy（MySQL、ClickHouse 异步 ORM）                                                                                                                                                                                       |
-| 数据库   | MySQL（SQLAlchemy，ai_history/ai_user_summary/mcp_server_config 表）、ClickHouse（SQLAlchemy ORM 数仓分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（neomodel 异步 OGM 知识图谱）                                                  |
+| 数据库   | MySQL（SQLAlchemy，ai_history/ai_user_summary/mcp_server_config 表）、ClickHouse（SQLAlchemy ORM 数仓分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（NeoModel 异步 OGM 知识图谱）                                                  |
 | 消息队列 | RabbitMQ                                                                                                                                                                                                                                 |
 | 注册中心 | Nacos                                                                                                                                                                                                                                    |
 | 运行时   | Python 3.12+                                                                                                                                                                                                                             |
-| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（neomodel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询/MCP 扩展工具）、多模型（GPT/Gemini/GLM/DeepSeek/Claude/Qwen）、LangSmith LLM 链路追踪、Agent 上下文压缩（预算裁剪 + 记忆摘要） |
+| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（NeoModel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询/MCP 扩展工具）、多模型（GPT/Gemini/GLM/DeepSeek/Claude/Qwen）、LangSmith LLM 链路追踪、Agent 上下文压缩（预算裁剪 + 记忆摘要） |
 | 代码位置 | `fastapi/`                                                                                                                                                                                                                               |
 
 ### Apache APISIX 网关（端口 8080）
@@ -443,6 +443,7 @@ Body 参数：
       USER }o--o{ FOCUS : "关注"
       USER ||--o{ APILOGS : "记录"
       USER ||--o{ USER_TABLE_SETTING : "列设置"
+      USER ||--o{ OSS_OBJECT : "上传"
       USER ||--o{ AI_HISTORY : "提问"
       USER ||--o{ AI_HISTORY_SUMMARY : "压缩"
       USER }o--o{ CHAT_MESSAGE : "聊天"
@@ -467,9 +468,9 @@ Body 参数：
       USER {
           bigint id PK
           bigint github_id
-          bigint gitee_id
-          varchar username
-          varchar github
+          varchar github_login
+          varchar github_url
+          varchar name
           varchar password
           int age
           varchar email
@@ -494,9 +495,21 @@ Body 参数：
           datetime create_at
           datetime update_at
       }
+      OSS_OBJECT {
+          bigint id PK
+          varchar oss_key
+          varchar oss_url
+          varchar prefix_type
+          varchar source
+          bigint uploader_user_id FK
+          bigint file_size
+          datetime last_verified_at
+          datetime create_at
+          datetime update_at
+      }
       APILOGS {
           objectid _id PK
-          number userid FK
+          number userId FK
           string username
           string apiDescription
           string apiPath
@@ -522,7 +535,7 @@ Body 参数：
           bigint id PK
           bigint user_id FK
           text summary
-          bigint last_summarized_history_id
+          int last_summarized_history_id
           int summarized_count
           datetime created_at
           datetime updated_at
@@ -601,8 +614,9 @@ Body 参数：
       LOGDELETION {
           objectid _id PK
           string logType
-          string eventId
+          string eventId FK
           date logCreatedAt
+          number __v
           date createdAt
           date updatedAt
       }
@@ -612,8 +626,8 @@ Body 参数：
           varchar transport_type
           varchar command
           json args_json
-          json env_json
           varchar url
+          json env_json
           json headers_json
           varchar description
           tinyint enabled
@@ -865,10 +879,10 @@ Body 参数：
 
 ## 技术栈
 
-- Spring Boot WebFlux：Java 响应式后端框架，支撑系统核心业务服务
+- Spring Boot WebFlux：Java 响应式后端框架，支撑系统核心业务
 - Spring Data R2DBC：关系型数据库响应式访问框架
-- GoZero：Golang 后端框架，支持系统高并发服务
-- NestJS：Node.js 后端框架，支撑系统日志处理服务
+- GoZero：Golang 后端框架，支撑系统高并发设计
+- NestJS：Node.js 后端框架，支撑系统日志处理和第三方服务
 - FastAPI：Python 后端服务，支撑系统数据分析和 Agent 服务
 - Apache APISIX：API 网关
 - JWT：身份验证
@@ -876,11 +890,11 @@ Body 参数：
 - MySQL：关系型数据库，系统核心数据库
 - PostgreSQL：RAG 向量数据库
 - MongoDB：非关系型数据库，系统日志数据库
-- Neo4j：图数据库，存储文章、用户、分类、标签等实体关系，FastAPI 侧通过 neomodel 异步 OGM 访问
+- Neo4j：图数据库，存储文章、用户、分类、标签等实体关系，FastAPI 侧通过 NeoModel 异步 OGM 访问
 - ElasticSearch：搜索引擎，系统搜索优化
 - Redis：缓存服务和状态管理，Spring 服务使用响应式 Redis 客户端
 - RabbitMQ：异步消息队列
-- ClickHouse：大数据存储与分析，FastAPI 侧通过 SQLAlchemy ORM（clickhouse-sqlalchemy + asynch 异步驱动）访问数仓分层表
+- ClickHouse：大数据存储与分析，FastAPI 侧通过 SQLAlchemy ORM 访问数仓分层表
 - WebSocket：用户实时聊天
 - SSE：实时通知未读消息
 - LangChain：大模型调用和 RAG 框架
@@ -2590,23 +2604,23 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 
 ### 分支与触发
 
-| 事件                     | 触发的工作流                          | 说明                                                 |
-| ------------------------ | ------------------------------------- | ---------------------------------------------------- |
-| `pull_request` → `prod`  | `CI`                                  | 合并前质量门禁，必须全绿                             |
+| 事件                     | 触发的工作流                          | 说明                                                                                         |
+| ------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `pull_request` → `prod`  | `CI`                                  | 合并前质量门禁，必须全绿                                                                     |
 | `push` → `prod`          | `CI`、`Release Images`、`Apifox Sync` | CI 复验一次；镜像构建（仅改观测配置时不构建，只触发配置部署）；文档/README 变更时同步 Apifox |
-| `push` → `main`          | 无                                    | `main` 是开发分支，不触发任何 CI/CD                  |
-| tag `vX.Y.Z`             | `Release Images`、`Deploy`            | 追加 `X.Y.Z` 版本号镜像，并按 tag 部署               |
-| 手动 `workflow_dispatch` | 全部                                  | 单服务门禁、补建镜像、手工部署/回滚、Apifox 干跑     |
+| `push` → `main`          | 无                                    | `main` 是开发分支，不触发任何 CI/CD                                                          |
+| tag `vX.Y.Z`             | `Release Images`、`Deploy`            | 追加 `X.Y.Z` 版本号镜像，并按 tag 部署                                                       |
+| 手动 `workflow_dispatch` | 全部                                  | 单服务门禁、补建镜像、手工部署/回滚、Apifox 干跑                                             |
 
 ### 工作流清单
 
-| 文件              | 作用                                                                                                                                                                                                                     |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/lint.sh` / `compile.sh` / `test.sh`；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿 |
-| `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                         |
-| `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`loki-config/`、`prometheus-config/`、`otel-config/` 有变更时按目录重启命中的容器（不重建业务服务）                                                        |
-| `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                  |
-| `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)                                                                                           |
+| 文件              | 作用                                                                                                                                                                                                                                           |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/lint.sh` / `compile.sh` / `test.sh`；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿                       |
+| `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                                               |
+| `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`loki-config/`、`prometheus-config/`、`otel-config/` 有变更时按目录重启命中的容器（不重建业务服务） |
+| `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                                        |
+| `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)                                                                                                                 |
 
 ### 需要的仓库配置
 
@@ -2646,148 +2660,22 @@ gh workflow run smoke.yml
 
 ## 项目规范说明
 
-> 这个为当前项目的代码和文件等相关规范，建议遵守
+> 完整规范以 [skills/mix-web-demo/SKILL.md](https://github.com/hongch666/mix-web-demo/blob/main/skills/mix-web-demo/SKILL.md) 为准，覆盖四个服务与网关的目录组织、依赖注入、参数校验、日志、测试、数据库与索引、接口文档收尾和验证命令。修改约定时改仓库内技能包，再执行 `./mix skills` 同步到本机 Agent 工具（见下文）。以下仅保留便于阅读的概要。
 
-### 项目架构说明
+### 架构与目录概要
 
-1. Spring 项目按 HTTP 入口、应用服务与数据访问分层：`web/controller` 负责接口，`application/service` 负责业务逻辑（接口与实现），`infra/persistence/repository` 负责响应式数据库操作；统一使用构造器依赖注入，基础设施 Bean 在 `config` 中装配，业务类禁止内部 `new` 基础设施对象
-2. GoZero 项目采用通用的三层架构，`/handler`为对应接口，`/logic`为对应实际逻辑，`/model`为对应数据库操作，并且使用 `svc` 组合根依赖注入；SSE/聊天 Hub 由组合根创建，队列属于 `ChatHub`，定时任务通过锁工厂注入 Redis 锁，禁止包级运行态单例
-3. NestJS 项目采用默认的 module 划分格式，每个 module 有对应的 `xxx.controller.ts`、`xxx.service.ts`、`xxx.module.ts` 文件，`/dto`、`/entities`、`/schema` 放置对应的 DTO 类、数据库实体类、Mongoose 实体类，并且使用依赖注入进行调用，其中系统业务模块放在 `module/system`，通用能力和基础设施模块放在 `module/common`；Nodemailer Transporter 和 ali-oss 客户端必须由 Module Provider 创建并注入，Service 内禁止直接创建
-4. FastAPI 项目采用官方推荐的目录结构，在 app 下实现代码，`api` 路由接口，`services` 服务逻辑，`crud` 为对应数据库操作，`core` 放置核心功能模块，并且基于 `Depends` 函数和获取实例函数进行依赖注入调用；非请求任务必须显式传入依赖，权限装饰器通过可传入的 checker 使用 Client，不在装饰器内部固定获取 Client
+- Spring：`web` 负责 HTTP 入口与横切，`application/service` 放业务接口与实现，`infra` 放远程调用和响应式数据访问；构造器注入，基础设施 Bean 在 `config` 装配
+- GoZero：`.api` 优先并用 goctl 生成，`handler` / `logic` / `model` 分层，`svc` 作组合根，禁止包级运行态单例
+- NestJS：`module/system` 放业务模块、`module/common` 放公共能力、`framework` 放全局横切；外部客户端由 Module Provider 注入
+- FastAPI：`internal/` 下分 `api` / `services` / `crud` / `clients` / `cache` / `tasks` / `agents`，依赖在 `app/dependencies/` 集中装配，非请求任务显式传依赖
 
-### 项目文件夹结构说明
+### 返回与字段命名
 
-1. Spring 项目的 HTTP 入口放在 `web/controller`，请求过滤、异常映射、权限和接口日志分别放在 `web/filter`、`web/exception`、`web/security`、`web/logging`；权限、接口日志和变更同步能力分别按 `annotation` 与 `aspect` 子目录组织。业务接口与实现放在 `application/service`，定时调度与变更同步放在 `application/task`、`application/sync`；远程调用和数据库访问放在 `infra/client`、`infra/persistence`；应用启动放在 `bootstrap`，Bean 配置及参数放在 `config`，指标记录放在 `observability`。`common` 保留常量、工具与通用异常，`entity` 保留 DTO、VO、PO、事件和投影；测试目录与主代码包路径对应
-2. GoZero 项目将 `.api`设计文件放置在 `/api`文件夹下，生成脚本放置在 `/script`文件夹下（项目级脚本另有根目录 `scripts/`），goctl 代码模板放置在 `/template`文件夹下，生成的代码放置在 `/app`文件夹下；`/app/model`下放置数据库实体和操作，`/app/common`下放置通用代码模块（`/constants`、`/client`、`/utils`、`/exceptions`、`/realtime`、`/keys`），`/app/internal`下放置业务相关的代码模块，按 `/handler`、`/logic`、`/middleware`、`/svc`、`/client`、`/hub`、`/boot`、`/task`、`/config`、`/types` 划分，`/app/etc`下放配置文件，`/app/docs`下放生成的 Swagger 产物
-3. NestJS 项目的非 module 通用工具放置在 `/common` 下，和系统相关的框架能力放置在 `/framework` 下，如 `filters`、`guards`、`interceptors` 等，业务 module 放置在 `/module` 下，其中 `module/system` 放置系统业务模块，`module/common` 放置通用能力模块
-4. FastAPI 项目的核心代码放置在 `/app`下，业务代码统一在 `/app/internal`下：`api`下放置路由接口，`services`下放置服务逻辑，`crud`下放置数据库操作，`clients`下放置按目标服务拆分的远程客户端，`cache`下放置两级缓存，`tasks`下放置 APScheduler 定时任务，`agents`下放置 LangChain Agent 与工具；`/app/core`下放置核心功能模块（含 `middleware` 中间件与 `decorators` 装饰器），`/app/dependencies`下集中定义依赖别名与装配函数，`/models`下放置实体相关的模块，`/schemas`下放置 Pydantic 模型
-   - `/models` 目录说明：`aiHistory.py` 为 MySQL 的 SQLAlchemy 模型；`warehouse/` 为 ClickHouse 数仓的 SQLAlchemy ORM 模型（按 `ods`、`dwd`、`dws`、`dim`、`ads` 分层，每张表一个文件）；`graph/` 为 Neo4j 的 neomodel 异步 OGM 模型（每个类一个文件）
-5. 其他相关的文件夹命名尽可能沿用当前项目的设计
+所有接口返回 `{code, msg, data}`：`code` 等于 HTTP 状态码，成功为 200 且 `msg` 为 `success`，失败时 `data` 为 `null`，不再有 `error` / `timestamp` / `trace` 等额外字段。对外 HTTP 字段统一 `snake_case`，后端内部保留各语言习惯的驼峰并在序列化时转换；RabbitMQ 消息体优先内部驼峰，消费者兼容历史下划线字段。各服务常量集中在 `common/constants/` 或 `core/constants/`，消息字符串统一进 `Messages` 类。
 
-### 项目文件命名说明
+### 定时任务
 
-1. Spring 项目采用驼峰命名方式，如 `UserCreateDTO.java`
-2. GoZero 项目采用驼峰命名方式，如 `userCreateDTO.go`
-3. NestJS 项目采用点号命名和驼峰命名混合使用的方式，驼峰命名区分模块名，点号区分功能，如 `userCreate.dto.ts`
-4. FastAPI 项目采用驼峰命名方式，如 `userCreateDTO.py`
-
-### 返回格式说明
-
-所有接口统一返回 `application/json` 格式，结构如下：
-
-```json
-{
-  "code": 200,
-  "msg": "success",
-  "data": null
-}
-```
-
-| 字段 | 类型   | 说明                                             |
-| ---- | ------ | ------------------------------------------------ |
-| code | int    | 3 位 HTTP 状态码，与 HTTP 响应状态码一致         |
-| msg  | string | 描述信息/错误信息                                |
-| data | any    | 业务数据，成功时返回，失败或无数据返回时为`null` |
-
-**核心规则**:
-
-1. `code` = HTTP 响应状态码，不再统一返回 200
-2. 成功时 `code` = 200，`msg` = "success"
-3. 失败时 `code` 为对应的 HTTP 状态码（如 400/401/403/404/409/422/429/500/502/503/504），`msg` 为具体错误描述
-4. 成功时除查询接口和部分状态管理外，其他接口 `data` 返回 `null`
-5. 失败时 `data` 统一返回 `null`
-6. 不再有 `error`、`timestamp`、`trace`、`path`、`requestId` 等额外字段
-
-### 字段命名规范说明
-
-1. 对外 HTTP 接口统一使用下划线命名。前端请求体、查询参数、路径参数和 JSON 响应中的多单词字段统一采用 `snake_case`，例如 `user_id`、`article_id`、`create_at`、`sub_category_id`。
-2. 后端服务内部代码仍按各语言习惯保留原有命名方式。Java、Go、TypeScript、Python 内部结构体、DTO、实体和变量可以继续使用驼峰命名，对外序列化时再转换为下划线字段。
-3. Spring 已启用 Jackson 全局 `SNAKE_CASE`，Spring 接口的 JSON 请求体和响应体会统一按下划线字段处理。
-4. GoZero 的 `.api`、`types` 和对外响应字段使用下划线 JSON tag；SSE、WebSocket、搜索接口等对外参数也使用下划线字段，例如 `user_id`、`enable_graph`、`enable_vector`。
-5. FastAPI 的 Pydantic Schema 通过 alias 对外接收和返回下划线字段，内部服务逻辑仍可使用原有驼峰属性。
-6. NestJS 通过序列化拦截器和 DTO 映射对外输出下划线字段；文件上传等历史接口如需保留特殊字段，以对应接口文档为准。
-7. RabbitMQ 消息属于服务内部契约，不直接暴露给前端。当前后端服务间消息体优先使用内部驼峰字段，并在消费者侧兼容历史下划线字段，避免新旧服务部署期间消息解析失败。
-8. 服务间 HTTP 调用按被调用服务的对外契约传参。
-
-### 异常处理说明
-
-1. Spring 项目使用全局异常处理类 `GlobalExceptionHandler.java` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
-2. GoZero 项目使用返回值返回error，不再使用panic直接抛出异常，也可以使用中间件 `recoveryMiddleware.go` 进行异常捕获和处理，业务异常统一抛出 `BusinessError` 异常
-3. NestJS 项目使用全局异常过滤器 `allException.filter.ts` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
-4. FastAPI 项目使用 `exceptionHandlers.py` 下的全局异常处理函数进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
-
-### 常量说明
-
-1. Spring 项目：`spring/src/main/java/com/hcsy/spring/common/constants/`
-   - `Defaults.java`：配置默认值（AI 用户 ID/名称/头像、分布式锁、Swagger、启动信息等）
-   - `HttpCode.java`：HTTP 状态码常量
-   - `Messages.java`：消息类常量（日志消息、用户提示、状态描述）
-   - `RedisKeys.java`：Redis Key 常量（前缀与生成方法）
-   - `Scripts.java`：数据库初始化 SQL 和 Redis 脚本常量
-   - `SqlTools.java`：SQL 工具常量（表名白名单、只读前缀白名单、查询限制）
-   - `HeaderNames.java`：网关与微服务间透传的自定义请求头名称
-   - `WarehouseResources.java`：数仓同步的资源与字段映射
-   - `SyncResource.java`：精确同步的资源名常量（与数仓源表 key、Neo4j 主体保持一致）
-   - `SyncChangeType.java`：精确同步的变更类型枚举（insert/update/delete），并提供由操作类型推导变更类型的方法
-
-2. GoZero 项目：`gozero/app/common/constants/`
-   - `defaults.go`：配置默认值（ES 权重名称、归一化参数名）
-   - `messages.go`：消息类常量（日志消息、用户提示、状态描述）
-   - `redisKeys.go`：Redis Key 常量（分布式锁 Key 及过期时间）
-   - `httpCode.go`：HTTP 状态码常量
-   - `scripts.go`：脚本类（SQL DDL/查询、ES 搜索脚本、ES 索引 Mapping）
-   - `sqlTools.go`：SQL 工具常量（表名白名单、只读前缀白名单、查询限制）
-   - `validations.go`：参数校验类（校验错误消息）
-
-3. FastAPI 项目：`fastapi/app/core/constants/`
-   - `algorithm.py`：搜索排序算法常量（权重定义表与归一化参数）
-   - `defaults.py`：配置默认值（TTL、权重、超时）
-   - `errorCodes.py`：错误标识常量（传给 `BusinessException` 的 `error` 参数）
-   - `httpCode.py`：HTTP 状态码常量
-   - `messages.py`：消息类常量（含启动与初始化消息），采用**静态字符串与函数常量混合**方式：消息内容确定时用 `NAME: str = "value"`，需要嵌入运行时上下文（如 serviceName、error）时用 `@staticmethod` 方法，方法名同样全大写，统一通过 `Messages.XXX` 调用
-   - `prompts.py`：LLM 提示词模板类（Agent 的 System Prompt），同样采用静态字符串与 `@staticmethod` 混合方式
-   - `redisKeys.py`：Redis Key 常量类（缓存 Key、同步时间 Key、分布式锁 Key 及过期时间，运行时拼接的 Key 用 `@staticmethod` 方法生成）
-   - `scripts.py`：脚本类（SQL 语句、Cypher 语句、SQL 安全规则、LangSmith 脱敏规则与阈值）
-   - `warehouse.py`：ClickHouse 数仓同步与汇总 SQL 常量
-   - `swaggerConfig.py`：Swagger/OpenAPI 配置类
-   - `__init__.py`：统一导出入口
-
-4. NestJS 项目：`nestjs/src/common/constants/`
-   - `defaults.constants.ts`：配置默认值常量
-   - `errorIds.constants.ts`：错误标识常量（传给 `BusinessException` 的 `error` 参数）
-   - `exportTemplate.constants.ts`：文章导出模板常量（PDF / Markdown 结构与样式）
-   - `httpCode.constants.ts`：HTTP 状态码常量
-   - `mongoTools.constants.ts`：MongoDB 工具常量（collection 白名单、危险操作符黑名单）
-   - `messages.constants.ts`：消息常量类，采用**静态字符串与函数常量混合**方式：消息内容确定时用 `static readonly NAME = "value"`，需要嵌入运行时上下文（如 userId、serviceName）时用 `static` 方法，方法名同样全大写，统一通过 `Messages.XXX` 调用
-   - `redisKey.constants.ts`：Redis 标识常量类 `RedisKeys`（锁 Key、客户端 Token、OAuth 状态 Key、Lua 脚本）
-   - `sqlTools.constants.ts`：SQL 工具常量类 `SqlTools`（表名白名单、只读前缀、SQL 模板、查询限制）
-   - `swagger.constants.ts`：Swagger/OpenAPI 配置常量
-   - `index.ts`：统一导出入口
-
-使用约定：
-
-- Java 各服务直接 `import` 对应常量类；Go 通过 `constants` 包引用；FastAPI 与 NestJS 通过包（目录）导入，由 `__init__.py`/`index.ts` 统一导出
-- 字符串模板（如 LLM 提示词、SQL/Cypher 脚本）已抽离到对应文件（如 `prompts.py`、`scripts.go`、`scripts.py`），不再散落在业务代码中
-- 消息类字符串（用户提示、日志描述）优先抽取到 `Messages`/`messages` 类，避免硬编码
-- FastAPI 与 NestJS 的函数常量方法名保持全大写+下划线风格（如 `STARTUP_SERVICE_ADDRESS`），与静态字符串命名一致
-- 目前常量类均可根据需要进行扩展，新增常量请按职责归入对应文件，保持统一管理
-
-### 定时任务说明
-
-1. 统一使用 Cron 表达式的方式进行定时任务管理
-2. 遵循当前项目的定时任务设置方式
-3. 部分定时任务使用 `logic`封装定时任务的实际逻辑，在定时任务主文件调用 `logic`
-4. 定时任务建议使用分布式锁时，锁 Key 的命名规范为 `lock:task:<业务>:<动作>`
-5. 同步类任务采用「AOP 精确触发 + 定时全量兜底」两条路径：Spring 在 `@ArticleSync` / `@DataSync` 标注的接口成功后，由切面采集变更事件（资源名 + 主键 + 变更类型）通过 HTTP 下发给下游，下游按主键精确处理；定时任务保持原有的全量或全局增量行为，负责兜底修正遗漏数据与清理已删除数据。两条路径共用同一套下游接口，由入参是否携带变更事件分流（携带则精确处理，缺省则退化为全量/增量）
-
-### 其他说明
-
-1. FastAPI 部分使用 `__init__.py`文件导出对应的函数/类，导入使用的时候以包为导入路径
-2. FastAPI 部分需要在 app 创建时添加的相关组件（如 router、中间件、异常处理器）在 `__init__.py`导出对应列表或者字典，用于 app 创建时遍历添加
-3. FastAPI 部分的 app 创建在 `app.py`的 `create_app`函数实现，lifespan 操作在 `lifespan.py`实现，主函数只进行调用和 `uvicorn`的启动
-4. GoZero 部分的初始化在 `internal/boot` 文件夹创建，main 函数只进行调用，配置相关的初始化在 `svc` 文件夹下初始化执行
-5. NestJS 项目的 app 创建在 `app`目录下的 `createApp`函数实现，main 函数只进行调用，`app`目录下包含 `app.module.ts`的 NestJS 的包初始化
-6. Spring 项目的 Main 类只进行服务启动，WebClient 等配置在 `config` 下使用 `@Configuration` 注解实现，R2DBC 数据库初始化在 `infra/persistence` 下通过响应式 `DatabaseClient` 执行
+统一使用 Cron 表达式，复杂逻辑放 `logic`，需要分布式锁时 Key 用 `lock:task:<业务>:<动作>`。同步类任务走「AOP 精确触发 + 定时全量兜底」两条路径，共用同一套下游接口，按入参是否携带变更事件分流。
 
 ### Agent 技能包（skills/mix-web-demo/）
 
@@ -3522,7 +3410,7 @@ token 估算不使用各家分词器，按字符类别保守折算（`app/core/c
 
 ### 邮箱说明
 
-1. Spring 部分的邮箱登录使用 QQ 邮箱配置发送，需单独配置 QQ 邮箱授权码。
+1. NestJS 部分的邮箱登录使用 QQ 邮箱配置发送，需单独配置 QQ 邮箱授权码。
 
 ### Fresh 热启动工具说明
 
