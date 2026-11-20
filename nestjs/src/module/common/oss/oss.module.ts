@@ -1,8 +1,9 @@
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { Module, Provider } from "@nestjs/common";
 import type OSS from "ali-oss";
-import { OssClient, OssService } from "./oss.service";
-import { OSS_CLIENT } from "./oss.tokens";
+import { detectOssRuntime, OssClient, OssService } from "./oss.service";
+import { OSS_CLIENT, OSS_RUNTIME } from "./oss.tokens";
+import type { OssRuntime } from "./oss.tokens";
 
 const ossClientProvider: Provider = {
   provide: OSS_CLIENT,
@@ -37,12 +38,17 @@ const ossClientProvider: Provider = {
   },
 };
 
+const ossRuntimeProvider: Provider = {
+  provide: OSS_RUNTIME,
+  useFactory: (): OssRuntime => detectOssRuntime(),
+};
+
 /**
  * OSS 对象存储模块，基于配置创建阿里云 OSS 客户端并注册导出 OssService
  */
 @Module({
   imports: [ConfigModule],
-  providers: [ossClientProvider, OssService],
+  providers: [ossClientProvider, ossRuntimeProvider, OssService],
   exports: [OssService],
 })
 export class OssModule {}

@@ -5,7 +5,18 @@ import * as fs from "fs";
 import { Defaults, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { LoggerService } from "src/module/common/logger/logger.service";
-import { OSS_CLIENT } from "./oss.tokens";
+import { OSS_CLIENT, OSS_RUNTIME } from "./oss.tokens";
+import type { OssRuntime } from "./oss.tokens";
+
+/**
+ * 根据进程信息选择 OSS 运行时，供模块注入与脱离 Nest 容器的调用复用
+ */
+export function detectOssRuntime(): OssRuntime {
+  return (process as NodeJS.Process & { versions?: { bun?: string } }).versions
+    ?.bun
+    ? "bun"
+    : "ali-oss";
+}
 
 /**
  * 阿里云 OSS 配置结构，包含访问密钥、存储桶名称与访问端点
@@ -81,6 +92,7 @@ export class OssService implements OnModuleInit {
   private accessKeyId!: string;
   private accessKeySecret!: string;
   private putTimeout!: number;
+  private readonly runtime: OssRuntime;
 
   constructor(
     private readonly configService: ConfigService,
@@ -88,7 +100,12 @@ export class OssService implements OnModuleInit {
     @Optional()
     @Inject(OSS_CLIENT)
     private readonly ossClient: OssClient | null = null,
-  ) {}
+    @Optional()
+    @Inject(OSS_RUNTIME)
+    runtime: OssRuntime | null = null,
+  ) {
+    this.runtime = runtime ?? detectOssRuntime();
+  }
 
   /**
    * 模块初始化时读取并校验 OSS 配置，计算上传超时时间并记录 Bun 运行时兼容提示
@@ -283,13 +300,10 @@ export class OssService implements OnModuleInit {
   }
 
   /**
-   * 判断当前进程是否运行在 Bun 运行时环境
+   * 判断当前服务是否使用 Bun 运行时策略
    */
   private isBunRuntime(): boolean {
-    return Boolean(
-      (process as NodeJS.Process & { versions?: { bun?: string } }).versions
-        ?.bun,
-    );
+    return this.runtime === "bun";
   }
 
   /**

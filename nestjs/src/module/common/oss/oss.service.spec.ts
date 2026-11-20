@@ -6,6 +6,7 @@ import { ConfigService } from "@nestjs/config";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { OssService } from "./oss.service";
+import type { OssRuntime } from "./oss.tokens";
 
 const OSS_CONFIG = {
   access_key_id: "unit-test-access-key",
@@ -124,16 +125,47 @@ describe("OssService", () => {
       quiet: true,
     });
   });
+
+  // 验证 Bun 策略通过 fetch 删除对象，不调用 ali-oss 客户端
+  it("验证 Bun 策略按 key 发起 DELETE 请求", async () => {
+    const service = createConfiguredService("bun");
+    Object.assign(service as unknown as Record<string, unknown>, {
+      client: { put: jest.fn(), list: jest.fn(), deleteMulti: jest.fn() },
+    });
+    const deleteMulti = (
+      service as unknown as { client: { deleteMulti: jest.Mock } }
+    ).client.deleteMulti;
+    const originalFetch: typeof fetch = globalThis.fetch;
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+    } as Response);
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      await expect(service.deleteObjects(["pic/a.png"])).resolves.toBe(1);
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://unit-test-bucket.oss-cn-test.aliyuncs.com/pic/a.png",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+      expect(deleteMulti).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 
 function createService(
   ossConfig: Record<string, unknown>,
   logger: LoggerService,
+  runtime: OssRuntime = "ali-oss",
 ): OssService {
   const configService = {
     get: jest.fn((key: string) => (key === "oss" ? ossConfig : undefined)),
   } as unknown as ConfigService;
-  return new OssService(configService, logger);
+  return new OssService(configService, logger, null, runtime);
 }
 
 function tCleanup(tempDir: string): void {
@@ -144,13 +176,17 @@ function tCleanup(tempDir: string): void {
   }
 }
 
-function createConfiguredService(): OssService {
-  const service = createService(OSS_CONFIG, {
-    info: jest.fn(),
-    error: jest.fn(),
-    warning: jest.fn(),
-    debug: jest.fn(),
-  } as unknown as LoggerService);
+function createConfiguredService(runtime: OssRuntime = "ali-oss"): OssService {
+  const service = createService(
+    OSS_CONFIG,
+    {
+      info: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn(),
+      debug: jest.fn(),
+    } as unknown as LoggerService,
+    runtime,
+  );
   Object.assign(service as unknown as Record<string, unknown>, {
     bucketName: OSS_CONFIG.bucket_name,
     endpoint: OSS_CONFIG.endpoint,
