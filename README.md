@@ -348,6 +348,10 @@ Body 参数：
 
 ## 设计图
 
+> 本章节正文以 mermaid 源码内嵌，便于随代码 review 差异。另附 drawio 导出的 PNG 版本，存放于 `docs/diagrams/`，用于 Apifox 等不渲染 mermaid 的场景；各图表达的内容与使用场景见 [项目结构与流程说明](docs/architecture.md)。
+>
+> [系统架构图](docs/diagrams/architecture.drawio.png) · [ER 图](docs/diagrams/er.drawio.png) · [项目功能结构图](docs/diagrams/structure.drawio.png) · [管理员用例图](docs/diagrams/uml_admin.drawio.png) · [用户用例图](docs/diagrams/uml_user.drawio.png)
+
 - 系统架构图
 
   ```mermaid
@@ -1974,7 +1978,7 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 - `observability/prometheus.yml -> /etc/prometheus/prometheus.yml`
 - `static/pic`, `static/excel`, `static/upload`, `static/word`
 
-`static/word` 存放文章导出的 Word 模板 `template.docx`（本地开发与 Docker 共用同一份），NestJS 容器内挂载到 `/app/static/word`，并通过 `FILES_WORD_PATH` 固定为该路径。
+`static/` 下的四个目录是运行时可写数据目录，内容不随仓库发布：`pic` 存 FastAPI 词云输出图，`excel` 存导出表格，`upload` 存 multipart 上传文件，`word` 是 Word 模板的部署期覆盖位。Word 导出的默认模板唯一的来源是镜像内置的 `nestjs/src/assets/word/template.docx`（构建后位于 `dist/assets/word/`）；`static/word` 为空时导出会自动回退到该内置模板，需要替换模板时再通过 `FILES_WORD_PATH` 指向自定义目录。
 
 此外，`observability/` 统一存放 Loki/Promtail/Grafana、Collector/Tempo 与 Prometheus 配置；日志由 Promtail 读取并写入 Loki，Span 经 Collector 脱敏后写入 Tempo，指标由 Prometheus 抓取。Loki、Tempo、Prometheus 与 Grafana 的数据均保存在 Compose 命名卷中。
 
@@ -2183,9 +2187,9 @@ NestJS 的文章导出（Word / Markdown / PDF）以 `FILES_WORD_PATH` 作为 Wo
 
 - **绝对路径直接使用**；相对路径基于**进程工作目录**展开，不是项目根目录。容器内工作目录是 `/app`，`../static/word` 会解析到 `/app/../static/word`，与挂载点不一致时导出会找不到模板
 - **目录或文件都可用**：传目录时自动补 `template.docx`，传 `.docx` 文件路径时按原样使用
-- **内置模板兜底**：配置路径不可读时回退到镜像内置模板 `dist/assets/word/template.docx`（源码位置 `nestjs/src/assets/word/template.docx`），两者都缺失才返回 `WORD_TEMPLATE_NOT_FOUND` 并列出尝试过的路径
+- **内置模板兜底**：配置路径不可读时回退到镜像内置模板 `dist/assets/word/template.docx`（源码位置 `nestjs/src/assets/word/template.docx`），这是默认模板的唯一来源；两者都缺失才返回 `WORD_TEMPLATE_NOT_FOUND` 并列出尝试过的路径
 - **导出产物不落静态目录**：Word / Markdown / PDF 的中间文件统一写到系统临时目录（`os.tmpdir()/mix-web-demo/export`），上传 OSS 后立即删除，因此静态目录没有写权限也不影响下载
-- **Docker 场景**在 `nestjs/.env.docker` 中设置 `FILES_WORD_PATH=/app/static/word` 并挂载宿主 `static/word`；本地开发保持默认 `../static/word`（即仓库根目录的 `static/word`）即可
+- **Docker 场景**在 `nestjs/.env.docker` 中设置 `FILES_WORD_PATH=/app/static/word` 并挂载宿主 `static/word`；该目录默认留空，导出走内置模板。要替换模板，把 `template.docx` 放进宿主机 `static/word` 或把 `FILES_WORD_PATH` 指向自己的目录，改内置模板则需重新构建镜像
 
 PDF 导出依赖 Chromium：运行镜像已安装 `chromium` + `font-noto-cjk`（保证中文渲染），并在 `nestjs/Dockerfile` 中把可执行文件统一成 `/usr/bin/puppeteer-chrome`，再用 `ENV PUPPETEER_EXECUTABLE_PATH` 指向它。puppeteer 原生读取该环境变量，因此 `application.yaml` 与 Compose 都不需要额外配置；本地不设置该变量时使用 puppeteer 自带浏览器。
 
