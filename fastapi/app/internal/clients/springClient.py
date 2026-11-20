@@ -199,7 +199,7 @@ class SpringClient:
         return result.get("data", [])
 
     async def get_monthly_publish_count(self) -> list[dict[str, Any]]:
-        """获取最近24个月文章发布数量统计"""
+        """获取全部月份文章发布数量统计"""
         result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/articles/statistics/monthly-publish-count",

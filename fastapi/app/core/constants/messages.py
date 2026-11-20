@@ -2027,7 +2027,7 @@ class Messages:
     @staticmethod
     def MONTHLY_PUBLISH_COUNT_RESULT(month_count: int, article_month_count: int) -> str:
         """构造月度文章发布统计结果的日志消息"""
-        return f"get_monthly_publish_count_service: 获取过去6个月中 {month_count} 个月份数据，有文章的月份数: {article_month_count}"
+        return f"get_monthly_publish_count_service: 获取全部 {month_count} 个月份数据，有文章的月份数: {article_month_count}"
 
     @staticmethod
     def REDIS_CONNECTION_FAILED(error: Exception) -> str:

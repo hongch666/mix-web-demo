@@ -433,7 +433,6 @@ class WarehouseScripts:
         INSERT INTO warehouse.ads_monthly_publish
         SELECT substring(toString(create_at), 1, 7), count(), now()
         FROM warehouse.dwd_article_event FINAL
-        WHERE create_at >= subtractMonths(now(), 24)
         GROUP BY substring(toString(create_at), 1, 7)
         """,
         """

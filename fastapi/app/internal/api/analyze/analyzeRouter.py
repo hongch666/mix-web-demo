@@ -127,7 +127,7 @@ async def get_article_count_by_category(
 @router.get(
     "/monthly-publish-count",
     summary="获取月度文章发布统计",
-    description="获取最近6个月的文章发布数量统计（从当前月向前推6个月，缺失月份置为0）",
+    description="获取全部月份的文章发布数量统计（从最早有数据的月份到当前月，缺失月份置为0）",
     response_model=ApiResponse[ListResponse[MonthlyPublishCountResponse]],
 )
 @log("获取月度文章发布统计")

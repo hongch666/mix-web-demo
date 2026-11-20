@@ -3,6 +3,7 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from dateutil.relativedelta import relativedelta
 
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
@@ -626,35 +627,70 @@ async def test_category_count_degrades_when_clickhouse_raises() -> None:
 # ===== 月度发布数 =====
 
 
-# 月度发布数补齐最近六个月并丢弃窗口外的月份
+# 月度发布数返回最早月份到当前月的全部月份并补齐中间缺失月份
 @pytest.mark.anyio
-async def test_monthly_publish_fills_missing_months() -> None:
-    current_month = datetime.now().strftime("%Y-%m")
+async def test_monthly_publish_returns_all_months_with_zero_gaps() -> None:
+    now = datetime.now()
+    first_month = (now - relativedelta(months=10)).strftime("%Y-%m")
+    gap_month = (now - relativedelta(months=9)).strftime("%Y-%m")
+    second_month = (now - relativedelta(months=8)).strftime("%Y-%m")
+    current_month = now.strftime("%Y-%m")
     mapper = AsyncMock()
     mapper.get_monthly_publish_count_clickhouse_mapper_async = AsyncMock(
         return_value=[
             {"year_month": current_month, "count": 3},
-            {"year_month": "1999-01", "count": 9},
+            {"year_month": second_month, "count": 2},
+            {"year_month": first_month, "count": 5},
         ]
     )
     service = _make_service(articleMapper=mapper)
 
     result = await service.get_monthly_publish_count_service(MagicMock())
 
-    assert len(result) == 6
     months = [item["year_month"] for item in result]
     assert months == sorted(months)
+    assert months[0] == first_month
+    assert months[-1] == current_month
+    assert len(months) > 6
     by_month = {item["year_month"]: item["count"] for item in result}
+    assert by_month[first_month] == 5
+    assert by_month[gap_month] == 0
+    assert by_month[second_month] == 2
     assert by_month[current_month] == 3
-    assert "1999-01" not in by_month
 
 
-# ClickHouse 失败时降级 Spring 并返回六个月零值
+# ClickHouse 失败时降级 Spring 并返回其全部月份数据
 @pytest.mark.anyio
-async def test_monthly_publish_degrades_to_spring() -> None:
+async def test_monthly_publish_degrades_to_spring_with_all_months() -> None:
+    now = datetime.now()
+    first_month = (now - relativedelta(months=10)).strftime("%Y-%m")
+    current_month = now.strftime("%Y-%m")
     mapper = AsyncMock()
     mapper.get_monthly_publish_count_clickhouse_mapper_async = AsyncMock(
         side_effect=RuntimeError("ch down")
+    )
+    spring = AsyncMock()
+    spring.get_monthly_publish_count.return_value = [
+        {"year_month": first_month, "count": 4},
+        {"year_month": current_month, "count": 1},
+    ]
+    service = _make_service(articleMapper=mapper, spring_client=spring)
+
+    result = await service.get_monthly_publish_count_service(MagicMock())
+
+    by_month = {item["year_month"]: item["count"] for item in result}
+    assert len(result) >= 11
+    assert by_month[first_month] == 4
+    assert by_month[current_month] == 1
+    spring.get_monthly_publish_count.assert_awaited_once()
+
+
+# 两个数据源都为空时返回空列表
+@pytest.mark.anyio
+async def test_monthly_publish_returns_empty_when_sources_empty() -> None:
+    mapper = AsyncMock()
+    mapper.get_monthly_publish_count_clickhouse_mapper_async = AsyncMock(
+        return_value=[]
     )
     spring = AsyncMock()
     spring.get_monthly_publish_count.return_value = []
@@ -662,6 +698,5 @@ async def test_monthly_publish_degrades_to_spring() -> None:
 
     result = await service.get_monthly_publish_count_service(MagicMock())
 
-    assert len(result) == 6
-    assert all(item["count"] == 0 for item in result)
+    assert result == []
     spring.get_monthly_publish_count.assert_awaited_once()
