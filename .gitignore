@@ -179,9 +179,6 @@ static/**/*
 # 白名单：不忽略所有的 .drawio.png 文件
 !static/**/*.drawio.png
 
-# 不忽略文章Word模板
-!static/word/template.docx
-
 logs/
 .otel/
 
