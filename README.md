@@ -2191,6 +2191,21 @@ NestJS 的文章导出（Word / Markdown / PDF）以 `FILES_WORD_PATH` 作为 Wo
 - **导出产物不落静态目录**：Word / Markdown / PDF 的中间文件统一写到系统临时目录（`os.tmpdir()/mix-web-demo/export`），上传 OSS 后立即删除，因此静态目录没有写权限也不影响下载
 - **Docker 场景**在 `nestjs/.env.docker` 中设置 `FILES_WORD_PATH=/app/static/word` 并挂载宿主 `static/word`；该目录默认留空，导出走内置模板。要替换模板，把 `template.docx` 放进宿主机 `static/word` 或把 `FILES_WORD_PATH` 指向自己的目录，改内置模板则需重新构建镜像
 
+#### 导出文档内容
+
+三种格式通过 `ExportTemplate` 的 `ArticleExportMeta` 统一取值，同一篇文章导出后信息一致：
+
+| 区块     | 内容                                                         | 数据来源                                                            |
+| -------- | ------------------------------------------------------------ | ------------------------------------------------------------------- |
+| 标题     | 文章标题                                                     | `articles.title`                                                    |
+| 元信息   | 作者、分类（父分类 / 子分类）、状态（已发布 / 草稿）、浏览量  | `user.name`、`category_name` + `sub_category_name`、`status`、`views` |
+| 标签     | 按中英文逗号与分号拆分后逐项展示，为空显示「无标签」          | `articles.tags`                                                     |
+| 时间     | 创作时间与更新时间，缺失显示 `—`                              | `create_at`、`update_at`                                            |
+| 正文     | Word 转纯文本并保留换行；PDF 经 marked 渲染 HTML；Markdown 保留原始内容 | `articles.content`                                                  |
+| 页脚     | 文章编号与平台署名                                           | `articles.id`                                                       |
+
+格式差异：Word 模板为 `nestjs/src/assets/word/template.docx`，占位符与元信息字段一一对应；PDF 采用 A4 版式并带 `第 N / M 页` 页码；Markdown 带 YAML front matter（`title`、`article_id`、`author`、`category`、`status`、`tags`、`views`、`created_at`、`updated_at`），可直接被静态站点生成器消费。
+
 PDF 导出依赖 Chromium：运行镜像已安装 `chromium` + `font-noto-cjk`（保证中文渲染），并在 `nestjs/Dockerfile` 中把可执行文件统一成 `/usr/bin/puppeteer-chrome`，再用 `ENV PUPPETEER_EXECUTABLE_PATH` 指向它。puppeteer 原生读取该环境变量，因此 `application.yaml` 与 Compose 都不需要额外配置；本地不设置该变量时使用 puppeteer 自带浏览器。
 
 使用方式保持一致：
