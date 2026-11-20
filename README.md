@@ -1,4 +1,4 @@
-# 基于 RAG 知识问答与 LLM 驱动推荐的 IT 智能文章推荐与知识问答系统(多语言技术栈构建)
+# 基于多语言微服务的智能文章平台
 
 ![Java](https://img.shields.io/badge/Java-17+-red?logo=java&logoColor=white)
 ![Spring](https://img.shields.io/badge/Spring-Boot-6DB33F?logo=spring&logoColor=white)
@@ -48,7 +48,7 @@
 
 ## 描述
 
-这是一个基于多语言技术栈构建的 IT 智能文章推荐与知识问答系统，主要包含以下框架：
+这是一个基于多语言微服务构建的智能文章平台，涵盖内容社区、融合搜索、RAG 知识问答、知识图谱与数据分析等能力，主要包含以下框架：
 
 - Spring（Java）
 - GoZero（Go）
@@ -678,7 +678,7 @@ Body 参数：
 
   ```mermaid
   flowchart TB
-      Root["基于 RAG 的 IT 智能文章推荐与知识问答系统"]
+      Root["多语言微服务智能文章平台"]
       Root --> Nav["系统导航"]
       Root --> UserMgr["用户管理"]
       Root --> AdminMgr["后台管理"]
