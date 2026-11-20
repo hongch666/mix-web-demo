@@ -235,5 +235,9 @@ _*.txt
 /.env
 /nacos/
 
-### Apifox CLI 本地状态（执行 ./mix apifox-readme 时生成，不入库）
-/.apifox/
+### Apifox 本地状态（CLI 状态与数据模型指纹，运行期生成，不入库）
+/.apifox/*
+!/.apifox/fastapi.schemas.sha256
+!/.apifox/gozero.schemas.sha256
+!/.apifox/nestjs.schemas.sha256
+!/.apifox/spring.schemas.sha256

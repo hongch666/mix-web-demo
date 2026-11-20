@@ -75,7 +75,7 @@ show_help() {
     echo "    help                   - 显示 docker-compose 帮助"
     echo ""
     echo "Observability Commands (可观测性组件):"
-    echo "  loki [command]           - Manage Loki/Promtail/Prometheus/Grafana/Tempo/Collector stack"
+    echo "  observability [command]  - Manage Loki/Promtail/Prometheus/Grafana/Tempo/Collector stack"
     echo "    start [--dist]         - 独立启动日志与链路观测组件 (默认采集 logs/)"
     echo "    stop                   - 停止容器，保留 Loki、Tempo 与 Grafana 数据卷"
     echo "    restart [--dist]       - 重启容器，或切换到 dist/logs 日志来源"
@@ -83,9 +83,10 @@ show_help() {
     echo "    logs [service]         - 查看观测组件容器日志"
     echo "    delete                 - 停止并删除容器及数据卷"
     echo "    help                   - 显示可观测性组件帮助"
+    echo "  别名: obs；旧命令 loki 仍可用（不推荐，后续版本可能移除）"
     echo ""
     echo "  --dist 采集 dist/logs (配合 ./mix dist start)，缺省采集根目录 logs/"
-    echo "  两套日志互不导入，切换用 ./mix loki restart [--dist]，根编排固定采集 logs/"
+    echo "  两套日志互不导入，切换用 ./mix observability restart [--dist]，根编排固定采集 logs/"
     echo "  dev/dist 的 OpenTelemetry 与观测栈同步启停，compose 模式固定启用"
     echo ""
     echo "Setup Commands (初始化):"
@@ -207,12 +208,12 @@ show_help() {
     echo "  ./mix docker-services status   # Show base container status"
     echo "  ./mix docker-services logs mysql # View MySQL container logs"
     echo "  ./mix docker-services stop     # Stop base containers"
-    echo "  ./mix loki start               # 启动日志与链路观测组件，采集根目录 logs/"
-    echo "  ./mix loki start --dist        # 采集 dist/logs (配合 ./mix dist start)"
-    echo "  ./mix loki restart --dist      # 切换到 dist 日志来源"
-    echo "  ./mix loki status              # 查看状态与当前采集配置"
-    echo "  ./mix loki logs promtail       # 查看 Promtail 容器日志"
-    echo "  ./mix loki stop                # 停止观测组件（保留数据卷）"
+    echo "  ./mix observability start               # 启动日志与链路观测组件，采集根目录 logs/"
+    echo "  ./mix observability start --dist        # 采集 dist/logs (配合 ./mix dist start)"
+    echo "  ./mix observability restart --dist      # 切换到 dist 日志来源"
+    echo "  ./mix observability status              # 查看状态与当前采集配置"
+    echo "  ./mix observability logs promtail       # 查看 Promtail 容器日志"
+    echo "  ./mix observability stop                # 停止观测组件（保留数据卷）"
     echo ""
     echo "Notes (备注):"
     echo "  - For Windows PowerShell: PowerShell -ExecutionPolicy Bypass -File ./scripts/run.ps1"
@@ -459,9 +460,12 @@ case $COMMAND in
             bash "$SCRIPTS_DIR/docker-services.sh" "${@:2}"
         fi
         ;;
-    loki)
+    observability|obs|loki)
+        if [ "$COMMAND" = "loki" ]; then
+            echo "提示: ./mix loki 已更名为 ./mix observability，旧命令仍可用"
+        fi
         if [ $# -lt 2 ]; then
-            echo "Starting Loki/Promtail/Grafana/Tempo/Collector stack..."
+            echo "Starting observability stack (Loki/Promtail/Grafana/Tempo/Collector)..."
             bash "$SCRIPTS_DIR/loki-control.sh" start
         else
             echo "Executing observability command: ${@:2}"

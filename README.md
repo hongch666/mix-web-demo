@@ -1,4 +1,4 @@
-# 基于 RAG 知识问答与 LLM 驱动推荐的 IT 智能文章推荐与知识问答系统(多语言技术栈构建)
+# 基于多语言微服务的智能文章平台
 
 ![Java](https://img.shields.io/badge/Java-17+-red?logo=java&logoColor=white)
 ![Spring](https://img.shields.io/badge/Spring-Boot-6DB33F?logo=spring&logoColor=white)
@@ -48,7 +48,7 @@
 
 ## 描述
 
-这是一个基于多语言技术栈构建的 IT 智能文章推荐与知识问答系统，主要包含以下框架：
+这是一个基于多语言微服务构建的智能文章平台，涵盖内容社区、融合搜索、RAG 知识问答、知识图谱与数据分析等能力，主要包含以下框架：
 
 - Spring（Java）
 - GoZero（Go）
@@ -183,14 +183,15 @@ NestJS 模块按职责划分为两层：
 
 配置文件位置：
 
-- `otel-config/otel-collector.yaml`：Receiver、脱敏动作、导出到 Tempo
-- `otel-config/tempo.yaml`：Tempo 存储与保留策略（block 保留 168 小时）
-- `loki-config/`：Loki、Promtail（`promtail.yaml` / `promtail-dist.yaml`）与 Grafana 数据源
-- `loki-config/loki.yaml`：Loki 存储与保留策略（compactor 按 `retention_period` 回收，默认 720 小时）
-- `prometheus-config/`：指标抓取配置，容器编排用 `prometheus.yml`，独立观测栈用 `prometheus-host.yml`；指标保留期由 `--storage.tsdb.retention.time` 控制（默认 30 天）
+- `observability/otel-collector.yaml`：Receiver、脱敏动作、导出到 Tempo
+- `observability/tempo.yaml`：Tempo 存储与保留策略（block 保留 168 小时）
+- `observability/loki.yaml`：Loki 存储与保留策略（compactor 按 `retention_period` 回收，默认 720 小时）
+- `observability/promtail.yaml` / `observability/promtail-dist.yaml`：分别采集根目录 `logs/` 与 `dist/logs/`
+- `observability/grafana/`：Grafana 数据源与面板预置配置
+- `observability/prometheus.yml` / `observability/prometheus-host.yml`：指标抓取配置，分别用于容器编排与独立观测栈；指标保留期由 `--storage.tsdb.retention.time` 控制（默认 30 天）
 - `gateway/apisix/config.yaml`：APISIX 开启 `opentelemetry` 插件并调整 access log 格式
 
-观测数据保留：日志、链路、指标与 Grafana 配置分别落在命名卷 `loki-data`、`tempo-data`、`prometheus-data`、`grafana-data` 上，重启容器、重新部署、`./mix compose down` 都不会清空历史数据；过期数据由各自保留策略回收，需要彻底清空时显式执行 `./mix compose down --volumes`（或 `./mix loki delete`）
+观测数据保留：日志、链路、指标与 Grafana 配置分别落在命名卷 `loki-data`、`tempo-data`、`prometheus-data`、`grafana-data` 上，重启容器、重新部署、`./mix compose down` 都不会清空历史数据；过期数据由各自保留策略回收，需要彻底清空时显式执行 `./mix compose down --volumes`（或 `./mix observability delete`）
 
 ### 链路与日志关联
 
@@ -224,14 +225,14 @@ Prometheus 通过静态配置抓取四个服务的指标端点，抓取间隔 15
 
 两份抓取配置对应两种运行方式，目标地址不同：
 
-- `prometheus-config/prometheus.yml`：根 `docker-compose.yml` 使用，目标为容器服务名（`spring:9101` 等）
-- `prometheus-config/prometheus-host.yml`：`loki-config/docker-compose.yml` 使用，配合 `host.docker.internal` 抓取宿主机上 `./mix dev` 启动的服务
+- `observability/prometheus.yml`：根 `docker-compose.yml` 使用，目标为容器服务名（`spring:9101` 等）
+- `observability/prometheus-host.yml`：`observability/docker-compose.yml` 使用，配合 `host.docker.internal` 抓取宿主机上 `./mix dev` 启动的服务
 
 Grafana 的 Prometheus 数据源预置了 `exemplarTraceIdDestinations`，配置了 Exemplar 的指标可直接跳转到对应 Trace。
 
 ### 开关与访问地址
 
-- 观测栈与 OTel 由 `./mix loki start` / `./mix loki stop` 同步启停：脚本在 `.otel/` 下维护 `enabled` 标记，dev/dist 模式启动服务时由 `scripts/otel-env.sh`（Windows 为 `scripts/otel-env.ps1`）读取该标记决定是否注入 OTel 配置
+- 观测栈与 OTel 由 `./mix observability start` / `./mix observability stop` 同步启停：脚本在 `.otel/` 下维护 `enabled` 标记，dev/dist 模式启动服务时由 `scripts/otel-env.sh`（Windows 为 `scripts/otel-env.ps1`）读取该标记决定是否注入 OTel 配置
 - `./mix compose up` 的容器编排固定启用 OTel，无需额外开关
 - Grafana：`http://localhost:3000`（匿名 Admin，Loki、Tempo 与 Prometheus 数据源已预置）
 - Loki：`http://localhost:3100`
@@ -678,7 +679,7 @@ Body 参数：
 
   ```mermaid
   flowchart TB
-      Root["基于 RAG 的 IT 智能文章推荐与知识问答系统"]
+      Root["多语言微服务智能文章平台"]
       Root --> Nav["系统导航"]
       Root --> UserMgr["用户管理"]
       Root --> AdminMgr["后台管理"]
@@ -1559,23 +1560,23 @@ pytest tests/core/auth/test_internal_token.py
 
 # ===== 可观测性组件（Loki / Promtail / Prometheus / Grafana / Tempo / Collector）=====
 # 独立启动观测栈并启用 OTel（默认采集根目录 logs/）
-./mix loki start
+./mix observability start
 
 # 切换到采集 dist/logs（配合 ./mix dist start 使用）
-./mix loki start --dist
+./mix observability start --dist
 
 # 查看组件状态、采集配置与 OTel 开关
-./mix loki status
+./mix observability status
 
 # 查看组件日志（loki | promtail | prometheus | grafana | tempo | otel-collector）
-./mix loki logs grafana
-./mix loki logs tempo
+./mix observability logs grafana
+./mix observability logs tempo
 
 # 停止组件并关闭 OTel（保留数据卷）
-./mix loki stop
+./mix observability stop
 
 # 停止并删除容器与数据卷
-./mix loki delete
+./mix observability delete
 
 # ===== 生产环境 =====
 # 构建所有服务到 dist/ 目录
@@ -1837,7 +1838,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 
 - **mix**（项目根目录）
   - 便捷启动器，用于快速调用 `scripts/` 下的脚本
-  - `loki` 子命令用于启停可观测性组件（Loki/Promtail/Prometheus/Grafana/Tempo/Collector），并同步 dev/dist 的 OTel 开关
+  - `observability` 子命令用于启停可观测性组件（Loki/Promtail/Prometheus/Grafana/Tempo/Collector），并同步 dev/dist 的 OTel 开关；`obs` 为别名，旧名 `loki` 仍可用但不推荐
   - 支持开发环境和生产环境命令
 
 - **scripts/build.sh**
@@ -1968,14 +1969,14 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 - `nestjs/src/config/application.yaml -> /app/dist/config/application.yaml`
 - `fastapi/application.yaml -> /app/application.yaml`
 - `logs/<service> -> /app/logs/<service>`
-- `otel-config/otel-collector.yaml -> /etc/otel/config.yaml`
-- `otel-config/tempo.yaml -> /etc/tempo/tempo.yaml`
-- `prometheus-config/prometheus.yml -> /etc/prometheus/prometheus.yml`
+- `observability/otel-collector.yaml -> /etc/otel/config.yaml`
+- `observability/tempo.yaml -> /etc/tempo/tempo.yaml`
+- `observability/prometheus.yml -> /etc/prometheus/prometheus.yml`
 - `static/pic`, `static/excel`, `static/upload`, `static/word`
 
 `static/word` 存放文章导出的 Word 模板 `template.docx`（本地开发与 Docker 共用同一份），NestJS 容器内挂载到 `/app/static/word`，并通过 `FILES_WORD_PATH` 固定为该路径。
 
-此外，`loki-config/` 提供 Loki、Promtail 与 Grafana（Loki/Tempo/Prometheus 数据源）配置，`otel-config/` 提供 Collector 与 Tempo 配置，`prometheus-config/` 提供指标抓取配置；日志由 Promtail 读取并写入 Loki，Span 经 Collector 脱敏后写入 Tempo，指标由 Prometheus 抓取。Loki、Tempo、Prometheus 与 Grafana 的数据均保存在 Compose 命名卷中。
+此外，`observability/` 统一存放 Loki/Promtail/Grafana、Collector/Tempo 与 Prometheus 配置；日志由 Promtail 读取并写入 Loki，Span 经 Collector 脱敏后写入 Tempo，指标由 Prometheus 抓取。Loki、Tempo、Prometheus 与 Grafana 的数据均保存在 Compose 命名卷中。
 
 `./scripts/docker-compose-up.sh` 会自动创建运行所需的日志与静态目录；网关日志权限由 Compose 初始化容器处理。
 
@@ -2163,7 +2164,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 
 链路追踪（OpenTelemetry）相关变量在各服务中统一命名：
 
-- `OTEL_ENABLED`：链路追踪开关，默认由 `./mix loki start` / `./mix loki stop` 维护的 `.otel/enabled` 标记决定，需要脱离控制脚本时可显式覆盖
+- `OTEL_ENABLED`：链路追踪开关，默认由 `./mix observability start` / `./mix observability stop` 维护的 `.otel/enabled` 标记决定，需要脱离控制脚本时可显式覆盖
 - `OTEL_SERVICE_NAME`：上报的服务名（spring / gozero / nestjs / fastapi），网关固定为 `apisix-gateway`
 - `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`：Collector 地址，本地开发默认 `http://127.0.0.1:4318`（HTTP 导出为 `/v1/traces`），容器内为 `otel-collector:4318`
 - `OTEL_TRACES_SAMPLER` 与 `OTEL_TRACES_SAMPLER_ARG`（NestJS、FastAPI）、`OTEL_TRACES_SAMPLER_RATIO`（GoZero）、`OTEL_DISABLED`（GoZero）：采样策略与比例
@@ -2482,8 +2483,8 @@ gh variable set APIFOX_README_DOC_ID --body "<文档ID>"
 2. 令牌或项目 ID 缺失时工作流**直接失败**并给出 `::error::` 提示，不做静默跳过，避免门禁假绿
 3. `concurrency: apifox-sync` 全局串行：Apifox 同一项目不允许并发导入，连续推送时排队执行而不是并发覆盖
 4. 接口同步固定带 `--no-readme`：README 由独立步骤（`scripts/apifox-readme-sync.sh --skip-if-unset`）负责，两边都改了就先后各跑一次，只改 README 时不会触发接口导入
-5. 同步成功后把 `.apifox-state/*.schemas.sha256` 数据模型指纹提交回当前分支（提交信息 `chore(apifox): 同步数据模型指纹基线`，用 `GITHUB_TOKEN` 推送不会再次触发工作流）。**这一步很关键**：指纹是「Apifox 项目已同步到哪个模型版本」的共享基线，不回写会让每次 CI 都误判为模型变更而走覆盖模式，冲掉手工维护的 Mock 与示例
-   - `prod` 若开了分支保护（必须走 PR），`GITHUB_TOKEN` 直推会被拒，步骤只打 `::warning::` 不失败：此时下载本次运行的 `apifox-state` 制品，解压覆盖仓库里的 `.apifox-state/` 再提交即可（该制品用 `include-hidden-files: true` 上传，点开头的隐藏目录也能取到）
+5. 同步成功后把 `.apifox/*.schemas.sha256` 数据模型指纹提交回当前分支（提交信息 `chore(apifox): 同步数据模型指纹基线`，用 `GITHUB_TOKEN` 推送不会再次触发工作流）。**这一步很关键**：指纹是「Apifox 项目已同步到哪个模型版本」的共享基线，不回写会让每次 CI 都误判为模型变更而走覆盖模式，冲掉手工维护的 Mock 与示例
+   - `prod` 若开了分支保护（必须走 PR），`GITHUB_TOKEN` 直推会被拒，步骤只打 `::warning::` 不失败：此时下载本次运行的 `apifox-state` 制品，解压覆盖仓库里的 `.apifox/` 再提交即可（该制品用 `include-hidden-files: true` 上传，点开头的隐藏目录也能取到）
    - 不想让 CI 提交就删掉「回写数据模型基线」步骤，改由本地 `./mix apifox` 后提交指纹
 6. 只想跑单服务时用 `workflow_dispatch` 的 `services` 输入（空格分隔）；`main` 上的中间态提交不会推送，文档只在合并进 `prod` 后同步一次
 
@@ -2596,7 +2597,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 3. README 里的相对路径（`scripts/xxx.sh`、`static/`）与锚点链接在 Apifox 侧无法跳转，需要跳转请改成绝对 URL
 4. 脚本依赖 `apifox`（缺失时自动安装）、`sed`、`tr`、`grep`、`awk`、`mktemp`，传给 CLI 的路径先经 `cygpath` 转成 Windows 原生路径
 5. README 的「## 目录」章节只在 Apifox 文档内被剔除，仓库里的 `README.md` 不做任何改写
-6. Apifox CLI 会在仓库根目录生成 `.apifox/` 本地状态目录（记录分支与守卫错误等），已加入 `.gitignore`，不要提交
+6. Apifox CLI 会在仓库根目录生成 `.apifox/` 本地状态目录（记录分支与守卫错误等），这部分已加入 `.gitignore`，不要提交；`.apifox/*.schemas.sha256` 是共享的指纹基线，需要随仓库提交
 
 ## CI/CD 工作流
 
@@ -2618,7 +2619,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/lint.sh` / `compile.sh` / `test.sh`；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿                       |
 | `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                                               |
-| `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`loki-config/`、`prometheus-config/`、`otel-config/` 有变更时按目录重启命中的容器（不重建业务服务） |
+| `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`observability/` 有变更时按文件重启命中的容器（不重建业务服务） |
 | `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                                        |
 | `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)                                                                                                                 |
 
@@ -2651,7 +2652,7 @@ gh workflow run smoke.yml
 
 ### 注意事项
 
-1. 只改 `**.md`、`docs/**`、`db/**`、`scripts/**`、`skills/**`、`static/**`、`.github/**` 时不触发流水线；改 `loki-config/`、`prometheus-config/`、`otel-config/`（或根 `docker-compose.yml`）会触发一次 `Release Images`，但变更检测为 0、不构建任何镜像，部署侧走 `CONFIG_ONLY` 同步代码与配置，并按目录重启命中的容器（Grafana / Loki / Promtail / Prometheus / otel-collector / tempo / gateway），业务容器不重建
+1. 只改 `**.md`、`docs/**`、`db/**`、`scripts/**`、`skills/**`、`static/**`、`.github/**` 时不触发流水线；改 `observability/`（或根 `docker-compose.yml`）会触发一次 `Release Images`，但变更检测为 0、不构建任何镜像，部署侧走 `CONFIG_ONLY` 同步代码与配置，并按目录重启命中的容器（Grafana / Loki / Promtail / Prometheus / otel-collector / tempo / gateway），业务容器不重建
 2. 部署机是「一次配置、长期复用」：runner 以 systemd 服务注册，仓库目录里的 `.env`、四个 `.env.docker` 都不随 `checkout` 重置；`docker compose` 需要 runner 用户具备 docker 权限
 3. 部署失败会自动按服务回滚到上一版本（状态记录在 `${RUNNER_WORKSPACE}/mix-deploy-state/last-deploy.txt`）；若回滚也失败会打出 `::warning::` 并要求人工介入
 4. 部署目录用 `git checkout -f -B prod <commit>` 而不是 detached HEAD，运维仍可直接在该目录 `git pull` 排查

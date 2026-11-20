@@ -7,7 +7,7 @@ name: Deploy
 #   2. release published：发布 GitHub Release 时部署对应 tag
 #   3. workflow_dispatch：手工部署 / 回滚，image_tag 填短 sha 或 vX.Y.Z
 #
-# 配置类变更（loki-config/、prometheus-config/、otel-config/、gateway/）不产生新镜像，
+# 配置类变更（observability/、gateway/）不产生新镜像，
 # 走 CONFIG_ONLY：同步代码与配置后只重启命中目录的观测/网关容器（见最后一步），业务服务不动。
 #
 # 部署机要求（一次配置，见 README 或交接说明）：
@@ -324,9 +324,9 @@ jobs:
           }
 
           restart_svc gateway        gateway/
-          restart_svc grafana        loki-config/grafana/
-          restart_svc loki           loki-config/loki.yaml
-          restart_svc promtail       loki-config/promtail.yaml loki-config/promtail-dist.yaml
-          restart_svc prometheus     prometheus-config/
-          restart_svc otel-collector otel-config/otel-collector.yaml
-          restart_svc tempo          otel-config/tempo.yaml
+          restart_svc grafana        observability/grafana/
+          restart_svc loki           observability/loki.yaml
+          restart_svc promtail       observability/promtail.yaml observability/promtail-dist.yaml
+          restart_svc prometheus     observability/prometheus.yml observability/prometheus-host.yml observability/rules/
+          restart_svc otel-collector observability/otel-collector.yaml
+          restart_svc tempo          observability/tempo.yaml
