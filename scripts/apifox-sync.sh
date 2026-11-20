@@ -49,7 +49,7 @@ REQUEST_TIMEOUT_SECONDS=180
 # 用于判断模型是否发生变更。它描述的是远端项目的同步基线而不是本机状态，
 # 必须提交：否则 A 机器同步后 B 机器没有基线，会把「无历史」误判成「模型有变」，
 # 从而用覆盖模式冲掉 A 侧保留的手工 Mock 与示例
-SCHEMA_STATE_DIR="$WORKDIR/.apifox-state"
+SCHEMA_STATE_DIR="$WORKDIR/.apifox"
 
 TMP_DIR=""
 
@@ -1153,7 +1153,7 @@ main() {
     # 基线是共享的：只有提交之后其他机器才能据此判断「模型没变、无需覆盖」
     if [ "$schema_state_updated" = "true" ]; then
         echo ""
-        print_info "数据模型同步基线已更新，请与 docs/ 产物一起提交 .apifox-state/"
+        print_info "数据模型同步基线已更新，请与 docs/ 产物一起提交 .apifox/"
         print_info "（其他机器靠它判断模型是否变更，漏提交会让它们误判为模型有变并触发覆盖同步）"
     fi
 

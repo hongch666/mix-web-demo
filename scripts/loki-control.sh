@@ -4,17 +4,17 @@
 # 用于 ./mix dist start（宿主机进程模式）下独立启动日志观测栈并查看日志
 # 使用方式: ./scripts/loki-control.sh [start|stop|restart|status|logs|delete|help] [--dist]
 #   --dist  采集 dist/logs（dist 模式），缺省采集根目录 logs/（容器与 dev 模式）
-# 推荐通过 ./mix loki <command> [--dist] 调用
+# 推荐通过 ./mix observability <command> [--dist] 调用
 
 set -e
 
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMPOSE_FILE="$WORKDIR/loki-config/docker-compose.yml"
+COMPOSE_FILE="$WORKDIR/observability/docker-compose.yml"
 COMPOSE_PROJECT="loki"
 OTEL_STATE_DIR="$WORKDIR/.otel"
 OTEL_ENABLED_MARKER="$OTEL_STATE_DIR/enabled"
 
-# 固定容器名（与 loki-config/docker-compose.yml 的 container_name 保持一致），
+# 固定容器名（与 observability/docker-compose.yml 的 container_name 保持一致），
 # 用于检测并清理其他编排栈（如根目录 docker-compose.yml）占用的同名容器
 NAMED_CONTAINERS=(loki promtail grafana prometheus mix-otel-collector mix-tempo)
 
@@ -192,7 +192,7 @@ cleanup_conflicts() {
     done
 }
 
-# 移除本栈（./mix loki start 独立启动）占用的同名容器
+# 移除本栈（./mix observability start 独立启动）占用的同名容器
 # 供根目录 docker-compose.yml 启动前调用：此时保留容器的是根编排项目，
 # 本栈容器必须让位，只清理属于本栈项目的容器，不会误删根编排自身的容器
 remove_standalone_containers() {
@@ -257,7 +257,7 @@ show_status() {
     if [ -f "$OTEL_ENABLED_MARKER" ]; then
         log_info "dev/dist OpenTelemetry: 已启用"
     else
-        log_info "dev/dist OpenTelemetry: 未启用（执行 ./mix loki start 后启用）"
+        log_info "dev/dist OpenTelemetry: 未启用（执行 ./mix observability start 后启用）"
     fi
 
     log_info "访问地址: Loki http://localhost:3100，Prometheus http://localhost:9090，OTLP http://localhost:4318，Grafana http://localhost:3000（匿名 Admin，数据源已预置）"
@@ -349,7 +349,7 @@ show_help() {
 可观测性组件控制脚本
 
 用法: ./scripts/loki-control.sh [命令] [参数]
-      通常通过 ./mix loki [命令] [参数] 调用
+      通常通过 ./mix observability [命令] [参数] 调用
 
 命令:
   start           启动 Loki/Promtail/Grafana/Tempo/Collector，并为 dev/dist 启用 OTel (默认)
@@ -377,13 +377,13 @@ show_help() {
   本栈与根编排的容器同名但属于不同 compose 项目，交叉启动时会自动清理对方容器
 
 示例:
-  ./mix loki start              # 启动观测栈并采集根目录 logs/
-  ./mix loki start --dist       # 启动观测栈并采集 dist/logs
-  ./mix loki restart --dist     # 切换到 dist 日志来源
-  ./mix loki restart            # 切回根目录 logs/
-  ./mix loki status             # 查看状态与当前采集配置
-  ./mix loki logs promtail      # 查看 Promtail 日志
-  ./mix loki stop               # 停止观测栈（保留数据）
+  ./mix observability start              # 启动观测栈并采集根目录 logs/
+  ./mix observability start --dist       # 启动观测栈并采集 dist/logs
+  ./mix observability restart --dist     # 切换到 dist 日志来源
+  ./mix observability restart            # 切回根目录 logs/
+  ./mix observability status             # 查看状态与当前采集配置
+  ./mix observability logs promtail      # 查看 Promtail 日志
+  ./mix observability stop               # 停止观测栈（保留数据）
 EOF
 }
 

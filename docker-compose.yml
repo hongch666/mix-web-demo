@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
     command: ["-config.file=/etc/tempo/tempo.yaml"]
     volumes:
-      - ./otel-config/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - ./observability/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo-data:/var/tempo
     networks:
       - hcsy
@@ -28,7 +28,7 @@ services:
     depends_on:
       - tempo
     volumes:
-      - ./otel-config/otel-collector.yaml:/etc/otel/config.yaml:ro
+      - ./observability/otel-collector.yaml:/etc/otel/config.yaml:ro
     networks:
       - hcsy
     expose:
@@ -52,8 +52,8 @@ services:
         "--storage.tsdb.retention.time=30d",
       ]
     volumes:
-      - ./prometheus-config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus-config/rules:/etc/prometheus/rules:ro
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/rules:/etc/prometheus/rules:ro
       - prometheus-data:/prometheus
     networks:
       - hcsy
@@ -99,7 +99,7 @@ services:
       loki-data-init:
         condition: service_completed_successfully
     volumes:
-      - ./loki-config/loki.yaml:/etc/loki/config.yaml:ro
+      - ./observability/loki.yaml:/etc/loki/config.yaml:ro
       - loki-data:/tmp/loki
     networks:
       - hcsy
@@ -157,7 +157,7 @@ services:
       promtail-positions-init:
         condition: service_completed_successfully
     volumes:
-      - ./loki-config/promtail.yaml:/etc/promtail/config.yaml:ro
+      - ./observability/promtail.yaml:/etc/promtail/config.yaml:ro
       - ./logs:/app/logs:ro
       - promtail-data:/tmp/positions
     networks:
@@ -188,7 +188,7 @@ services:
       - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./loki-config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
     networks:
       - hcsy
     healthcheck:

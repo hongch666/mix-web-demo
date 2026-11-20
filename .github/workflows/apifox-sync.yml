@@ -209,7 +209,7 @@ jobs:
     if: needs.changes.result == 'success' && (needs.changes.outputs.count != '0' || needs.changes.outputs.readme == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # 回写 .apifox-state/ 的数据模型指纹基线需要写权限；
+    # 回写 .apifox/ 的数据模型指纹基线需要写权限；
     # 置仓库变量 APIFOX_COMMIT_STATE=false 可关闭回写（此时基线只随 artifact 保留）
     permissions:
       contents: write
@@ -221,7 +221,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # 回写 .apifox-state 需要可推送的凭据，默认 fetch-depth 足够
+          # 回写 .apifox 需要可推送的凭据，默认 fetch-depth 足够
           persist-credentials: true
 
       - uses: actions/setup-node@v4
@@ -297,25 +297,25 @@ jobs:
         run: |
           set -euo pipefail
           # 用 status 而不是 diff：新建服务的指纹文件是未跟踪文件，diff 看不到
-          if [ -z "$(git status --porcelain -- .apifox-state)" ]; then
+          if [ -z "$(git status --porcelain -- .apifox)" ]; then
             echo "数据模型基线无变化，无需回写"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .apifox-state
+          git add .apifox
           git commit -m "chore(apifox): 同步数据模型指纹基线"
           # 主干开分支保护时会被拒绝：只告警，新指纹仍在 artifact（apifox-state）里，可下载后直接提交
-          git push || echo "::warning::基线回写被拒绝（prod 开了分支保护，GITHUB_TOKEN 无法直推）。请下载本次运行的 apifox-state 制品解压覆盖 .apifox-state/ 后提交，或本地执行 ./mix apifox 让指纹自然更新；不修的话下次 CI 仍会按覆盖模式同步"
+          git push || echo "::warning::基线回写被拒绝（prod 开了分支保护，GITHUB_TOKEN 无法直推）。请下载本次运行的 apifox-state 制品解压覆盖 .apifox/ 后提交，或本地执行 ./mix apifox 让指纹自然更新；不修的话下次 CI 仍会按覆盖模式同步"
 
-      # 基线目录以点开头，属于隐藏目录：upload-artifact v4 默认跳过，
+      # 指纹目录以点开头，属于隐藏目录：upload-artifact v4 默认跳过，
       # 必须显式 include-hidden-files，否则会出现「No files were found with the provided path」
-      - name: 上传基线 artifact
+      - name: 上传指纹 artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: apifox-state
-          path: .apifox-state
+          path: .apifox
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: ignore
