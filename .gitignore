@@ -176,9 +176,6 @@ static/**/*
 # 允许 Git 进入 static 下的所有子目录（为了寻找图片）
 !static/**/
 
-# 白名单：不忽略所有的 .drawio.png 文件
-!static/**/*.drawio.png
-
 logs/
 .otel/
 
