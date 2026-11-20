@@ -488,7 +488,7 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * 实现统计最近24个月每月发布文章数量
+     * 实现统计全部月份每月发布文章数量
      */
     @Override
     public Mono<List<MonthlyPublishCountVO>> getMonthlyPublishCount() {

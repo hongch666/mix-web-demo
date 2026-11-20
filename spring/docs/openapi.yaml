@@ -3110,8 +3110,8 @@ paths:
     get:
       tags:
       - "文章模块"
-      summary: "获取最近24个月文章发布数量统计（内部）"
-      description: "获取最近24个月文章发布数量统计，供内部服务远程调用"
+      summary: "获取全部月份文章发布数量统计（内部）"
+      description: "获取全部月份文章发布数量统计，供内部服务远程调用"
       operationId: "getMonthlyPublishCount"
       responses:
         "200":

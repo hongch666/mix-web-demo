@@ -204,7 +204,7 @@
           "文章分析模块"
         ],
         "summary": "获取月度文章发布统计",
-        "description": "获取最近6个月的文章发布数量统计（从当前月向前推6个月，缺失月份置为0）",
+        "description": "获取全部月份的文章发布数量统计（从最早有数据的月份到当前月，缺失月份置为0）",
         "operationId": "get_monthly_publish_count_analyze_monthly_publish_count_get",
         "responses": {
           "200": {

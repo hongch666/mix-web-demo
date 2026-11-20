@@ -304,10 +304,10 @@ public class ArticleController {
     }
 
     /**
-     * GET /articles/statistics/monthly-publish-count 内部接口，返回最近24个月的月度文章发布数量统计
+     * GET /articles/statistics/monthly-publish-count 内部接口，返回全部月份的月度文章发布数量统计
      */
     @GetMapping("/statistics/monthly-publish-count")
-    @Operation(summary = "获取最近24个月文章发布数量统计（内部）", description = "获取最近24个月文章发布数量统计，供内部服务远程调用")
+    @Operation(summary = "获取全部月份文章发布数量统计（内部）", description = "获取全部月份文章发布数量统计，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部获取月度发布数量统计")
     public Mono<Result<List<MonthlyPublishCountVO>>> getMonthlyPublishCount() {

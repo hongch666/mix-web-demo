@@ -150,12 +150,12 @@ public interface ArticleRepository extends ReactiveCrudRepository<Article, Long>
     Flux<IdCountVO> countViewsByIdIn(@Param("ids") Collection<Long> articleIds);
 
     /**
-     * 按月分组统计近 24 个月已发布文章数量并按月份倒序返回，用于发布趋势统计
+     * 按月分组统计全部已发布文章数量并按月份倒序返回，用于发布趋势统计
      */
     @Query("""
         SELECT DATE_FORMAT(create_at, '%Y-%m') AS yearMonth, COUNT(*) AS count
         FROM articles
-        WHERE status = 1 AND create_at >= DATE_SUB(NOW(), INTERVAL 24 MONTH)
+        WHERE status = 1
         GROUP BY yearMonth
         ORDER BY yearMonth DESC
         """)

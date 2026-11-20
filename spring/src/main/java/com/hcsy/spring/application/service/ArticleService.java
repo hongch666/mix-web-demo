@@ -162,7 +162,7 @@ public interface ArticleService {
     Mono<List<CategoryArticleCountVO>> getCategoryArticleCount();
 
     /**
-     * 获取最近24个月文章发布数量统计
+     * 获取全部月份文章发布数量统计
      */
     Mono<List<MonthlyPublishCountVO>> getMonthlyPublishCount();
 

@@ -755,9 +755,9 @@ class AnalyzeService:
         获取按月份统计的文章发布数量服务
 
         流程:
-        1. 从ClickHouse查询最近6个月的文章发布数据
-        2. 从当前月份向前推6个月，补充缺失的月份为零值
-        3. 按月份排序
+        1. 从ClickHouse查询全部月份的文章发布数据，失败时降级到Spring
+        2. 从最早有数据的月份补齐到当前月，缺失月份置为0
+        3. 按月份升序排序
         4. 使用缓存优化性能
         """
         data_source: Optional[str] = None
@@ -800,21 +800,26 @@ class AnalyzeService:
             local_data_source = "DB"
             self._logger.info(Messages.MONTHLY_STATISTICS_DB_SOURCE)
 
-        now: datetime = datetime.now()
-        expected_months: list[str] = []
-        for i in range(5, -1, -1):
-            month_date = now - relativedelta(months=i)
-            expected_months.append(month_date.strftime("%Y-%m"))
-
         data_dict: dict[str, int] = {
-            item["year_month"]: item["count"] for item in local_publish_data
+            str(item["year_month"]): int(item["count"])
+            for item in local_publish_data
+            if item.get("year_month")
         }
 
         result: list[dict[str, Any]] = []
-        for month in expected_months:
-            result.append({"year_month": month, "count": data_dict.get(month, 0)})
-
-        result.sort(key=lambda x: x["year_month"], reverse=False)
+        if data_dict:
+            sorted_months: list[str] = sorted(data_dict)
+            current_month: datetime = datetime.now().replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
+            end_month: datetime = max(
+                datetime.strptime(sorted_months[-1], "%Y-%m"), current_month
+            )
+            month_cursor: datetime = datetime.strptime(sorted_months[0], "%Y-%m")
+            while month_cursor <= end_month:
+                month: str = month_cursor.strftime("%Y-%m")
+                result.append({"year_month": month, "count": data_dict.get(month, 0)})
+                month_cursor += relativedelta(months=1)
         self._logger.info(
             Messages.MONTHLY_PUBLISH_COUNT_RESULT(
                 len(result), len([r for r in result if r["count"] > 0])

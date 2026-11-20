@@ -28,8 +28,8 @@ class RedisKeys:
     CATEGORY_ARTICLE_COUNT_VERSION: str = "category:article_count:version"
     """分类文章数统计的版本号"""
 
-    PUBLISH_MONTHLY_COUNT: str = "publish:monthly_count"
-    """每月发布量统计的缓存 key"""
+    PUBLISH_MONTHLY_COUNT: str = "publish:monthly_count:all"
+    """全量月度发布量统计的缓存 key，换 key 使旧版近六个月数据失效"""
 
     PUBLISH_MONTHLY_COUNT_VERSION: str = "publish:monthly_count:version"
     """每月发布量统计的版本号"""
