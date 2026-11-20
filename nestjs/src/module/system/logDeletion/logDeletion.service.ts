@@ -5,6 +5,7 @@ import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { Model, Types } from "mongoose";
 import { Defaults, Messages } from "src/common/constants";
+import type { MongoIndexInfo } from "src/common/interfaces/mongoIndexInfo.interface";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { LogDeletion, LogDeletionDocument } from "./schema/logDeletion.schema";
 
@@ -12,13 +13,6 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const TIMEZONE = "Asia/Shanghai";
-
-/**
- * MongoDB 索引信息结构，仅包含索引名
- */
-interface MongoIndexInfo {
-  name?: string;
-}
 
 /**
  * 待记录墓碑的日志来源，按被删日志的主键与原产生时间描述

@@ -7,6 +7,7 @@ import utc from "dayjs/plugin/utc";
 import { DeleteResult, Model, Types } from "mongoose";
 import { Defaults, LogTypes, Messages, RedisKeys } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
+import type { MongoIndexInfo } from "src/common/interfaces/mongoIndexInfo.interface";
 import type { CreatedAtCursor } from "src/common/utils/createdAtCursor.util";
 import {
   CREATED_AT_CURSOR_INDEX,
@@ -31,13 +32,6 @@ dayjs.extend(timezone);
 dayjs.extend(isLeapYear);
 
 const TIMEZONE = "Asia/Shanghai";
-
-/**
- * MongoDB 索引信息结构，仅包含索引名
- */
-interface MongoIndexInfo {
-  name?: string;
-}
 
 /**
  * 文章日志分页列表项数据结构，含远程映射的用户名与文章标题

@@ -7,6 +7,7 @@ import utc from "dayjs/plugin/utc";
 import { Model, Types } from "mongoose";
 import { Defaults, LogTypes, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
+import type { MongoIndexInfo } from "src/common/interfaces/mongoIndexInfo.interface";
 import type { CreatedAtCursor } from "src/common/utils/createdAtCursor.util";
 import {
   CREATED_AT_CURSOR_INDEX,
@@ -31,13 +32,6 @@ const TIMEZONE = "Asia/Shanghai";
  */
 const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-/**
- * MongoDB 索引信息结构，仅包含索引名
- */
-interface MongoIndexInfo {
-  name?: string;
-}
 
 /**
  * API 日志分页列表项数据结构，时间为格式化后的字符串

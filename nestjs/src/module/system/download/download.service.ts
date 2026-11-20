@@ -8,6 +8,7 @@ import * as path from "path";
 import { Browser, launch, Page } from "puppeteer";
 import { ErrorIds, ExportTemplate, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
+import type { ArticleExportMeta } from "src/common/interfaces/articleExportMeta.interface";
 import { SpringClientService } from "src/module/common/client/springClient.service";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { OssService } from "src/module/common/oss/oss.service";
@@ -25,6 +26,8 @@ interface RemoteArticle {
   tags: string;
   status: number;
   views: number;
+  category_name: string | null;
+  sub_category_name: string | null;
   create_at: string | null;
   update_at: string | null;
 }
@@ -46,6 +49,17 @@ const EXPORT_TEMP_DIR: string = path.join(
   "export",
 );
 
+/** 已发布状态值，与 spring 的 articles.status 约定一致 */
+const ARTICLE_STATUS_PUBLISHED = 1;
+/** 已发布状态的展示文案 */
+const ARTICLE_STATUS_PUBLISHED_TEXT = "已发布";
+/** 非发布状态（含草稿）的展示文案 */
+const ARTICLE_STATUS_DRAFT_TEXT = "草稿";
+/** 分类缺失时的展示文案 */
+const UNCATEGORIZED_TEXT = "未分类";
+/** 时间等字段缺失时的占位文案，避免三种格式出现空白行 */
+const EMPTY_FIELD_TEXT = "—";
+
 /**
  * 文章导出服务，负责拉取文章与作者信息并生成 Word、Markdown、PDF 文件上传到 OSS 返回下载链接
  */
@@ -61,39 +75,20 @@ export class DownloadService {
 
   // 生成word并保存到指定位置
   async exportToWordAndSave(id: number): Promise<string> {
-    const res: Record<string, unknown> =
-      await this.springClient.getArticleById(id);
-    const article: RemoteArticle | null =
-      SpringClientService.extractData<RemoteArticle | null>(res);
-    if (!article) {
-      throw BusinessException.notFound(
-        Messages.ARTICLE_NOT_FOUND_BY_ID(id),
-        ErrorIds.ARTICLE_NOT_FOUND,
-      );
-    }
+    const { article, user } = await this.loadArticleWithAuthor(id);
+    const meta: ArticleExportMeta = this.buildExportMeta(article, user);
     const htmlContent: string = marked.parse(article.content || "");
-
-    // 并行获取用户信息；文章未关联作者（user_id 为空）时跳过，避免调用 GET /users/null 触发 spring 路径变量类型转换 400
-    const [userRes] = await Promise.all([
-      article.user_id != null
-        ? this.springClient.getUserById(article.user_id)
-        : Promise.resolve(null),
-    ]);
-    const user: RemoteUser | null = userRes
-      ? SpringClientService.extractData<RemoteUser | null>(userRes)
-      : null;
-
     const data: Record<string, unknown> = {
-      title: article.title,
+      id: meta.id,
+      title: meta.title,
+      author: meta.author,
+      category: meta.category,
+      status: meta.status,
+      tags: ExportTemplate.formatTags(meta.tags),
+      views: meta.views,
+      createTime: meta.createTime,
+      updateTime: meta.updateTime,
       content: htmlContent,
-      tags: article.tags,
-      username: user?.name || Messages.UNKNOWN_USER,
-      create_at: article.create_at
-        ? dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss")
-        : "",
-      update_at: article.update_at
-        ? dayjs(article.update_at).format("YYYY-MM-DD HH:mm:ss")
-        : "",
     };
     const wordDir: string = this.resolveWordDir(); // 模板目录，仅用于读取模板
     const templatePath: string = path.join(wordDir, "template.docx"); // 模板文件路径
@@ -141,30 +136,11 @@ export class DownloadService {
 
   // 生成markdown文件并上传到OSS，返回下载链接
   async exportMarkdownAndUpload(id: number): Promise<string> {
-    const res: Record<string, unknown> =
-      await this.springClient.getArticleById(id);
-    const article: RemoteArticle | null =
-      SpringClientService.extractData<RemoteArticle | null>(res);
-    if (!article) {
-      throw BusinessException.notFound(
-        Messages.ARTICLE_NOT_FOUND_BY_ID(id),
-        ErrorIds.ARTICLE_NOT_FOUND,
-      );
-    }
-    // 获取作者信息（文章未关联作者时回退为未知用户）
-    const userRes: Record<string, unknown> =
-      await this.springClient.getUserById(article.user_id);
-    const user: RemoteUser | null =
-      SpringClientService.extractData<RemoteUser | null>(userRes);
-
+    const { article, user } = await this.loadArticleWithAuthor(id);
+    const meta: ArticleExportMeta = this.buildExportMeta(article, user);
     // Markdown 结构模板统一由 ExportTemplate 常量类提供
     const markdown: string = ExportTemplate.renderArticleMarkdown(
-      article.title,
-      article.tags,
-      user?.name || Messages.UNKNOWN_USER,
-      article.create_at
-        ? dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss")
-        : "",
+      meta,
       article.content || "",
     );
     // 保存到本地临时文件
@@ -180,30 +156,17 @@ export class DownloadService {
 
   // 生成PDF文件并保存到指定位置
   async exportToPdfAndSave(id: number): Promise<string> {
-    const res: Record<string, unknown> =
-      await this.springClient.getArticleById(id);
-    const article: RemoteArticle | null =
-      SpringClientService.extractData<RemoteArticle | null>(res);
-    if (!article) {
-      throw BusinessException.notFound(
-        Messages.ARTICLE_NOT_FOUND_BY_ID(id),
-        ErrorIds.ARTICLE_NOT_FOUND,
-      );
-    }
-
-    const userRes: Record<string, unknown> =
-      await this.springClient.getUserById(article.user_id);
-    const user: RemoteUser | null =
-      SpringClientService.extractData<RemoteUser | null>(userRes);
+    const { article, user } = await this.loadArticleWithAuthor(id);
+    const meta: ArticleExportMeta = this.buildExportMeta(article, user);
 
     // 获取文件保存路径
     const saveDir: string = await this.prepareExportDir();
     const savePath: string = path.join(saveDir, `article-${id}.pdf`);
 
-    // 创建 HTML 内容
-    const htmlContent: string = this.generatePdfHtml(
-      article,
-      user || { name: Messages.UNKNOWN_USER },
+    // 使用 marked 解析 Markdown 内容为 HTML，再套用 PDF 模板
+    const htmlContent: string = ExportTemplate.renderArticleHtml(
+      meta,
+      marked.parse(article.content || ""),
     );
 
     // 使用 puppeteer 生成 PDF，容器内由镜像的 PUPPETEER_EXECUTABLE_PATH 指向系统 chromium
@@ -230,6 +193,10 @@ export class DownloadService {
             right: ExportTemplate.PAGE_MARGIN,
           },
           printBackground: true,
+          // 页脚注入页码，页眉不输出，避免与正文标题重复
+          displayHeaderFooter: true,
+          headerTemplate: "<span></span>",
+          footerTemplate: ExportTemplate.PDF_FOOTER_TEMPLATE,
         });
       } finally {
         await page.close();
@@ -242,26 +209,72 @@ export class DownloadService {
     }
   }
 
-  // 生成 PDF 的 HTML 内容
-  private generatePdfHtml(
+  /**
+   * 拉取文章与作者信息，作者缺失（文章未关联用户）时返回 null
+   * @param id 文章 ID
+   */
+  private async loadArticleWithAuthor(
+    id: number,
+  ): Promise<{ article: RemoteArticle; user: RemoteUser | null }> {
+    const res: Record<string, unknown> =
+      await this.springClient.getArticleById(id);
+    const article: RemoteArticle | null =
+      SpringClientService.extractData<RemoteArticle | null>(res);
+    if (!article) {
+      throw BusinessException.notFound(
+        Messages.ARTICLE_NOT_FOUND_BY_ID(id),
+        ErrorIds.ARTICLE_NOT_FOUND,
+      );
+    }
+
+    // 文章未关联作者（user_id 为空）时跳过，避免调用 GET /users/null 触发 spring 路径变量类型转换 400
+    if (article.user_id == null) {
+      return { article, user: null };
+    }
+    const userRes: Record<string, unknown> =
+      await this.springClient.getUserById(article.user_id);
+    return {
+      article,
+      user: SpringClientService.extractData<RemoteUser | null>(userRes),
+    };
+  }
+
+  /**
+   * 构造三种导出格式共用的元信息，字段缺失时填充占位文案
+   * @param article 远程文章数据
+   * @param user 远程作者数据，缺失时回退为未知用户
+   */
+  private buildExportMeta(
     article: RemoteArticle,
-    user: RemoteUser | { name: string },
-  ): string {
-    const createTime: string = article.create_at
-      ? dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss")
-      : "";
+    user: RemoteUser | null,
+  ): ArticleExportMeta {
+    const category: string = [article.category_name, article.sub_category_name]
+      .filter((name: string | null): boolean => Boolean(name))
+      .join(" / ");
+    return {
+      id: article.id,
+      title: article.title || "",
+      author: user?.name || Messages.UNKNOWN_USER,
+      category: category || UNCATEGORIZED_TEXT,
+      status:
+        article.status === ARTICLE_STATUS_PUBLISHED
+          ? ARTICLE_STATUS_PUBLISHED_TEXT
+          : ARTICLE_STATUS_DRAFT_TEXT,
+      tags: ExportTemplate.parseTags(article.tags),
+      views: article.views ?? 0,
+      createTime: this.formatTime(article.create_at),
+      updateTime: this.formatTime(article.update_at),
+    };
+  }
 
-    // 使用 marked 解析 Markdown 内容为 HTML
-    const htmlContent: string = marked.parse(article.content || "");
-
-    // 模板与样式统一由 ExportTemplate 常量类提供
-    return ExportTemplate.renderArticleHtml(
-      article.title,
-      user?.name,
-      createTime,
-      article.tags,
-      htmlContent,
-    );
+  /**
+   * 格式化远程时间字段，缺失时返回占位文案
+   * @param value 远程时间字符串
+   */
+  private formatTime(value: string | null): string {
+    return value
+      ? dayjs(value).format("YYYY-MM-DD HH:mm:ss")
+      : EMPTY_FIELD_TEXT;
   }
 
   // 上传Word文件到OSS
