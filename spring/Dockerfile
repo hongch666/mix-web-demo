@@ -6,15 +6,16 @@ FROM maven:3.9-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
-# 复制构建描述、格式化配置与源代码，dependency:go-offline 会额外下载大量插件依赖，
-# 直接打包并复用 Maven 缓存可缩短首次镜像构建时间
+# 先只复制构建描述与格式化配置，让依赖下载独立成层：
+# pom.xml 不变时，go-offline 层可直接命中 registry 缓存（cache-from），
+# 后续改 src 代码只需重新打包，无需每次重新下载整个依赖树
 # eclipse-formatter.xml 为 pom.xml 中 Spotless 校验所需的格式化配置，validate 阶段会读取
 COPY pom.xml .
 COPY eclipse-formatter.xml .
 COPY settings-docker.xml .
-COPY src ./src
 ARG MAVEN_PROXY_HOST=
 ARG MAVEN_PROXY_PORT=
+# 依赖层：sed 生成 settings 后只做 dependency:go-offline，把依赖/插件拉进 /root/.m2 缓存
 RUN --mount=type=cache,target=/root/.m2 \
     if [ -n "${MAVEN_PROXY_HOST}" ] && [ -n "${MAVEN_PROXY_PORT}" ]; then \
       proxy_active=true; \
@@ -22,6 +23,10 @@ RUN --mount=type=cache,target=/root/.m2 \
       proxy_active=false; \
     fi; \
     sed -i "s/__MAVEN_PROXY_ACTIVE__/${proxy_active}/; s/__MAVEN_PROXY_HOST__/${MAVEN_PROXY_HOST:-127.0.0.1}/; s/__MAVEN_PROXY_PORT__/${MAVEN_PROXY_PORT:-1}/" settings-docker.xml && \
+    mvn -s settings-docker.xml dependency:go-offline -q
+# 源码层：代码变更只影响这一层及之后，复用上面的依赖缓存
+COPY src ./src
+RUN --mount=type=cache,target=/root/.m2 \
     mvn -s settings-docker.xml clean package -DskipTests -Dspotless.check.skip=true -q
 
 # 阶段2：运行阶段
