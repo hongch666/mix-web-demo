@@ -214,6 +214,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 - AOP 切面中 `pjp.proceed()` 返回 `Mono<?>` 时必须在 Mono 链内操作（`.flatMap()` / `.doOnSuccess()`），上下文用 `.deferContextual()` 获取
 - 横切能力由 AOP 实现：`ApiLogAspect`（接口日志）、`RequirePermissionAspect`（`@RequirePermission` 声明式权限）、`RequireInternalTokenAspect`（`@RequireInternalToken` 内部令牌）、`ArticleSyncAspect`（文章变更同步 MQ / ES / 向量）、`DataSyncAspect`（图谱与数仓同步）。切面类与注解同名（注解去 `@` 加 `Aspect` 后缀），新增切面沿用该命名。新增写接口时确认是否需要权限注解与同步触发，同步失败只记日志、没有补偿机制
 - **响应式切面的固定写法**：`pjp.proceed()` 返回的是**未订阅的冷流**（业务代码此时尚未执行），且 Reactor Context 只在订阅时可见。所以切面必须把校验 / 日志 / 同步挂到 Mono 链上（`Mono.deferContextual(ctx -> ...)`）：校验类用 `validate(ctx).then(businessMono)` 保证「校验先于业务」，副作用类用 `monoResult.doOnSuccess(...)` 发后即忘；副作用里若需要用户身份，必须用 `UserContext.writeContext(Context.empty(), ...)` 重建 Context 再 `contextWrite`，否则异步链上读不到。**禁止用同步代码在 `proceed()` 之前读上下文**，那时 ctx 不可见，只会拿到 null
+- **方法可见性顺序**：类（含嵌套类）的实例方法按可见性分组排列，public / protected 方法在前，private 方法在后，private 方法不得穿插在 public / protected 方法之间。static 方法不参与排序（常量类与工具类的 static 方法常与 static 字段成对书写）；字段、构造器、静态初始化块与嵌套类型声明不受约束；只识别带 public / protected / private 修饰符的方法，无修饰符的包私有方法不参与。该约定由 `./mix lint spring` 里的 `scripts/java-method-order.py` 检查，`./mix format spring` 会把 private 方法自动移到 public / protected 之后
 - 注入风格：`@Service` + `@RequiredArgsConstructor` + `private final` 字段（构造器注入），禁止字段 `@Autowired`
 - 外部基础设施统一由 Spring Bean 提供：`PasswordEncryptor` 注入 `BCryptPasswordEncoder`，禁止在工具或 Service 内部直接 `new` 加密器、客户端或连接资源；新增同类依赖放入 `config` 的 `@Configuration` Bean
 - Swagger 用 springdoc：`@Operation(summary, description)`、`@Tag`，注解参数直接写字面量，不抽常量
@@ -719,9 +720,10 @@ FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大�
 
 ```bash
 # Spring：Eclipse formatter + import 四段分组，配置在 spring/eclipse-formatter.xml
-# lint 额外执行 scripts/controller-vo.py（控制器是否返回匿名 Map）与 scripts/constants.py（常量注释与分类）
-./mix format spring      # mvn spotless:apply
-./mix lint spring        # mvn spotless:check + 控制器返回类型检查 + 常量规范检查
+# lint 额外执行 scripts/controller-vo.py（控制器是否返回匿名 Map）、scripts/constants.py（常量注释与分类）
+# 与 scripts/java-method-order.py（方法可见性顺序）
+./mix format spring      # 方法可见性顺序整理（private 移到 public/protected 之后）+ mvn spotless:apply
+./mix lint spring        # mvn spotless:check + 控制器返回类型检查 + 常量规范检查 + 方法可见性顺序检查
 
 # GoZero：Go 配置在 gozero/app/.golangci.yml，.api 文件用 goctl api format
 ./mix format gozero      # golangci-lint fmt + goctl api format
