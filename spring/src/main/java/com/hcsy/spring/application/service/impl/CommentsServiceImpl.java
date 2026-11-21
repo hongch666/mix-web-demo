@@ -141,27 +141,6 @@ public class CommentsServiceImpl implements CommentsService {
     }
 
     /**
-     * 查询评论关联的用户与文章并组装为评论视图
-     */
-    private Mono<CommentsVO> toCommentsVO(Comments comment) {
-        Mono<User> user = userRepository.findById(comment.getUserId()).defaultIfEmpty(new User());
-        Mono<Article> article = articleRepository.findById(comment.getArticleId()).defaultIfEmpty(new Article());
-        return Mono.zip(user, article).map(relations -> mapComment(comment, relations.getT1(), relations.getT2()));
-    }
-
-    /**
-     * 将评论实体与用户、文章组装为视图对象，缺失时用默认值
-     */
-    private CommentsVO mapComment(Comments comment, User user, Article article) {
-        CommentsVO vo = BeanUtil.copyProperties(comment, CommentsVO.class);
-        vo.setUsername(user == null || user.getName() == null ? Defaults.DEFAULT_USER : user.getName());
-        vo.setPic(user == null ? null : user.getImg());
-        vo.setArticleTitle(
-            article == null || article.getTitle() == null ? Defaults.DEFAULT_ARTICLE : article.getTitle());
-        return vo;
-    }
-
-    /**
      * 实现按用户名、文章标题、内容条件分页查询普通用户评论
      */
     @Override
@@ -293,6 +272,107 @@ public class CommentsServiceImpl implements CommentsService {
         return transactionalOperator.transactional(operation);
     }
 
+    // ==================== 统计方法 ====================
+
+    @Override
+    public Mono<Long> getAiCommentsNumByArticleId(Long articleId) {
+        return userRepository.findIdsByRole(Defaults.AI_ROLE)
+            .collectList()
+            .flatMap(aiUserIds -> {
+                if (aiUserIds.isEmpty()) {
+                    return Mono.just(0L);
+                }
+                return commentsRepository.countByArticleIdAndUserIdIn(articleId, aiUserIds).defaultIfEmpty(0L);
+            });
+    }
+
+    /**
+     * 实现删除文章下所有AI用户的评论
+     */
+    @Override
+    public Mono<Void> deleteAiCommentsByArticleId(Long articleId) {
+        return userRepository.findIdsByRole(Defaults.AI_ROLE)
+            .collectList()
+            .flatMap(aiUserIds -> {
+                if (aiUserIds.isEmpty()) {
+                    return Mono.empty();
+                }
+                return commentsRepository.deleteByArticleIdAndUserIdIn(articleId, aiUserIds).then();
+            });
+    }
+
+    /**
+     * 实现统计用户本月每日评论趋势与总数
+     */
+    @Override
+    public Mono<MapDataVO> getMonthlyCommentTrend(Long userId) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime firstDay = today.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime lastDay;
+        if (today.getMonthValue() == 12) {
+            lastDay = LocalDate.of(today.getYear() + 1, 1, 1).atStartOfDay();
+        } else {
+            lastDay = LocalDate.of(today.getYear(), today.getMonthValue() + 1, 1).atStartOfDay();
+        }
+
+        return commentsRepository.countMonthlyByUserIdGroupByDate(userId, firstDay, lastDay)
+            .map(row -> {
+                Map<String, Object> trend = new HashMap<>();
+                trend.put("date", row.getDate().toString());
+                trend.put("count", row.getCount());
+                return trend;
+            })
+            .collectList()
+            .map(dailyTrends -> {
+                Map<String, Object> result = new HashMap<>();
+                result.put("daily_trends", dailyTrends);
+                long total = dailyTrends.stream()
+                    .mapToLong(t -> ((Number) t.get("count")).longValue())
+                    .sum();
+                result.put("total", total);
+                return new MapDataVO(result);
+            });
+    }
+
+    /**
+     * 实现查询评论数据用于Neo4j同步，全量时仅取最近限定条数
+     */
+    @Override
+    public Mono<List<CommentSyncVO>> getNeo4jSyncComments(String updatedAfter) {
+        // 评论表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return commentsRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
+                .map(this::commentToVO)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return commentsRepository.findLatestAfterForSync(after, Defaults.NEO4J_SYNC_LIMIT)
+            .map(this::commentToVO)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+    /**
+     * 查询评论关联的用户与文章并组装为评论视图
+     */
+    private Mono<CommentsVO> toCommentsVO(Comments comment) {
+        Mono<User> user = userRepository.findById(comment.getUserId()).defaultIfEmpty(new User());
+        Mono<Article> article = articleRepository.findById(comment.getArticleId()).defaultIfEmpty(new Article());
+        return Mono.zip(user, article).map(relations -> mapComment(comment, relations.getT1(), relations.getT2()));
+    }
+
+    /**
+     * 将评论实体与用户、文章组装为视图对象，缺失时用默认值
+     */
+    private CommentsVO mapComment(Comments comment, User user, Article article) {
+        CommentsVO vo = BeanUtil.copyProperties(comment, CommentsVO.class);
+        vo.setUsername(user == null || user.getName() == null ? Defaults.DEFAULT_USER : user.getName());
+        vo.setPic(user == null ? null : user.getImg());
+        vo.setArticleTitle(
+            article == null || article.getTitle() == null ? Defaults.DEFAULT_ARTICLE : article.getTitle());
+        return vo;
+    }
+
     /**
      * 按角色过滤用户并结合文章标题与内容条件动态拼装评论分页查询
      */
@@ -379,87 +459,6 @@ public class CommentsServiceImpl implements CommentsService {
         return BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(message).build();
     }
 
-    // ==================== 统计方法 ====================
-
-    @Override
-    public Mono<Long> getAiCommentsNumByArticleId(Long articleId) {
-        return userRepository.findIdsByRole(Defaults.AI_ROLE)
-            .collectList()
-            .flatMap(aiUserIds -> {
-                if (aiUserIds.isEmpty()) {
-                    return Mono.just(0L);
-                }
-                return commentsRepository.countByArticleIdAndUserIdIn(articleId, aiUserIds).defaultIfEmpty(0L);
-            });
-    }
-
-    /**
-     * 实现删除文章下所有AI用户的评论
-     */
-    @Override
-    public Mono<Void> deleteAiCommentsByArticleId(Long articleId) {
-        return userRepository.findIdsByRole(Defaults.AI_ROLE)
-            .collectList()
-            .flatMap(aiUserIds -> {
-                if (aiUserIds.isEmpty()) {
-                    return Mono.empty();
-                }
-                return commentsRepository.deleteByArticleIdAndUserIdIn(articleId, aiUserIds).then();
-            });
-    }
-
-    /**
-     * 实现统计用户本月每日评论趋势与总数
-     */
-    @Override
-    public Mono<MapDataVO> getMonthlyCommentTrend(Long userId) {
-        LocalDate today = LocalDate.now();
-        LocalDateTime firstDay = today.withDayOfMonth(1).atStartOfDay();
-        LocalDateTime lastDay;
-        if (today.getMonthValue() == 12) {
-            lastDay = LocalDate.of(today.getYear() + 1, 1, 1).atStartOfDay();
-        } else {
-            lastDay = LocalDate.of(today.getYear(), today.getMonthValue() + 1, 1).atStartOfDay();
-        }
-
-        return commentsRepository.countMonthlyByUserIdGroupByDate(userId, firstDay, lastDay)
-            .map(row -> {
-                Map<String, Object> trend = new HashMap<>();
-                trend.put("date", row.getDate().toString());
-                trend.put("count", row.getCount());
-                return trend;
-            })
-            .collectList()
-            .map(dailyTrends -> {
-                Map<String, Object> result = new HashMap<>();
-                result.put("daily_trends", dailyTrends);
-                long total = dailyTrends.stream()
-                    .mapToLong(t -> ((Number) t.get("count")).longValue())
-                    .sum();
-                result.put("total", total);
-                return new MapDataVO(result);
-            });
-    }
-
-    /**
-     * 实现查询评论数据用于Neo4j同步，全量时仅取最近限定条数
-     */
-    @Override
-    public Mono<List<CommentSyncVO>> getNeo4jSyncComments(String updatedAfter) {
-        // 评论表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时
-        if (updatedAfter == null || updatedAfter.isBlank()) {
-            return commentsRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
-                .map(this::commentToVO)
-                .collectList()
-                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
-        }
-        LocalDateTime after = LocalDateTime.parse(updatedAfter);
-        return commentsRepository.findLatestAfterForSync(after, Defaults.NEO4J_SYNC_LIMIT)
-            .map(this::commentToVO)
-            .collectList()
-            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
-    }
-
     /**
      * 评论实体转同步视图对象，字段名与数据库列名保持一致，用于 Neo4j 同步
      */
@@ -472,4 +471,5 @@ public class CommentsServiceImpl implements CommentsService {
             comment.getCreateTime(),
             comment.getUpdateTime());
     }
+
 }

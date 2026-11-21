@@ -97,6 +97,13 @@ public class InternalTokenUtil {
     }
 
     /**
+     * 获取令牌剩余有效期（毫秒）
+     */
+    public long getRemainingTime(String token) {
+        Date expiration = getClaims(token).getExpiration();
+        return expiration.getTime() - System.currentTimeMillis();
+    }
+    /**
      * 私有方法：解析令牌获取Claims
      */
     private Claims getClaims(String token) {
@@ -106,13 +113,5 @@ public class InternalTokenUtil {
             .build()
             .parseClaimsJws(token)
             .getBody();
-    }
-
-    /**
-     * 获取令牌剩余有效期（毫秒）
-     */
-    public long getRemainingTime(String token) {
-        Date expiration = getClaims(token).getExpiration();
-        return expiration.getTime() - System.currentTimeMillis();
     }
 }

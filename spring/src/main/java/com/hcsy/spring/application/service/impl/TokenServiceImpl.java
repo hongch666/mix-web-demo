@@ -155,81 +155,6 @@ public class TokenServiceImpl implements TokenService {
     }
 
     /**
-     * 持锁后校验刷新令牌的反向索引与会话记录，校验通过则执行令牌轮换
-     */
-    private Mono<TokenRefreshVO> refreshTokenLocked(String refreshToken, Long userId, String sessionId) {
-        String sessionKey = RedisKeys.userSession(userId, sessionId);
-        String expectedValue = userId + ":" + sessionId;
-
-        Mono<String> reverseValue = redisUtil.get(RedisKeys.userRefresh(refreshToken)).defaultIfEmpty("");
-        Mono<String> storedRefreshToken = redisUtil.getHash(sessionKey, "refreshToken").defaultIfEmpty("");
-        Mono<String> username = redisUtil.getHash(sessionKey, "username").defaultIfEmpty("");
-        Mono<String> oldAccessToken = redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty("");
-
-        return Mono.zip(reverseValue, storedRefreshToken, username, oldAccessToken)
-            .flatMap(values -> {
-                if (!expectedValue.equals(values.getT1()) || !refreshToken.equals(values.getT2())) {
-                    return Mono.error(unauthorized(Messages.REFRESH_TOKEN_INVALID));
-                }
-                if (values.getT3().isEmpty()) {
-                    return Mono.error(unauthorized(Messages.SESSION_NOT_FOUND));
-                }
-                return rotateTokens(userId, sessionId, values.getT3(), refreshToken, values.getT4());
-            });
-    }
-
-    /**
-     * 在操作完成或失败后释放刷新令牌的分布式锁并透传原结果或异常
-     */
-    private <T> Mono<T> releaseRefreshLockAfter(String lockKey, String lockValue, Mono<T> operation) {
-        return operation
-            .flatMap(result -> distributedLock.unlock(lockKey, lockValue).thenReturn(result))
-            .onErrorResume(error -> distributedLock.unlock(lockKey, lockValue)
-                .onErrorResume(unlockError -> Mono.empty())
-                .then(Mono.error(error)));
-    }
-
-    /**
-     * 轮换令牌对，生成新的访问与刷新令牌并更新会话哈希与反向索引，删除旧令牌索引后返回刷新结果
-     */
-    private Mono<TokenRefreshVO> rotateTokens(
-        Long userId, String sessionId, String username, String oldRefreshToken, String oldAccessToken) {
-        String newAccessToken = jwtUtil.generateAccessToken(userId, username, sessionId);
-        String newRefreshToken = jwtUtil.generateRefreshToken(userId, username, sessionId);
-        long accessTtl = jwtUtil.getAccessExpirationSeconds();
-        long refreshTtl = jwtUtil.getRefreshExpirationSeconds();
-        String sessionKey = RedisKeys.userSession(userId, sessionId);
-
-        Mono<Void> deleteOldIndexes = Mono.when(
-            oldAccessToken.isEmpty() ? Mono.empty() : redisUtil.delete(RedisKeys.userAccess(oldAccessToken)),
-            redisUtil.delete(RedisKeys.userRefresh(oldRefreshToken)));
-        Mono<Void> updateSession = Mono.when(
-            redisUtil.putHash(sessionKey, "accessToken", newAccessToken),
-            redisUtil.putHash(sessionKey, "refreshToken", newRefreshToken))
-            .then(redisUtil.expire(sessionKey, refreshTtl))
-            .then();
-        Mono<Void> writeIndexes = Mono.when(
-            redisUtil.set(RedisKeys.userAccess(newAccessToken), userId + ":" + sessionId, accessTtl),
-            redisUtil.set(RedisKeys.userRefresh(newRefreshToken), userId + ":" + sessionId, refreshTtl),
-            redisUtil.expire(RedisKeys.userSessions(userId), refreshTtl),
-            redisUtil.set(RedisKeys.userStatus(userId), "1"));
-
-        return deleteOldIndexes.then(Mono.when(updateSession, writeIndexes)).then(Mono.fromSupplier(() -> {
-            logger.info(Messages.REFRESH_TOKEN_SUCCESS);
-            return TokenRefreshVO.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
-                .tokenType("Bearer")
-                .expiresIn(accessTtl)
-                .refreshExpiresIn(refreshTtl)
-                .userId(userId)
-                .username(username)
-                .sessionId(sessionId)
-                .build();
-        }));
-    }
-
-    /**
      * 通过访问令牌的反向索引解析出用户与会话ID后删除对应会话
      */
     @Override
@@ -328,6 +253,80 @@ public class TokenServiceImpl implements TokenService {
             .reduce(0, Integer::sum)
             .doOnNext(cleaned -> logger.info(Messages.TOTAL_SESSION_CLEAN, 0, cleaned))
             .then();
+    }
+    /**
+     * 持锁后校验刷新令牌的反向索引与会话记录，校验通过则执行令牌轮换
+     */
+    private Mono<TokenRefreshVO> refreshTokenLocked(String refreshToken, Long userId, String sessionId) {
+        String sessionKey = RedisKeys.userSession(userId, sessionId);
+        String expectedValue = userId + ":" + sessionId;
+
+        Mono<String> reverseValue = redisUtil.get(RedisKeys.userRefresh(refreshToken)).defaultIfEmpty("");
+        Mono<String> storedRefreshToken = redisUtil.getHash(sessionKey, "refreshToken").defaultIfEmpty("");
+        Mono<String> username = redisUtil.getHash(sessionKey, "username").defaultIfEmpty("");
+        Mono<String> oldAccessToken = redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty("");
+
+        return Mono.zip(reverseValue, storedRefreshToken, username, oldAccessToken)
+            .flatMap(values -> {
+                if (!expectedValue.equals(values.getT1()) || !refreshToken.equals(values.getT2())) {
+                    return Mono.error(unauthorized(Messages.REFRESH_TOKEN_INVALID));
+                }
+                if (values.getT3().isEmpty()) {
+                    return Mono.error(unauthorized(Messages.SESSION_NOT_FOUND));
+                }
+                return rotateTokens(userId, sessionId, values.getT3(), refreshToken, values.getT4());
+            });
+    }
+
+    /**
+     * 在操作完成或失败后释放刷新令牌的分布式锁并透传原结果或异常
+     */
+    private <T> Mono<T> releaseRefreshLockAfter(String lockKey, String lockValue, Mono<T> operation) {
+        return operation
+            .flatMap(result -> distributedLock.unlock(lockKey, lockValue).thenReturn(result))
+            .onErrorResume(error -> distributedLock.unlock(lockKey, lockValue)
+                .onErrorResume(unlockError -> Mono.empty())
+                .then(Mono.error(error)));
+    }
+
+    /**
+     * 轮换令牌对，生成新的访问与刷新令牌并更新会话哈希与反向索引，删除旧令牌索引后返回刷新结果
+     */
+    private Mono<TokenRefreshVO> rotateTokens(
+        Long userId, String sessionId, String username, String oldRefreshToken, String oldAccessToken) {
+        String newAccessToken = jwtUtil.generateAccessToken(userId, username, sessionId);
+        String newRefreshToken = jwtUtil.generateRefreshToken(userId, username, sessionId);
+        long accessTtl = jwtUtil.getAccessExpirationSeconds();
+        long refreshTtl = jwtUtil.getRefreshExpirationSeconds();
+        String sessionKey = RedisKeys.userSession(userId, sessionId);
+
+        Mono<Void> deleteOldIndexes = Mono.when(
+            oldAccessToken.isEmpty() ? Mono.empty() : redisUtil.delete(RedisKeys.userAccess(oldAccessToken)),
+            redisUtil.delete(RedisKeys.userRefresh(oldRefreshToken)));
+        Mono<Void> updateSession = Mono.when(
+            redisUtil.putHash(sessionKey, "accessToken", newAccessToken),
+            redisUtil.putHash(sessionKey, "refreshToken", newRefreshToken))
+            .then(redisUtil.expire(sessionKey, refreshTtl))
+            .then();
+        Mono<Void> writeIndexes = Mono.when(
+            redisUtil.set(RedisKeys.userAccess(newAccessToken), userId + ":" + sessionId, accessTtl),
+            redisUtil.set(RedisKeys.userRefresh(newRefreshToken), userId + ":" + sessionId, refreshTtl),
+            redisUtil.expire(RedisKeys.userSessions(userId), refreshTtl),
+            redisUtil.set(RedisKeys.userStatus(userId), "1"));
+
+        return deleteOldIndexes.then(Mono.when(updateSession, writeIndexes)).then(Mono.fromSupplier(() -> {
+            logger.info(Messages.REFRESH_TOKEN_SUCCESS);
+            return TokenRefreshVO.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .tokenType("Bearer")
+                .expiresIn(accessTtl)
+                .refreshExpiresIn(refreshTtl)
+                .userId(userId)
+                .username(username)
+                .sessionId(sessionId)
+                .build();
+        }));
     }
 
     /**
@@ -434,4 +433,5 @@ public class TokenServiceImpl implements TokenService {
     private BusinessException unauthorized(String message) {
         return BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(message).build();
     }
+
 }

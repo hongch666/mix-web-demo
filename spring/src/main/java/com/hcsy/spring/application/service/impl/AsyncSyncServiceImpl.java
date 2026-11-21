@@ -59,13 +59,6 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     }
 
     /**
-     * 构造数仓同步任务，响应码非成功时转为错误
-     */
-    private Mono<Void> warehouseTask(Set<String> resources) {
-        return reactiveCall(() -> fastAPIClient.syncWarehouse(resources), Messages.WAREHOUSE_SYNC_SUCCESS);
-    }
-
-    /**
      * 实现向FastAPI提交Neo4j同步事件并记录响应与失败日志
      */
     @Override
@@ -77,6 +70,12 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
                 methodName, description, error.getMessage(), error))
             .onErrorResume(error -> Mono.empty())
             .then();
+    }
+    /**
+     * 构造数仓同步任务，响应码非成功时转为错误
+     */
+    private Mono<Void> warehouseTask(Set<String> resources) {
+        return reactiveCall(() -> fastAPIClient.syncWarehouse(resources), Messages.WAREHOUSE_SYNC_SUCCESS);
     }
 
     /**
@@ -133,4 +132,5 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
             .doOnSuccess(ignored -> logger.info(successMessage))
             .then();
     }
+
 }

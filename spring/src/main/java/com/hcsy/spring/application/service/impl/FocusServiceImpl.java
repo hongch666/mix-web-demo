@@ -116,57 +116,6 @@ public class FocusServiceImpl implements FocusService {
         return focusRepository.countByFocusId(userId);
     }
 
-    /**
-     * 将关注记录分页结果批量补充用户信息并组装分页对象
-     */
-    private Mono<PageDTO<FocusUserVO>> buildPage(
-        Flux<Focus> query,
-        Mono<Long> total,
-        long page,
-        long size,
-        Function<Focus, Long> relatedUserId) {
-        Mono<List<FocusUserVO>> records = query.collectList().flatMap(focuses -> {
-            Set<Long> userIds = focuses.stream().map(relatedUserId).collect(Collectors.toSet());
-            return userRepository.findAllById(userIds)
-                .collectMap(User::getId, Function.identity())
-                .map(users -> toVOs(focuses, users, relatedUserId));
-        });
-        return Mono.zip(records, total).map(result -> {
-            PageDTO<FocusUserVO> pageDTO = new PageDTO<>();
-            pageDTO.setCurrent(page);
-            pageDTO.setSize(size);
-            pageDTO.setTotal(result.getT2());
-            pageDTO.setRecords(result.getT1());
-            return pageDTO;
-        });
-    }
-
-    /**
-     * 将关注记录与用户信息映射为关注用户视图，用户缺失时抛404异常
-     */
-    private List<FocusUserVO> toVOs(
-        List<Focus> focuses,
-        Map<Long, User> users,
-        Function<Focus, Long> relatedUserId) {
-        return focuses.stream().map(focus -> {
-            User user = users.get(relatedUserId.apply(focus));
-            if (user == null) {
-                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND)
-                    .errorMessage(Messages.UNDEFINED_USER).build();
-            }
-            FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
-            vo.setFocusedTime(focus.getCreatedTime());
-            return vo;
-        }).toList();
-    }
-
-    /**
-     * 构造分页请求，页码从1起始转0起始并限制每页最大1000条
-     */
-    private PageRequest pageRequest(long page, long size) {
-        return PageRequest.of((int) Math.max(0, page - 1), (int) Math.max(1, Math.min(size, 1000)));
-    }
-
     // ==================== 统计方法 ====================
 
     @Override
@@ -220,6 +169,56 @@ public class FocusServiceImpl implements FocusService {
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
+    /**
+     * 将关注记录分页结果批量补充用户信息并组装分页对象
+     */
+    private Mono<PageDTO<FocusUserVO>> buildPage(
+        Flux<Focus> query,
+        Mono<Long> total,
+        long page,
+        long size,
+        Function<Focus, Long> relatedUserId) {
+        Mono<List<FocusUserVO>> records = query.collectList().flatMap(focuses -> {
+            Set<Long> userIds = focuses.stream().map(relatedUserId).collect(Collectors.toSet());
+            return userRepository.findAllById(userIds)
+                .collectMap(User::getId, Function.identity())
+                .map(users -> toVOs(focuses, users, relatedUserId));
+        });
+        return Mono.zip(records, total).map(result -> {
+            PageDTO<FocusUserVO> pageDTO = new PageDTO<>();
+            pageDTO.setCurrent(page);
+            pageDTO.setSize(size);
+            pageDTO.setTotal(result.getT2());
+            pageDTO.setRecords(result.getT1());
+            return pageDTO;
+        });
+    }
+
+    /**
+     * 将关注记录与用户信息映射为关注用户视图，用户缺失时抛404异常
+     */
+    private List<FocusUserVO> toVOs(
+        List<Focus> focuses,
+        Map<Long, User> users,
+        Function<Focus, Long> relatedUserId) {
+        return focuses.stream().map(focus -> {
+            User user = users.get(relatedUserId.apply(focus));
+            if (user == null) {
+                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND)
+                    .errorMessage(Messages.UNDEFINED_USER).build();
+            }
+            FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
+            vo.setFocusedTime(focus.getCreatedTime());
+            return vo;
+        }).toList();
+    }
+
+    /**
+     * 构造分页请求，页码从1起始转0起始并限制每页最大1000条
+     */
+    private PageRequest pageRequest(long page, long size) {
+        return PageRequest.of((int) Math.max(0, page - 1), (int) Math.max(1, Math.min(size, 1000)));
+    }
 
     /**
      * 关注实体转同步视图对象，字段名与数据库列名保持一致，用于 Neo4j 同步
@@ -227,4 +226,5 @@ public class FocusServiceImpl implements FocusService {
     private FocusSyncVO focusToVO(Focus focus) {
         return new FocusSyncVO(focus.getUserId(), focus.getFocusId(), focus.getCreatedTime());
     }
+
 }
