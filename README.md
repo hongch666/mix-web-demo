@@ -2156,6 +2156,8 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 
 所有配置值通过 `${VAR_NAME:default_value}` 的格式在 YAML 文件中引用。
 
+`DOCKER_IMAGE_TAG` 由 `docker-compose.yml` 从根目录 `.env` 读取（shell 环境变量优先），但 `./mix docker push` 不读 `.env`，只认 `--tag` 参数或 shell 环境变量，未指定时固定推 `latest`。推送非默认 tag 可用 `./mix docker push --tag v1.0.0` 或 `DOCKER_IMAGE_TAG=v1.0.0 ./mix docker push`。
+
 ### 各服务配置说明
 
 各服务的具体环境变量请直接参考对应的 `.env.example`，这里不再重复列出完整配置。
