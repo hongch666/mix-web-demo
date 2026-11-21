@@ -158,31 +158,6 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 为用户填充登录状态并按在线优先排序，内存分页后逐个补齐在线设备数组装分页列表VO
-     */
-    private Mono<UserListVO> toPagedUserList(List<User> users, List<String> statuses, long page, long size) {
-        for (int index = 0; index < users.size(); index++) {
-            String status = index < statuses.size() ? statuses.get(index) : null;
-            users.get(index).setLoginStatus("1".equals(status) ? 1 : 0);
-        }
-        users.sort(Comparator.comparing(User::getLoginStatus).reversed().thenComparing(User::getId));
-        int from = (int) Math.min(users.size(), Math.max(0, page - 1) * Math.max(1, size));
-        int to = (int) Math.min(users.size(), from + Math.max(1, size));
-        List<User> paged = users.subList(from, to);
-
-        return Flux.fromIterable(paged)
-            .flatMapSequential(user -> tokenService.getUserOnlineDeviceCount(user.getId())
-                .map(deviceCount -> {
-                    UserVO vo = BeanUtil.copyProperties(user, UserVO.class);
-                    vo.setLoginStatus(user.getLoginStatus());
-                    vo.setOnlineDeviceCount(deviceCount);
-                    return vo;
-                }), 8)
-            .collectList()
-            .map(records -> userList(records, users.size()));
-    }
-
-    /**
      * 事务删除指定用户后清理其登录状态、角色缓存与全量用户缓存
      */
     @Override
@@ -280,14 +255,6 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 为用户创建令牌登录会话并回写最后登录时间
-     */
-    private Mono<UserLoginVO> loginUser(User user) {
-        return tokenService.createLoginSession(user.getId(), user.getName())
-            .flatMap(login -> markLastLoginTime(user).thenReturn(login));
-    }
-
-    /**
      * 校验用户存在后创建登录会话，将登录凭证JSON以随机票据键缓存进Redis，缓存失败时回收会话并报错
      */
     @Override
@@ -377,34 +344,6 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 读取全量非AI用户列表的多级缓存，未命中时回源数据库加载
-     */
-    private Mono<UserListVO> getAllUsersFromCache() {
-        return cacheUtil.get(ALL_USERS_CACHE, RedisKeys.allUsersCache(), RedisKeys.allUsersCache(),
-            UserListVO.class, this::loadAllUsers);
-    }
-
-    /**
-     * 从仓储查询全部非AI用户并转换为VO组装为列表结果
-     */
-    private Mono<UserListVO> loadAllUsers() {
-        return userRepository.findByRoleNotOrderByIdAsc(Defaults.AI_ROLE)
-            .map(user -> BeanUtil.copyProperties(user, UserVO.class))
-            .collectList()
-            .map(records -> userList(records, records.size()));
-    }
-
-    /**
-     * 按用户名模糊查询非AI用户并转换为VO组装为列表结果
-     */
-    private Mono<UserListVO> loadUsersByUsername(String username) {
-        return userRepository.findByRoleNotAndNameContainingOrderByIdAsc(Defaults.AI_ROLE, username)
-            .map(user -> BeanUtil.copyProperties(user, UserVO.class))
-            .collectList()
-            .map(records -> userList(records, records.size()));
-    }
-
-    /**
      * 按ID集合读取用户名称映射，走本地与Redis两级缓存，未命中时加载全量ID与名称快照
      */
     @Override
@@ -415,14 +354,6 @@ public class UserServiceImpl implements UserService {
         return cacheUtil.get(USER_NAMES_CACHE, RedisKeys.userNames(), RedisKeys.userNames(),
             new TypeReference<Map<Long, String>>() {
             }, this::loadUserNames);
-    }
-
-    /**
-     * 查询全部用户的ID与名称生成名称快照
-     */
-    private Mono<Map<Long, String>> loadUserNames() {
-        return userRepository.findAllIdAndName()
-            .collectMap(User::getId, user -> user.getName() == null ? "" : user.getName());
     }
 
     /**
@@ -523,10 +454,10 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 校验邮箱验证码后按邮箱定位用户并加密保存新密码
+     * 校验邮箱验证码后按邮箱定位用户并加密保存新密码，成功后使该用户旧会话失效
      */
     @Override
-    public Mono<Void> resetPassword(ResetPasswordDTO dto) {
+    public Mono<Void> resetPassword(ResetPasswordDTO dto, Long currentUserId, String currentToken) {
         return emailVerificationService.verifyCode(dto.getEmail(), dto.getVerificationCode())
             .filter(Boolean.TRUE::equals)
             .switchIfEmpty(Mono.error(unauthorized(Messages.VERIFY_CODE)))
@@ -535,34 +466,41 @@ public class UserServiceImpl implements UserService {
                 user.setPassword(password);
                 return transactionalOperator.transactional(userRepository.save(user));
             }))
+            .flatMap(user -> invalidateSessionsAfterPasswordReset(user.getId(), currentUserId, currentToken))
             .then();
     }
 
     /**
-     * 存在用户时将全部用户密码批量更新为配置的重置密码
+     * 存在用户时将全部用户密码批量更新为配置的重置密码，并使全部用户的旧会话失效
      */
     @Override
-    public Mono<Void> resetAllPasswords() {
+    public Mono<Void> resetAllPasswords(Long currentUserId, String currentToken) {
         return userRepository.count()
             .filter(count -> count > 0)
             .switchIfEmpty(Mono.error(BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY)
                 .errorMessage(Messages.PASSWORD_NO_USER).build()))
             .then(encryptPassword(userPasswordProperties.resetPassword()))
             .flatMap(userRepository::updateAllPasswords)
-            .then();
+            .then(userRepository.findAllIdAndName()
+                .map(User::getId)
+                .collectList()
+                .flatMapMany(Flux::fromIterable)
+                .flatMap(userId -> invalidateSessionsAfterPasswordReset(userId, currentUserId, currentToken), 8)
+                .then());
     }
 
     /**
-     * 定位指定用户后将密码重置为配置的重置密码并事务保存
+     * 定位指定用户后将密码重置为配置的重置密码并事务保存，成功后使该用户旧会话失效
      */
     @Override
-    public Mono<Void> resetUserPassword(Long userId) {
+    public Mono<Void> resetUserPassword(Long userId, Long currentUserId, String currentToken) {
         return userRepository.findById(userId)
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
             .flatMap(user -> encryptPassword(userPasswordProperties.resetPassword()).flatMap(password -> {
                 user.setPassword(password);
                 return transactionalOperator.transactional(userRepository.save(user));
             }))
+            .flatMap(user -> invalidateSessionsAfterPasswordReset(user.getId(), currentUserId, currentToken))
             .then();
     }
 
@@ -652,6 +590,85 @@ public class UserServiceImpl implements UserService {
             .map(this::userToVO)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+    /**
+     * 为用户填充登录状态并按在线优先排序，内存分页后逐个补齐在线设备数组装分页列表VO
+     */
+    private Mono<UserListVO> toPagedUserList(List<User> users, List<String> statuses, long page, long size) {
+        for (int index = 0; index < users.size(); index++) {
+            String status = index < statuses.size() ? statuses.get(index) : null;
+            users.get(index).setLoginStatus("1".equals(status) ? 1 : 0);
+        }
+        users.sort(Comparator.comparing(User::getLoginStatus).reversed().thenComparing(User::getId));
+        int from = (int) Math.min(users.size(), Math.max(0, page - 1) * Math.max(1, size));
+        int to = (int) Math.min(users.size(), from + Math.max(1, size));
+        List<User> paged = users.subList(from, to);
+
+        return Flux.fromIterable(paged)
+            .flatMapSequential(user -> tokenService.getUserOnlineDeviceCount(user.getId())
+                .map(deviceCount -> {
+                    UserVO vo = BeanUtil.copyProperties(user, UserVO.class);
+                    vo.setLoginStatus(user.getLoginStatus());
+                    vo.setOnlineDeviceCount(deviceCount);
+                    return vo;
+                }), 8)
+            .collectList()
+            .map(records -> userList(records, users.size()));
+    }
+
+    /**
+     * 为用户创建令牌登录会话并回写最后登录时间
+     */
+    private Mono<UserLoginVO> loginUser(User user) {
+        return tokenService.createLoginSession(user.getId(), user.getName())
+            .flatMap(login -> markLastLoginTime(user).thenReturn(login));
+    }
+
+    /**
+     * 读取全量非AI用户列表的多级缓存，未命中时回源数据库加载
+     */
+    private Mono<UserListVO> getAllUsersFromCache() {
+        return cacheUtil.get(ALL_USERS_CACHE, RedisKeys.allUsersCache(), RedisKeys.allUsersCache(),
+            UserListVO.class, this::loadAllUsers);
+    }
+
+    /**
+     * 从仓储查询全部非AI用户并转换为VO组装为列表结果
+     */
+    private Mono<UserListVO> loadAllUsers() {
+        return userRepository.findByRoleNotOrderByIdAsc(Defaults.AI_ROLE)
+            .map(user -> BeanUtil.copyProperties(user, UserVO.class))
+            .collectList()
+            .map(records -> userList(records, records.size()));
+    }
+
+    /**
+     * 按用户名模糊查询非AI用户并转换为VO组装为列表结果
+     */
+    private Mono<UserListVO> loadUsersByUsername(String username) {
+        return userRepository.findByRoleNotAndNameContainingOrderByIdAsc(Defaults.AI_ROLE, username)
+            .map(user -> BeanUtil.copyProperties(user, UserVO.class))
+            .collectList()
+            .map(records -> userList(records, records.size()));
+    }
+
+    /**
+     * 查询全部用户的ID与名称生成名称快照
+     */
+    private Mono<Map<Long, String>> loadUserNames() {
+        return userRepository.findAllIdAndName()
+            .collectMap(User::getId, user -> user.getName() == null ? "" : user.getName());
+    }
+
+    /**
+     * 密码重置后使目标用户的旧会话失效：目标用户为当前操作者时保留其当前令牌只踢其他设备，否则撤销全部会话
+     */
+    private Mono<Void> invalidateSessionsAfterPasswordReset(Long targetUserId, Long currentUserId,
+        String currentToken) {
+        if (targetUserId.equals(currentUserId) && currentToken != null) {
+            return tokenService.removeOtherSessions(targetUserId, currentToken).then();
+        }
+        return tokenService.forceLogoutUser(targetUserId);
     }
 
     /**
@@ -780,4 +797,5 @@ public class UserServiceImpl implements UserService {
             user.getCreateAt(),
             user.getUpdateAt());
     }
+
 }

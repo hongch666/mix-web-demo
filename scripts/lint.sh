@@ -53,6 +53,20 @@ lint_controller_vo() {
     return 0
 }
 
+# 方法可见性顺序检查（spring）：public/protected 方法在前、private 方法在后，python 缺失时跳过
+lint_method_order() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/java-method-order.py" --check "$1"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/java-method-order.py" --check "$1"
+        return
+    fi
+    print_warn "未检测到 python，跳过方法可见性顺序检查"
+    return 0
+}
+
 # 包导入规范检查（fastapi）：目标目录有 __init__.py 导出时须从包导入，python 缺失时跳过
 lint_package_imports() {
     if command -v python >/dev/null 2>&1; then
@@ -152,6 +166,8 @@ lint_spring() {
     lint_controller_vo "$WORKDIR/spring/src/main/java/com/hcsy/spring/web/controller" || return 1
     print_info "检查 Spring 常量文件规范（成员注释与分类注释）..."
     lint_constants "$WORKDIR/spring/src/main/java/com/hcsy/spring/common/constants" || return 1
+    print_info "检查 Spring 方法可见性顺序（public/protected 在前、private 在后）..."
+    lint_method_order "$WORKDIR/spring/src/main/java" || return 1
     command -v mvn >/dev/null 2>&1 || return 2
     print_info "检查 Spring 代码格式（Spotless）..."
     (cd "$WORKDIR/spring" && mvn -q spotless:check)

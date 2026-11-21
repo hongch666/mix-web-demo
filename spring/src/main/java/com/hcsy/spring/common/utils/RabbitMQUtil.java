@@ -66,6 +66,18 @@ public class RabbitMQUtil {
     }
 
     /**
+     * 将消息转换为指定的对象类型
+     */
+    public <T> T convertMessage(String jsonMessage, Class<T> targetClass) {
+        try {
+            return objectMapper.readValue(jsonMessage, targetClass);
+        } catch (Exception e) {
+            logger.error(Messages.TRANSFORM_MSG_FAIL, e.getMessage(), e);
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
+                .errorMessage(Messages.TRANSFORM_MSG_FAIL).build();
+        }
+    }
+    /**
      * 以发布确认模式发送 JSON 消息，未收到 Broker 确认时报错
      */
     private Mono<Void> sendWithConfirm(String exchange, String routingKey, String jsonMessage) {
@@ -79,18 +91,5 @@ public class RabbitMQUtil {
             .flatMap(result -> result.isAck()
                 ? Mono.empty()
                 : Mono.error(new IllegalStateException(Messages.RABBITMQ_MESSAGE_UNCONFIRMED)));
-    }
-
-    /**
-     * 将消息转换为指定的对象类型
-     */
-    public <T> T convertMessage(String jsonMessage, Class<T> targetClass) {
-        try {
-            return objectMapper.readValue(jsonMessage, targetClass);
-        } catch (Exception e) {
-            logger.error(Messages.TRANSFORM_MSG_FAIL, e.getMessage(), e);
-            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
-                .errorMessage(Messages.TRANSFORM_MSG_FAIL).build();
-        }
     }
 }

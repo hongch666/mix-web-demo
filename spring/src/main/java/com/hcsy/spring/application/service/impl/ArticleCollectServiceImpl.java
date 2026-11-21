@@ -98,25 +98,6 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
         return articleCollectRepository.countByArticleId(articleId);
     }
 
-    /**
-     * 构造分页请求，页码从1起始转0起始并限制每页最大1000条
-     */
-    private PageRequest pageRequest(long page, long size) {
-        return PageRequest.of((int) Math.max(0, page - 1), (int) Math.max(1, Math.min(size, 1000)));
-    }
-
-    /**
-     * 组装收藏分页结果的当前页、页大小、总数与记录
-     */
-    private PageDTO<ArticleCollectVO> page(long current, long size, long total, List<ArticleCollectVO> records) {
-        PageDTO<ArticleCollectVO> result = new PageDTO<>();
-        result.setCurrent(current);
-        result.setSize(size);
-        result.setTotal(total);
-        result.setRecords(records);
-        return result;
-    }
-
     // ==================== 统计方法 ====================
 
     @Override
@@ -191,6 +172,24 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
+    /**
+     * 构造分页请求，页码从1起始转0起始并限制每页最大1000条
+     */
+    private PageRequest pageRequest(long page, long size) {
+        return PageRequest.of((int) Math.max(0, page - 1), (int) Math.max(1, Math.min(size, 1000)));
+    }
+
+    /**
+     * 组装收藏分页结果的当前页、页大小、总数与记录
+     */
+    private PageDTO<ArticleCollectVO> page(long current, long size, long total, List<ArticleCollectVO> records) {
+        PageDTO<ArticleCollectVO> result = new PageDTO<>();
+        result.setCurrent(current);
+        result.setSize(size);
+        result.setTotal(total);
+        result.setRecords(records);
+        return result;
+    }
 
     /**
      * 收藏实体转同步视图对象，字段名与数据库列名保持一致，用于 Neo4j 同步
@@ -198,4 +197,5 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     private ArticleRelationSyncVO collectToVO(ArticleCollect collect) {
         return new ArticleRelationSyncVO(collect.getUserId(), collect.getArticleId(), collect.getCreatedTime());
     }
+
 }

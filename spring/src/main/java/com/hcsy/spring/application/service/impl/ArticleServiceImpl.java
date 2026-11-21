@@ -311,6 +311,105 @@ public class ArticleServiceImpl implements ArticleService {
         return articleRepository.count();
     }
 
+    // ==================== 统计方法 ====================
+
+    @Override
+    public Mono<Integer> getTotalViews() {
+        return articleRepository.findAll()
+            .map(article -> article.getViews() != null ? article.getViews() : 0)
+            .reduce(0, Integer::sum);
+    }
+
+    /**
+     * 实现统计有文章的活跃作者数
+     */
+    @Override
+    public Mono<Long> getActiveAuthors() {
+        return articleRepository.countDistinctUserId().defaultIfEmpty(0L);
+    }
+
+    /**
+     * 实现计算所有文章的平均阅读量，结果保留两位小数
+     */
+    @Override
+    public Mono<Double> getAverageViews() {
+        return articleRepository.findAll()
+            .map(article -> article.getViews() != null ? article.getViews() : 0)
+            .collectList()
+            .map(views -> {
+                if (views.isEmpty()) {
+                    return 0.0;
+                }
+                double sum = views.stream().mapToInt(Integer::intValue).sum();
+                return Math.round(sum / views.size() * 100.0) / 100.0;
+            });
+    }
+
+    /**
+     * 实现查询导出Excel所需的文章全量数据（含用户与分类关联列）
+     */
+    @Override
+    public Mono<List<ArticleExportVO>> getArticlesForExcelExport() {
+        return articleRepository.findArticlesForExcelExport()
+            .map(row -> new ArticleExportVO(
+                row.getId(), row.getTitle(), row.getContent(), row.getUser_id(), row.getUsername(),
+                row.getTags(), row.getStatus(), row.getCreate_at(), row.getUpdate_at(), row.getViews(),
+                row.getSub_category_id(), row.getSub_category_name(), row.getCategory_id(),
+                row.getCategory_name(), row.getLike_count(), row.getCollect_count()))
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * 实现查询已发布阅读量最高的Top10文章并转为同步视图
+     */
+    @Override
+    public Mono<List<ArticleSyncVO>> getTop10Articles() {
+        return articleRepository.findTop10ByStatusOrderByViewsDesc(1)
+            .map(this::articleToVO)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * 实现按子分类分组统计文章数量
+     */
+    @Override
+    public Mono<List<CategoryArticleCountVO>> getCategoryArticleCount() {
+        return articleRepository.countBySubCategoryIdGroupBy()
+            .map(row -> new CategoryArticleCountVO(row.getSubCategoryId(), row.getCount()))
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * 实现统计全部月份每月发布文章数量
+     */
+    @Override
+    public Mono<List<MonthlyPublishCountVO>> getMonthlyPublishCount() {
+        return articleRepository.countMonthlyPublished()
+            .map(row -> new MonthlyPublishCountVO(row.getYearMonth(), row.getCount()))
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * 实现查询文章数据用于Neo4j同步，支持按更新时间增量
+     */
+    @Override
+    public Mono<List<ArticleSyncVO>> getNeo4jSyncArticles(String updatedAfter) {
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return articleRepository.findAll()
+                .map(this::articleToVO)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return articleRepository.findByUpdateAtAfter(after)
+            .map(this::articleToVO)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
     /**
      * 将文章分页结果批量补充作者与子分类、分类信息
      */
@@ -399,66 +498,6 @@ public class ArticleServiceImpl implements ArticleService {
         return BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(message).build();
     }
 
-    // ==================== 统计方法 ====================
-
-    @Override
-    public Mono<Integer> getTotalViews() {
-        return articleRepository.findAll()
-            .map(article -> article.getViews() != null ? article.getViews() : 0)
-            .reduce(0, Integer::sum);
-    }
-
-    /**
-     * 实现统计有文章的活跃作者数
-     */
-    @Override
-    public Mono<Long> getActiveAuthors() {
-        return articleRepository.countDistinctUserId().defaultIfEmpty(0L);
-    }
-
-    /**
-     * 实现计算所有文章的平均阅读量，结果保留两位小数
-     */
-    @Override
-    public Mono<Double> getAverageViews() {
-        return articleRepository.findAll()
-            .map(article -> article.getViews() != null ? article.getViews() : 0)
-            .collectList()
-            .map(views -> {
-                if (views.isEmpty()) {
-                    return 0.0;
-                }
-                double sum = views.stream().mapToInt(Integer::intValue).sum();
-                return Math.round(sum / views.size() * 100.0) / 100.0;
-            });
-    }
-
-    /**
-     * 实现查询导出Excel所需的文章全量数据（含用户与分类关联列）
-     */
-    @Override
-    public Mono<List<ArticleExportVO>> getArticlesForExcelExport() {
-        return articleRepository.findArticlesForExcelExport()
-            .map(row -> new ArticleExportVO(
-                row.getId(), row.getTitle(), row.getContent(), row.getUser_id(), row.getUsername(),
-                row.getTags(), row.getStatus(), row.getCreate_at(), row.getUpdate_at(), row.getViews(),
-                row.getSub_category_id(), row.getSub_category_name(), row.getCategory_id(),
-                row.getCategory_name(), row.getLike_count(), row.getCollect_count()))
-            .collectList()
-            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
-    }
-
-    /**
-     * 实现查询已发布阅读量最高的Top10文章并转为同步视图
-     */
-    @Override
-    public Mono<List<ArticleSyncVO>> getTop10Articles() {
-        return articleRepository.findTop10ByStatusOrderByViewsDesc(1)
-            .map(this::articleToVO)
-            .collectList()
-            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
-    }
-
     /**
      * 文章实体转同步视图对象，用于内部接口返回通用数据
      */
@@ -474,45 +513,5 @@ public class ArticleServiceImpl implements ArticleService {
             article.getSubCategoryId(),
             article.getCreateAt(),
             article.getUpdateAt());
-    }
-
-    /**
-     * 实现按子分类分组统计文章数量
-     */
-    @Override
-    public Mono<List<CategoryArticleCountVO>> getCategoryArticleCount() {
-        return articleRepository.countBySubCategoryIdGroupBy()
-            .map(row -> new CategoryArticleCountVO(row.getSubCategoryId(), row.getCount()))
-            .collectList()
-            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
-    }
-
-    /**
-     * 实现统计全部月份每月发布文章数量
-     */
-    @Override
-    public Mono<List<MonthlyPublishCountVO>> getMonthlyPublishCount() {
-        return articleRepository.countMonthlyPublished()
-            .map(row -> new MonthlyPublishCountVO(row.getYearMonth(), row.getCount()))
-            .collectList()
-            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
-    }
-
-    /**
-     * 实现查询文章数据用于Neo4j同步，支持按更新时间增量
-     */
-    @Override
-    public Mono<List<ArticleSyncVO>> getNeo4jSyncArticles(String updatedAfter) {
-        if (updatedAfter == null || updatedAfter.isBlank()) {
-            return articleRepository.findAll()
-                .map(this::articleToVO)
-                .collectList()
-                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
-        }
-        LocalDateTime after = LocalDateTime.parse(updatedAfter);
-        return articleRepository.findByUpdateAtAfter(after)
-            .map(this::articleToVO)
-            .collectList()
-            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 }

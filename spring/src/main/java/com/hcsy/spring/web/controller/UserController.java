@@ -366,17 +366,19 @@ public class UserController {
     }
 
     /**
-     * POST /users/reset-password 接口，用户通过邮箱验证码验证身份后重置密码
+     * POST /users/reset-password 接口，用户通过邮箱验证码验证身份后重置密码，并使其其他设备会话失效
      */
     @PostMapping("/reset-password")
     @Operation(summary = "通过邮箱验证码重置密码", description = "用户通过邮箱验证码验证身份后重置密码")
     @ApiLog(value = "重置密码", excludeFields = { "newPassword", "verificationCode" })
     public Mono<Result<Void>> resetPassword(@Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
-        return userService.resetPassword(resetPasswordDTO).thenReturn(Result.<Void>success());
+        return Mono.deferContextual(ctx -> userService
+            .resetPassword(resetPasswordDTO, UserContext.getUserId(ctx), UserContext.getToken(ctx))
+            .thenReturn(Result.<Void>success()));
     }
 
     /**
-     * POST /users/admin/reset-all-passwords 接口，管理员将所有用户密码批量重置为配置中的重置密码
+     * POST /users/admin/reset-all-passwords 接口，管理员将所有用户密码批量重置为配置中的重置密码，并使全部用户旧会话失效
      */
     @PostMapping("/admin/reset-all-passwords")
     @Operation(summary = "管理员重置所有用户密码", description = "管理员操作：将所有用户密码重置为配置中的重置密码")
@@ -384,11 +386,13 @@ public class UserController {
         paramName = "id")
     @ApiLog("重置所有用户密码")
     public Mono<Result<Void>> resetAllPasswords() {
-        return userService.resetAllPasswords().thenReturn(Result.<Void>success());
+        return Mono.deferContextual(ctx -> userService
+            .resetAllPasswords(UserContext.getUserId(ctx), UserContext.getToken(ctx))
+            .thenReturn(Result.<Void>success()));
     }
 
     /**
-     * POST /users/admin/reset-password/{user_id} 接口，管理员将指定用户的密码重置为配置中的重置密码
+     * POST /users/admin/reset-password/{user_id} 接口，管理员将指定用户的密码重置为配置中的重置密码，并使其旧会话失效
      */
     @PostMapping("/admin/reset-password/{user_id}")
     @Operation(summary = "管理员重置指定用户密码", description = "管理员操作：将指定用户ID的密码重置为配置中的重置密码")
@@ -396,7 +400,9 @@ public class UserController {
         paramName = "user_id")
     @ApiLog("重置指定用户密码")
     public Mono<Result<Void>> resetUserPassword(@PathVariable("user_id") Long userId) {
-        return userService.resetUserPassword(userId).thenReturn(Result.<Void>success());
+        return Mono.deferContextual(ctx -> userService
+            .resetUserPassword(userId, UserContext.getUserId(ctx), UserContext.getToken(ctx))
+            .thenReturn(Result.<Void>success()));
     }
 
     /**

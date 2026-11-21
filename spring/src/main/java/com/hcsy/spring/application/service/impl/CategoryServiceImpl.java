@@ -230,6 +230,76 @@ public class CategoryServiceImpl implements CategoryService {
                 .collectMap(SubCategoryWithParentVO::getId, Function.identity()));
     }
 
+    // ==================== 内部接口方法 ====================
+
+    @Override
+    public Flux<Category> listAllCategories() {
+        return categoryRepository.findAll();
+    }
+
+    /**
+     * 实现查询所有子分类并批量关联父分类名称，避免N+1查询
+     */
+    @Override
+    public Flux<SubCategoryWithParentVO> listAllSubCategoriesWithParent() {
+        return subCategoryRepository.findAll()
+            .collectList()
+            .flatMapMany(subCategories -> {
+                // 收集所有分类ID，批量查询，避免 N+1 问题
+                java.util.Set<Long> categoryIds = subCategories.stream()
+                    .map(SubCategory::getCategoryId)
+                    .collect(java.util.stream.Collectors.toSet());
+                return categoryRepository.findAllById(categoryIds)
+                    .collectMap(Category::getId, java.util.function.Function.identity())
+                    .flatMapMany(categoryMap -> Flux.fromIterable(subCategories)
+                        .map(subCategory -> {
+                            Category category = categoryMap.get(subCategory.getCategoryId());
+                            return new SubCategoryWithParentVO(
+                                subCategory.getId(),
+                                subCategory.getName(),
+                                subCategory.getCategoryId(),
+                                category != null ? category.getName() : Messages.UNCATEGORIZED,
+                                subCategory.getCreateTime(),
+                                subCategory.getUpdateTime());
+                        }));
+            });
+    }
+
+    /**
+     * 实现查询分类数据用于Neo4j同步，支持按更新时间增量
+     */
+    @Override
+    public Mono<List<CategorySyncVO>> getNeo4jSyncCategories(String updatedAfter) {
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return categoryRepository.findAll()
+                .map(this::categoryToVO)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return categoryRepository.findByUpdateTimeAfter(after)
+            .map(this::categoryToVO)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * 实现查询子分类数据用于Neo4j同步，支持按更新时间增量
+     */
+    @Override
+    public Mono<List<SubCategorySyncVO>> getNeo4jSyncSubCategories(String updatedAfter) {
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return subCategoryRepository.findAll()
+                .map(this::subCategoryToVO)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return subCategoryRepository.findByUpdateTimeAfter(after)
+            .map(this::subCategoryToVO)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
     /**
      * 缓存未命中时从数据库加载分类详情并组装子分类列表
      */
@@ -309,77 +379,6 @@ public class CategoryServiceImpl implements CategoryService {
         return BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(message).build();
     }
 
-    // ==================== 内部接口方法 ====================
-
-    @Override
-    public Flux<Category> listAllCategories() {
-        return categoryRepository.findAll();
-    }
-
-    /**
-     * 实现查询所有子分类并批量关联父分类名称，避免N+1查询
-     */
-    @Override
-    public Flux<SubCategoryWithParentVO> listAllSubCategoriesWithParent() {
-        return subCategoryRepository.findAll()
-            .collectList()
-            .flatMapMany(subCategories -> {
-                // 收集所有分类ID，批量查询，避免 N+1 问题
-                java.util.Set<Long> categoryIds = subCategories.stream()
-                    .map(SubCategory::getCategoryId)
-                    .collect(java.util.stream.Collectors.toSet());
-                return categoryRepository.findAllById(categoryIds)
-                    .collectMap(Category::getId, java.util.function.Function.identity())
-                    .flatMapMany(categoryMap -> Flux.fromIterable(subCategories)
-                        .map(subCategory -> {
-                            Category category = categoryMap.get(subCategory.getCategoryId());
-                            return new SubCategoryWithParentVO(
-                                subCategory.getId(),
-                                subCategory.getName(),
-                                subCategory.getCategoryId(),
-                                category != null ? category.getName() : Messages.UNCATEGORIZED,
-                                subCategory.getCreateTime(),
-                                subCategory.getUpdateTime());
-                        }));
-            });
-    }
-
-    /**
-     * 实现查询分类数据用于Neo4j同步，支持按更新时间增量
-     */
-    @Override
-    public Mono<List<CategorySyncVO>> getNeo4jSyncCategories(String updatedAfter) {
-        if (updatedAfter == null || updatedAfter.isBlank()) {
-            return categoryRepository.findAll()
-                .map(this::categoryToVO)
-                .collectList()
-                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
-        }
-        LocalDateTime after = LocalDateTime.parse(updatedAfter);
-        return categoryRepository.findByUpdateTimeAfter(after)
-            .map(this::categoryToVO)
-            .collectList()
-            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
-    }
-
-    /**
-     * 实现查询子分类数据用于Neo4j同步，支持按更新时间增量
-     */
-    @Override
-    public Mono<List<SubCategorySyncVO>> getNeo4jSyncSubCategories(String updatedAfter) {
-        if (updatedAfter == null || updatedAfter.isBlank()) {
-            return subCategoryRepository.findAll()
-                .map(this::subCategoryToVO)
-                .collectList()
-                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
-        }
-        LocalDateTime after = LocalDateTime.parse(updatedAfter);
-        return subCategoryRepository.findByUpdateTimeAfter(after)
-            .map(this::subCategoryToVO)
-            .collectList()
-            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
-    }
-
     /**
      * 分类实体转同步视图对象，字段名与数据库列名保持一致，用于 Neo4j 同步
      */
@@ -397,4 +396,5 @@ public class CategoryServiceImpl implements CategoryService {
             subCategory.getCategoryId(),
             subCategory.getUpdateTime());
     }
+
 }

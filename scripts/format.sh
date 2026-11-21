@@ -67,6 +67,20 @@ format_dependency_aliases() {
     return 0
 }
 
+# 方法可见性顺序整理（spring）：把 private 方法移到 public/protected 之后，python 缺失时跳过
+format_method_order() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/java-method-order.py" --fix "$1"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/java-method-order.py" --fix "$1"
+        return
+    fi
+    print_warn "未检测到 python，跳过方法可见性顺序整理"
+    return 0
+}
+
 # API 文件格式化（gozero）：与 genApi.sh 生成流程使用同一命令，goctl 缺失时跳过
 format_api_files() {
     if command -v goctl >/dev/null 2>&1; then
@@ -88,6 +102,8 @@ fi
 # 返回码约定：0 表示成功，2 表示跳过（工具未安装），其它表示格式化失败
 
 format_spring() {
+    print_info "整理 Spring 方法可见性顺序（private 方法移到 public/protected 之后）..."
+    format_method_order "$WORKDIR/spring/src/main/java" || return 1
     command -v mvn >/dev/null 2>&1 || return 2
     print_info "格式化 Spring 代码（Spotless）..."
     (cd "$WORKDIR/spring" && mvn -q spotless:apply) || return 1

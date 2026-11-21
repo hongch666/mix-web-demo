@@ -176,17 +176,6 @@ public class JwtUtil {
     }
 
     /**
-     * 解析令牌并返回签名校验后的 Claims
-     */
-    private Claims getClaims(String token) {
-        return Jwts.parserBuilder()
-            .setSigningKey(key)
-            .build()
-            .parseClaimsJws(token)
-            .getBody();
-    }
-
-    /**
      * 返回访问令牌的有效期毫秒数
      */
     public long getAccessExpiration() {
@@ -236,5 +225,15 @@ public class JwtUtil {
     public long getRefreshRemainingSeconds(String token) {
         long remainingMs = getRemainingTime(token);
         return remainingMs > 0 ? remainingMs / 1000 : 0;
+    }
+    /**
+     * 解析令牌并返回签名校验后的 Claims
+     */
+    private Claims getClaims(String token) {
+        return Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token)
+            .getBody();
     }
 }
