@@ -150,19 +150,38 @@ public interface UserService {
     Mono<Void> updateUserInfo(UserUpdateDTO userDto);
 
     /**
-     * 校验邮箱验证码后将指定邮箱用户的密码重置为新密码
+     * 校验邮箱验证码后将指定邮箱用户的密码重置为新密码，并使其旧会话失效
+     *
+     * @param resetPasswordDTO
+     *                             重置密码请求，含邮箱、验证码与新密码
+     * @param currentUserId
+     *                             当前操作者用户ID，目标用户与其一致时保留当前令牌
+     * @param currentToken
+     *                             当前操作者的访问令牌，用于区分「保留当前会话」
      */
-    Mono<Void> resetPassword(ResetPasswordDTO resetPasswordDTO);
+    Mono<Void> resetPassword(ResetPasswordDTO resetPasswordDTO, Long currentUserId, String currentToken);
 
     /**
-     * 将全库用户密码批量重置为配置的默认重置密码
+     * 将全库用户密码批量重置为配置的默认重置密码，并使全部用户的旧会话失效
+     *
+     * @param currentUserId
+     *                             当前操作者用户ID，命中该用户时保留当前令牌
+     * @param currentToken
+     *                             当前操作者的访问令牌
      */
-    Mono<Void> resetAllPasswords();
+    Mono<Void> resetAllPasswords(Long currentUserId, String currentToken);
 
     /**
-     * 将指定用户的密码重置为配置的默认重置密码
+     * 将指定用户的密码重置为配置的默认重置密码，并使其旧会话失效
+     *
+     * @param userId
+     *                             被重置密码的用户ID
+     * @param currentUserId
+     *                             当前操作者用户ID，目标用户与其一致时保留当前令牌
+     * @param currentToken
+     *                             当前操作者的访问令牌
      */
-    Mono<Void> resetUserPassword(Long userId);
+    Mono<Void> resetUserPassword(Long userId, Long currentUserId, String currentToken);
 
     /**
      * 查询用户登录状态，返回1在线0离线的Mono结果

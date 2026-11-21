@@ -36,6 +36,7 @@ import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.config.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
+import com.hcsy.spring.entity.dto.ResetPasswordDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.UserLoginVO;
@@ -449,6 +450,91 @@ class UserServiceImplTest {
             .verifyComplete();
     }
 
+    @Test
+    @DisplayName("重置密码目标为当前用户时保留当前令牌只踢其他设备")
+    void resetPasswordKeepsCurrentSessionForSameUser() {
+        when(emailVerificationService.verifyCode(EMAIL, VERIFICATION_CODE)).thenReturn(Mono.just(true));
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Mono.just(user(USERNAME)));
+        when(passwordEncryptor.encryptPassword(anyString())).thenReturn(ENCODED_PASSWORD);
+        stubTransactional();
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(tokenService.removeOtherSessions(USER_ID, "current-token")).thenReturn(Mono.just(1));
+
+        StepVerifier.create(userService.resetPassword(resetPasswordDTO(), USER_ID, "current-token"))
+            .verifyComplete();
+
+        verify(tokenService).removeOtherSessions(USER_ID, "current-token");
+        verify(tokenService, never()).forceLogoutUser(anyLong());
+    }
+
+    @Test
+    @DisplayName("重置密码目标非当前用户时撤销其全部会话")
+    void resetPasswordForceLogsOutDifferentUser() {
+        when(emailVerificationService.verifyCode(EMAIL, VERIFICATION_CODE)).thenReturn(Mono.just(true));
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Mono.just(user(USERNAME)));
+        when(passwordEncryptor.encryptPassword(anyString())).thenReturn(ENCODED_PASSWORD);
+        stubTransactional();
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(tokenService.forceLogoutUser(USER_ID)).thenReturn(Mono.empty());
+
+        StepVerifier.create(userService.resetPassword(resetPasswordDTO(), 99L, "current-token"))
+            .verifyComplete();
+
+        verify(tokenService).forceLogoutUser(USER_ID);
+        verify(tokenService, never()).removeOtherSessions(anyLong(), anyString());
+    }
+
+    @Test
+    @DisplayName("管理员重置指定用户密码且目标为本人时保留当前令牌")
+    void resetUserPasswordKeepsCurrentSessionForSameUser() {
+        when(userRepository.findById(USER_ID)).thenReturn(Mono.just(user(USERNAME)));
+        when(passwordEncryptor.encryptPassword(anyString())).thenReturn(ENCODED_PASSWORD);
+        stubTransactional();
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(tokenService.removeOtherSessions(USER_ID, "current-token")).thenReturn(Mono.just(1));
+
+        StepVerifier.create(userService.resetUserPassword(USER_ID, USER_ID, "current-token"))
+            .verifyComplete();
+
+        verify(tokenService).removeOtherSessions(USER_ID, "current-token");
+        verify(tokenService, never()).forceLogoutUser(anyLong());
+    }
+
+    @Test
+    @DisplayName("管理员重置指定用户密码且目标非本人时撤销其全部会话")
+    void resetUserPasswordForceLogsOutDifferentUser() {
+        when(userRepository.findById(USER_ID)).thenReturn(Mono.just(user(USERNAME)));
+        when(passwordEncryptor.encryptPassword(anyString())).thenReturn(ENCODED_PASSWORD);
+        stubTransactional();
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(tokenService.forceLogoutUser(USER_ID)).thenReturn(Mono.empty());
+
+        StepVerifier.create(userService.resetUserPassword(USER_ID, 99L, "current-token"))
+            .verifyComplete();
+
+        verify(tokenService).forceLogoutUser(USER_ID);
+        verify(tokenService, never()).removeOtherSessions(anyLong(), anyString());
+    }
+
+    @Test
+    @DisplayName("管理员重置全部用户密码后使全部旧会话失效且保留当前令牌")
+    void resetAllPasswordsInvalidatesAllSessions() {
+        User other = user(USERNAME);
+        other.setId(99L);
+        when(userRepository.count()).thenReturn(Mono.just(2L));
+        when(passwordEncryptor.encryptPassword(anyString())).thenReturn(ENCODED_PASSWORD);
+        when(userRepository.updateAllPasswords(ENCODED_PASSWORD)).thenReturn(Mono.just(2));
+        when(userRepository.findAllIdAndName()).thenReturn(Flux.just(user(USERNAME), other));
+        when(tokenService.removeOtherSessions(USER_ID, "current-token")).thenReturn(Mono.just(1));
+        when(tokenService.forceLogoutUser(99L)).thenReturn(Mono.empty());
+
+        StepVerifier.create(userService.resetAllPasswords(USER_ID, "current-token"))
+            .verifyComplete();
+
+        verify(tokenService).removeOtherSessions(USER_ID, "current-token");
+        verify(tokenService).forceLogoutUser(99L);
+    }
+
     private void stubTransactional() {
         when(transactionalOperator.transactional(any(Mono.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
@@ -460,6 +546,10 @@ class UserServiceImplTest {
 
     private LoginDTO loginDTO() {
         return new LoginDTO(RAW_PASSWORD, USERNAME, CAPTCHA_ID, CAPTCHA_TEXT);
+    }
+
+    private ResetPasswordDTO resetPasswordDTO() {
+        return new ResetPasswordDTO(EMAIL, VERIFICATION_CODE, RAW_PASSWORD);
     }
 
     private EmailLoginDTO emailLoginDTO() {

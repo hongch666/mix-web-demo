@@ -523,10 +523,10 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 校验邮箱验证码后按邮箱定位用户并加密保存新密码
+     * 校验邮箱验证码后按邮箱定位用户并加密保存新密码，成功后使该用户旧会话失效
      */
     @Override
-    public Mono<Void> resetPassword(ResetPasswordDTO dto) {
+    public Mono<Void> resetPassword(ResetPasswordDTO dto, Long currentUserId, String currentToken) {
         return emailVerificationService.verifyCode(dto.getEmail(), dto.getVerificationCode())
             .filter(Boolean.TRUE::equals)
             .switchIfEmpty(Mono.error(unauthorized(Messages.VERIFY_CODE)))
@@ -535,35 +535,53 @@ public class UserServiceImpl implements UserService {
                 user.setPassword(password);
                 return transactionalOperator.transactional(userRepository.save(user));
             }))
+            .flatMap(user -> invalidateSessionsAfterPasswordReset(user.getId(), currentUserId, currentToken))
             .then();
     }
 
     /**
-     * 存在用户时将全部用户密码批量更新为配置的重置密码
+     * 存在用户时将全部用户密码批量更新为配置的重置密码，并使全部用户的旧会话失效
      */
     @Override
-    public Mono<Void> resetAllPasswords() {
+    public Mono<Void> resetAllPasswords(Long currentUserId, String currentToken) {
         return userRepository.count()
             .filter(count -> count > 0)
             .switchIfEmpty(Mono.error(BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY)
                 .errorMessage(Messages.PASSWORD_NO_USER).build()))
             .then(encryptPassword(userPasswordProperties.resetPassword()))
             .flatMap(userRepository::updateAllPasswords)
-            .then();
+            .then(userRepository.findAllIdAndName()
+                .map(User::getId)
+                .collectList()
+                .flatMapMany(Flux::fromIterable)
+                .flatMap(userId -> invalidateSessionsAfterPasswordReset(userId, currentUserId, currentToken), 8)
+                .then());
     }
 
     /**
-     * 定位指定用户后将密码重置为配置的重置密码并事务保存
+     * 定位指定用户后将密码重置为配置的重置密码并事务保存，成功后使该用户旧会话失效
      */
     @Override
-    public Mono<Void> resetUserPassword(Long userId) {
+    public Mono<Void> resetUserPassword(Long userId, Long currentUserId, String currentToken) {
         return userRepository.findById(userId)
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
             .flatMap(user -> encryptPassword(userPasswordProperties.resetPassword()).flatMap(password -> {
                 user.setPassword(password);
                 return transactionalOperator.transactional(userRepository.save(user));
             }))
+            .flatMap(user -> invalidateSessionsAfterPasswordReset(user.getId(), currentUserId, currentToken))
             .then();
+    }
+
+    /**
+     * 密码重置后使目标用户的旧会话失效：目标用户为当前操作者时保留其当前令牌只踢其他设备，否则撤销全部会话
+     */
+    private Mono<Void> invalidateSessionsAfterPasswordReset(Long targetUserId, Long currentUserId,
+        String currentToken) {
+        if (targetUserId.equals(currentUserId) && currentToken != null) {
+            return tokenService.removeOtherSessions(targetUserId, currentToken).then();
+        }
+        return tokenService.forceLogoutUser(targetUserId);
     }
 
     /**
