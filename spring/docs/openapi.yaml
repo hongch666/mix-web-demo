@@ -68,12 +68,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserListVO"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     put:
       tags:
       - "用户模块"
@@ -93,12 +111,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       tags:
       - "用户模块"
@@ -118,12 +154,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/status/{id}:
     put:
       tags:
@@ -150,12 +204,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments:
     get:
       tags:
@@ -205,12 +277,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOCommentsVO"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     put:
       tags:
       - "评论模块"
@@ -230,12 +320,36 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "404":
+          description: "评论不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       tags:
       - "评论模块"
@@ -255,12 +369,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "404":
+          description: "文章或用户不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category:
     put:
       tags:
@@ -281,12 +413,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       tags:
       - "分类模块"
@@ -306,12 +456,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/sub:
     put:
       tags:
@@ -332,12 +500,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       tags:
       - "分类模块"
@@ -357,12 +543,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/reference:
     put:
       tags:
@@ -383,12 +587,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       tags:
       - "权威参考文本模块"
@@ -408,12 +630,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles:
     put:
       tags:
@@ -434,12 +674,36 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "404":
+          description: "文章或作者不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       tags:
       - "文章模块"
@@ -459,12 +723,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "404":
+          description: "作者不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/view/{id}:
     put:
       tags:
@@ -486,12 +768,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/publish/{id}:
     put:
       tags:
@@ -513,12 +807,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/token/refresh:
     post:
       tags:
@@ -539,12 +851,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultTokenRefreshVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/reset-password:
     post:
       tags:
@@ -565,12 +889,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/register:
     post:
       tags:
@@ -591,12 +927,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/logout:
     post:
       tags:
@@ -611,12 +959,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/login:
     post:
       tags:
@@ -637,12 +997,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserLoginVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/kick-other-devices:
     post:
       tags:
@@ -657,12 +1029,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultKickOtherDevicesVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/github/token:
     post:
       tags:
@@ -683,12 +1067,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserLoginVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/github/token-ticket:
     post:
       tags:
@@ -709,12 +1105,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultGithubTokenTicketVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/github-user:
     post:
       tags:
@@ -735,12 +1149,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/force-logout/{user_id}:
     post:
       tags:
@@ -762,12 +1194,36 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "404":
+          description: "用户不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/email/send:
     post:
       tags:
@@ -798,12 +1254,42 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "422":
+          description: "邮箱格式不正确"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "不支持的类型，请使用 register、login 或 reset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "邮箱已被注册"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "邮箱未注册"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/email-login:
     post:
       tags:
@@ -824,12 +1310,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserLoginVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/batch:
     post:
       tags:
@@ -850,12 +1348,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListUserVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/admin/reset-password/{user_id}:
     post:
       tags:
@@ -877,12 +1393,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/admin/reset-all-passwords:
     post:
       tags:
@@ -897,12 +1431,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /task/clean:
     post:
       tags:
@@ -917,12 +1469,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /sql-tools/query:
     post:
       tags:
@@ -943,12 +1513,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultSqlQueryResultVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /likes:
     post:
       tags:
@@ -969,12 +1551,36 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "409":
+          description: "已经点赞过该文章"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       tags:
       - "文章点赞模块"
@@ -1003,12 +1609,36 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "409":
+          description: "点赞记录不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /focus:
     post:
       tags:
@@ -1029,12 +1659,36 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "409":
+          description: "已经关注过该用户"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       tags:
       - "用户关注模块"
@@ -1063,12 +1717,36 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "409":
+          description: "关注记录不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/statistics/delete-ai/{articleId}:
     post:
       tags:
@@ -1090,12 +1768,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/internal/create:
     post:
       tags:
@@ -1116,12 +1812,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/batch:
     post:
       tags:
@@ -1142,12 +1856,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCommentSyncVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /collects:
     post:
       tags:
@@ -1168,12 +1900,36 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "409":
+          description: "已经收藏过该文章"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       tags:
       - "文章收藏模块"
@@ -1202,12 +1958,36 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "409":
+          description: "收藏记录不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/sub/batch:
     post:
       tags:
@@ -1228,12 +2008,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListSubCategoryVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/batch:
     post:
       tags:
@@ -1254,12 +2052,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCategoryVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/stats/batch:
     post:
       tags:
@@ -1280,12 +2096,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultArticleStatsBatchVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/batch:
     post:
       tags:
@@ -1306,12 +2140,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleWithCategoryVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /warehouse/sync/{resource}:
     get:
       tags:
@@ -1352,12 +2204,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultSyncPage"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/{id}:
     get:
       tags:
@@ -1379,12 +2243,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserVO"
+        "404":
+          description: "用户不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       tags:
       - "用户模块"
@@ -1405,12 +2287,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/neo4j-sync:
     get:
       tags:
@@ -1431,12 +2331,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListUserSyncVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/is-admin/{id}:
     get:
       tags:
@@ -1458,12 +2376,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultBoolean"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/internal/auth/validate:
     get:
       tags:
@@ -1506,12 +2442,24 @@ paths:
               style: "simple"
               schema:
                 type: "string"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/captcha:
     get:
       tags:
@@ -1526,12 +2474,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultImageCaptchaVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/by-name:
     get:
       tags:
@@ -1552,12 +2512,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListUserVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/all:
     get:
       tags:
@@ -1572,12 +2550,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserListVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/ai:
     get:
       tags:
@@ -1592,12 +2582,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultUserListVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /test/spring:
     get:
       tags:
@@ -1612,12 +2614,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultString"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /sql-tools/tables:
     get:
       tags:
@@ -1638,12 +2652,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListSqlTableSchemaVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /oss/internal/references:
     get:
       tags:
@@ -1658,12 +2684,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListString"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /likes/user/{user_id}:
     get:
       tags:
@@ -1702,12 +2746,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOArticleLikeVO"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /likes/statistics/total:
     get:
       tags:
@@ -1722,12 +2784,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /likes/statistics/monthly-trend/{userId}:
     get:
       tags:
@@ -1749,12 +2829,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultMapDataVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /likes/statistics/average:
     get:
       tags:
@@ -1769,12 +2867,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultDouble"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /likes/neo4j-sync:
     get:
       tags:
@@ -1795,12 +2911,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleRelationSyncVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /likes/count/{article_id}:
     get:
       tags:
@@ -1823,12 +2957,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLikeCountVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /likes/check:
     get:
       tags:
@@ -1858,12 +3004,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLikeCheckVO"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /focus/statistics/total-follows/{userId}:
     get:
       tags:
@@ -1885,12 +3049,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /focus/statistics/followers-in-period/{userId}:
     get:
       tags:
@@ -1924,12 +3106,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /focus/statistics/daily-follows/{userId}:
     get:
       tags:
@@ -1963,12 +3163,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultMapDataVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /focus/neo4j-sync:
     get:
       tags:
@@ -1989,12 +3207,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListFocusSyncVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /focus/followers/{user_id}:
     get:
       tags:
@@ -2033,12 +3269,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOFocusUserVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /focus/count/follower/{user_id}:
     get:
       tags:
@@ -2061,12 +3309,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCountVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /focus/count/focus/{user_id}:
     get:
       tags:
@@ -2089,12 +3349,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCountVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /focus/check:
     get:
       tags:
@@ -2124,12 +3396,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultFocusCheckVO"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /focus/authors/{user_id}:
     get:
       tags:
@@ -2168,12 +3458,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOFocusUserVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/{id}:
     get:
       tags:
@@ -2195,12 +3497,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCommentsVO"
+        "404":
+          description: "评论不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       tags:
       - "评论模块"
@@ -2221,12 +3541,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/user/{id}:
     get:
       tags:
@@ -2262,12 +3600,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOCommentsVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/statistics/monthly-trend/{userId}:
     get:
       tags:
@@ -2289,12 +3639,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultMapDataVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/statistics/ai-count/{articleId}:
     get:
       tags:
@@ -2316,12 +3684,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/neo4j-sync:
     get:
       tags:
@@ -2342,12 +3728,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCommentSyncVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/article/{id}:
     get:
       tags:
@@ -2389,12 +3793,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOCommentsVO"
+        "400":
+          description: "排序参数非法"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/article/ai/{id}:
     get:
       tags:
@@ -2416,12 +3832,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListAICommentsVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/ai:
     get:
       tags:
@@ -2471,12 +3899,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOCommentsVO"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /collects/user/{user_id}:
     get:
       tags:
@@ -2515,12 +3961,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOArticleCollectVO"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /collects/statistics/total:
     get:
       tags:
@@ -2535,12 +3999,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /collects/statistics/monthly-trend/{userId}:
     get:
       tags:
@@ -2562,12 +4044,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultMapDataVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /collects/statistics/average:
     get:
       tags:
@@ -2582,12 +4082,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultDouble"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /collects/neo4j-sync:
     get:
       tags:
@@ -2608,12 +4126,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleRelationSyncVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /collects/count/{article_id}:
     get:
       tags:
@@ -2636,12 +4172,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCollectCountVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /collects/check:
     get:
       tags:
@@ -2671,12 +4219,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCollectCheckVO"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/{id}:
     get:
       tags:
@@ -2698,12 +4264,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCategoryVO"
+        "404":
+          description: "分类不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       tags:
       - "分类模块"
@@ -2724,12 +4308,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/reference/sub/{sub_category_id}:
     get:
       tags:
@@ -2751,12 +4353,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultCategoryReferenceVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       tags:
       - "权威参考文本模块"
@@ -2777,12 +4391,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/list:
     get:
       tags:
@@ -2812,12 +4444,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOCategoryVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/internal/sub/with-parent:
     get:
       tags:
@@ -2832,12 +4476,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListSubCategoryWithParentVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/internal/sub/neo4j-sync:
     get:
       tags:
@@ -2858,12 +4520,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListSubCategorySyncVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/internal/neo4j-sync:
     get:
       tags:
@@ -2884,12 +4564,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCategorySyncVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/internal/all:
     get:
       tags:
@@ -2904,12 +4602,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCategoryVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/{id}:
     get:
       tags:
@@ -2931,12 +4647,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultArticleWithCategoryVO"
+        "404":
+          description: "文章不存在"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       tags:
       - "文章模块"
@@ -2957,12 +4691,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/user/{id}:
     get:
       tags:
@@ -3005,12 +4757,24 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOArticleWithCategoryVO"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/unpublished/list:
     get:
       tags:
@@ -3040,12 +4804,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOArticleWithCategoryVO"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/statistics/total:
     get:
       tags:
@@ -3060,12 +4842,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/statistics/total-views:
     get:
       tags:
@@ -3080,12 +4880,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultInteger"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/statistics/top10:
     get:
       tags:
@@ -3100,12 +4918,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleSyncVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/statistics/monthly-publish-count:
     get:
       tags:
@@ -3120,12 +4956,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListMonthlyPublishCountVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/statistics/excel-export:
     get:
       tags:
@@ -3140,12 +4994,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleExportVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/statistics/category-count:
     get:
       tags:
@@ -3160,12 +5032,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListCategoryArticleCountVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/statistics/average-views:
     get:
       tags:
@@ -3180,12 +5070,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultDouble"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/statistics/active-authors:
     get:
       tags:
@@ -3200,12 +5108,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultLong"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/neo4j-sync:
     get:
       tags:
@@ -3226,12 +5152,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleSyncVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/list:
     get:
       tags:
@@ -3261,12 +5205,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultPageVOArticle"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/by-title:
     get:
       tags:
@@ -3287,12 +5249,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultListArticleWithCategoryVO"
+        "403":
+          description: "内部接口禁止外部访问"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /users/batch/{ids}:
     delete:
       tags:
@@ -3313,12 +5293,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /comments/batch/{ids}:
     delete:
       tags:
@@ -3339,12 +5337,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/sub/{id}:
     delete:
       tags:
@@ -3366,12 +5382,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/sub/batch/{ids}:
     delete:
       tags:
@@ -3392,12 +5426,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /category/batch/{ids}:
     delete:
       tags:
@@ -3418,12 +5470,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /articles/batch/{ids}:
     delete:
       tags:
@@ -3444,12 +5514,30 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/ResultVoid"
+        "403":
+          description: "无权限访问该资源"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: "请求参数校验失败"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: "用户未登录或登录已失效"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UnauthorizedResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "服务器内部错误"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     UserUpdateDTO:
@@ -6554,7 +8642,7 @@ components:
       required:
       - "code"
       - "msg"
-    UnauthorizedResponse:
+    ErrorResponse:
       type: "object"
       description: "统一错误响应"
       properties:
@@ -6562,7 +8650,7 @@ components:
           type: "integer"
           format: "int32"
           description: "响应码，与 HTTP 状态码一致"
-          example: 401
+          example: 400
         msg:
           type: "string"
           description: "响应信息"

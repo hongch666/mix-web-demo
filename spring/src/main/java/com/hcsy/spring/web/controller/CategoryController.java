@@ -37,6 +37,7 @@ import com.hcsy.spring.entity.vo.SubCategoryWithParentVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.DataSync;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -188,6 +189,7 @@ public class CategoryController {
      * GET /category/{id} 接口，按ID返回分类详情及子分类层级信息，不存在时返回404
      */
     @Operation(summary = "根据ID查询分类（含子分类信息）", description = "根据分类ID查询单个分类详情，返回分类及其子分类的层级结构信息，不存在时返回404")
+    @ApiErrorCode(code = "404", description = "分类不存在")
     @GetMapping("/{id}")
     @ApiLog("根据ID查询分类")
     public Mono<Result<CategoryVO>> getCategoryById(@PathVariable Long id) {

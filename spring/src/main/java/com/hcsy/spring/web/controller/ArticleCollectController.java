@@ -30,6 +30,7 @@ import com.hcsy.spring.entity.vo.PageVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.ArticleSync;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -55,6 +56,7 @@ public class ArticleCollectController {
      */
     @PostMapping
     @Operation(summary = "添加收藏", description = "为文章添加收藏")
+    @ApiErrorCode(code = "409", description = "已经收藏过该文章")
     @ArticleSync(action = SyncAction.COLLECT, resource = SyncResource.COLLECTS, description = "收藏了1篇文章")
     @ApiLog("添加收藏")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
@@ -72,6 +74,7 @@ public class ArticleCollectController {
      */
     @DeleteMapping
     @Operation(summary = "取消收藏", description = "取消对文章的收藏")
+    @ApiErrorCode(code = "409", description = "收藏记录不存在")
     @ArticleSync(action = SyncAction.UNCOLLECT, resource = SyncResource.COLLECTS, description = "取消收藏了1篇文章")
     @ApiLog("取消收藏")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,

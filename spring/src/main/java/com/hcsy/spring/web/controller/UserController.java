@@ -56,6 +56,7 @@ import com.hcsy.spring.entity.vo.UserVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.DataSync;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -162,6 +163,7 @@ public class UserController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "查询用户", description = "根据id查询用户，返回用户信息及其登录状态和设备数")
+    @ApiErrorCode(code = "404", description = "用户不存在")
     @ApiLog("查询用户")
     public Mono<Result<UserVO>> getUserById(@PathVariable Long id) {
         return userService.getUserDetail(id)
@@ -300,6 +302,7 @@ public class UserController {
      */
     @PostMapping("/force-logout/{user_id}")
     @Operation(summary = "手动下线用户", description = "管理员操作：将指定用户的所有登录会话强制下线")
+    @ApiErrorCode(code = "404", description = "用户不存在")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.USER, paramSource = ParamSource.PATH_SINGLE,
         paramName = "user_id")
     @ApiLog("手动下线用户")
@@ -345,6 +348,10 @@ public class UserController {
      */
     @PostMapping("/email/send")
     @Operation(summary = "发送邮箱验证码", description = "向指定邮箱发送验证码，支持注册(register)和登录(login)两种场景")
+    @ApiErrorCode(code = "422", description = "邮箱格式不正确")
+    @ApiErrorCode(code = "400", description = "不支持的类型，请使用 register、login 或 reset")
+    @ApiErrorCode(code = "409", description = "邮箱已被注册")
+    @ApiErrorCode(code = "404", description = "邮箱未注册")
     @ApiLog("发送邮箱验证码")
     public Mono<Result<Void>> sendVerificationCode(@RequestParam(required = false) String email,
         @RequestParam(required = false) String type,

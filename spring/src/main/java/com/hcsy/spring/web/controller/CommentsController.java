@@ -37,6 +37,7 @@ import com.hcsy.spring.entity.vo.PageVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.DataSync;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -60,6 +61,7 @@ public class CommentsController {
      */
     @PostMapping
     @Operation(summary = "新增评论", description = "通过请求体创建评论信息")
+    @ApiErrorCode(code = "404", description = "文章或用户不存在")
     @DataSync(resource = SyncResource.COMMENTS, changeType = SyncChangeType.INSERT, description = "新增评论后同步图谱与数仓")
     @ApiLog("新增评论")
     public Mono<Result<Long>> createComment(@Valid @RequestBody CommentCreateDTO dto) {
@@ -72,6 +74,7 @@ public class CommentsController {
      */
     @PutMapping
     @Operation(summary = "修改评论", description = "通过请求体修改评论信息")
+    @ApiErrorCode(code = "404", description = "评论不存在")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = BusinessType.COMMENT, paramSource = ParamSource.BODY,
         paramName = "id")
@@ -119,6 +122,7 @@ public class CommentsController {
     @GetMapping("/{id}")
     @Operation(summary = "根据id查询评论",
         description = "按评论ID返回单条评论详情，包含评论内容、所属文章、评论用户与评分信息；评论不存在时返回 404")
+    @ApiErrorCode(code = "404", description = "评论不存在")
     @ApiLog("根据id查询评论")
     public Mono<Result<CommentsVO>> getCommentsById(@PathVariable Long id) {
         return commentsService.getCommentDetail(id)
@@ -174,6 +178,7 @@ public class CommentsController {
     @GetMapping("/article/{id}")
     @Operation(summary = "根据文章id分页获取评论",
         description = "分页返回指定文章的评论，支持按创建时间或评分排序；排序参数非法时返回 400")
+    @ApiErrorCode(code = "400", description = "排序参数非法")
     @ApiLog("根据文章id分页获取评论")
     public Mono<Result<PageVO<CommentsVO>>> listCommentsByArticleId(
         @PathVariable Long id,

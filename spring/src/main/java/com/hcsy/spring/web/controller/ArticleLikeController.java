@@ -30,6 +30,7 @@ import com.hcsy.spring.entity.vo.PageVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.ArticleSync;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -55,6 +56,7 @@ public class ArticleLikeController {
      */
     @PostMapping
     @Operation(summary = "添加点赞", description = "为文章添加点赞")
+    @ApiErrorCode(code = "409", description = "已经点赞过该文章")
     @ArticleSync(action = SyncAction.LIKE, resource = SyncResource.LIKES, description = "点赞了1篇文章")
     @ApiLog("添加点赞")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
@@ -72,6 +74,7 @@ public class ArticleLikeController {
      */
     @DeleteMapping
     @Operation(summary = "取消点赞", description = "取消对文章的点赞")
+    @ApiErrorCode(code = "409", description = "点赞记录不存在")
     @ArticleSync(action = SyncAction.UNLIKE, resource = SyncResource.LIKES, description = "取消点赞了1篇文章")
     @ApiLog("取消点赞")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,

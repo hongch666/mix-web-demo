@@ -30,6 +30,7 @@ import com.hcsy.spring.entity.vo.PageVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.ArticleSync;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -55,6 +56,7 @@ public class FocusController {
      */
     @PostMapping
     @Operation(summary = "新增关注", description = "用户关注另一个用户")
+    @ApiErrorCode(code = "409", description = "已经关注过该用户")
     @ArticleSync(action = SyncAction.FOCUS, resource = SyncResource.FOCUS, description = "关注了1个用户")
     @ApiLog("新增关注")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
@@ -72,6 +74,7 @@ public class FocusController {
      */
     @DeleteMapping
     @Operation(summary = "取消关注", description = "用户取消关注另一个用户")
+    @ApiErrorCode(code = "409", description = "关注记录不存在")
     @ArticleSync(action = SyncAction.UNFOCUS, resource = SyncResource.FOCUS, description = "取消关注了1个用户")
     @ApiLog("取消关注")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
