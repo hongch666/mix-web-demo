@@ -47,8 +47,10 @@ FASTAPI_DEFAULT_VALIDATION_STATUS = "422"
 # 网关 block-internal 路由返回的 403 描述，与 apisix.yaml 的 response_example 对齐
 GATEWAY_FORBIDDEN_DESCRIPTION = "内部接口禁止外部访问"
 
-# 共享的网关黑名单 JSON（由 scripts/swag-init.sh 在生成前从 apisix.yaml 抽取）
-GATEWAY_BLOCKLIST_JSON = FASTAPI_ROOT.parent / "scripts" / "generated" / "gateway-blocklist.json"
+# 共享的网关黑名单 JSON（由 scripts/docs/swag-init.sh 在生成前从 apisix.yaml 抽取）
+GATEWAY_BLOCKLIST_JSON = (
+    FASTAPI_ROOT.parent / "scripts" / "generated" / "gateway-blocklist.json"
+)
 
 
 def write_json(path: Path, schema: dict[str, object]) -> None:
@@ -119,7 +121,15 @@ def add_gateway_internal_responses(schema: dict[str, object]) -> None:
         if not isinstance(path_item, dict) or not is_gateway_blocked(path, blocklist):
             continue
         for method, operation in path_item.items():
-            if method not in ("get", "post", "put", "delete", "patch", "head", "options"):
+            if method not in (
+                "get",
+                "post",
+                "put",
+                "delete",
+                "patch",
+                "head",
+                "options",
+            ):
                 continue
             if not isinstance(operation, dict):
                 continue

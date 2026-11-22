@@ -1,27 +1,3 @@
-# 可观测性组件（Loki + Promtail + Grafana + Tempo + OpenTelemetry Collector）编排文件
-#
-# 本文件用于独立启动观测栈，适用于 ./mix dist start 的宿主机进程模式：
-#   ./mix observability start          采集根目录 logs/（容器与 dev 模式）
-#   ./mix observability start --dist   采集 dist/logs（./mix dist start）
-#   docker compose -f observability/docker-compose.yml -p loki up -d
-#
-# 根目录 docker-compose.yml 中内联了同一套观测组件，供 ./mix compose up 使用
-# 两者容器名相同但属于不同 compose 项目，交叉启动时由 scripts/loki-control.sh
-# 自动清理对方的同名容器；修改镜像版本或挂载路径时两处需要同步
-#
-# 两套日志目录各自独立、互不导入，实际采集哪一套由 Promtail 配置决定
-# （LOKI_PROMTAIL_CONFIG，见 promtail 服务的 volumes 说明）
-#
-# 观测栈内部通过服务名互相访问（Grafana -> http://loki:3100），
-# 因此不强制加入 hcsy 网络，独立启动时不依赖任何外部网络
-#
-# 代理排除项：Docker CLI 会把宿主机代理（~/.docker/config.json 的 proxies 配置）
-# 注入到容器，默认 NO_PROXY 只含 localhost，导致容器间访问被转发到宿主代理而失败：
-#   - Loki 单机模式组件间 gRPC 直连容器 IP（如 172.20.0.2:9095）被代理
-#     → push 返回 500、查询报 unable to get stream rates from ingester、Grafana 无数据
-#   - Grafana 访问 http://loki:3100 同理
-# 取值与根目录 docker-compose.yml 的 x-no-proxy 保持一致，便于两处同步维护
-# 注意 NO_PROXY 与 no_proxy 是两个独立变量，必须同时设置才能完全覆盖 Docker 注入值
 x-no-proxy: &no-proxy-env
   NO_PROXY: "localhost,127.0.0.1,::1,host.docker.internal,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,prometheus,otel-collector,tempo,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
   no_proxy: "localhost,127.0.0.1,::1,host.docker.internal,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,prometheus,otel-collector,tempo,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
@@ -32,7 +8,7 @@ services:
     container_name: mix-tempo
     command: ["-config.file=/etc/tempo/tempo.yaml"]
     volumes:
-      - ./tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo-data:/var/tempo
     networks:
       default:
@@ -51,7 +27,7 @@ services:
     depends_on:
       - tempo
     volumes:
-      - ./otel-collector.yaml:/etc/otel/config.yaml:ro
+      - ./otel-collector/otel-collector.yaml:/etc/otel/config.yaml:ro
     networks:
       default:
       hcsy:
@@ -77,8 +53,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./prometheus-host.yml:/etc/prometheus/prometheus.yml:ro
-      - ./rules:/etc/prometheus/rules:ro
+      - ./prometheus/prometheus-host.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
       - prometheus-data:/prometheus
     networks:
       default:
@@ -110,7 +86,7 @@ services:
       loki-data-init:
         condition: service_completed_successfully
     volumes:
-      - ./loki.yaml:/etc/loki/config.yaml:ro
+      - ./loki/loki.yaml:/etc/loki/config.yaml:ro
       - loki-data:/tmp/loki
     ports:
       - "3100:3100"
@@ -131,11 +107,11 @@ services:
       loki:
         condition: service_healthy
     volumes:
-      # 采集哪套日志由配置决定，两套日志互不导入：
+      # 采集哪套日志由配置决定，两套日志互不导入；以下文件名相对于 promtail/ 目录：
       #   promtail.yaml      采集 /app/logs      （根目录 logs/，容器与 dev 模式，根编排默认）
       #   promtail-dist.yaml 采集 /app/dist-logs （dist/logs，./mix dist start）
       # 由 ./mix observability start [--dist] 通过 LOKI_PROMTAIL_CONFIG 切换，切换会重建 promtail 容器
-      - ./${LOKI_PROMTAIL_CONFIG:-promtail.yaml}:/etc/promtail/config.yaml:ro
+      - ./promtail/${LOKI_PROMTAIL_CONFIG:-promtail.yaml}:/etc/promtail/config.yaml:ro
       - ../logs:/app/logs:ro
       - ../dist/logs:/app/dist-logs:ro
       - promtail-data:/tmp/positions

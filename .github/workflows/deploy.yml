@@ -325,8 +325,8 @@ jobs:
 
           restart_svc gateway        gateway/
           restart_svc grafana        observability/grafana/
-          restart_svc loki           observability/loki.yaml
-          restart_svc promtail       observability/promtail.yaml observability/promtail-dist.yaml
-          restart_svc prometheus     observability/prometheus.yml observability/prometheus-host.yml observability/rules/
-          restart_svc otel-collector observability/otel-collector.yaml
-          restart_svc tempo          observability/tempo.yaml
+          restart_svc loki           observability/loki/
+          restart_svc promtail       observability/promtail/
+          restart_svc prometheus     observability/prometheus/
+          restart_svc otel-collector observability/otel-collector/
+          restart_svc tempo          observability/tempo/

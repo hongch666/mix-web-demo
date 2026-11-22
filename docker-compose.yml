@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
     command: ["-config.file=/etc/tempo/tempo.yaml"]
     volumes:
-      - ./observability/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - ./observability/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo-data:/var/tempo
     networks:
       - hcsy
@@ -28,7 +28,7 @@ services:
     depends_on:
       - tempo
     volumes:
-      - ./observability/otel-collector.yaml:/etc/otel/config.yaml:ro
+      - ./observability/otel-collector/otel-collector.yaml:/etc/otel/config.yaml:ro
     networks:
       - hcsy
     expose:
@@ -52,8 +52,8 @@ services:
         "--storage.tsdb.retention.time=30d",
       ]
     volumes:
-      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./observability/rules:/etc/prometheus/rules:ro
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/rules:/etc/prometheus/rules:ro
       - prometheus-data:/prometheus
     networks:
       - hcsy
@@ -91,7 +91,7 @@ services:
     container_name: loki
     restart: unless-stopped
     # 日志数据落在卷 loki-data 上，重启与重新部署都保留历史日志；
-    # 过期数据由 loki.yaml 的 compactor retention_period 回收，不再靠启动时清空目录
+    # 过期数据由 observability/loki/loki.yaml 的 compactor retention_period 回收，不再靠启动时清空目录
     command: ["-config.file=/etc/loki/config.yaml"]
     environment:
       <<: *no-proxy-env
@@ -99,7 +99,7 @@ services:
       loki-data-init:
         condition: service_completed_successfully
     volumes:
-      - ./observability/loki.yaml:/etc/loki/config.yaml:ro
+      - ./observability/loki/loki.yaml:/etc/loki/config.yaml:ro
       - loki-data:/tmp/loki
     networks:
       - hcsy
@@ -157,7 +157,7 @@ services:
       promtail-positions-init:
         condition: service_completed_successfully
     volumes:
-      - ./observability/promtail.yaml:/etc/promtail/config.yaml:ro
+      - ./observability/promtail/promtail.yaml:/etc/promtail/config.yaml:ro
       - ./logs:/app/logs:ro
       - promtail-data:/tmp/positions
     networks:

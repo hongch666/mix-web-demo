@@ -3,7 +3,7 @@
 # 拉取后钩子：git pull（merge 方式）完成后自动同步技能包
 #
 # 行为：
-#   执行 ./mix skills，把 skills/mix-web-demo 镜像到 scripts/skills-targets.conf 列出的
+#   执行 ./mix skills，把 skills/mix-web-demo 镜像到 scripts/tools/skills-targets.conf 列出的
 #   本机用户级 Agent 技能目录；同步脚本本身幂等，内容一致时跳过，未改技能也只是多一次比对
 #
 # 安装方式：./mix hooks（等价于 git config core.hooksPath .githooks），新克隆需执行一次
