@@ -15,19 +15,21 @@ COPY eclipse-formatter.xml .
 COPY settings-docker.xml .
 ARG MAVEN_PROXY_HOST=
 ARG MAVEN_PROXY_PORT=
-# 依赖层：sed 生成 settings 后只做 dependency:go-offline，把依赖/插件拉进 /root/.m2 缓存
-RUN --mount=type=cache,target=/root/.m2 \
-    if [ -n "${MAVEN_PROXY_HOST}" ] && [ -n "${MAVEN_PROXY_PORT}" ]; then \
+# 依赖层：sed 生成 settings 后只做 dependency:go-offline
+# 注意：这里故意不用 --mount=type=cache 挂载 /root/.m2 —— cache mount 只在同一次构建内有效，
+# 不跨 run（registry 层缓存恢复层结果，但不恢复 cache mount 内容）；
+# 若挂载，即使本层命中缓存，下一层 mvn package 仍会因 .m2 为空而重新下载全部依赖。
+# 依赖直接写入镜像层 /root/.m2，本层命中缓存时打包层可直接复用本地仓库，零网络下载
+RUN if [ -n "${MAVEN_PROXY_HOST}" ] && [ -n "${MAVEN_PROXY_PORT}" ]; then \
       proxy_active=true; \
     else \
       proxy_active=false; \
     fi; \
     sed -i "s/__MAVEN_PROXY_ACTIVE__/${proxy_active}/; s/__MAVEN_PROXY_HOST__/${MAVEN_PROXY_HOST:-127.0.0.1}/; s/__MAVEN_PROXY_PORT__/${MAVEN_PROXY_PORT:-1}/" settings-docker.xml && \
     mvn -s settings-docker.xml dependency:go-offline -q
-# 源码层：代码变更只影响这一层及之后，复用上面的依赖缓存
+# 源码层：代码变更只影响这一层及之后，直接复用依赖层写入镜像的 /root/.m2
 COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn -s settings-docker.xml clean package -DskipTests -Dspotless.check.skip=true -q
+RUN mvn -s settings-docker.xml clean package -DskipTests -Dspotless.check.skip=true -q
 
 # 阶段2：运行阶段
 FROM eclipse-temurin:17.0.21_9-jre-alpine-3.24
