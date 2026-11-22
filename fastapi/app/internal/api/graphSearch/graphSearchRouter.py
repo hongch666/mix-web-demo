@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, success
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireInternalToken
 from app.dependencies import GraphSearchServiceDep
 from app.internal.schemas import GraphSearchEnhanceReq, GraphSearchEnhanceResp
@@ -16,6 +17,7 @@ router: APIRouter = APIRouter(
     summary="知识图谱搜索增强",
     description="根据文章ID列表和用户画像, 返回对应文章的图谱分、推荐原因和关系证据（仅限内部服务调用）",
     response_model=ApiResponse[GraphSearchEnhanceResp],
+    responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @log("知识图谱搜索增强")
 @requireInternalToken

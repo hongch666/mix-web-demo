@@ -3,6 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, success
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireAdmin
 from app.dependencies import ApiLogServiceDep
 from app.internal.schemas import ApiLogAverageResponse, ApiLogCalledCountResponse
@@ -18,6 +19,10 @@ router: APIRouter = APIRouter(
     summary="获取所有接口的平均响应速度",
     description="返回各接口的平均响应耗时与调用次数，数据来自 ClickHouse 的 API 日志聚合，未命中缓存时回退到 NestJS 实时查询",
     response_model=ApiResponse[list[ApiLogAverageResponse]],
+    responses={
+        **SwaggerConfig.FORBIDDEN_RESPONSE,
+        502: {"description": "回退查询 NestJS 失败"},
+    },
 )
 @log("获取所有接口的平均响应速度")
 @requireAdmin
@@ -37,6 +42,10 @@ async def get_api_average_speed(
     summary="获取接口调用次数",
     description="返回各接口的调用次数（同时带出平均响应耗时），数据来源与平均响应速度接口一致",
     response_model=ApiResponse[list[ApiLogCalledCountResponse]],
+    responses={
+        **SwaggerConfig.FORBIDDEN_RESPONSE,
+        502: {"description": "回退查询 NestJS 失败"},
+    },
 )
 @log("获取接口调用次数")
 @requireAdmin

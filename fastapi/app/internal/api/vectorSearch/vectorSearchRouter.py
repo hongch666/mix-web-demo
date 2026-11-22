@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, success
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireInternalToken
 from app.dependencies import VectorSearchServiceDep
 from app.internal.schemas import VectorSearchEnhanceReq, VectorSearchEnhanceResp
@@ -16,6 +17,10 @@ router: APIRouter = APIRouter(
     summary="向量搜索增强",
     description="根据 ES 候选文章和搜索词返回语义分、语义原因和匹配片段（仅限内部服务调用）",
     response_model=ApiResponse[VectorSearchEnhanceResp],
+    responses={
+        **SwaggerConfig.FORBIDDEN_RESPONSE,
+        503: {"description": "Embedding 配置缺失或模型初始化失败"},
+    },
 )
 @log("向量搜索增强")
 @requireInternalToken

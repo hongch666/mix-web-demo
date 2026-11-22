@@ -35,12 +35,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ListResponse_dict_str__Any___'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '502':
+          description: 下游 Spring 服务调用失败
+          content: &id001
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: 下游服务不可用或熔断降级
+          content: *id001
+        '400':
+          description: 请求参数校验失败
+          content: *id001
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id001
+        '500':
+          description: 服务器内部错误
+          content: *id001
   /analyze/wordcloud:
     post:
       tags:
@@ -55,12 +67,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_str_'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '502':
+          description: 下游 Spring 服务调用失败
+          content: &id002
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: 下游服务不可用或熔断降级
+          content: *id002
+        '400':
+          description: 请求参数校验失败
+          content: *id002
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id002
+        '500':
+          description: 服务器内部错误
+          content: *id002
   /analyze/internal/wordcloud-url:
     get:
       tags:
@@ -75,12 +99,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '403':
+          description: 内部接口禁止外部访问
+          content: &id003
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id003
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id003
+        '500':
+          description: 服务器内部错误
+          content: *id003
   /analyze/excel:
     post:
       tags:
@@ -95,12 +128,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_str_'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '403':
+          description: 无权限访问
+          content: &id004
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 下游 Spring 服务调用失败
+          content: *id004
+        '503':
+          description: 下游服务不可用或熔断降级
+          content: *id004
+        '400':
+          description: 请求参数校验失败
+          content: *id004
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id004
+        '500':
+          description: 服务器内部错误
+          content: *id004
   /analyze/statistics:
     get:
       tags:
@@ -115,12 +163,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ArticleStatisticsResponse_'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '502':
+          description: 下游 Spring 服务调用失败
+          content: &id005
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: 下游服务不可用或熔断降级
+          content: *id005
+        '400':
+          description: 请求参数校验失败
+          content: *id005
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id005
+        '500':
+          description: 服务器内部错误
+          content: *id005
   /analyze/article-count-by-category:
     get:
       tags:
@@ -135,12 +195,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ListResponse_CategoryArticleCountResponse__'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '502':
+          description: 下游 Spring 服务调用失败
+          content: &id006
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: 下游服务不可用或熔断降级
+          content: *id006
+        '400':
+          description: 请求参数校验失败
+          content: *id006
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id006
+        '500':
+          description: 服务器内部错误
+          content: *id006
   /analyze/monthly-publish-count:
     get:
       tags:
@@ -155,12 +227,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ListResponse_MonthlyPublishCountResponse__'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '502':
+          description: 下游 Spring 服务调用失败
+          content: &id007
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: 下游服务不可用或熔断降级
+          content: *id007
+        '400':
+          description: 请求参数校验失败
+          content: *id007
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id007
+        '500':
+          description: 服务器内部错误
+          content: *id007
   /analyze/api/average-speed:
     get:
       tags:
@@ -175,12 +259,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_ApiLogAverageResponse__'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '403':
+          description: 无权限访问
+          content: &id008
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 回退查询 NestJS 失败
+          content: *id008
+        '400':
+          description: 请求参数校验失败
+          content: *id008
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id008
+        '500':
+          description: 服务器内部错误
+          content: *id008
   /analyze/api/called-count:
     get:
       tags:
@@ -195,12 +291,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_ApiLogCalledCountResponse__'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '403':
+          description: 无权限访问
+          content: &id009
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 回退查询 NestJS 失败
+          content: *id009
+        '400':
+          description: 请求参数校验失败
+          content: *id009
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id009
+        '500':
+          description: 服务器内部错误
+          content: *id009
   /chat/models:
     get:
       tags:
@@ -215,12 +323,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_str__'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '400':
+          description: 请求参数校验失败
+          content: &id010
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id010
+        '500':
+          description: 服务器内部错误
+          content: *id010
   /chat/send:
     post:
       tags:
@@ -241,18 +355,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatResponse'
-        '422':
-          description: Validation Error
-          content:
+        '400':
+          description: 请求参数校验失败
+          content: &id011
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id011
+        '500':
+          description: 服务器内部错误
+          content: *id011
   /chat/stream:
     post:
       tags:
@@ -283,18 +397,18 @@ paths:
                 oneOf:
                 - $ref: '#/components/schemas/ChatResponse'
                 - $ref: '#/components/schemas/OpenAIStreamChunk'
-        '422':
-          description: Validation Error
-          content:
+        '400':
+          description: 请求参数校验失败
+          content: &id012
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id012
+        '500':
+          description: 服务器内部错误
+          content: *id012
   /generate/tags:
     post:
       tags:
@@ -315,18 +429,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_str__'
-        '422':
-          description: Validation Error
-          content:
+        '400':
+          description: 请求参数校验失败
+          content: &id013
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id013
+        '500':
+          description: 服务器内部错误
+          content: *id013
   /generate/ai_comment/{article_id}:
     post:
       tags:
@@ -348,18 +462,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_GenerateCommentTaskResponse_'
-        '422':
-          description: Validation Error
-          content:
+        '400':
+          description: 请求参数校验失败
+          content: &id014
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id014
+        '500':
+          description: 服务器内部错误
+          content: *id014
   /generate/ai_comment_with_reference/{article_id}:
     post:
       tags:
@@ -381,18 +495,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_GenerateCommentTaskResponse_'
-        '422':
-          description: Validation Error
-          content:
+        '400':
+          description: 请求参数校验失败
+          content: &id015
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id015
+        '500':
+          description: 服务器内部错误
+          content: *id015
   /test/fastapi:
     get:
       tags:
@@ -407,12 +521,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_str_'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '400':
+          description: 请求参数校验失败
+          content: &id016
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id016
+        '500':
+          description: 服务器内部错误
+          content: *id016
   /task/update-analyze-caches:
     post:
       tags:
@@ -427,12 +547,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '403':
+          description: 内部接口禁止外部访问
+          content: &id017
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id017
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id017
+        '500':
+          description: 服务器内部错误
+          content: *id017
   /task/vector:
     post:
       tags:
@@ -452,18 +581,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 内部接口禁止外部访问
+          content: &id018
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id018
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id018
+        '500':
+          description: 服务器内部错误
+          content: *id018
   /task/init-hash-cache:
     post:
       tags:
@@ -479,12 +611,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '403':
+          description: 内部接口禁止外部访问
+          content: &id019
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id019
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id019
+        '500':
+          description: 服务器内部错误
+          content: *id019
   /task/clear-analyze-caches:
     post:
       tags:
@@ -499,12 +640,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '403':
+          description: 内部接口禁止外部访问
+          content: &id020
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id020
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id020
+        '500':
+          description: 服务器内部错误
+          content: *id020
   /task/sync-neo4j:
     post:
       tags:
@@ -535,18 +685,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 内部接口禁止外部访问
+          content: &id021
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id021
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id021
+        '500':
+          description: 服务器内部错误
+          content: *id021
   /task/sync-warehouse:
     post:
       tags:
@@ -566,18 +719,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 内部接口禁止外部访问
+          content: &id022
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id022
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id022
+        '500':
+          description: 服务器内部错误
+          content: *id022
   /ai_history/list:
     get:
       tags:
@@ -599,18 +755,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_list_AiHistoryResponse__'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 无权限访问
+          content: &id023
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id023
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id023
+        '500':
+          description: 服务器内部错误
+          content: *id023
   /ai_history/{user_id}:
     delete:
       tags:
@@ -632,18 +791,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 无权限访问
+          content: &id024
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 用户不存在
+          content: *id024
+        '502':
+          description: 校验用户的 Spring 调用失败
+          content: *id024
+        '400':
+          description: 请求参数校验失败
+          content: *id024
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id024
+        '500':
+          description: 服务器内部错误
+          content: *id024
   /analyze/user/new-followers:
     get:
       tags:
@@ -672,18 +840,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_UserFollowerResponse_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 无权限访问
+          content: &id025
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id025
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id025
+        '500':
+          description: 服务器内部错误
+          content: *id025
   /analyze/user/article-view-distribution:
     get:
       tags:
@@ -705,18 +876,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ArticleViewDistributionResponse_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 无权限访问
+          content: &id026
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id026
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id026
+        '500':
+          description: 服务器内部错误
+          content: *id026
   /analyze/user/author-follow-statistics:
     get:
       tags:
@@ -738,18 +912,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_AuthorFollowStatisticsResponse_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 无权限访问
+          content: &id027
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id027
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id027
+        '500':
+          description: 服务器内部错误
+          content: *id027
   /analyze/user/monthly-comment-trend:
     get:
       tags:
@@ -771,18 +948,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ActionTrendResponse_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 无权限访问
+          content: &id028
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id028
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id028
+        '500':
+          description: 服务器内部错误
+          content: *id028
   /analyze/user/monthly-like-trend:
     get:
       tags:
@@ -804,18 +984,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ActionTrendResponse_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 无权限访问
+          content: &id029
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id029
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id029
+        '500':
+          description: 服务器内部错误
+          content: *id029
   /analyze/user/monthly-collect-trend:
     get:
       tags:
@@ -837,18 +1020,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ActionTrendResponse_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 无权限访问
+          content: &id030
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id030
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id030
+        '500':
+          description: 服务器内部错误
+          content: *id030
   /analyze/user/profile:
     get:
       tags:
@@ -870,18 +1056,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_UserProfileResponse_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 无权限访问
+          content: &id031
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: 下游 Spring 服务调用失败
+          content: *id031
+        '503':
+          description: 下游服务不可用或熔断降级
+          content: *id031
+        '400':
+          description: 请求参数校验失败
+          content: *id031
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id031
+        '500':
+          description: 服务器内部错误
+          content: *id031
   /graph-search/enhance:
     post:
       tags:
@@ -902,18 +1097,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_GraphSearchEnhanceResp_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 无权限访问
+          content: &id032
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id032
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id032
+        '500':
+          description: 服务器内部错误
+          content: *id032
   /vector-search/enhance:
     post:
       tags:
@@ -934,18 +1132,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_VectorSearchEnhanceResp_'
-        '422':
-          description: Validation Error
-          content:
+        '403':
+          description: 无权限访问
+          content: &id033
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Embedding 配置缺失或模型初始化失败
+          content: *id033
+        '400':
+          description: 请求参数校验失败
+          content: *id033
         '401':
           description: 用户未登录或登录已失效
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+          content: *id033
+        '500':
+          description: 服务器内部错误
+          content: *id033
   /algorithm/search/weights:
     get:
       tags:
@@ -960,12 +1164,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_SearchWeightsResponse_'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '403':
+          description: 无权限访问
+          content: &id034
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id034
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id034
+        '500':
+          description: 服务器内部错误
+          content: *id034
   /algorithm/search/script:
     get:
       tags:
@@ -980,12 +1193,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_SearchScriptResponseData_'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '403':
+          description: 无权限访问
+          content: &id035
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id035
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id035
+        '500':
+          description: 服务器内部错误
+          content: *id035
   /algorithm/search/script-params:
     get:
       tags:
@@ -1000,12 +1222,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_ScriptParamsResponse_'
-        '401':
-          description: 用户未登录或登录已失效
-          content:
+        '403':
+          description: 无权限访问
+          content: &id036
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: 请求参数校验失败
+          content: *id036
+        '401':
+          description: 用户未登录或登录已失效
+          content: *id036
+        '500':
+          description: 服务器内部错误
+          content: *id036
 components:
   schemas:
     AIServiceType:
@@ -2588,23 +2819,25 @@ components:
       type: object
       title: WarehouseSyncDTO
       description: 数仓同步请求，按资源名精确定位需要刷新的源表
-    UnauthorizedResponse:
+    ErrorResponse:
       type: object
       description: 统一错误响应
       properties:
         code:
           type: integer
-          description: 响应码
-        data:
-          type: 'null'
-          description: 返回数据
+          format: int32
+          example: 400
+          description: 响应码，与 HTTP 状态码一致
         msg:
           type: string
           description: 响应消息
+        data:
+          type: 'null'
+          description: 返回数据
       required:
       - code
-      - data
       - msg
+      - data
 tags:
 - name: AI历史模块
   description: AI历史相关API，包括创建AI历史记录、获取所有AI历史记录、删除用户所有AI历史记录等

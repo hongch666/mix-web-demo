@@ -3,6 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, ListResponse, success
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireAdmin, requireInternalToken
 from app.dependencies import AnalyzeServiceDep, DbSession
 from app.internal.schemas import (
@@ -22,6 +23,7 @@ router: APIRouter = APIRouter(
     summary="获取前10篇文章",
     description="获取阅读量前10的文章",
     response_model=ApiResponse[ListResponse[dict[str, Any]]],
+    responses=SwaggerConfig.REMOTE_FAILURE_RESPONSES,
 )
 @log("获取前10篇文章")
 async def get_top10_articles(
@@ -42,6 +44,7 @@ async def get_top10_articles(
     summary="生成词云图",
     description="根据文章生成词云图（支持Redis缓存，24h过期）",
     response_model=ApiResponse[str],
+    responses=SwaggerConfig.REMOTE_FAILURE_RESPONSES,
 )
 @log("生成词云图")
 async def get_wordcloud(
@@ -72,6 +75,10 @@ async def get_current_wordcloud_url(
     summary="获取文章数据Excel",
     description="导出文章数据到Excel并上传到OSS",
     response_model=ApiResponse[str],
+    responses={
+        **SwaggerConfig.FORBIDDEN_RESPONSE,
+        **SwaggerConfig.REMOTE_FAILURE_RESPONSES,
+    },
 )
 @requireAdmin
 @log("获取文章数据Excel")
@@ -91,6 +98,7 @@ async def get_excel(
     summary="获取文章统计信息",
     description="返回平台文章的阅读量、文章数、活跃作者数、点赞与收藏的汇总值及平均值",
     response_model=ApiResponse[ArticleStatisticsResponse],
+    responses=SwaggerConfig.REMOTE_FAILURE_RESPONSES,
 )
 @log("获取文章统计信息")
 async def get_article_statistics(
@@ -109,6 +117,7 @@ async def get_article_statistics(
     summary="按分类统计文章数量",
     description="获取所有大分类的文章数量分布，包括没有文章的分类",
     response_model=ApiResponse[ListResponse[CategoryArticleCountResponse]],
+    responses=SwaggerConfig.REMOTE_FAILURE_RESPONSES,
 )
 @log("按分类统计文章数量")
 async def get_article_count_by_category(
@@ -129,6 +138,7 @@ async def get_article_count_by_category(
     summary="获取月度文章发布统计",
     description="获取全部月份的文章发布数量统计（从最早有数据的月份到当前月，缺失月份置为0）",
     response_model=ApiResponse[ListResponse[MonthlyPublishCountResponse]],
+    responses=SwaggerConfig.REMOTE_FAILURE_RESPONSES,
 )
 @log("获取月度文章发布统计")
 async def get_monthly_publish_count(
