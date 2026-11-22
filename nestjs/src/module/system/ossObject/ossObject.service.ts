@@ -267,7 +267,7 @@ export class OssObjectService {
     // FastAPI 当前词云 URL：缓存过期返回空，旧词云对象按无引用清理
     try {
       const response: Record<string, unknown> = await this.nacosService.call({
-        serviceName: "fastapi",
+        serviceName: Defaults.FASTAPI_SERVICE_NAME,
         method: "GET",
         path: "/analyze/internal/wordcloud-url",
       });

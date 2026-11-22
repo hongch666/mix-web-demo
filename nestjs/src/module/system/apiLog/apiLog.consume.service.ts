@@ -76,7 +76,7 @@ export class ApiLogConsumerService implements OnApplicationShutdown {
    * 订阅 api-log-queue 消息，兼容对象与 JSON 字符串两种格式，归一化字段校验后入攒批队列
    */
   @RabbitSubscribe({
-    queue: "api-log-queue",
+    queue: Defaults.RABBITMQ_API_LOG_QUEUE,
   })
   async handleApiLog(msg: unknown): Promise<void> {
     // MQ 消费没有请求上下文，手动开启一段根 span，让消费日志关联到本次处理

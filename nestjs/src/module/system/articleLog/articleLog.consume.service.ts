@@ -74,7 +74,7 @@ export class LogConsumerService implements OnApplicationShutdown {
    * 订阅 article-log-queue 消息，校验必填字段与操作类型后构建 DTO 入攒批队列
    */
   @RabbitSubscribe({
-    queue: "article-log-queue",
+    queue: Defaults.RABBITMQ_ARTICLE_LOG_QUEUE,
   })
   async handleArticleLog(msg: unknown): Promise<void> {
     // MQ 消费没有请求上下文，手动开启一段根 span，让消费日志关联到本次处理

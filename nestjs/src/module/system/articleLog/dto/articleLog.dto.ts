@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
 } from "class-validator";
+import { Messages } from "src/common/constants";
 import { ExposeName } from "src/common/utils/snakeCase";
 
 export enum ArticleAction {
@@ -39,14 +40,14 @@ export interface ArticleLogMessage {
 export class CreateArticleLogDto {
   @ApiProperty({ description: "用户ID", example: "1" })
   @ExposeName()
-  @IsNumber({}, { message: "用户ID必须是数字" })
-  @IsNotEmpty({ message: "用户ID不能为空" })
+  @IsNumber({}, { message: Messages.DTO_USER_ID_MUST_BE_NUMBER })
+  @IsNotEmpty({ message: Messages.DTO_USER_ID_NOT_EMPTY })
   userId!: number;
 
   @ApiProperty({ description: "文章ID", example: "1" })
   @ExposeName()
-  @IsNumber({}, { message: "文章ID必须是数字" })
-  @IsNotEmpty({ message: "文章ID不能为空" })
+  @IsNumber({}, { message: Messages.DTO_ARTICLE_ID_MUST_BE_NUMBER })
+  @IsNotEmpty({ message: Messages.DTO_ARTICLE_ID_NOT_EMPTY })
   articleId!: number;
 
   @ApiProperty({
@@ -54,7 +55,7 @@ export class CreateArticleLogDto {
     enum: ArticleAction,
     example: ArticleAction.EDIT,
   })
-  @IsEnum(ArticleAction, { message: "操作类型必须是有效的枚举值" })
+  @IsEnum(ArticleAction, { message: Messages.DTO_ACTION_INVALID_ENUM })
   action!: ArticleAction;
 
   @ApiProperty({
@@ -66,7 +67,7 @@ export class CreateArticleLogDto {
 
   @ApiPropertyOptional({ description: "操作说明", example: "修改了文章标题" })
   @IsOptional()
-  @IsString({ message: "操作说明必须是字符串" })
+  @IsString({ message: Messages.DTO_ACTION_MESSAGE_MUST_BE_STRING })
   msg?: string;
 }
 
@@ -77,24 +78,27 @@ export class QueryArticleLogDto {
   @ApiPropertyOptional({ description: "用户ID" })
   @ExposeName()
   @IsOptional()
-  @IsNumberString({}, { message: "用户ID必须是数字字符串" })
+  @IsNumberString({}, { message: Messages.DTO_USER_ID_MUST_BE_NUMBER_STRING })
   userId?: string;
 
   @ApiPropertyOptional({ description: "文章ID" })
   @ExposeName()
   @IsOptional()
-  @IsNumberString({}, { message: "文章ID必须是数字字符串" })
+  @IsNumberString(
+    {},
+    { message: Messages.DTO_ARTICLE_ID_MUST_BE_NUMBER_STRING },
+  )
   articleId?: string;
 
   @ApiPropertyOptional({ description: "用户名（模糊搜索）" })
   @IsOptional()
-  @IsString({ message: "用户名必须是字符串" })
+  @IsString({ message: Messages.DTO_USERNAME_MUST_BE_STRING })
   username?: string;
 
   @ApiPropertyOptional({ description: "文章标题（模糊搜索）" })
   @ExposeName()
   @IsOptional()
-  @IsString({ message: "文章标题必须是字符串" })
+  @IsString({ message: Messages.DTO_ARTICLE_TITLE_MUST_BE_STRING })
   articleTitle?: string;
 
   @ApiPropertyOptional({
@@ -115,29 +119,29 @@ export class QueryArticleLogDto {
     ],
   })
   @IsOptional()
-  @IsEnum(ArticleAction, { message: "操作类型必须是有效的枚举值" })
+  @IsEnum(ArticleAction, { message: Messages.DTO_ACTION_INVALID_ENUM })
   action?: ArticleAction;
 
   @ApiPropertyOptional({ description: "开始时间（格式：yyyy-MM-dd HH:mm:ss）" })
   @ExposeName()
   @IsOptional()
-  @IsString({ message: "开始时间必须是字符串" })
+  @IsString({ message: Messages.DTO_START_TIME_MUST_BE_STRING })
   startTime?: string;
 
   @ApiPropertyOptional({ description: "结束时间（格式：yyyy-MM-dd HH:mm:ss）" })
   @ExposeName()
   @IsOptional()
-  @IsString({ message: "结束时间必须是字符串" })
+  @IsString({ message: Messages.DTO_END_TIME_MUST_BE_STRING })
   endTime?: string;
 
   @ApiPropertyOptional({ description: "页码", example: "1" })
   @IsOptional()
-  @IsNumberString({}, { message: "页码必须是数字字符串" })
+  @IsNumberString({}, { message: Messages.DTO_PAGE_MUST_BE_NUMBER_STRING })
   page?: string;
 
   @ApiPropertyOptional({ description: "每页条数", example: "10" })
   @IsOptional()
-  @IsNumberString({}, { message: "每页条数必须是数字字符串" })
+  @IsNumberString({}, { message: Messages.DTO_PAGE_SIZE_MUST_BE_NUMBER_STRING })
   size?: string;
 
   @ApiPropertyOptional({
@@ -145,6 +149,6 @@ export class QueryArticleLogDto {
       "翻页游标，传上一页返回的 nextCursor 时忽略 page 并按 createdAt + _id 顺序取下一页",
   })
   @IsOptional()
-  @IsString({ message: "翻页游标必须是字符串" })
+  @IsString({ message: Messages.DTO_CURSOR_MUST_BE_STRING })
   cursor?: string;
 }

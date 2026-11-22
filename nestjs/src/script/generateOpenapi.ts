@@ -9,6 +9,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { AppModule } from "src/app/app.module";
 import { buildSwaggerDocument } from "src/app/swagger";
+import { Messages } from "src/common/constants";
 
 const LOG_CONTEXT = "OpenApiGenerator";
 const DEFAULT_OUTPUT_FILE = "docs/openapi.json";
@@ -53,7 +54,7 @@ async function generateOpenApiDoc(): Promise<void> {
 
     const pathCount: number = Object.keys(document.paths ?? {}).length;
     Logger.log(
-      `NestJS OpenAPI 文档已生成: ${outputFile}、${yamlOutputFile}（接口路径 ${pathCount} 个）`,
+      Messages.OPENAPI_DOC_GENERATED(outputFile, yamlOutputFile, pathCount),
       LOG_CONTEXT,
     );
   } finally {
@@ -62,6 +63,6 @@ async function generateOpenApiDoc(): Promise<void> {
 }
 
 void generateOpenApiDoc().catch((error: unknown) => {
-  Logger.error("NestJS OpenAPI 文档生成失败", error, LOG_CONTEXT);
+  Logger.error(Messages.OPENAPI_DOC_GENERATION_FAILED(), error, LOG_CONTEXT);
   process.exit(1);
 });

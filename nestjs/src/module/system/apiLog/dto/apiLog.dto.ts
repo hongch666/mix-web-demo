@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
 } from "class-validator";
+import { Messages } from "src/common/constants";
 import { ExposeName } from "src/common/utils/snakeCase";
 
 export enum ApiMethod {
@@ -38,25 +39,25 @@ export interface ApiLogMessage {
 export class CreateApiLogDto {
   @ApiProperty({ description: "用户ID", example: 1 })
   @ExposeName()
-  @IsNumber({}, { message: "用户ID必须是数字" })
-  @IsNotEmpty({ message: "用户ID不能为空" })
+  @IsNumber({}, { message: Messages.DTO_USER_ID_MUST_BE_NUMBER })
+  @IsNotEmpty({ message: Messages.DTO_USER_ID_NOT_EMPTY })
   userId!: number;
 
   @ApiProperty({ description: "用户名", example: "admin" })
-  @IsString({ message: "用户名必须是字符串" })
-  @IsNotEmpty({ message: "用户名不能为空" })
+  @IsString({ message: Messages.DTO_USERNAME_MUST_BE_STRING })
+  @IsNotEmpty({ message: Messages.DTO_USERNAME_NOT_EMPTY })
   username!: string;
 
   @ApiProperty({ description: "API描述", example: "获取用户信息" })
   @ExposeName()
-  @IsString({ message: "API描述必须是字符串" })
-  @IsNotEmpty({ message: "API描述不能为空" })
+  @IsString({ message: Messages.DTO_API_DESCRIPTION_MUST_BE_STRING })
+  @IsNotEmpty({ message: Messages.DTO_API_DESCRIPTION_NOT_EMPTY })
   apiDescription!: string;
 
   @ApiProperty({ description: "API路径", example: "/api/users/1" })
   @ExposeName()
-  @IsString({ message: "API路径必须是字符串" })
-  @IsNotEmpty({ message: "API路径不能为空" })
+  @IsString({ message: Messages.DTO_API_PATH_MUST_BE_STRING })
+  @IsNotEmpty({ message: Messages.DTO_API_PATH_NOT_EMPTY })
   apiPath!: string;
 
   @ApiProperty({
@@ -65,8 +66,8 @@ export class CreateApiLogDto {
     example: ApiMethod.GET,
   })
   @ExposeName()
-  @IsEnum(ApiMethod, { message: "API方法必须是有效的枚举值" })
-  @IsNotEmpty({ message: "API方法不能为空" })
+  @IsEnum(ApiMethod, { message: Messages.DTO_API_METHOD_INVALID_ENUM })
+  @IsNotEmpty({ message: Messages.DTO_API_METHOD_NOT_EMPTY })
   apiMethod!: ApiMethod;
 
   @ApiPropertyOptional({
@@ -89,8 +90,8 @@ export class CreateApiLogDto {
 
   @ApiProperty({ description: "响应时间（毫秒）", example: 100 })
   @ExposeName()
-  @IsNumber({}, { message: "响应时间必须是数字" })
-  @IsNotEmpty({ message: "响应时间不能为空" })
+  @IsNumber({}, { message: Messages.DTO_RESPONSE_TIME_MUST_BE_NUMBER })
+  @IsNotEmpty({ message: Messages.DTO_RESPONSE_TIME_NOT_EMPTY })
   responseTime!: number;
 }
 
@@ -101,24 +102,24 @@ export class QueryApiLogDto {
   @ApiPropertyOptional({ description: "用户ID" })
   @ExposeName()
   @IsOptional()
-  @IsNumberString({}, { message: "用户ID必须是数字字符串" })
+  @IsNumberString({}, { message: Messages.DTO_USER_ID_MUST_BE_NUMBER_STRING })
   userId?: string;
 
   @ApiPropertyOptional({ description: "用户名（模糊搜索）" })
   @IsOptional()
-  @IsString({ message: "用户名必须是字符串" })
+  @IsString({ message: Messages.DTO_USERNAME_MUST_BE_STRING })
   username?: string;
 
   @ApiPropertyOptional({ description: "API描述（模糊搜索）" })
   @ExposeName()
   @IsOptional()
-  @IsString({ message: "API描述必须是字符串" })
+  @IsString({ message: Messages.DTO_API_DESCRIPTION_MUST_BE_STRING })
   apiDescription?: string;
 
   @ApiPropertyOptional({ description: "API路径（模糊搜索）" })
   @ExposeName()
   @IsOptional()
-  @IsString({ message: "API路径必须是字符串" })
+  @IsString({ message: Messages.DTO_API_PATH_MUST_BE_STRING })
   apiPath?: string;
 
   @ApiPropertyOptional({
@@ -127,29 +128,29 @@ export class QueryApiLogDto {
   })
   @ExposeName()
   @IsOptional()
-  @IsEnum(ApiMethod, { message: "API方法必须是有效的枚举值" })
+  @IsEnum(ApiMethod, { message: Messages.DTO_API_METHOD_INVALID_ENUM })
   apiMethod?: ApiMethod;
 
   @ApiPropertyOptional({ description: "开始时间（格式：yyyy-MM-dd HH:mm:ss）" })
   @ExposeName()
   @IsOptional()
-  @IsString({ message: "开始时间必须是字符串" })
+  @IsString({ message: Messages.DTO_START_TIME_MUST_BE_STRING })
   startTime?: string;
 
   @ApiPropertyOptional({ description: "结束时间（格式：yyyy-MM-dd HH:mm:ss）" })
   @ExposeName()
   @IsOptional()
-  @IsString({ message: "结束时间必须是字符串" })
+  @IsString({ message: Messages.DTO_END_TIME_MUST_BE_STRING })
   endTime?: string;
 
   @ApiPropertyOptional({ description: "页码", example: "1" })
   @IsOptional()
-  @IsNumberString({}, { message: "页码必须是数字字符串" })
+  @IsNumberString({}, { message: Messages.DTO_PAGE_MUST_BE_NUMBER_STRING })
   page?: string;
 
   @ApiPropertyOptional({ description: "每页条数", example: "10" })
   @IsOptional()
-  @IsNumberString({}, { message: "每页条数必须是数字字符串" })
+  @IsNumberString({}, { message: Messages.DTO_PAGE_SIZE_MUST_BE_NUMBER_STRING })
   size?: string;
 
   @ApiPropertyOptional({
@@ -157,6 +158,6 @@ export class QueryApiLogDto {
       "翻页游标，传上一页返回的 nextCursor 时忽略 page 并按 createdAt + _id 顺序取下一页",
   })
   @IsOptional()
-  @IsString({ message: "翻页游标必须是字符串" })
+  @IsString({ message: Messages.DTO_CURSOR_MUST_BE_STRING })
   cursor?: string;
 }

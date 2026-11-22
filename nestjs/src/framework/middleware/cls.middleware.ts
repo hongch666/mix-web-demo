@@ -1,6 +1,7 @@
 import { Injectable, NestMiddleware } from "@nestjs/common";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { ClsService } from "nestjs-cls";
+import { HeaderNames } from "src/common/constants";
 
 /**
  * 请求上下文中间件，在 AppModule 中对所有路由生效，将请求头中的用户身份与令牌解析后写入 CLS 上下文
@@ -14,15 +15,16 @@ export class ClsMiddleware implements NestMiddleware {
    */
   use(req: FastifyRequest, _res: FastifyReply, next: () => void): void {
     // Fastify 会将所有头部转换为小写，这里统一把 userId 规整成 number 再写入 CLS
-    const rawUserId: string | string[] | undefined = req.headers["x-user-id"];
+    const rawUserId: string | string[] | undefined =
+      req.headers[HeaderNames.USER_ID_LOWER];
     const rawUsername: string | string[] | undefined =
-      req.headers["x-username"];
+      req.headers[HeaderNames.USERNAME_LOWER];
     const rawSessionId: string | string[] | undefined =
-      req.headers["x-session-id"];
+      req.headers[HeaderNames.SESSION_ID_LOWER];
     const rawToken: string | string[] | undefined =
-      req.headers["authorization"];
+      req.headers[HeaderNames.AUTHORIZATION_LOWER];
     const rawInternalToken: string | string[] | undefined =
-      req.headers["x-internal-token"];
+      req.headers[HeaderNames.INTERNAL_TOKEN_LOWER];
     const userId: number | undefined = this.parseUserId(rawUserId);
     const username: string = this.parseUsername(rawUsername);
     const sessionId: string = this.parseSessionId(rawSessionId);
@@ -87,7 +89,7 @@ export class ClsMiddleware implements NestMiddleware {
     } else {
       header = value || "";
     }
-    const bearerPrefix = "Bearer ";
+    const bearerPrefix: string = HeaderNames.BEARER_PREFIX;
     if (header.startsWith(bearerPrefix)) {
       return header.slice(bearerPrefix.length);
     }

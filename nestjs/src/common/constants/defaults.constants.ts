@@ -44,6 +44,14 @@ export class Defaults {
   /** 日志保留月数：API 日志与文章日志超过该期限后由定时任务分批清理，数仓按同一保留期清理已过期日志 */
   static readonly LOG_RETENTION_MONTHS = 3;
 
+  // ===== RabbitMQ 队列 =====
+
+  /** API 日志生产者与消费者共用的队列名 */
+  static readonly RABBITMQ_API_LOG_QUEUE = "api-log-queue";
+
+  /** 文章日志生产者与消费者共用的队列名 */
+  static readonly RABBITMQ_ARTICLE_LOG_QUEUE = "article-log-queue";
+
   // ===== RabbitMQ 日志攒批配置 =====
 
   /** 批量大小：达到此数量立即 flush */
@@ -62,6 +70,14 @@ export class Defaults {
 
   /** 删除墓碑单页返回上限：供数仓按游标拉取，与日志同步接口的单页上限保持一致 */
   static readonly LOG_DELETION_SYNC_MAX_LIMIT = 5000;
+
+  // ===== 远程调用服务名 =====
+
+  /** Nacos 中 Spring 服务的注册名 */
+  static readonly SPRING_SERVICE_NAME = "spring";
+
+  /** Nacos 中 FastAPI 服务的注册名 */
+  static readonly FASTAPI_SERVICE_NAME = "fastapi";
 
   // ===== 远程调用连接池 =====
 

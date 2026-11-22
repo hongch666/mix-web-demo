@@ -9,6 +9,11 @@ import type { TypeOrmModuleOptions } from "@nestjs/typeorm";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import mongoose from "mongoose";
 import { ClsModule } from "nestjs-cls";
+import { Defaults } from "src/common/constants";
+import type {
+  DatabaseConfig,
+  MongoDbConfig,
+} from "src/common/interfaces/databaseConfig.interface";
 import config, { isTaskEnabled } from "src/config";
 import { AllExceptionsFilter } from "src/framework/filters/allException.filter";
 import { InternalTokenGuard } from "src/framework/guards/internalToken.guard";
@@ -24,31 +29,6 @@ import { NacosModule } from "src/module/common/nacos/nacos.module";
 import { RedisModule } from "src/module/common/redis/redis.module";
 import { SystemModule } from "src/module/system/system.module";
 import { ClsMiddleware } from "../framework/middleware/cls.middleware";
-
-/**
- * MySQL 数据库连接配置结构，供 TypeOrmModule 异步初始化读取
- */
-interface DatabaseConfig {
-  type: "mysql";
-  host: string;
-  port: number;
-  username: string;
-  password: string;
-  database: string;
-  logging: boolean;
-}
-
-/**
- * MongoDB 数据库连接配置结构，供 MongooseModule 异步初始化读取
- */
-interface MongoDbConfig {
-  host: string;
-  port: number;
-  username?: string;
-  password?: string;
-  dbName: string;
-  logging: boolean;
-}
 
 /**
  * NestJS 根模块，聚合 TypeORM、Mongoose、Redis、RabbitMQ、CLS 等基础设施配置，并注册全局过滤器、拦截器与守卫
@@ -138,11 +118,11 @@ interface MongoDbConfig {
           connectionInitOptions: { timeout: 10000 },
           queues: [
             {
-              name: "api-log-queue",
+              name: Defaults.RABBITMQ_API_LOG_QUEUE,
               options: { durable: true },
             },
             {
-              name: "article-log-queue",
+              name: Defaults.RABBITMQ_ARTICLE_LOG_QUEUE,
               options: { durable: true },
             },
           ],

@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { Defaults, HeaderNames } from "src/common/constants";
 import { NacosService } from "../nacos/nacos.service";
 
 /**
@@ -23,7 +24,7 @@ export class SpringClientService {
    */
   async getUserById(id: number): Promise<Record<string, unknown>> {
     return await this.nacosService.call({
-      serviceName: "spring",
+      serviceName: Defaults.SPRING_SERVICE_NAME,
       method: "GET",
       path: `/users/${id}`,
     });
@@ -34,7 +35,7 @@ export class SpringClientService {
    */
   async getUserByIds(ids: number[]): Promise<Record<string, unknown>> {
     return await this.nacosService.call({
-      serviceName: "spring",
+      serviceName: Defaults.SPRING_SERVICE_NAME,
       method: "POST",
       path: "/users/batch",
       body: { ids },
@@ -46,7 +47,7 @@ export class SpringClientService {
    */
   async getUsersByName(name: string): Promise<Record<string, unknown>> {
     return await this.nacosService.call({
-      serviceName: "spring",
+      serviceName: Defaults.SPRING_SERVICE_NAME,
       method: "GET",
       path: "/users/by-name",
       queryParams: { name },
@@ -60,7 +61,7 @@ export class SpringClientService {
     dto: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return await this.nacosService.call({
-      serviceName: "spring",
+      serviceName: Defaults.SPRING_SERVICE_NAME,
       method: "POST",
       path: "/users/github-user",
       body: dto,
@@ -72,7 +73,7 @@ export class SpringClientService {
    */
   async isAdminUser(userId: number): Promise<Record<string, unknown>> {
     return await this.nacosService.call({
-      serviceName: "spring",
+      serviceName: Defaults.SPRING_SERVICE_NAME,
       method: "GET",
       path: `/users/is-admin/${userId}`,
     });
@@ -83,7 +84,7 @@ export class SpringClientService {
    */
   async listOssReferenceUrls(): Promise<Record<string, unknown>> {
     return await this.nacosService.call({
-      serviceName: "spring",
+      serviceName: Defaults.SPRING_SERVICE_NAME,
       method: "GET",
       path: "/oss/internal/references",
     });
@@ -98,7 +99,7 @@ export class SpringClientService {
   ): Promise<Record<string, unknown>> {
     const safeUsername: string = username.replace(/[^\x20-\x7E]/g, "").trim();
     return await this.nacosService.call({
-      serviceName: "spring",
+      serviceName: Defaults.SPRING_SERVICE_NAME,
       method: "POST",
       path: "/users/github/token-ticket",
       body: {
@@ -106,7 +107,7 @@ export class SpringClientService {
         username,
       },
       headers: {
-        "X-Username": safeUsername,
+        [HeaderNames.USERNAME]: safeUsername,
       },
     });
   }
@@ -118,7 +119,7 @@ export class SpringClientService {
    */
   async getArticleById(id: number): Promise<Record<string, unknown>> {
     return await this.nacosService.call({
-      serviceName: "spring",
+      serviceName: Defaults.SPRING_SERVICE_NAME,
       method: "GET",
       path: `/articles/${id}`,
     });
@@ -129,7 +130,7 @@ export class SpringClientService {
    */
   async getArticleByIds(ids: number[]): Promise<Record<string, unknown>> {
     return await this.nacosService.call({
-      serviceName: "spring",
+      serviceName: Defaults.SPRING_SERVICE_NAME,
       method: "POST",
       path: "/articles/batch",
       body: { ids },
@@ -141,7 +142,7 @@ export class SpringClientService {
    */
   async getArticlesByTitle(title: string): Promise<Record<string, unknown>> {
     return await this.nacosService.call({
-      serviceName: "spring",
+      serviceName: Defaults.SPRING_SERVICE_NAME,
       method: "GET",
       path: "/articles/by-title",
       queryParams: { title },

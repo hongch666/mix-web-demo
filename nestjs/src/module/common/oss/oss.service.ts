@@ -19,16 +19,6 @@ export function detectOssRuntime(): OssRuntime {
 }
 
 /**
- * 阿里云 OSS 配置结构，包含访问密钥、存储桶名称与访问端点
- */
-export interface OssConfig {
-  access_key_id: string;
-  access_key_secret: string;
-  bucket_name: string;
-  endpoint: string;
-}
-
-/**
  * OSS 对象简要信息，列取接口返回
  */
 export interface OssObjectInfo {

@@ -9,7 +9,7 @@ import { Reflector } from "@nestjs/core";
 import { ClsService } from "nestjs-cls";
 import { Observable } from "rxjs";
 import { finalize } from "rxjs/operators";
-import { Messages } from "src/common/constants";
+import { Defaults, Messages } from "src/common/constants";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { API_LOG_KEY, ApiLogOptions } from "../decorators/apiLog.decorator";
 
@@ -200,12 +200,16 @@ export class ApiLogInterceptor implements NestInterceptor {
         apiMethod: method,
         queryParams: queryParams,
         pathParams: pathParams,
-        requestBody: isMultipart ? "[文件上传]" : requestBody,
+        requestBody: isMultipart ? Messages.FILE_UPLOAD_MARK : requestBody,
         responseTime: responseTime,
       };
 
       // 发送到消息队列，await 发布结果以便失败时进入下方 catch 记录日志
-      await this.amqpConnection.publish("", "api-log-queue", apiLogMessage);
+      await this.amqpConnection.publish(
+        "",
+        Defaults.RABBITMQ_API_LOG_QUEUE,
+        apiLogMessage,
+      );
 
       this.logger.info(
         Messages.API_LOG_QUEUE_SENT(JSON.stringify(apiLogMessage)),
@@ -242,7 +246,7 @@ export class ApiLogInterceptor implements NestInterceptor {
     try {
       // 检查是否是 multipart/form-data 请求（文件上传）
       if (contentType.includes("multipart/form-data")) {
-        params.push("RequestType: multipart/form-data [文件上传]");
+        params.push(Messages.MULTIPART_REQUEST_TYPE(Messages.FILE_UPLOAD_MARK));
         return params.join("\n");
       }
 
@@ -309,7 +313,7 @@ export class ApiLogInterceptor implements NestInterceptor {
     ) {
       return "QueryDto";
     }
-    return "Query参数";
+    return Messages.QUERY_PARAM_FALLBACK;
   }
 
   /**
