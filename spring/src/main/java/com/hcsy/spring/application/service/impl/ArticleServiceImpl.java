@@ -364,41 +364,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * 将导出查询结果行逐列映射为文章 Excel 行模型
-     */
-    private ArticleExcelRow toExcelRow(Row row) {
-        return new ArticleExcelRow(
-            row.get("id", Long.class),
-            row.get("title", String.class),
-            row.get("content", String.class),
-            row.get("user_id", Long.class),
-            row.get("username", String.class),
-            row.get("tags", String.class),
-            row.get("status", Integer.class),
-            row.get("create_at", LocalDateTime.class),
-            row.get("update_at", LocalDateTime.class),
-            row.get("views", Integer.class),
-            row.get("sub_category_id", Integer.class),
-            row.get("sub_category_name", String.class),
-            row.get("category_id", Long.class),
-            row.get("category_name", String.class),
-            row.get("like_count", Long.class),
-            row.get("collect_count", Long.class),
-            row.get("author_follow_count", Long.class));
-    }
-
-    /**
-     * 将文章 Excel 行模型转换为导出视图对象
-     */
-    private ArticleExportVO toArticleExportVO(ArticleExcelRow row) {
-        return new ArticleExportVO(
-            row.id(), row.title(), row.content(), row.userId(), row.username(),
-            row.tags(), row.status(), row.createAt(), row.updateAt(), row.views(),
-            row.subCategoryId(), row.subCategoryName(), row.categoryId(),
-            row.categoryName(), row.likeCount(), row.collectCount(), row.authorFollowCount());
-    }
-
-    /**
      * 实现查询已发布阅读量最高的Top10文章并转为同步视图
      */
     @Override
@@ -448,6 +413,42 @@ public class ArticleServiceImpl implements ArticleService {
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
+
+    /**
+     * 将导出查询结果行逐列映射为文章 Excel 行模型
+     */
+    private ArticleExcelRow toExcelRow(Row row) {
+        return new ArticleExcelRow(
+            row.get("id", Long.class),
+            row.get("title", String.class),
+            row.get("content", String.class),
+            row.get("user_id", Long.class),
+            row.get("username", String.class),
+            row.get("tags", String.class),
+            row.get("status", Integer.class),
+            row.get("create_at", LocalDateTime.class),
+            row.get("update_at", LocalDateTime.class),
+            row.get("views", Integer.class),
+            row.get("sub_category_id", Integer.class),
+            row.get("sub_category_name", String.class),
+            row.get("category_id", Long.class),
+            row.get("category_name", String.class),
+            row.get("like_count", Long.class),
+            row.get("collect_count", Long.class),
+            row.get("author_follow_count", Long.class));
+    }
+
+    /**
+     * 将文章 Excel 行模型转换为导出视图对象
+     */
+    private ArticleExportVO toArticleExportVO(ArticleExcelRow row) {
+        return new ArticleExportVO(
+            row.id(), row.title(), row.content(), row.userId(), row.username(),
+            row.tags(), row.status(), row.createAt(), row.updateAt(), row.views(),
+            row.subCategoryId(), row.subCategoryName(), row.categoryId(),
+            row.categoryName(), row.likeCount(), row.collectCount(), row.authorFollowCount());
+    }
+
     /**
      * 将文章分页结果批量补充作者与子分类、分类信息
      */
