@@ -14,7 +14,7 @@ from tenacity import (
 from app.core.auth import InternalTokenUtil
 from app.core.base import Logger
 from app.core.config import load_config
-from app.core.constants import HttpCode, Messages
+from app.core.constants import HeaderNames, HttpCode, Messages
 from app.core.errors import BusinessException
 from app.core.middleware import (
     get_current_session_id,
@@ -132,12 +132,12 @@ def _build_default_headers() -> dict[str, str]:
     session_id: str = get_current_session_id() or ""
     token: Optional[str] = get_current_token()
     headers: dict[str, str] = {
-        "X-User-Id": str(user_id) if user_id is not None else "",
-        "X-Username": username,
-        "X-Session-Id": session_id,
+        HeaderNames.USER_ID: str(user_id) if user_id is not None else "",
+        HeaderNames.USERNAME: username,
+        HeaderNames.SESSION_ID: session_id,
     }
     if token:
-        headers["Authorization"] = f"Bearer {token}"
+        headers[HeaderNames.AUTHORIZATION] = f"{HeaderNames.BEARER_PREFIX}{token}"
     return headers
 
 
@@ -152,7 +152,8 @@ def _build_internal_token_header(user_id: str) -> dict[str, str]:
         internal_token: str = internal_token_util.generate_internal_token(
             final_user_id, service_name_config
         )
-        return {"X-Internal-Token": f"Bearer {internal_token}"}
+        token_header: str = f"{HeaderNames.BEARER_PREFIX}{internal_token}"
+        return {HeaderNames.INTERNAL_TOKEN: token_header}
     except Exception as e:
         Logger.error(Messages.INTERNAL_TOKEN_GENERATION_FAILED(e))
         return {}
@@ -161,7 +162,9 @@ def _build_internal_token_header(user_id: str) -> dict[str, str]:
 def _merge_headers(headers: Optional[dict[str, str]]) -> dict[str, str]:
     """合并默认请求头与调用方自定义请求头"""
     default_headers: dict[str, str] = _build_default_headers()
-    default_headers.update(_build_internal_token_header(default_headers["X-User-Id"]))
+    default_headers.update(
+        _build_internal_token_header(default_headers[HeaderNames.USER_ID])
+    )
     merged_headers: dict[str, str] = {**default_headers, **(headers or {})}
     return merged_headers
 
@@ -268,7 +271,7 @@ def _build_remote_service_error(
         return BusinessException(
             Messages.REMOTE_SERVICE_DEGRADED(service_name),
             HttpCode.SERVICE_UNAVAILABLE,
-            "SERVICE_CALL_FAILED",
+            Messages.ERROR_SERVICE_CALL_FAILED,
         )
     if isinstance(error, httpx.HTTPStatusError):
         status_code: int = error.response.status_code

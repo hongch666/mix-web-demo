@@ -69,4 +69,4 @@ def enforce_mongodb_row_scope(filter_dict: Optional[dict[str, Any]]) -> Optional
 
 def log_scope_denial(tool_name: str, denial: str) -> None:
     """记录一次行级范围拒绝，便于审计"""
-    Logger.warning(f"[工具权限] {tool_name} 拒绝执行: {denial}")
+    Logger.warning(Messages.TOOL_SCOPE_DENIAL_LOG(tool_name, denial))

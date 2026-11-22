@@ -52,7 +52,11 @@ async def _update_analyze_caches_async(
             await analyze_service.get_top10_articles_service(db)
             Logger.info(Messages.UPDATE_ANALYZE_CACHES_TOP10_SUCCESS_MESSAGE)
         except Exception as e:
-            Logger.error(Messages.ANALYZE_CACHE_UPDATE_FAILED("前10篇文章", e))
+            Logger.error(
+                Messages.ANALYZE_CACHE_UPDATE_FAILED(
+                    Messages.ANALYZE_CACHE_LABEL_TOP10, e
+                )
+            )
             Logger.debug(traceback.format_exc())
 
         # 2. 更新词云图缓存
@@ -61,7 +65,11 @@ async def _update_analyze_caches_async(
             await analyze_service.get_wordcloud_service()
             Logger.info(Messages.UPDATE_ANALYZE_CACHES_WORDCLOUD_SUCCESS_MESSAGE)
         except Exception as e:
-            Logger.error(Messages.ANALYZE_CACHE_UPDATE_FAILED("词云图", e))
+            Logger.error(
+                Messages.ANALYZE_CACHE_UPDATE_FAILED(
+                    Messages.ANALYZE_CACHE_LABEL_WORDCLOUD, e
+                )
+            )
             Logger.debug(traceback.format_exc())
 
         # 3. 更新文章统计信息缓存
@@ -70,7 +78,11 @@ async def _update_analyze_caches_async(
             await analyze_service.get_article_statistics_service(db)
             Logger.info(Messages.UPDATE_ANALYZE_CACHES_STATISTICS_SUCCESS_MESSAGE)
         except Exception as e:
-            Logger.error(Messages.ANALYZE_CACHE_UPDATE_FAILED("文章统计信息", e))
+            Logger.error(
+                Messages.ANALYZE_CACHE_UPDATE_FAILED(
+                    Messages.ANALYZE_CACHE_LABEL_STATISTICS, e
+                )
+            )
             Logger.debug(traceback.format_exc())
 
         # 4. 更新按分类统计文章数量缓存
@@ -83,7 +95,11 @@ async def _update_analyze_caches_async(
                 Messages.UPDATE_ANALYZE_CACHES_CATEGORY_STATISTICS_SUCCESS_MESSAGE
             )
         except Exception as e:
-            Logger.error(Messages.ANALYZE_CACHE_UPDATE_FAILED("按分类统计文章数量", e))
+            Logger.error(
+                Messages.ANALYZE_CACHE_UPDATE_FAILED(
+                    Messages.ANALYZE_CACHE_LABEL_CATEGORY_STATISTICS, e
+                )
+            )
             Logger.debug(traceback.format_exc())
 
         # 5. 更新月度文章发布统计缓存
@@ -94,7 +110,11 @@ async def _update_analyze_caches_async(
                 Messages.UPDATE_ANALYZE_CACHES_MONTHLY_STATISTICS_SUCCESS_MESSAGE
             )
         except Exception as e:
-            Logger.error(Messages.ANALYZE_CACHE_UPDATE_FAILED("月度文章发布统计", e))
+            Logger.error(
+                Messages.ANALYZE_CACHE_UPDATE_FAILED(
+                    Messages.ANALYZE_CACHE_LABEL_MONTHLY_STATISTICS, e
+                )
+            )
             Logger.debug(traceback.format_exc())
 
         Logger.info(Messages.UPDATE_ANALYZE_CACHES_COMPLETE_MESSAGE)

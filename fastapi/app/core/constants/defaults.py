@@ -185,3 +185,11 @@ class Defaults:
     """非 CJK 字符的 token 估算比例，按 4 字符 1 token 计"""
     CHAT_CONTEXT_TRUNCATED_SUFFIX: str = "..."
     """上下文裁剪后追加的标记，便于模型感知内容已截断"""
+
+    # ===== 统一响应文案 =====
+
+    RESPONSE_MSG_SUCCESS: str = "success"
+    """统一成功响应的默认 msg 取值"""
+
+    RESPONSE_MSG_ERROR: str = "error"
+    """统一错误响应的默认 msg 取值"""

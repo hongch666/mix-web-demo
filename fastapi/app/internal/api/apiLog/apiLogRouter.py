@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, success
-from app.core.constants import SwaggerConfig
+from app.core.constants import Messages, SwaggerConfig
 from app.core.decorators import log, requireAdmin
 from app.dependencies import ApiLogServiceDep
 from app.internal.schemas import ApiLogAverageResponse, ApiLogCalledCountResponse
@@ -24,7 +24,7 @@ router: APIRouter = APIRouter(
         502: {"description": "回退查询 NestJS 失败"},
     },
 )
-@log("获取所有接口的平均响应速度")
+@log(Messages.API_LOG_DESC_API_AVERAGE_SPEED)
 @requireAdmin
 async def get_api_average_speed(
     request: Request, apilogService: ApiLogServiceDep
@@ -47,7 +47,7 @@ async def get_api_average_speed(
         502: {"description": "回退查询 NestJS 失败"},
     },
 )
-@log("获取接口调用次数")
+@log(Messages.API_LOG_DESC_API_CALLED_COUNT)
 @requireAdmin
 async def get_called_count_apis(
     request: Request, apilogService: ApiLogServiceDep

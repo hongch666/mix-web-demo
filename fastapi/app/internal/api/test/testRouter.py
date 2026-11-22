@@ -17,7 +17,7 @@ router: APIRouter = APIRouter(
     description="验证 FastAPI 服务是否正常运行，成功时返回欢迎文案 Hello, I am FastAPI!",
     response_model=ApiResponse[str],
 )
-@log("测试FastAPI服务")
+@log(Messages.API_LOG_DESC_TEST_FASTAPI)
 async def testFastapi(request: Request) -> ApiResponse:
     """测试FastAPI服务接口"""
     return success(Messages.TEST_MESSAGE)

@@ -4,7 +4,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
-from app.core.constants import HttpCode
+from app.core.constants import Defaults, HttpCode
 
 T = TypeVar("T")
 
@@ -14,10 +14,12 @@ class ApiResponse[T](BaseModel):
 
     code: int = Field(description="响应码")
     data: T | None = Field(default=None, description="返回数据")
-    msg: str = Field(default="success", description="响应消息")
+    msg: str = Field(default=Defaults.RESPONSE_MSG_SUCCESS, description="响应消息")
 
 
-def success[T](data: T | None = None, msg: str = "success") -> ApiResponse[T]:
+def success[T](
+    data: T | None = None, msg: str = Defaults.RESPONSE_MSG_SUCCESS
+) -> ApiResponse[T]:
     """返回成功响应"""
 
     return ApiResponse[T](code=HttpCode.OK, data=data, msg=msg)
@@ -25,7 +27,7 @@ def success[T](data: T | None = None, msg: str = "success") -> ApiResponse[T]:
 
 def error(
     code: int = HttpCode.INTERNAL_SERVER_ERROR,
-    msg: str = "error",
+    msg: str = Defaults.RESPONSE_MSG_ERROR,
     data: object | None = None,
 ) -> ApiResponse[object]:
     """返回错误响应"""
