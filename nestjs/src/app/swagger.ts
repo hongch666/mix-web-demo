@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import type { INestApplication } from "@nestjs/common";
 import type { OpenAPIObject } from "@nestjs/swagger";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
@@ -8,26 +11,38 @@ import { applySwaggerSnakeCase } from "src/common/utils/swaggerSnakeCase";
 /** 401 统一错误响应的描述文案 */
 const UNAUTHORIZED_DESCRIPTION = "用户未登录或登录已失效";
 
-/** 401 统一错误响应的 schema 名 */
-const UNAUTHORIZED_SCHEMA_NAME = "UnauthorizedResponse";
+/** 统一错误响应的 schema 名 */
+const ERROR_SCHEMA_NAME = "ErrorResponse";
 
 /**
- * 为所有接口补统一的 401 未登录响应
+ * 全局通用错误码与描述
  *
- * 未登录或令牌失效由 AllExceptionsFilter 统一转为 error(401, msg)，
- * 该响应对所有接口通用，这里统一注入，避免每个控制器重复声明
+ * 400 由全局 ValidationPipe 与守卫参数校验抛出，401 由鉴权守卫抛出，
+ * 500 由 AllExceptionsFilter 兜底，三类响应对所有接口通用
  */
-function applyCommonUnauthorizedResponses(document: OpenAPIObject): void {
+const COMMON_ERROR_RESPONSES: ReadonlyArray<readonly [string, string]> = [
+  ["400", "请求参数校验失败"],
+  ["401", UNAUTHORIZED_DESCRIPTION],
+  ["500", "服务器内部错误"],
+];
+
+/**
+ * 为所有接口补全局通用错误响应（400、401、500）
+ *
+ * 参数校验失败、未登录/令牌失效与未捕获异常由 AllExceptionsFilter 统一转为
+ * error(code, msg)，这些响应对所有接口通用，这里统一注入，避免每个控制器重复声明
+ */
+function applyCommonErrorResponses(document: OpenAPIObject): void {
   const schemas = document.components?.schemas;
   if (schemas) {
-    schemas[UNAUTHORIZED_SCHEMA_NAME] = {
+    schemas[ERROR_SCHEMA_NAME] = {
       type: "object",
       description: "统一错误响应",
       properties: {
         code: {
           type: "integer",
           format: "int32",
-          example: 401,
+          example: 400,
           description: "响应码，与 HTTP 状态码一致",
         },
         msg: { type: "string", description: "响应消息" },
@@ -43,18 +58,107 @@ function applyCommonUnauthorizedResponses(document: OpenAPIObject): void {
         continue;
       }
       const op = operation as OperationObject;
-      if (op.responses?.["401"]) {
+      const responses = { ...(op.responses ?? {}) };
+      const errorContent = {
+        "application/json": {
+          schema: { $ref: `#/components/schemas/${ERROR_SCHEMA_NAME}` },
+        },
+      };
+      for (const [code, description] of COMMON_ERROR_RESPONSES) {
+        if (responses[code]) {
+          continue;
+        }
+        responses[code] = { description, content: errorContent };
+      }
+      // 控制器上用 @ApiResponse 声明的业务错误码可能只写描述，
+      // 统一错误体在这里补齐，避免每个接口重复声明 schema 引用
+      for (const [code, response] of Object.entries(responses)) {
+        if (!isErrorStatus(code)) {
+          continue;
+        }
+        const apiResponse = response as LooseRecord | undefined;
+        if (apiResponse && !("content" in apiResponse)) {
+          apiResponse.content = errorContent;
+        }
+      }
+      op.responses = responses;
+    }
+  }
+}
+
+/**
+ * 判断响应状态码是否落在 400~599 的错误区间
+ *
+ * OpenAPI 的 responses 键既有数字也有 default 这类占位键，非数字一律视为非错误码
+ */
+function isErrorStatus(code: string): boolean {
+  const value: number = Number.parseInt(code, 10);
+  return Number.isInteger(value) && value >= 400 && value <= 599;
+}
+
+/** 网关 block-internal 路由返回的 403 描述，与 apisix.yaml 的 response_example 对齐 */
+const GATEWAY_FORBIDDEN_DESCRIPTION = "内部接口禁止外部访问";
+
+/** 共享的网关黑名单 JSON（由 scripts/swag-init.sh 在生成前从 apisix.yaml 抽取） */
+const GATEWAY_BLOCKLIST_JSON = resolve(
+  process.cwd(),
+  "../scripts/generated/gateway-blocklist.json",
+);
+
+/** 读取网关黑名单，文件不存在时返回空数组（单独构建文档时跳过注入） */
+function loadGatewayBlocklist(): string[] {
+  try {
+    const data = JSON.parse(readFileSync(GATEWAY_BLOCKLIST_JSON, "utf-8")) as {
+      uris?: string[];
+    };
+    return data.uris ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/** OpenAPI path 是否命中网关黑名单：精确匹配或以 * 结尾的前缀匹配 */
+function isGatewayBlocked(path: string, blocklist: string[]): boolean {
+  return blocklist.some((uri) =>
+    uri.endsWith("*") ? path.startsWith(uri.slice(0, -1)) : path === uri,
+  );
+}
+
+/**
+ * 为网关 block-internal 拦截的接口补 403
+ *
+ * 必须在 applySwaggerSnakeCase 之后调用：网关黑名单是对外路径（下划线命名），
+ * 转换前的路径可能是驼峰，先注入会漏匹配
+ */
+function applyGatewayInternalResponses(document: OpenAPIObject): void {
+  const blocklist = loadGatewayBlocklist();
+  if (blocklist.length === 0) {
+    return;
+  }
+  for (const [path, pathItem] of Object.entries(document.paths ?? {})) {
+    if (!isGatewayBlocked(path, blocklist)) {
+      continue;
+    }
+    for (const [method, operation] of Object.entries(pathItem)) {
+      if (method === "parameters") {
+        continue;
+      }
+      const op = operation as OperationObject;
+      const existing = op.responses?.["403"] as
+        | { description?: string }
+        | undefined;
+      if (existing) {
+        // 网关是外部第一道关，被拦截的接口统一用网关描述覆盖应用级 403
+        existing.description = GATEWAY_FORBIDDEN_DESCRIPTION;
         continue;
       }
       op.responses = {
         ...(op.responses ?? {}),
-        "401": {
-          description: UNAUTHORIZED_DESCRIPTION,
+        "403": {
+          description: GATEWAY_FORBIDDEN_DESCRIPTION,
           content: {
             "application/json": {
-              schema: {
-                $ref: `#/components/schemas/${UNAUTHORIZED_SCHEMA_NAME}`,
-              },
+              schema: { $ref: `#/components/schemas/${ERROR_SCHEMA_NAME}` },
             },
           },
         },
@@ -394,11 +498,13 @@ export function buildSwaggerDocument(app: INestApplication): OpenAPIObject {
 
   const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
 
-  applyCommonUnauthorizedResponses(document);
+  applyCommonErrorResponses(document);
 
   hoistInlineSchemas(document);
 
   const named: OpenAPIObject = applySwaggerSnakeCase(document);
+
+  applyGatewayInternalResponses(named);
 
   markNullableProperties(named);
 

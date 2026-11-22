@@ -1,5 +1,10 @@
 import { Controller, Get, Param } from "@nestjs/common";
-import { ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
+import {
+  ApiOperation,
+  ApiParam,
+  ApiResponse as ApiErrorResponse,
+  ApiTags,
+} from "@nestjs/swagger";
 import {
   ApiResponseModel,
   SwaggerStringData,
@@ -25,6 +30,10 @@ export class DownloadController {
     description: "通过id下载对应文章Word",
   })
   @ApiParam({ name: "id", type: "number", description: "文章ID" })
+  @ApiErrorResponse({
+    status: 404,
+    description: "文章不存在或模板目录未配置",
+  })
   @ApiLog("下载文章Word")
   @ApiResponseModel({ data: SwaggerStringData })
   async downloadWord(@Param("id") id: number): Promise<ApiResponse<string>> {
@@ -41,6 +50,7 @@ export class DownloadController {
     description: "通过id下载对应文章的Markdown并返回OSS链接",
   })
   @ApiParam({ name: "id", type: "number", description: "文章ID" })
+  @ApiErrorResponse({ status: 404, description: "文章不存在" })
   @ApiLog("下载文章Markdown")
   @ApiResponseModel({ data: SwaggerStringData })
   async downloadMarkdown(
@@ -61,6 +71,7 @@ export class DownloadController {
     description: "通过id下载对应文章的PDF并返回OSS链接",
   })
   @ApiParam({ name: "id", type: "number", description: "文章ID" })
+  @ApiErrorResponse({ status: 404, description: "文章不存在" })
   @ApiLog("下载文章PDF")
   @ApiResponseModel({ data: SwaggerStringData })
   async downloadPdf(@Param("id") id: number): Promise<ApiResponse<string>> {

@@ -28,12 +28,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Redis 客户端未就绪，无法生成 OAuth state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -103,12 +133,32 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -146,12 +196,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -179,12 +259,32 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -319,12 +419,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "非管理员无权查询",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -369,12 +499,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -411,12 +571,52 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "非管理员无权删除",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "日志 ID 不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -453,12 +653,52 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "非管理员无权删除",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "存在不存在的日志 ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -495,12 +735,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -537,12 +807,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -570,12 +870,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -620,12 +950,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -755,12 +1115,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "非管理员无权查询",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -797,12 +1187,52 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "非管理员无权删除",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "日志 ID 不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -839,12 +1269,52 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "非管理员无权删除",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "存在不存在的日志 ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -889,12 +1359,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -922,12 +1422,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -955,12 +1485,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -998,12 +1558,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "文章不存在或模板目录未配置",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1041,12 +1631,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "文章不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1084,12 +1704,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "文章不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1117,12 +1767,32 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1160,12 +1830,32 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1203,12 +1893,32 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1246,12 +1956,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1298,12 +2038,62 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "请求体中没有带 filename 的文件分片",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "文件大小超过限制",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "文件对象无法读取",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1360,12 +2150,72 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "非管理员无权上传 PDF",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "请求体中没有带 filename 的文件分片",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "文件大小超过限制",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "扩展名不是 .pdf 或文件对象无法读取",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1412,12 +2262,62 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "请求体中没有带 filename 的文件分片",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "文件大小超过限制",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "文件对象无法读取",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1456,12 +2356,32 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1510,12 +2430,32 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1572,12 +2512,32 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1624,12 +2584,32 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1667,12 +2647,32 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1710,12 +2710,32 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1743,12 +2763,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1776,12 +2826,42 @@
               }
             }
           },
+          "400": {
+            "description": "请求参数校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "用户未登录或登录已失效",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "内部接口禁止外部访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2082,14 +3162,14 @@
           "query"
         ]
       },
-      "UnauthorizedResponse": {
+      "ErrorResponse": {
         "type": "object",
         "description": "统一错误响应",
         "properties": {
           "code": {
             "type": "integer",
             "format": "int32",
-            "example": 401,
+            "example": 400,
             "description": "响应码，与 HTTP 状态码一致"
           },
           "msg": {

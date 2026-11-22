@@ -19,12 +19,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsGithubAuthorizeGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Redis 客户端未就绪，无法生成 OAuth state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 获取 GitHub 授权地址
       tags:
         - GitHub 登录模块
@@ -69,12 +87,24 @@ paths:
               description: 重定向地址
               schema:
                 type: string
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: GitHub 回调处理
       tags:
         - GitHub 登录模块
@@ -96,12 +126,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsEmailSendCodePostResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 发送邮箱验证码
       tags:
         - 邮件模块
@@ -117,12 +165,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsTestNestjsGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 测试NestJS服务
       tags:
         - 测试模块
@@ -213,12 +273,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsArticleLogsListGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 非管理员无权查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 查询文章日志
       tags:
         - 文章日志模块
@@ -244,12 +322,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsArticleLogsSyncGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 游标同步文章日志
       tags:
         - 文章日志模块
@@ -270,12 +366,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsArticleLogsByIdDeleteResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 非管理员无权删除
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 日志 ID 不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 删除文章日志
       tags:
         - 文章日志模块
@@ -296,12 +416,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsArticleLogsBatchByIdsDeleteResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 非管理员无权删除
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 存在不存在的日志 ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 批量删除文章日志
       tags:
         - 文章日志模块
@@ -323,12 +467,30 @@ paths:
               schema:
                 $ref: >-
                   #/components/schemas/NestjsArticleLogsSearchHistoryByUserIdGetResponse
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 获取搜索历史
       tags:
         - 文章日志模块
@@ -350,12 +512,30 @@ paths:
               schema:
                 $ref: >-
                   #/components/schemas/NestjsArticleLogsViewDistributionByUserIdGetResponse
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 获取文章浏览分布
       tags:
         - 文章日志模块
@@ -372,12 +552,30 @@ paths:
               schema:
                 $ref: >-
                   #/components/schemas/NestjsArticleLogsSearchKeywordsGetResponse
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 获取搜索关键词
       tags:
         - 文章日志模块
@@ -403,12 +601,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsLogDeletionsSyncGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 游标同步日志删除墓碑
       tags:
         - 日志删除同步模块
@@ -494,12 +710,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsApiLogsListGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 非管理员无权查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 查询API日志
       tags:
         - API日志模块
@@ -520,12 +754,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsApiLogsByIdDeleteResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 非管理员无权删除
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 日志 ID 不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 删除API日志
       tags:
         - API日志模块
@@ -546,12 +804,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsApiLogsBatchByIdsDeleteResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 非管理员无权删除
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 存在不存在的日志 ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 批量删除API日志
       tags:
         - API日志模块
@@ -577,12 +859,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsApiLogsSyncGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 游标同步API日志
       tags:
         - API日志模块
@@ -598,12 +898,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsApiLogsAverageSpeedGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 获取所有接口的平均响应速度
       tags:
         - API日志模块
@@ -619,12 +937,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsApiLogsCalledCountGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 获取接口调用次数
       tags:
         - API日志模块
@@ -646,12 +982,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsDownloadWordByIdGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 文章不存在或模板目录未配置
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 下载文章Word
       tags:
         - 下载模块
@@ -673,12 +1027,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsDownloadMarkdownByIdGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 文章不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 下载文章Markdown
       tags:
         - 下载模块
@@ -700,12 +1072,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsDownloadPdfByIdGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 文章不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 下载文章PDF
       tags:
         - 下载模块
@@ -721,12 +1111,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsMongoToolsCollectionsGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 列出日志集合
       tags:
         - MongoDB工具模块
@@ -748,12 +1150,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsMongoToolsQueryPostResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 查询日志文档
       tags:
         - MongoDB工具模块
@@ -775,12 +1189,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsMongoToolsAggregatePostResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 聚合查询日志文档
       tags:
         - MongoDB工具模块
@@ -802,12 +1228,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsUploadPostResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 上传本地文件到 OSS
       tags:
         - 文件上传
@@ -835,12 +1279,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsUploadImagePostResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 请求体中没有带 filename 的文件分片
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: 文件大小超过限制
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: 文件对象无法读取
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 上传图片到 OSS
       tags:
         - 文件上传
@@ -874,12 +1348,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsUploadPdfPostResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 非管理员无权上传 PDF
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 请求体中没有带 filename 的文件分片
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: 文件大小超过限制
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: 扩展名不是 .pdf 或文件对象无法读取
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 上传 PDF 到 OSS（管理员）
       tags:
         - 文件上传
@@ -907,12 +1417,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsUploadPublicImagePostResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 请求体中没有带 filename 的文件分片
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: 文件大小超过限制
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: 文件对象无法读取
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 匿名上传图片到 OSS
       tags:
         - 文件上传
@@ -935,12 +1475,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsTableSettingsGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 获取指定用户所有页面的列配置
       tags:
         - 表格列设置
@@ -970,12 +1522,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsTableSettingsByTableKeyGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 获取指定页面的列配置
       tags:
         - 表格列设置
@@ -1010,12 +1574,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsTableSettingsByTableKeyPutResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 保存指定页面的列配置
       tags:
         - 表格列设置
@@ -1045,12 +1621,24 @@ paths:
               schema:
                 $ref: >-
                   #/components/schemas/NestjsTableSettingsByTableKeyDeleteResponse
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 删除指定页面的列配置
       tags:
         - 表格列设置
@@ -1072,12 +1660,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsSqlToolsTablesGetResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 获取表结构信息
       tags:
         - SQL工具
@@ -1099,12 +1699,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsSqlToolsQueryPostResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 执行只读参数化SQL
       tags:
         - SQL工具
@@ -1120,12 +1732,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsTaskApilogPostResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 手动执行清理API日志任务
       tags:
         - 定时任务模块
@@ -1141,12 +1771,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NestjsTaskOssCleanupPostResponse'
+        '400':
+          description: 请求参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: 用户未登录或登录已失效
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: 内部接口禁止外部访问
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       summary: 手动执行 OSS 对象清理任务
       tags:
         - 定时任务模块
@@ -1364,14 +2012,14 @@ components:
             limit: 10
       required:
         - query
-    UnauthorizedResponse:
+    ErrorResponse:
       type: object
       description: 统一错误响应
       properties:
         code:
           type: integer
           format: int32
-          example: 401
+          example: 400
           description: 响应码，与 HTTP 状态码一致
         msg:
           type: string
