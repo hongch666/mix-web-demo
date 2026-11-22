@@ -488,14 +488,15 @@ async def test_export_articles_to_excel_appends_rows(
     assert file_path.endswith(Messages.EXPORT_ARTICLES_EXCEL_FILENAME)
 
 
-# 超长内容截断到 Excel 单元格上限并移除非法控制字符
+# 超长内容截断到 Excel 单元格上限并移除 C0/C1 控制字符
 def test_sanitize_excel_text_truncates_and_strips_illegal_chars() -> None:
-    raw = "=" + "\x00" + "a" * 40000
+    raw = "=" + "\x00" + "\x9a" + "a" * 40000
 
     cleaned = analyze_module._sanitize_excel_text(raw)
 
     assert len(cleaned) == 32767
     assert "\x00" not in cleaned
+    assert "\x9a" not in cleaned
     assert cleaned.startswith("=a")
 
 
