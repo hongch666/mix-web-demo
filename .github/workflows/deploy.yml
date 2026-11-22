@@ -104,6 +104,8 @@ jobs:
           # 运维手动拉取/排障就被卡住了
           git checkout -f -B prod "$commit"
           git reset --hard "$commit"
+          # 确保入口脚本可直接执行
+          chmod +x mix
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
           echo "prev_commit=$prev_commit" >> "$GITHUB_OUTPUT"
