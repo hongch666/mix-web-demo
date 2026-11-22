@@ -42,12 +42,12 @@ func (t *InternalTokenUtil) GenerateInternalToken(userID int64, serviceName stri
 	claims := InternalTokenClaims{
 		UserID:      userID,
 		ServiceName: serviceName,
-		TokenType:   "internal",
+		TokenType:   constants.InternalTokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
-			Subject:   "internal_service_token",
+			Subject:   constants.InternalTokenSubject,
 		},
 	}
 

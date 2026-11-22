@@ -13,7 +13,7 @@ import (
 func Success(w http.ResponseWriter, data any) {
 	httpx.WriteJson(w, http.StatusOK, map[string]any{
 		"code": constants.HttpOK,
-		"msg":  "success",
+		"msg":  constants.RESULT_SUCCESS,
 		"data": unwrapData(data),
 	})
 }

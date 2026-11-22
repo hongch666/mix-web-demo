@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"app/common/client"
+	"app/common/constants"
 	"app/common/utils"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -25,7 +26,7 @@ func NewSpringClient(
 	tokenUtil *utils.InternalTokenUtil,
 ) *SpringClient {
 	return &SpringClient{
-		serviceName:  "spring",
+		serviceName:  constants.SpringServiceName,
 		namingClient: nc,
 		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig, logger, tokenUtil),
 	}

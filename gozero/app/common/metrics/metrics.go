@@ -1,33 +1,37 @@
 package metrics
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"app/common/constants"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 var (
 	ClientRequests = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: NameClientRequests,
-		Help: "下游服务调用次数",
+		Help: constants.METRIC_HELP_CLIENT_REQUESTS,
 	}, []string{LabelTargetService, LabelMethod, LabelOutcome})
 	ClientDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    NameClientDuration,
-		Help:    "下游服务调用耗时",
+		Help:    constants.METRIC_HELP_CLIENT_DURATION,
 		Buckets: prometheus.DefBuckets,
 	}, []string{LabelTargetService, LabelMethod})
 	TaskRuns = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: NameTaskRuns,
-		Help: "定时任务执行次数",
+		Help: constants.METRIC_HELP_TASK_RUNS,
 	}, []string{LabelTask, LabelResult})
 	TaskDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    NameTaskDuration,
-		Help:    "定时任务执行耗时",
+		Help:    constants.METRIC_HELP_TASK_DURATION,
 		Buckets: prometheus.DefBuckets,
 	}, []string{LabelTask})
 	SearchRequests = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: NameSearchRequests,
-		Help: "搜索请求次数",
+		Help: constants.METRIC_HELP_SEARCH_REQUESTS,
 	}, []string{LabelMode, LabelResult})
 	SearchDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    NameSearchDuration,
-		Help:    "搜索请求耗时",
+		Help:    constants.METRIC_HELP_SEARCH_DURATION,
 		Buckets: prometheus.DefBuckets,
 	}, []string{LabelMode})
 )

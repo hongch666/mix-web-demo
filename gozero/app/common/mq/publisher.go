@@ -57,7 +57,7 @@ func (p *Publisher) PublishJSON(queue string, payload any) error {
 	}
 
 	return p.publisher.Publish(data, []string{queue},
-		rabbitmq.WithPublishOptionsContentType("application/json"),
+		rabbitmq.WithPublishOptionsContentType(constants.ContentTypeJSON),
 		rabbitmq.WithPublishOptionsTimestamp(time.Now()),
 	)
 }

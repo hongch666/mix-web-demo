@@ -128,6 +128,18 @@ const (
 	RedisConnectTimeout = 5 * time.Second
 	// DDL 执行超时（如建表）
 	DDLOperationTimeout = 10 * time.Second
+
+	// ===== 定时任务 =====
+
+	// ES 同步定时任务的名称，用作监控指标与日志标签
+	TASK_ES_SYNC_NAME = "es-sync"
+	// 定时任务链路追踪 span 名称前缀
+	TASK_SPAN_PREFIX = "job:"
+
+	// ===== 数据同步变更类型 =====
+
+	// ES 文章的删除变更类型，其余类型统一按写入处理
+	SYNC_CHANGE_TYPE_DELETE = "delete"
 )
 
 // 敏感字段掩码

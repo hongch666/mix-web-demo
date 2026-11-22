@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	articlesIndexName = "articles"
+	// articlesIndexName 文章检索索引名，与索引创建及同步链路共用同一常量
+	articlesIndexName = constants.ES_ARTICLES_INDEX_NAME
 )
 
 // SearchArticle 按关键词与过滤条件检索文章索引，支持脚本复合打分与高亮，并用 Spring 实时统计覆盖 ES 快照数据

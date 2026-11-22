@@ -164,9 +164,9 @@ func (hub *SSEHubManager) BroadcastNotification(ctx context.Context, notificatio
 // HandleConnection 处理 SSE 连接的完整生命周期，包括：注册客户端、发送初始化消息、事件循环（心跳+消息分发），Handler 层只需调用此方法，无需关心 SSE 协议细节
 func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Request, userID int64) {
 	// 设置SSE响应头
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set(constants.HeaderContentType, "text/event-stream")
+	w.Header().Set(constants.HeaderCacheControl, "no-cache")
+	w.Header().Set(constants.HeaderConnection, "keep-alive")
 
 	connectionID := NewConnectionID("sse")
 	sendCh := make(chan any, constants.SSESendBufferSize)

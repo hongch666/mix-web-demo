@@ -44,7 +44,7 @@ func NewFastapiClient(
 	}
 
 	return &FastapiClient{
-		serviceName:             "fastapi",
+		serviceName:             constants.FastapiServiceName,
 		namingClient:            nc,
 		serviceDisc:             client.NewServiceDiscovery(nc, remoteCallConfig, logger, tokenUtil),
 		searchWeightsCache:      cache.NewMultiLevelCache[search.SearchWeights](cacheOptions),
