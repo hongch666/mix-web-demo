@@ -39,8 +39,8 @@ public class TokenCleanupTask {
         long startedAt = System.nanoTime();
         String lockKey = RedisKeys.lockTaskTokenCleanup();
         // 定时任务没有请求入口，手动开启一段根 span，让本次执行的日志关联到同一个 trace_id
-        Tracer tracer = GlobalOpenTelemetry.get().getTracer("spring");
-        Span span = tracer.spanBuilder("job:token-cleanup").startSpan();
+        Tracer tracer = GlobalOpenTelemetry.get().getTracer(Defaults.SPRING_SERVICE_NAME);
+        Span span = tracer.spanBuilder("job:" + Defaults.TOKEN_CLEANUP_TASK_NAME).startSpan();
 
         return distributedLock.tryLock(lockKey, Defaults.LOCK_TASK_TOKEN_CLEANUP_EXPIRE)
             .switchIfEmpty(Mono.fromRunnable(
@@ -50,10 +50,11 @@ public class TokenCleanupTask {
                 .doOnSubscribe(ignored -> logInfo(span, Messages.TASK_START))
                 .doOnSuccess(ignored -> logInfo(span, Messages.TASK_END))
                 .doOnSuccess(ignored -> metricsRecorder.recordTask(
-                    "token-cleanup", "success", System.nanoTime() - startedAt))
+                    Defaults.TOKEN_CLEANUP_TASK_NAME, Defaults.METRIC_STATUS_SUCCESS, System.nanoTime() - startedAt))
                 .doOnError(error -> {
                     metricsRecorder.recordTask(
-                        "token-cleanup", "failure", System.nanoTime() - startedAt);
+                        Defaults.TOKEN_CLEANUP_TASK_NAME, Defaults.METRIC_STATUS_FAILURE,
+                        System.nanoTime() - startedAt);
                     span.recordException(error);
                     logError(span, Messages.TASK_EXCEPTION + error.getMessage(), error);
                 })

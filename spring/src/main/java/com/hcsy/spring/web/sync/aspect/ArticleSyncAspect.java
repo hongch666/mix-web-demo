@@ -109,7 +109,7 @@ public class ArticleSyncAspect extends AbstractSyncAspect<ArticleSync> {
             case DELETE -> {
                 if (ids.size() > 1) {
                     builder.articleIds(ids)
-                        .msg(articleSync.description() + ids.size() + "篇文章")
+                        .msg(String.format(Messages.SYNC_ARTICLE_BATCH_DELETE, articleSync.description(), ids.size()))
                         .content(ArticleLogMessage.Content.builder().ids(ids).build());
                 } else {
                     Long articleId = ids.isEmpty() ? null : ids.get(0);

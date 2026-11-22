@@ -11,6 +11,15 @@ public final class RedisKeys {
     private RedisKeys() {
     }
 
+    // ===== 会话哈希字段 =====
+
+    /** 用户会话哈希里访问令牌的字段名 */
+    public static final String SESSION_HASH_ACCESS_TOKEN = "accessToken";
+    /** 用户会话哈希里刷新令牌的字段名 */
+    public static final String SESSION_HASH_REFRESH_TOKEN = "refreshToken";
+    /** 用户会话哈希里用户名的字段名 */
+    public static final String SESSION_HASH_USERNAME = "username";
+
     // ===== 用户状态 =====
 
     /** 用户在线状态 key 的前缀 */

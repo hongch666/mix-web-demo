@@ -5,6 +5,7 @@ import java.security.SecureRandom;
 import org.springframework.stereotype.Service;
 
 import com.hcsy.spring.application.service.EmailVerificationService;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.utils.RedisUtil;
@@ -22,7 +23,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class EmailVerificationServiceImpl implements EmailVerificationService {
 
-    private static final long VERIFICATION_CODE_EXPIRY = 10 * 60;
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final RedisUtil redisUtil;
@@ -36,9 +36,10 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     public Mono<Void> sendVerificationCode(String email, String type) {
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
         String key = RedisKeys.emailVerify(email);
-        return redisUtil.set(key, code, VERIFICATION_CODE_EXPIRY)
+        return redisUtil.set(key, code, Defaults.EMAIL_CODE_TTL_SECONDS)
             .doOnSuccess(ignored -> logger.info(Messages.CODE_SAVE + email))
-            .then(nestjsClient.sendEmailCode(new InternalEmailCodeSendDTO(email, code, type, 10)))
+            .then(nestjsClient.sendEmailCode(
+                new InternalEmailCodeSendDTO(email, code, type, Defaults.EMAIL_CODE_TTL_MINUTES)))
             .doOnSuccess(ignored -> logger.info(Messages.CODE_SUCCESS + email))
             .then();
     }
@@ -74,6 +75,6 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
      */
     @Override
     public Mono<Void> markEmailAsVerified(String email) {
-        return redisUtil.set(RedisKeys.emailVerified(email), "true", 24 * 60 * 60).then();
+        return redisUtil.set(RedisKeys.emailVerified(email), "true", Defaults.EMAIL_VERIFIED_TTL_SECONDS).then();
     }
 }

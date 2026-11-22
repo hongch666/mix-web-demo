@@ -31,7 +31,7 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
-    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String BEARER_PREFIX = Defaults.BEARER_PREFIX;
     /** 允许从 query 读取 token 的路径前缀：仅浏览器无法设置自定义请求头的 WebSocket / SSE 长连接 */
     private static final List<String> QUERY_TOKEN_PATH_PREFIXES = List.of("/ws/", "/sse/");
 
@@ -54,8 +54,10 @@ public class TokenServiceImpl implements TokenService {
             String expectedValue = userId + ":" + sessionId;
 
             Mono<String> accessIndex = redisUtil.get(RedisKeys.userAccess(accessToken)).defaultIfEmpty("");
-            Mono<String> storedAccessToken = redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty("");
-            Mono<String> sessionUsername = redisUtil.getHash(sessionKey, "username").defaultIfEmpty("");
+            Mono<String> storedAccessToken = redisUtil.getHash(sessionKey, RedisKeys.SESSION_HASH_ACCESS_TOKEN)
+                .defaultIfEmpty("");
+            Mono<String> sessionUsername = redisUtil.getHash(sessionKey, RedisKeys.SESSION_HASH_USERNAME)
+                .defaultIfEmpty("");
             Mono<String> userStatus = redisUtil.get(RedisKeys.userStatus(userId)).defaultIfEmpty("");
 
             return Mono.zip(accessIndex, storedAccessToken, sessionUsername, userStatus)
@@ -103,9 +105,9 @@ public class TokenServiceImpl implements TokenService {
         String sessionsKey = RedisKeys.userSessions(userId);
 
         Mono<Void> sessionWrite = Mono.when(
-            redisUtil.putHash(sessionKey, "accessToken", accessToken),
-            redisUtil.putHash(sessionKey, "refreshToken", refreshToken),
-            redisUtil.putHash(sessionKey, "username", username))
+            redisUtil.putHash(sessionKey, RedisKeys.SESSION_HASH_ACCESS_TOKEN, accessToken),
+            redisUtil.putHash(sessionKey, RedisKeys.SESSION_HASH_REFRESH_TOKEN, refreshToken),
+            redisUtil.putHash(sessionKey, RedisKeys.SESSION_HASH_USERNAME, username))
             .then(redisUtil.expire(sessionKey, refreshTtl))
             .then();
         Mono<Void> reverseIndexes = Mono.when(
@@ -123,7 +125,7 @@ public class TokenServiceImpl implements TokenService {
                 return UserLoginVO.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
-                    .tokenType("Bearer")
+                    .tokenType(Defaults.TOKEN_TYPE_BEARER)
                     .expiresIn(accessTtl)
                     .refreshExpiresIn(refreshTtl)
                     .userId(userId)
@@ -176,8 +178,10 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public Mono<Void> removeSession(Long userId, String sessionId) {
         String sessionKey = RedisKeys.userSession(userId, sessionId);
-        Mono<String> accessToken = redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty("");
-        Mono<String> refreshToken = redisUtil.getHash(sessionKey, "refreshToken").defaultIfEmpty("");
+        Mono<String> accessToken = redisUtil.getHash(sessionKey, RedisKeys.SESSION_HASH_ACCESS_TOKEN)
+            .defaultIfEmpty("");
+        Mono<String> refreshToken = redisUtil.getHash(sessionKey, RedisKeys.SESSION_HASH_REFRESH_TOKEN)
+            .defaultIfEmpty("");
 
         return Mono.zip(accessToken, refreshToken).flatMap(tokens -> {
             Mono<Void> deleteIndexes = Mono.when(
@@ -262,9 +266,11 @@ public class TokenServiceImpl implements TokenService {
         String expectedValue = userId + ":" + sessionId;
 
         Mono<String> reverseValue = redisUtil.get(RedisKeys.userRefresh(refreshToken)).defaultIfEmpty("");
-        Mono<String> storedRefreshToken = redisUtil.getHash(sessionKey, "refreshToken").defaultIfEmpty("");
-        Mono<String> username = redisUtil.getHash(sessionKey, "username").defaultIfEmpty("");
-        Mono<String> oldAccessToken = redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty("");
+        Mono<String> storedRefreshToken = redisUtil.getHash(sessionKey, RedisKeys.SESSION_HASH_REFRESH_TOKEN)
+            .defaultIfEmpty("");
+        Mono<String> username = redisUtil.getHash(sessionKey, RedisKeys.SESSION_HASH_USERNAME).defaultIfEmpty("");
+        Mono<String> oldAccessToken = redisUtil.getHash(sessionKey, RedisKeys.SESSION_HASH_ACCESS_TOKEN)
+            .defaultIfEmpty("");
 
         return Mono.zip(reverseValue, storedRefreshToken, username, oldAccessToken)
             .flatMap(values -> {
@@ -304,8 +310,8 @@ public class TokenServiceImpl implements TokenService {
             oldAccessToken.isEmpty() ? Mono.empty() : redisUtil.delete(RedisKeys.userAccess(oldAccessToken)),
             redisUtil.delete(RedisKeys.userRefresh(oldRefreshToken)));
         Mono<Void> updateSession = Mono.when(
-            redisUtil.putHash(sessionKey, "accessToken", newAccessToken),
-            redisUtil.putHash(sessionKey, "refreshToken", newRefreshToken))
+            redisUtil.putHash(sessionKey, RedisKeys.SESSION_HASH_ACCESS_TOKEN, newAccessToken),
+            redisUtil.putHash(sessionKey, RedisKeys.SESSION_HASH_REFRESH_TOKEN, newRefreshToken))
             .then(redisUtil.expire(sessionKey, refreshTtl))
             .then();
         Mono<Void> writeIndexes = Mono.when(
@@ -319,7 +325,7 @@ public class TokenServiceImpl implements TokenService {
             return TokenRefreshVO.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
-                .tokenType("Bearer")
+                .tokenType(Defaults.TOKEN_TYPE_BEARER)
                 .expiresIn(accessTtl)
                 .refreshExpiresIn(refreshTtl)
                 .userId(userId)
@@ -363,7 +369,7 @@ public class TokenServiceImpl implements TokenService {
      */
     private Mono<Boolean> isSessionValid(Long userId, String sessionId) {
         String sessionKey = RedisKeys.userSession(userId, sessionId);
-        return redisUtil.getHash(sessionKey, "refreshToken")
+        return redisUtil.getHash(sessionKey, RedisKeys.SESSION_HASH_REFRESH_TOKEN)
             .flatMap(refreshToken -> redisUtil.get(RedisKeys.userRefresh(refreshToken))
                 .map(value -> value.equals(userId + ":" + sessionId)))
             .defaultIfEmpty(false);
@@ -397,7 +403,7 @@ public class TokenServiceImpl implements TokenService {
         }
         for (String pair : query.split("&")) {
             int separator = pair.indexOf('=');
-            if (separator > 0 && "token".equals(pair.substring(0, separator))) {
+            if (separator > 0 && Defaults.QUERY_PARAM_TOKEN.equals(pair.substring(0, separator))) {
                 return URLDecoder.decode(pair.substring(separator + 1), StandardCharsets.UTF_8);
             }
         }
