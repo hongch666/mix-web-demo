@@ -37,12 +37,33 @@ else
     SERVICES="spring gozero nestjs fastapi"
 fi
 
+# 先把网关的 block-internal URI 黑名单抽取为共享 JSON，供各服务生成器注入 403
+# 网关黑名单是服务代码无法自行推导的外部约束，必须在文档生成阶段同步
+extract_gateway_blocklist() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/gateway-blocklist.py" --check > "$WORKDIR/scripts/generated/gateway-blocklist.json"
+    elif command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/gateway-blocklist.py" --check > "$WORKDIR/scripts/generated/gateway-blocklist.json"
+    else
+        print_warn "未检测到 python，无法抽取网关黑名单，403 文档注入将跳过"
+        return 0
+    fi
+    local count
+    count=$(python -c "import json,sys;print(len(json.load(open(sys.argv[1]))['uris']))" "$WORKDIR/scripts/generated/gateway-blocklist.json" 2>/dev/null || echo '?')
+    print_info "网关内部接口黑名单已抽取（${count} 条）"
+}
+
+mkdir -p "$WORKDIR/scripts/generated"
+extract_gateway_blocklist
+
 # ==================== 各服务生成 ====================
 # 返回码约定：0 表示成功，2 表示跳过（工具未安装），其它表示生成失败
 
 gen_spring() {
     command -v mvn >/dev/null 2>&1 || return 2
     print_info "生成 Spring OpenAPI 文档（隔离 Web 层，不依赖中间件）..."
+    # 通过环境变量传黑名单绝对路径：mvn 的 fork JVM user.dir 可能不是 spring/，相对路径不可靠
+    export GATEWAY_BLOCKLIST_JSON="$WORKDIR/scripts/generated/gateway-blocklist.json"
     # 跳过 Spotless：文档生成不承担格式门禁职责，格式检查由 ./mix lint spring 负责
     (cd "$WORKDIR/spring" && mvn -q test -Dtest=OpenApiDocGenerator -DfailIfNoTests=false \
         -Dspotless.check.skip=true)

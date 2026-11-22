@@ -235,3 +235,6 @@ _*.txt
 !/.apifox/gozero.schemas.sha256
 !/.apifox/nestjs.schemas.sha256
 !/.apifox/spring.schemas.sha256
+
+### 文档生成中间产物（网关黑名单快照，由 swag-init.sh 从 apisix.yaml 抽取）
+/scripts/generated/
