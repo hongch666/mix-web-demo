@@ -22,6 +22,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
@@ -63,7 +64,7 @@ public class CommentsController {
     @ApiLog("新增评论")
     public Mono<Result<Long>> createComment(@Valid @RequestBody CommentCreateDTO dto) {
         return commentsService.createComment(dto).map(saved -> Result.success(saved.getId()))
-            .defaultIfEmpty(Result.<Long>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT)));
     }
 
     /**
@@ -79,7 +80,7 @@ public class CommentsController {
     public Mono<Result<Void>> updateComment(@Valid @RequestBody CommentUpdateDTO dto) {
         return commentsService.updateComment(dto)
             .map(ignored -> Result.<Void>success())
-            .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT)));
     }
 
     /**
@@ -122,7 +123,7 @@ public class CommentsController {
     public Mono<Result<CommentsVO>> getCommentsById(@PathVariable Long id) {
         return commentsService.getCommentDetail(id)
             .map(Result::success)
-            .defaultIfEmpty(Result.<CommentsVO>error(HttpCode.NOT_FOUND, Messages.COMMENT_ID + id));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.COMMENT_ID + id)));
     }
 
     /**
@@ -180,7 +181,7 @@ public class CommentsController {
         @RequestParam(defaultValue = "10") int size,
         @RequestParam(defaultValue = "1") int page) {
         if (!"create_time".equals(sortWay) && !"star".equals(sortWay)) {
-            return Mono.just(Result.error(HttpCode.BAD_REQUEST, Messages.SORT_WAY + sortWay));
+            return Mono.error(new BusinessException(HttpCode.BAD_REQUEST, Messages.SORT_WAY + sortWay));
         }
         return commentsService.listCommentsByArticleId(page, size, id, sortWay)
             .flatMap(commentsService::listCommentDetails)

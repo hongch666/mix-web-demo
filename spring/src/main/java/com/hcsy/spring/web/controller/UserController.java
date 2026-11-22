@@ -29,6 +29,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
@@ -165,7 +166,7 @@ public class UserController {
     public Mono<Result<UserVO>> getUserById(@PathVariable Long id) {
         return userService.getUserDetail(id)
             .map(Result::success)
-            .defaultIfEmpty(Result.<UserVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER)));
     }
 
     /**
@@ -278,7 +279,7 @@ public class UserController {
         return Mono.deferContextual(ctx -> {
             String accessToken = UserContext.getToken(ctx);
             if (accessToken == null) {
-                return Mono.just(Result.<Void>error(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID));
+                return Mono.error(new BusinessException(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID));
             }
             return tokenService.removeSessionByAccessToken(accessToken).thenReturn(Result.<Void>success());
         });
@@ -304,9 +305,9 @@ public class UserController {
     @ApiLog("手动下线用户")
     public Mono<Result<Void>> forceLogoutUser(@PathVariable("user_id") Long userId) {
         return userService.forceLogoutUser(userId)
-            .map(exists -> exists
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .flatMap(exists -> exists
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER)));
     }
 
     /**
@@ -321,7 +322,7 @@ public class UserController {
             Long userId = UserContext.getUserId(ctx);
 
             if (token == null || userId == null) {
-                return Mono.just(Result.<KickOtherDevicesVO>error(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID));
+                return Mono.error(new BusinessException(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID));
             }
 
             return userService.kickOtherDevices(userId, token).map(Result::success);
@@ -356,12 +357,15 @@ public class UserController {
         }
         resolvedType = resolvedType == null || resolvedType.isBlank() ? "register" : resolvedType;
         return userService.sendVerificationCode(resolvedEmail, resolvedType)
-            .map(outcome -> switch (outcome) {
-                case SENT -> Result.<Void>success();
-                case INVALID_EMAIL -> Result.<Void>error(HttpCode.UNPROCESSABLE_ENTITY, Messages.EMAIL);
-                case INVALID_TYPE -> Result.<Void>error(HttpCode.BAD_REQUEST, Messages.VERIFY_CODE_UNSUPPORT);
-                case EMAIL_EXISTS -> Result.<Void>error(HttpCode.CONFLICT, Messages.EMAIL_REGISTER);
-                case EMAIL_NOT_FOUND -> Result.<Void>error(HttpCode.NOT_FOUND, Messages.EMAIL_UNREGISTER);
+            .flatMap(outcome -> switch (outcome) {
+                case SENT -> Mono.just(Result.<Void>success());
+                case INVALID_EMAIL -> Mono
+                    .error(new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Messages.EMAIL));
+                case INVALID_TYPE -> Mono
+                    .error(new BusinessException(HttpCode.BAD_REQUEST, Messages.VERIFY_CODE_UNSUPPORT));
+                case EMAIL_EXISTS -> Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.EMAIL_REGISTER));
+                case EMAIL_NOT_FOUND -> Mono
+                    .error(new BusinessException(HttpCode.NOT_FOUND, Messages.EMAIL_UNREGISTER));
             });
     }
 

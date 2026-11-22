@@ -18,6 +18,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleCollectDTO;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
@@ -61,9 +62,9 @@ public class ArticleCollectController {
         paramName = "userId")
     public Mono<Result<Void>> addCollect(@Valid @RequestBody ArticleCollectDTO dto) {
         return articleCollectService.addCollect(dto.getArticleId(), dto.getUserId())
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.COLLECT_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.COLLECT_FAIL)));
     }
 
     /**
@@ -82,9 +83,9 @@ public class ArticleCollectController {
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id",
             required = true) Long userId) {
         return articleCollectService.removeCollect(articleId, userId)
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.UNCOLLECT_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.UNCOLLECT_FAIL)));
     }
 
     /**

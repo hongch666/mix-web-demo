@@ -20,6 +20,7 @@ import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncAction;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleStatsBatchDTO;
@@ -65,7 +66,7 @@ public class ArticleController {
     @ApiLog("创建文章")
     public Mono<Result<Long>> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
         return articleService.createArticle(dto).map(saved -> Result.success(saved.getId()))
-            .defaultIfEmpty(Result.<Long>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER)));
     }
 
     /**
@@ -106,7 +107,7 @@ public class ArticleController {
     public Mono<Result<ArticleWithCategoryVO>> getArticleById(@PathVariable Long id) {
         return articleService.getArticleDetail(id)
             .map(Result::success)
-            .defaultIfEmpty(Result.<ArticleWithCategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE)));
     }
 
     /**
@@ -121,7 +122,7 @@ public class ArticleController {
     @ApiLog("更新文章")
     public Mono<Result<Void>> updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         return articleService.updateArticle(dto).map(ignored -> Result.<Void>success())
-            .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER)));
     }
 
     /**

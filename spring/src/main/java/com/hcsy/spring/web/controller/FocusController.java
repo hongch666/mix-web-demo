@@ -18,6 +18,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.FocusDTO;
 import com.hcsy.spring.entity.vo.CountVO;
@@ -61,9 +62,9 @@ public class FocusController {
         paramName = "userId")
     public Mono<Result<Void>> addFocus(@Valid @RequestBody FocusDTO dto) {
         return focusService.addFocus(dto.getUserId(), dto.getFocusId())
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.FOCUS_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.FOCUS_FAIL)));
     }
 
     /**
@@ -81,9 +82,9 @@ public class FocusController {
         @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id",
             required = true) Long focusId) {
         return focusService.removeFocus(userId, focusId)
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.UNFOCUS_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.UNFOCUS_FAIL)));
     }
 
     /**

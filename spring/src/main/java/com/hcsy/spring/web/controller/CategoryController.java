@@ -21,6 +21,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
@@ -192,7 +193,7 @@ public class CategoryController {
     public Mono<Result<CategoryVO>> getCategoryById(@PathVariable Long id) {
         return categoryService.getCategoryById(id)
             .map(Result::success)
-            .defaultIfEmpty(Result.<CategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_CATEGORY));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_CATEGORY)));
     }
 
     /**

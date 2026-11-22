@@ -18,6 +18,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
@@ -61,9 +62,9 @@ public class ArticleLikeController {
         paramName = "userId")
     public Mono<Result<Void>> addLike(@Valid @RequestBody ArticleLikeDTO dto) {
         return articleLikeService.addLike(dto.getArticleId(), dto.getUserId())
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.LIKE_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.LIKE_FAIL)));
     }
 
     /**
@@ -82,9 +83,9 @@ public class ArticleLikeController {
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id",
             required = true) Long userId) {
         return articleLikeService.removeLike(articleId, userId)
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.UNLIKE_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.UNLIKE_FAIL)));
     }
 
     /**
