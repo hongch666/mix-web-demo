@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import time
 import uuid
 from collections.abc import Awaitable, Callable
@@ -9,6 +10,7 @@ from typing import Any, Optional
 
 from dateutil.relativedelta import relativedelta
 from openpyxl import Workbook
+from openpyxl.cell import WriteOnlyCell
 from sqlalchemy.ext.asyncio import AsyncSession
 from wordcloud import WordCloud
 
@@ -36,6 +38,26 @@ from app.internal.clients import (
     get_spring_client,
 )
 from app.internal.crud import ArticleMapper, get_article_mapper
+
+
+# Excel 单元格字符串上限，超长内容会被 Excel 判定为损坏并提示修复
+_EXCEL_CELL_MAX_CHARS: int = 32767
+# Excel 不接受的控制字符（保留 \t、\n、\r）
+_EXCEL_ILLEGAL_CHARS: re.Pattern[str] = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+
+def _sanitize_excel_text(value: str) -> str:
+    """截断超长文本并移除非法控制字符，避免导出文件打开时提示修复"""
+    return _EXCEL_ILLEGAL_CHARS.sub("", value)[:_EXCEL_CELL_MAX_CHARS]
+
+
+def _excel_value(worksheet: Any, value: Any) -> Any:
+    """字符串统一清洗并按文本写入，避免以 = 开头的内容被当成公式；其它类型原样返回"""
+    if not isinstance(value, str):
+        return value
+    cell: Any = WriteOnlyCell(worksheet, value=_sanitize_excel_text(value))
+    cell.data_type = "s"
+    return cell
 
 
 class AnalyzeService:
@@ -472,8 +494,8 @@ class AnalyzeService:
 
         workbook = Workbook(write_only=True)
         worksheet: Any = workbook.create_sheet(title="Sheet1")
-        worksheet.append([Messages.EXPORT_ARTICLES_EXCEL_TIP])
-        worksheet.append(headers)
+        worksheet.append([_excel_value(worksheet, Messages.EXPORT_ARTICLES_EXCEL_TIP)])
+        worksheet.append([_excel_value(worksheet, header) for header in headers])
 
         total_rows: int = 0
         rows: list[
@@ -490,20 +512,20 @@ class AnalyzeService:
 
             worksheet.append(
                 [
-                    item.get("id"),
-                    item.get("title"),
-                    item.get("content"),
-                    item.get("username"),
-                    item.get("tags"),
-                    item.get("status"),
-                    create_at,
-                    update_at,
-                    item.get("views"),
-                    item.get("sub_category_name"),
-                    item.get("category_name"),
-                    item.get("like_count"),
-                    item.get("collect_count"),
-                    item.get("author_follow_count"),
+                    _excel_value(worksheet, item.get("id")),
+                    _excel_value(worksheet, item.get("title")),
+                    _excel_value(worksheet, item.get("content")),
+                    _excel_value(worksheet, item.get("username")),
+                    _excel_value(worksheet, item.get("tags")),
+                    _excel_value(worksheet, item.get("status")),
+                    _excel_value(worksheet, create_at),
+                    _excel_value(worksheet, update_at),
+                    _excel_value(worksheet, item.get("views")),
+                    _excel_value(worksheet, item.get("sub_category_name")),
+                    _excel_value(worksheet, item.get("category_name")),
+                    _excel_value(worksheet, item.get("like_count")),
+                    _excel_value(worksheet, item.get("collect_count")),
+                    _excel_value(worksheet, item.get("author_follow_count")),
                 ]
             )
             total_rows += 1

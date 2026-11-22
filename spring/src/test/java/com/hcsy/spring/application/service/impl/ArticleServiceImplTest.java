@@ -4,11 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.BiFunction;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +20,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.r2dbc.core.DatabaseClient;
+import org.springframework.r2dbc.core.RowsFetchSpec;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.hcsy.spring.application.service.CategoryService;
@@ -24,11 +29,14 @@ import com.hcsy.spring.application.service.UserService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.Scripts;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.projection.ArticleExcelRow;
+import com.hcsy.spring.entity.vo.ArticleExportVO;
 import com.hcsy.spring.infra.repository.ArticleRepository;
 import com.hcsy.spring.infra.repository.UserRepository;
 
@@ -52,13 +60,19 @@ class ArticleServiceImplTest {
     private CategoryService categoryService;
     @Mock
     private TransactionalOperator transactionalOperator;
+    @Mock
+    private DatabaseClient databaseClient;
+    @Mock
+    private DatabaseClient.GenericExecuteSpec executeSpec;
+    @Mock
+    private RowsFetchSpec<ArticleExcelRow> rowsFetchSpec;
 
     private ArticleServiceImpl articleService;
 
     @BeforeEach
     void setUp() {
         articleService = new ArticleServiceImpl(articleRepository, userRepository, userService, categoryService,
-            transactionalOperator);
+            transactionalOperator, databaseClient);
     }
 
     @Test
@@ -312,6 +326,32 @@ class ArticleServiceImplTest {
             .verifyComplete();
 
         verify(userService, never()).getUserNamesByIds(any());
+    }
+
+    @Test
+    @DisplayName("导出文章时执行 JOIN SQL 并映射作者、分类与互动列")
+    void getArticlesForExcelExportMapsJoinColumns() {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 1, 2, 3, 4, 5);
+        ArticleExcelRow row = new ArticleExcelRow(
+            1L, "标题", "正文", USER_ID, "alice", "go,java", 1, createdAt, createdAt, 10,
+            2, "子分类", 3L, "分类", 4L, 5L, 6L);
+        when(databaseClient.sql(Scripts.EXPORT_ARTICLES_EXCEL_SQL)).thenReturn(executeSpec);
+        doReturn(rowsFetchSpec).when(executeSpec).map(any(BiFunction.class));
+        when(rowsFetchSpec.all()).thenReturn(Flux.just(row));
+
+        StepVerifier.create(articleService.getArticlesForExcelExport())
+            .assertNext(list -> {
+                assertThat(list).hasSize(1);
+                ArticleExportVO vo = list.get(0);
+                assertThat(vo.getId()).isEqualTo(1L);
+                assertThat(vo.getUsername()).isEqualTo("alice");
+                assertThat(vo.getSubCategoryName()).isEqualTo("子分类");
+                assertThat(vo.getCategoryName()).isEqualTo("分类");
+                assertThat(vo.getLikeCount()).isEqualTo(4L);
+                assertThat(vo.getCollectCount()).isEqualTo(5L);
+                assertThat(vo.getAuthorFollowCount()).isEqualTo(6L);
+            })
+            .verifyComplete();
     }
 
     private void stubTransactional() {

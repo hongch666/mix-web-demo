@@ -1,7 +1,7 @@
 package com.hcsy.spring.common.constants;
 
 /**
- * 脚本类，统一管理数据库初始化 SQL
+ * 脚本类，统一管理数据库 SQL 与 Redis 脚本
  */
 public final class Scripts {
 
@@ -165,5 +165,26 @@ public final class Scripts {
             KEY idx_user_created (user_id, created_time),
             KEY idx_created_time_id (created_time, id)
         ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '关注表'
+        """;
+
+    // ===== 业务查询 SQL =====
+
+    /**
+     * 导出 Excel 的多表 JOIN 查询，包含作者、分类、点赞、收藏与作者被关注数统计
+     */
+    public static final String EXPORT_ARTICLES_EXCEL_SQL = """
+        SELECT a.id AS id, a.title AS title, a.content AS content, a.user_id AS user_id,
+               u.name AS username, a.tags AS tags, a.status AS status,
+               a.create_at AS create_at, a.update_at AS update_at, a.views AS views,
+               a.sub_category_id AS sub_category_id, sc.name AS sub_category_name,
+               c.id AS category_id, c.name AS category_name,
+               (SELECT COUNT(*) FROM likes l WHERE l.article_id = a.id) AS like_count,
+               (SELECT COUNT(*) FROM collects cl WHERE cl.article_id = a.id) AS collect_count,
+               (SELECT COUNT(*) FROM focus f WHERE f.focus_id = a.user_id) AS author_follow_count
+        FROM articles a
+        LEFT JOIN `user` u ON a.user_id = u.id
+        LEFT JOIN sub_category sc ON a.sub_category_id = sc.id
+        LEFT JOIN category c ON sc.category_id = c.id
+        ORDER BY a.id
         """;
 }

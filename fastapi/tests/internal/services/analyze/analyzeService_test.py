@@ -453,7 +453,14 @@ async def test_export_articles_to_excel_appends_rows(
         def save(self, path: str) -> None:
             self.saved_path = path
 
+    class _FakeCell:
+        def __init__(self, worksheet, value=None) -> None:
+            self.worksheet = worksheet
+            self.value = value
+            self.data_type = "n"
+
     monkeypatch.setattr(analyze_module, "Workbook", _FakeWorkbook)
+    monkeypatch.setattr(analyze_module, "WriteOnlyCell", _FakeCell)
     monkeypatch.setattr(
         analyze_module,
         "load_config",
@@ -472,12 +479,47 @@ async def test_export_articles_to_excel_appends_rows(
     file_path = await service.export_articles_to_excel(MagicMock())
 
     workbook = created[0]
-    assert workbook.rows[0] == [Messages.EXPORT_ARTICLES_EXCEL_TIP]
-    assert workbook.rows[1][0] == "id"
+    assert workbook.rows[0][0].value == Messages.EXPORT_ARTICLES_EXCEL_TIP
+    assert workbook.rows[1][0].value == "id"
+    assert workbook.rows[1][13].value == "author_follow_count"
     assert workbook.rows[2][0] == 1
-    assert workbook.rows[2][6] == created_at.isoformat()
+    assert workbook.rows[2][6].value == created_at.isoformat()
     assert workbook.saved_path == file_path
     assert file_path.endswith(Messages.EXPORT_ARTICLES_EXCEL_FILENAME)
+
+
+# 超长内容截断到 Excel 单元格上限并移除非法控制字符
+def test_sanitize_excel_text_truncates_and_strips_illegal_chars() -> None:
+    raw = "=" + "\x00" + "a" * 40000
+
+    cleaned = analyze_module._sanitize_excel_text(raw)
+
+    assert len(cleaned) == 32767
+    assert "\x00" not in cleaned
+    assert cleaned.startswith("=a")
+
+
+# 以 = 开头的文本强制按字符串写入，避免被 Excel 当成公式
+def test_excel_value_forces_text_type_for_formula_like_string(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakeCell:
+        def __init__(self, worksheet, value=None) -> None:
+            self.value = value
+            self.data_type = "n"
+
+    monkeypatch.setattr(analyze_module, "WriteOnlyCell", _FakeCell)
+
+    cell = analyze_module._excel_value(object(), "=SUM(A1:A2)")
+
+    assert cell.data_type == "s"
+    assert cell.value == "=SUM(A1:A2)"
+
+
+# 非字符串单元格保持原值，交给写库逻辑按数字处理
+def test_excel_value_returns_non_string_values_as_is() -> None:
+    assert analyze_module._excel_value(object(), 12) == 12
+    assert analyze_module._excel_value(object(), None) is None
 
 
 # ===== 文章统计 =====

@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -19,11 +20,13 @@ import com.hcsy.spring.application.service.UserService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.Scripts;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
+import com.hcsy.spring.entity.projection.ArticleExcelRow;
 import com.hcsy.spring.entity.vo.ArticleExportVO;
 import com.hcsy.spring.entity.vo.ArticleSyncVO;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
@@ -34,6 +37,7 @@ import com.hcsy.spring.infra.repository.ArticleRepository;
 import com.hcsy.spring.infra.repository.UserRepository;
 
 import cn.hutool.core.bean.BeanUtil;
+import io.r2dbc.spi.Row;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -50,6 +54,7 @@ public class ArticleServiceImpl implements ArticleService {
     private final UserService userService;
     private final CategoryService categoryService;
     private final TransactionalOperator transactionalOperator;
+    private final DatabaseClient databaseClient;
 
     /**
      * 实现查询所有已发布文章并以 Flux 流式返回
@@ -350,12 +355,10 @@ public class ArticleServiceImpl implements ArticleService {
      */
     @Override
     public Mono<List<ArticleExportVO>> getArticlesForExcelExport() {
-        return articleRepository.findArticlesForExcelExport()
-            .map(row -> new ArticleExportVO(
-                row.getId(), row.getTitle(), row.getContent(), row.getUser_id(), row.getUsername(),
-                row.getTags(), row.getStatus(), row.getCreate_at(), row.getUpdate_at(), row.getViews(),
-                row.getSub_category_id(), row.getSub_category_name(), row.getCategory_id(),
-                row.getCategory_name(), row.getLike_count(), row.getCollect_count()))
+        return databaseClient.sql(Scripts.EXPORT_ARTICLES_EXCEL_SQL)
+            .map((row, metadata) -> toExcelRow(row))
+            .all()
+            .map(this::toArticleExportVO)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
@@ -410,6 +413,42 @@ public class ArticleServiceImpl implements ArticleService {
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
+
+    /**
+     * 将导出查询结果行逐列映射为文章 Excel 行模型
+     */
+    private ArticleExcelRow toExcelRow(Row row) {
+        return new ArticleExcelRow(
+            row.get("id", Long.class),
+            row.get("title", String.class),
+            row.get("content", String.class),
+            row.get("user_id", Long.class),
+            row.get("username", String.class),
+            row.get("tags", String.class),
+            row.get("status", Integer.class),
+            row.get("create_at", LocalDateTime.class),
+            row.get("update_at", LocalDateTime.class),
+            row.get("views", Integer.class),
+            row.get("sub_category_id", Integer.class),
+            row.get("sub_category_name", String.class),
+            row.get("category_id", Long.class),
+            row.get("category_name", String.class),
+            row.get("like_count", Long.class),
+            row.get("collect_count", Long.class),
+            row.get("author_follow_count", Long.class));
+    }
+
+    /**
+     * 将文章 Excel 行模型转换为导出视图对象
+     */
+    private ArticleExportVO toArticleExportVO(ArticleExcelRow row) {
+        return new ArticleExportVO(
+            row.id(), row.title(), row.content(), row.userId(), row.username(),
+            row.tags(), row.status(), row.createAt(), row.updateAt(), row.views(),
+            row.subCategoryId(), row.subCategoryName(), row.categoryId(),
+            row.categoryName(), row.likeCount(), row.collectCount(), row.authorFollowCount());
+    }
+
     /**
      * 将文章分页结果批量补充作者与子分类、分类信息
      */
