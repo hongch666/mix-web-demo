@@ -140,7 +140,7 @@ fi
 remove_lowercase_middleware_skeletons
 
 # Format generated code so routes.go, types.go and new handlers keep the project format
-format_script="$repo_root/scripts/format.sh"
+format_script="$repo_root/scripts/quality/format.sh"
 if [ -f "$format_script" ]; then
 	echo "Formatting generated code..."
 	if ! bash "$format_script" gozero; then
@@ -148,7 +148,7 @@ if [ -f "$format_script" ]; then
 		exit 1
 	fi
 else
-	echo "scripts/format.sh not found, skip formatting, please run ./mix format gozero manually" >&2
+	echo "scripts/quality/format.sh not found, skip formatting, please run ./mix format gozero manually" >&2
 fi
 
 # generate swagger and convert to openapi3 only when -s is provided

@@ -16,7 +16,7 @@
 #
 # 平台说明：
 #   - Windows 走 Git for Windows 自带的 Git Bash，Git 会用其内置 sh 执行本钩子，
-#     因此无需 PowerShell 版本；但前提是已安装 Git for Windows
+#     仓库不再提供 PowerShell 版本；但前提是已安装 Git for Windows
 #   - 换行符由 .gitattributes 的 `* text=auto eol=lf` 统一为 LF，避免 CRLF 导致 shebang 失效
 
 set -euo pipefail

@@ -197,6 +197,6 @@ jobs:
         run: |
           set -euo pipefail
           SVC="${{ matrix.service }}"
-          bash scripts/lint.sh "$SVC"
-          bash scripts/compile.sh "$SVC"
-          bash scripts/test.sh "$SVC"
+          bash scripts/quality/lint.sh "$SVC"
+          bash scripts/quality/compile.sh "$SVC"
+          bash scripts/quality/test.sh "$SVC"

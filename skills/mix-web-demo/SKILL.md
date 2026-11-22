@@ -69,14 +69,14 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
 3. SQL 一律参数化，禁止字符串拼接用户值。各服务占位风格：Spring R2DBC 用 `:param`；FastAPI ClickHouse 用 `%(name)s`；GoZero sqlx 用 `?`；NestJS 走 ORM 方法 API
 4. **每次生成或修改代码后必须执行代码格式化与格式检查**：先跑 `./mix format <service>` 自动格式化，再跑 `./mix lint <service>` 确认检查通过，不允许把未格式化的代码交付；省略服务名时处理 spring、gozero、nestjs、fastapi 全部，`gateway` 为配置驱动不参与
 5. **交付前必须验证编译通过**：格式与 lint 之后跑 `./mix compile <service>`（只编译校验，不产出打包目录），未通过不得交付；该步骤与「验证命令」章节里各服务的编译命令等价，省略服务名时处理四个服务全部。`./mix compile` 与打包命令 `./mix dist build` 职责不同，不要用后者替代前者（后者会清理 dist 并产出可运行产物）。对应工具未安装时该服务返回码 2 自动跳过，不允许据此判定通过
-   - **Windows 环境下所有 `./mix` 命令必须用 Git Bash 执行**，例如 PowerShell 中：`& "C:\Program Files\Git\bin\bash.exe" -c "./mix format spring"`。禁止用 PowerShell 直接 `./mix`（会被静默空跑，退出码 0 但什么都没做），也禁止用 WSL 的 `bash`（WSL 侧没有各服务工具链，会导致 gozero/fastapi 等被「工具未安装」跳过、NestJS 的 `tsc` 找不到 `node_modules/.bin` shim 而误报失败）。确认 Git Bash 安装路径不存在时改用本机服务工具链直接验证（如 `go build ./...`、`node node_modules/typescript/bin/tsc --noEmit`、`python -m compileall`），并如实说明未跑 mix
+   - **Windows 环境下所有 `./mix` 命令与项目脚本统一用 Git Bash 执行**：从 PowerShell 启动时用 `& "C:\Program Files\Git\bin\bash.exe" -c "./mix format spring"`；不要直接用 PowerShell 跑 `./mix`，也不要用 WSL 的 `bash`（WSL 侧没有各服务工具链，会导致 gozero/fastapi 等被「工具未安装」跳过、NestJS 的 `tsc` 找不到 `node_modules/.bin` shim 而误报失败）。Git Bash 不可用时改用本机服务工具链直接验证（如 `go build ./...`、`node node_modules/typescript/bin/tsc --noEmit`、`python -m compileall`），并如实说明未跑 mix
 6. 常量抽取：四个服务均有常量类，消息类字符串必须进常量类引用
    - Spring：`common/constants/`（`Messages`、`Defaults`、`RedisKeys`、`Scripts`、`SqlTools`、`HttpCode`、`HeaderNames`、`MetricNames`、`RabbitQueues`、`SyncResource`、`SyncAction`、`SyncChangeType`、`TelemetryConstants`、`WarehouseResources`）
    - NestJS：`common/constants/`（`Messages`、`HttpCode`、`Defaults`、`ErrorIds`、`RedisKey`、`SqlTools`、`MongoTools`、`Swagger`、`Telemetry`、`MetricNames`、`ExportTemplate`）
    - FastAPI：`core/constants/`（`Messages`、`Defaults`、`HttpCode`、`ErrorCodes`、`RedisKeys`、`Scripts`、`WarehouseScripts`、`Prompts`、`Algorithm`、`Intent`、`Vector`、`AiUsers`、`SwaggerConfig`、`Telemetry`、`MetricNames`）
    - GoZero：`app/common/constants/`（`messages.go`、`defaults.go`、`validations.go`、`httpCode.go`、`remoteCall.go`、`redisKeys.go`、`scripts.go`、`sqlTools.go`）
    - 语言支持字符串模板时（Python f-string、TS 模板串、Go fmt），动态部分用模板拼接常量，不把整句抽离
-   - **常量类内部成员顺序：函数型成员必须全部排在普通常量之前**（NestJS 为 `static readonly NAME = (...) => ...` 形式的静态属性，FastAPI 为 `@staticmethod` 方法），新增常量时先写函数成员再写普通常量；该约定由 `./mix lint` 里的 `scripts/constants.py` 检查并报错，`./mix format` 不做任何常量整理（Spring 与 GoZero 的常量前缀与其配套方法成对书写，只检查注释与分类，不参与顺序检查）
+   - **常量类内部成员顺序：函数型成员必须全部排在普通常量之前**（NestJS 为 `static readonly NAME = (...) => ...` 形式的静态属性，FastAPI 为 `@staticmethod` 方法），新增常量时先写函数成员再写普通常量；该约定由 `./mix lint` 里的 `scripts/quality/constants.py` 检查并报错，`./mix format` 不做任何常量整理（Spring 与 GoZero 的常量前缀与其配套方法成对书写，只检查注释与分类，不参与顺序检查）
    - **常量注释与分类（四个服务统一）**：每个常量与每个函数型成员都必须带能被 IDE 悬停展示的注释，注释写在成员的声明处而不是集中写一块
      - Spring：成员上方 `/** 单行说明 */`（Javadoc），字段用单行形式，不需要 `@param` 之类的标签
      - NestJS：成员上方 `/** 单行说明 */`（JSDoc），与类、方法的 JSDoc 同一风格
@@ -84,7 +84,7 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
      - FastAPI：普通常量写在**变量下方**的三双引号字符串里（PEP 257 属性文档串，Pylance 与 PyCharm 会作为悬停说明展示），形如 `ARTICLE_TOP10: str = "article:top10"` 下一行写 `"""文章阅读量前十榜单的缓存 key"""`；`@staticmethod` 方法仍写在函数体内第一行
      - 成员按用途分类摆放，每个分类以单行分类注释开头：Java / NestJS / GoZero 用 `// ===== 分类名 =====`，FastAPI 用 `# ===== 分类名 =====`；分类注释与下方的成员注释之间空一行，分类内部不再拆散不相干的常量，Go 的 `const` / `var` 块把分类注释写在 `const (` 上方或块内首行均可
      - 注释内容说明该常量的用途、取值来源或与其它服务的对齐关系（如「需与 GoZero 侧 `SEARCH_GRAPH_CANDIDATE_LIMIT` 保持一致」），不复述常量名与字面值；结尾不加中文句号（见通用规则 13）
-     - 该约定由 `./mix lint` 里的 `scripts/constants.py` 检查：缺少成员注释、成员未归入任何分类都会报错并打印文件与行号
+     - 该约定由 `./mix lint` 里的 `scripts/quality/constants.py` 检查：缺少成员注释、成员未归入任何分类都会报错并打印文件与行号
    - 注解 / 装饰器的字符串参数**不抽常量**，直接写字面量：这类字符串只在声明处使用一次，抽到常量类后需跳转查看，反而降低可读性
      - Spring：`@Operation(summary, description)`、`@Tag`
      - NestJS：`@ApiOperation({ summary, description })`、`@ApiTags`
@@ -197,7 +197,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 
 ### 硬性约定
 
-- **控制器返回类型禁止匿名 Map**：一律用 `entity/vo/` 下的 VO 并给字段加 `@Schema`，`./mix lint spring` 会检查（`scripts/controller-vo.py`）。把原先的 `Map<String, Object>` 换成 VO 时，类上必须加 `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)` 保持 `user_id`、`create_time` 这类下划线字段名，否则 FastAPI/GoZero 按原字段名解析会取不到值；只有运行时结构不固定（动态列、动态键）时才允许 Map，并在方法或其注解上方写 `// vo-exempt: 原因`，整类场景写 `// vo-exempt-class: 原因`
+- **控制器返回类型禁止匿名 Map**：一律用 `entity/vo/` 下的 VO 并给字段加 `@Schema`，`./mix lint spring` 会检查（`scripts/quality/controller-vo.py`）。把原先的 `Map<String, Object>` 换成 VO 时，类上必须加 `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)` 保持 `user_id`、`create_time` 这类下划线字段名，否则 FastAPI/GoZero 按原字段名解析会取不到值；只有运行时结构不固定（动态列、动态键）时才允许 Map，并在方法或其注解上方写 `// vo-exempt: 原因`，整类场景写 `// vo-exempt-class: 原因`
 - **依赖方向**：`web` 调用 `application/service`，应用服务使用 `infra` 的客户端与 Repository；`application/task` 调用业务服务，`web/sync` 的切面调用同步服务。`common` 不依赖 `web` 或 `application`；`entity/assembler` 现有实现依赖 `infra/repository`，新增跨层组件前先确认依赖方向
 - 文章创建/更新的作者解析、评论创建/更新的关联规则与评论列表补全由应用服务执行；Controller 只映射原接口的成功或缺失响应。定时任务的异步订阅由任务组件启动，Controller 只触发任务。保留 `@ArticleSync` / `@DataSync` 所需的创建主键与成功结果形态
 - ORM 是 Spring Data R2DBC，不是 MyBatisPlus：Repository 继承 `ReactiveCrudRepository<T, ID>`；自定义 SQL 用 `@Query` + `:param`，更新加 `@Modifying`；事务用 `TransactionalOperator.transactional()` 包裹，禁止 `@Transactional`
@@ -214,7 +214,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 - AOP 切面中 `pjp.proceed()` 返回 `Mono<?>` 时必须在 Mono 链内操作（`.flatMap()` / `.doOnSuccess()`），上下文用 `.deferContextual()` 获取
 - 横切能力由 AOP 实现：`ApiLogAspect`（接口日志）、`RequirePermissionAspect`（`@RequirePermission` 声明式权限）、`RequireInternalTokenAspect`（`@RequireInternalToken` 内部令牌）、`ArticleSyncAspect`（文章变更同步 MQ / ES / 向量）、`DataSyncAspect`（图谱与数仓同步）。切面类与注解同名（注解去 `@` 加 `Aspect` 后缀），新增切面沿用该命名。新增写接口时确认是否需要权限注解与同步触发，同步失败只记日志、没有补偿机制
 - **响应式切面的固定写法**：`pjp.proceed()` 返回的是**未订阅的冷流**（业务代码此时尚未执行），且 Reactor Context 只在订阅时可见。所以切面必须把校验 / 日志 / 同步挂到 Mono 链上（`Mono.deferContextual(ctx -> ...)`）：校验类用 `validate(ctx).then(businessMono)` 保证「校验先于业务」，副作用类用 `monoResult.doOnSuccess(...)` 发后即忘；副作用里若需要用户身份，必须用 `UserContext.writeContext(Context.empty(), ...)` 重建 Context 再 `contextWrite`，否则异步链上读不到。**禁止用同步代码在 `proceed()` 之前读上下文**，那时 ctx 不可见，只会拿到 null
-- **方法可见性顺序**：类（含嵌套类）的实例方法按可见性分组排列，public / protected 方法在前，private 方法在后，private 方法不得穿插在 public / protected 方法之间。static 方法不参与排序（常量类与工具类的 static 方法常与 static 字段成对书写）；字段、构造器、静态初始化块与嵌套类型声明不受约束；只识别带 public / protected / private 修饰符的方法，无修饰符的包私有方法不参与。该约定由 `./mix lint spring` 里的 `scripts/java-method-order.py` 检查，`./mix format spring` 会把 private 方法自动移到 public / protected 之后
+- **方法可见性顺序**：类（含嵌套类）的实例方法按可见性分组排列，public / protected 方法在前，private 方法在后，private 方法不得穿插在 public / protected 方法之间。static 方法不参与排序（常量类与工具类的 static 方法常与 static 字段成对书写）；字段、构造器、静态初始化块与嵌套类型声明不受约束；只识别带 public / protected / private 修饰符的方法，无修饰符的包私有方法不参与。该约定由 `./mix lint spring` 里的 `scripts/quality/java-method-order.py` 检查，`./mix format spring` 会把 private 方法自动移到 public / protected 之后
 - 注入风格：`@Service` + `@RequiredArgsConstructor` + `private final` 字段（构造器注入），禁止字段 `@Autowired`
 - 外部基础设施统一由 Spring Bean 提供：`PasswordEncryptor` 注入 `BCryptPasswordEncoder`，禁止在工具或 Service 内部直接 `new` 加密器、客户端或连接资源；新增同类依赖放入 `config` 的 `@Configuration` Bean
 - Swagger 用 springdoc：`@Operation(summary, description)`、`@Tag`，注解参数直接写字面量，不抽常量
@@ -289,15 +289,15 @@ app/internal/agents     LangChain Agent 与工具
   - 定义层 `internal/{clients,crud,cache}/` 各文件底部：类 + 构造 + `@lru_cache` 工厂三位一体
   - 注册层 `app/dependencies/` 包（`database.py`、`mappers.py`、`caches.py`、`clients.py`、`services.py`、`tools.py`、`llm.py`）：集中定义 `Annotated` 别名（`DbSession`、`XxxServiceDep`、`XxxToolDep`），由包 `__init__.py` 统一导出
   - 装配层 `dependencies/services.py` / `tools.py` / `llm.py`：`provide_xxx(...)` 函数，**参数即依赖别名**，函数体调用底层工厂；服务与工具的构造依赖必须由这里显式传入，构造函数内不得自建依赖
-  - **文件内顺序固定为「装配函数 → 依赖别名」**：`app/dependencies/` 下每个文件先集中写 `provide_*` / `resolve_*` 函数，再把全部依赖别名（`XxxDep = Annotated[...]`，含 `DbSession`、`ClickHouseSession` 这类会话别名）集中在文件末尾构成连续区块，中间不再夹装配函数。由此装配函数的参数不能引用本文件定义的别名（`def` 时注解即求值，别名排在后面会变成前向引用），需要注入另一个服务的实例时写内联 `Annotated[XxxService, Depends(provide_xxx_service)]`。该约定由 `./mix lint fastapi` 里的 `scripts/dependency-aliases.py` 检查，`./mix format fastapi` 会把散落的别名搬到文件末尾；引用本文件别名的装配函数不做自动改写，脚本报出位置后人工改成内联
+  - **文件内顺序固定为「装配函数 → 依赖别名」**：`app/dependencies/` 下每个文件先集中写 `provide_*` / `resolve_*` 函数，再把全部依赖别名（`XxxDep = Annotated[...]`，含 `DbSession`、`ClickHouseSession` 这类会话别名）集中在文件末尾构成连续区块，中间不再夹装配函数。由此装配函数的参数不能引用本文件定义的别名（`def` 时注解即求值，别名排在后面会变成前向引用），需要注入另一个服务的实例时写内联 `Annotated[XxxService, Depends(provide_xxx_service)]`。该约定由 `./mix lint fastapi` 里的 `scripts/quality/dependency-aliases.py` 检查，`./mix format fastapi` 会把散落的别名搬到文件末尾；引用本文件别名的装配函数不做自动改写，脚本报出位置后人工改成内联
 - 注册范围只含**路由函数签名里直接出现**的依赖（DB 会话 + 服务 + agent 工具）；Client / Mapper / Cache 工厂不注册，只被 `provide_*` 与 `get_*_service` 消费
 - `@lru_cache` 工厂是承重墙：`provide_*` 每次请求都会执行，底层工厂漏 `@lru_cache` 会让 `get_xxx_service` 的缓存按新键无界累积
 - 非请求链路（APScheduler 任务）用 `resolve_xxx_service()` 复用同一组单例工厂，禁止 `cls(...)` 直接 new（会造出第二个实例、内部状态不共享）
 - 全异步：接口必须 `async def`；优先用 asyncio 生态；同步阻塞库（clickhouse_driver、连接池同步接口）用 `asyncio.to_thread(...)` 包裹后 `await`
 - 并行：独立 IO 用 `asyncio.gather`；循环内并行把每次迭代封装为内部 async 函数后 gather
-- `__init__.py` 导出：包内有 `__init__.py` 导出的功能，导入一律走包路径（`from app.internal.crud import UserAnalysisMapper`），禁止深入到文件路径；新增模块必须同步更新 `__init__.py` 导出。该约定由 `./mix lint` 里的 `scripts/package-imports.py` 检查（目标目录没有 `__init__.py`、与目标同包、或导入方位于目标包导入链上时不受约束），历史违规可执行 `python scripts/package-imports.py --fix fastapi` 批量整理
+- `__init__.py` 导出：包内有 `__init__.py` 导出的功能，导入一律走包路径（`from app.internal.crud import UserAnalysisMapper`），禁止深入到文件路径；新增模块必须同步更新 `__init__.py` 导出。该约定由 `./mix lint` 里的 `scripts/quality/package-imports.py` 检查（目标目录没有 `__init__.py`、与目标同包、或导入方位于目标包导入链上时不受约束），历史违规可执行 `python scripts/quality/package-imports.py --fix fastapi` 批量整理
 - `internal/services` 每个业务子目录及 `llm/extend` 都在自身 `__init__.py` 导出公开类和工厂；顶层 `services/__init__.py` 只从子包聚合导出，避免跨层直接指向具体服务文件。新增业务服务时同步维护子包与顶层两级导出
-- 类型标注全覆盖；**`import` / `from ... import` 一律写在文件顶部，禁止出现在函数体、类体或条件分支里**（`if TYPE_CHECKING:` 块不受约束，它不参与运行时导入）；确认无法上移的只有两类，必须在导入语句行尾或上一行写 `# lazy-import: 原因`：循环依赖（`app.core.db` 的建表/装图函数导入 `app.internal.models`，models 反向依赖 `core.db`）与明确的延迟加载（`app/__init__.py` 的 `create_app` 门面，避免导入工具模块时初始化数据库驱动与遥测 SDK）。该约定由 `./mix lint fastapi` 里的 `scripts/local-imports.py` 检查，`./mix format fastapi` 会把可整理的导入搬到顶部对应分组（标准库 / 第三方 / `app` 与相对导入各自成组、组内按模块名字典序）；多名字导入、多行括号导入、带行尾注释（如 `# noqa`）与分支内的导入只报位置，需人工处理；生成后检查并删除未使用的 import
+- 类型标注全覆盖；**`import` / `from ... import` 一律写在文件顶部，禁止出现在函数体、类体或条件分支里**（`if TYPE_CHECKING:` 块不受约束，它不参与运行时导入）；确认无法上移的只有两类，必须在导入语句行尾或上一行写 `# lazy-import: 原因`：循环依赖（`app.core.db` 的建表/装图函数导入 `app.internal.models`，models 反向依赖 `core.db`）与明确的延迟加载（`app/__init__.py` 的 `create_app` 门面，避免导入工具模块时初始化数据库驱动与遥测 SDK）。该约定由 `./mix lint fastapi` 里的 `scripts/quality/local-imports.py` 检查，`./mix format fastapi` 会把可整理的导入搬到顶部对应分组（标准库 / 第三方 / `app` 与相对导入各自成组、组内按模块名字典序）；多名字导入、多行括号导入、带行尾注释（如 `# noqa`）与分支内的导入只报位置，需人工处理；生成后检查并删除未使用的 import
 - **入参校验用 Pydantic 模型**（放 `internal/schemas/`，文件名 `xxxDTO.py`）：字段用 `Field(...)` 声明，单字段规则用 `@field_validator` + `PydanticCustomError`（中文消息，参考 `createHistoryDTO.py`），请求体禁止用裸 `dict` / `Any` 接收；新增接口必须带校验（通用规则 13）
 - **统一响应模型使用泛型**：`core/base/response.py` 的 `ApiResponse[T]` 负责声明 `code`、`msg` 和 `data`，路由必须通过 `response_model=ApiResponse[具体类型]` 暴露返回结构。已知结构使用领域 DTO、列表或字典泛型；只有运行时结构确实不固定时才使用 `ApiResponse[object]`，禁止退回不带类型参数的 `ApiResponse`
 - **FastAPI 响应结构必须可展开**：已知返回字段必须定义 Pydantic 响应 DTO，并在路由使用 `response_model=ApiResponse[具体 DTO]`；禁止用 `ApiResponse[object]` 隐藏可确定的 `data` 结构。DTO 的每个字段、嵌套对象和列表项都要用 `Field(description=...)` 写明含义。
@@ -322,12 +322,12 @@ app/internal/agents     LangChain Agent 与工具
 ### API-First 流程（强制）
 
 1. 先在 `gozero/api/` 修改 `.api` 文件：`main.api` 按业务分组 import（chat、search、sqlTools、task 等），路由写在分组文件中，`@server` 块声明 `group`、`prefix`、`middleware`
-2. 生成代码：`gozero/script/goctl/genApi.sh`（bash）或 `genApi.ps1`（PowerShell），两者等价，顶层入口 `scripts/goctl-api-init.sh`。核心动作是 `goctl api format -dir .` + `goctl api go -api main.api -dir ../app --style=goZero --home ../template`；脚本会自动备份并还原 `main.go` 与 `etc/`、删除生成的 `app.go`，随后清理 goctl 生成的小写中间件骨架并调用 `scripts/format.sh gozero` 收敛格式
-3. ORM：`gozero/script/goctl/genOrm.sh` / `genOrm.ps1`（`goctl model mysql ddl --style goZero --home ../template`），SQL DDL 放 `gozero/script/sql/`；实际执行生成时同样会调用 `scripts/format.sh gozero`
+2. 生成代码：`gozero/script/goctl/genApi.sh`（bash，Windows 在 Git Bash 中执行），顶层入口 `scripts/codegen/goctl-api-init.sh`。核心动作是 `goctl api format -dir .` + `goctl api go -api main.api -dir ../app --style=goZero --home ../template`；脚本会自动备份并还原 `main.go` 与 `etc/`、删除生成的 `app.go`，随后清理 goctl 生成的小写中间件骨架并调用 `scripts/quality/format.sh gozero` 收敛格式
+3. ORM：`gozero/script/goctl/genOrm.sh`（`goctl model mysql ddl --style goZero --home ../template`），SQL DDL 放 `gozero/script/sql/`；实际执行生成时同样会调用 `scripts/quality/format.sh gozero`
 4. 模板在 `gozero/template/`，只保留 `api/` 与 `model/` 两个目录（goctl 其它子命令的默认模板已删除），生成代码基于模板；禁止手写 handler/types 绕过生成流程，logic 文件头部有 `// Code scaffolded by goctl. Safe to edit.` 标记可编辑
 5. 生成脚本已自动处理、不需要手工介入的事项：
    - **小写中间件骨架**：goctl 会把 `.api` 里声明的 `XxxMiddleware` 转成全小写开头的文件名（`userContextMiddleware` → `usercontextMiddleware.go`），与仓库手写的 camelCase 文件重名并造成中间件构造函数重复声明、编译失败。脚本只删除同时满足「位于 `app/internal/middleware`」「同目录存在忽略大小写后重名的另一个文件」「内容含 goctl 骨架占位注释」三个条件的文件，避免误删真实实现
-   - **格式与行尾**：脚本最后调用 `scripts/format.sh gozero`（即 `golangci-lint fmt` + `goctl api format`，Go 代码与 `.api` 文件一起收敛）。仓库行尾由根目录 `.gitattributes` 的 `* text=auto eol=lf` 统一为 LF，不再需要手工转换或还原
+   - **格式与行尾**：脚本最后调用 `scripts/quality/format.sh gozero`（即 `golangci-lint fmt` + `goctl api format`，Go 代码与 `.api` 文件一起收敛）。仓库行尾由根目录 `.gitattributes` 的 `* text=auto eol=lf` 统一为 LF，不再需要手工转换或还原
 6. 生成产物校验：`./mix lint gozero` 会先校验 `.api` 文件格式（`goctl api format` 没有只读模式，脚本把 `gozero/api/` 复制到临时目录执行格式化后与仓库文件 diff，不一致即失败，仓库文件只读），再调用 `gozero/script/goctl/checkGenerated.sh`，在临时模块里用 `gozero/template` + `main.api` + `gozero/script/sql` 重新生成后逐个比对
    - 带 `// Code generated by goctl. DO NOT EDIT.` 标记的文件（`types.go`、`routes.go`、`*_gen.go`）内容必须与模板生成结果一致，人工改动或删除都会报错并打印 diff
    - 带 `// Code scaffolded by goctl. Safe to edit.` 标记的文件只校验首行标记未被改写或删除，文件内容不限；与生成骨架同名但从未带过标记的手写实现（如 `recoveryMiddleware.go`）会跳过校验
@@ -443,7 +443,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 ### Swagger 文档
 
 - 产物在 `app/docs/`：`openapi.json` 被 `docs/embed.go` **嵌入二进制**（改后需重新编译并重启才生效），`openapi.yaml` 不嵌入。两个产物名是本仓库约定（goctl 固定输出 `main.json`，由脚本改名），改动会让 embed 失效
-- 生成流程 `gozero/script/swagger/genSwagger.sh`（Windows 为 `genSwagger.ps1`，两者等价，顶层入口 `./mix swag gozero`）：
+- 生成流程 `gozero/script/swagger/genSwagger.sh`（顶层入口 `./mix swag gozero`，Windows 在 Git Bash 中执行）：
   1. `goctl api swagger --api main.api --dir app/docs` 产出 `main.json`
   2. 按仓库约定改名为 `openapi.json`，并清理历史遗留的 `main.yaml`
   3. `swagger2openapi -o openapi.json -p openapi.json` 转成 OpenAPI 3（未安装时自动 `npm install -g`，PATH 不可见则退化为 `npx -y`）
@@ -452,7 +452,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - **`fix.py` 的输入必须是 goctl + swagger2openapi 的原始产物**，对已处理过的产物重跑不幂等：`/ws/chat` 已被剔除会把 `docs/websocket.json` 写成空数组、`/sse/chat` 的 `400` 响应键序被打乱。要改产物走 `./mix swag gozero` 全流程；只想改个别字段时直接编辑产物，不要手工重跑 `fix.py`
 - `fix.py` 是生成后修补产物的固定环节，按顺序做以下修补：
   - 补中文标签定义与 `info`（`tag_mapping`、`x-author`），并把每个 operation 的 `tags` 由英文替换为中文名
-  - **把规范版本固定为 `OPENAPI_VERSION`（`3.1.0`）**：产物必须留 3.1 —— 空数据响应用 `type: "null"`（`EMPTY_DATA_SCHEMA`，Apifox 靠它展示空值），而 3.0 的 `type` 只接受 `array`/`boolean`/`integer`/`number`/`object`/`string`，降到 3.0 会让该 schema 非法。**版本只在 `fix.py` 里改**，`genSwagger.sh` 与 `genSwagger.ps1` 都不再单独改写版本（曾因 sh 里多一段内联 Python 强制 3.1 后与 ps1 分叉），两个脚本改为校验产物版本是 `3.1.0`
+  - **把规范版本固定为 `OPENAPI_VERSION`（`3.1.0`）**：产物必须留 3.1 —— 空数据响应用 `type: "null"`（`EMPTY_DATA_SCHEMA`，Apifox 靠它展示空值），而 3.0 的 `type` 只接受 `array`/`boolean`/`integer`/`number`/`object`/`string`，降到 3.0 会让该 schema 非法。**版本只在 `fix.py` 里改**；`genSwagger.sh` 只校验产物版本是 `3.1.0`，不改写版本
   - **服务内嵌的 swagger-ui 必须支持 3.1**：`gozero/app/docs/` 下的 `swagger-ui.css`、`swagger-ui-bundle.js`、`swagger-ui-standalone-preset.js`、`favicon-16x16.png`、`favicon-32x32.png` 取自 `swagger-ui-dist` 5.x，由 `go:embed` 编译进二进制，**不再使用 `swaggo/files`**（该库只到 v1.0.1，内嵌 Swagger UI 4.x，渲染 3.1 会白屏）。升级 UI 时只替换这几个文件，并同步 `docs/embed.go` 的 embed 指令与 `boot/swagger.go` 的资源表；不引入 `.map` 文件
   - `boot/swagger.go` 的 `swaggerContentTypes` 显式声明内嵌资源的 `Content-Type`，不走 `mime.TypeByExtension`（Windows 上会读系统 MIME 注册表，类型不可控；`swagger-ui-bundle.js` 类型不对会被浏览器拒绝执行、同样白屏）
   - 移除 `swagger2openapi` 注入的全局 / path 级 / operation 级 `servers` 与 per-operation `schemes`（Swagger 2.0 文档没有 host，转换工具会默认补 `https://`，导致前端用错协议）
@@ -486,7 +486,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
    - 确实只服务服务间调用且无消费者 → 删除
 5. **连带清理只服务它的实现**：Service 方法 → Mapper/Repository 查询方法 → 请求/响应 DTO → 测试用例；删除过程中每一层都要重新确认「是否还有其它调用方」
 6. **任务类的手动触发接口一律保留，不纳入清理范围**：`/task/*` 这类手动触发入口（Spring `TaskController`、NestJS `TaskController`、FastAPI `taskRouter`）是运维兜底能力——手工补跑、修数据、紧急刷缓存都靠它。**即使当前没有任何服务调用、也即使 `@Scheduled`（Spring）/ `@Cron`（NestJS）/ scheduler（FastAPI）已在自动调度，都必须保留**：自动调度是常态通道，HTTP 入口是运维通道，两者互补（曾误删 `POST /task/clean`、`/task/apilog`、`/task/articlelog`、`/task/update-analyze-caches`、`/task/init-hash-cache`、`/task/clear-analyze-caches`）
-7. **重新生成产物并同步文档**：`./scripts/swag-init.sh <service>`（可选 service 名），需要时 `./mix apifox`。**Spring 删过控制器源文件后必须先清掉 `target/classes` 下的残留 `.class`**——Maven 增量编译不删除已移除源文件的产物，文档生成器扫描 classpath，否则已删接口会继续出现在产物里
+7. **重新生成产物并同步文档**：`./scripts/docs/swag-init.sh <service>`（可选 service 名），需要时 `./mix apifox`。**Spring 删过控制器源文件后必须先清掉 `target/classes` 下的残留 `.class`**——Maven 增量编译不删除已移除源文件的产物，文档生成器扫描 classpath，否则已删接口会继续出现在产物里
 
 ### 已清理的无效内部接口（勿重复排查）
 
@@ -529,10 +529,10 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 - **禁止删除、清空、移动或重建本地依赖环境**：`fastapi/.venv`、`nestjs/node_modules` 属于开发者本机已安装的依赖环境，删除与整体重建都是禁止操作（重装需联网且耗时，也会打断本地校验命令）；排查问题、清理临时文件、执行格式化与校验时一律绕开这些目录，确需变更依赖时用对应包管理命令做增量安装。**不要为了任何理由运行删除 `.venv` 的命令**（含 `rm -rf`、`Remove-Item -Recurse`、`uv venv --clear`、`python -m venv --clear` 等）
 - **Windows 主机上禁止用 WSL 的 bash 跑 `./mix compile fastapi` 与 `./mix test fastapi`（本问题只在 Windows + WSL 场景出现，Linux/macOS 无此问题）**：这两步底层分别是 `uv run python -c ...` 与 `uv run pytest`。在 Windows + WSL 的组合下，WSL bash 里 `uv` / `ruff` / `python3` 解析到的是 Linux 版本，`fastapi/.venv` 却是 Windows 的 uv 创建的（`pyvenv.cfg` 里 `home = C:\...`）；Linux uv 判定环境与自身平台不匹配后，会按 `uv run` 的 sync 语义**清空并重建 `.venv`**，一旦中途被打断就留下半成品，`fastapi/pyproject.toml` 的 `venvPath = "."` / `venv = ".venv"` 随即解析失败并回退到根目录或全局解释器，表现为「IDE 只能解析到根目录的环境」，等价于「重建本地依赖环境」，属禁止操作。Linux/macOS 上 `uv` 与 `.venv` 同平台，`uv run pytest` 就是正常入口，不受本条约束
-  - 正确做法（Windows）：`./mix` 只在 Windows 侧 shell（Git Bash 或 PowerShell，且 PATH 指向 Windows 工具）执行；fastapi 的校验改用项目自带解释器做只读操作——`fastapi/.venv/Scripts/python.exe -m pytest -q`、`fastapi/.venv/Scripts/python.exe -m ruff check .`，以及 `scripts/compile.sh` 里那段字节码编译片段。macOS/Linux 上按默认命令执行 `uv run pytest` 即可
-  - 全服务形式同样禁止（Windows + WSL 场景）：`./mix compile`、`./mix test` 会把 fastapi 一起带上，要么写明确的服务名、要么改用 Windows 侧 shell
+  - 正确做法（Windows）：`./mix` 只在 Git Bash（且 PATH 指向 Windows 工具）执行；fastapi 的校验改用项目自带解释器做只读操作——`fastapi/.venv/Scripts/python.exe -m pytest -q`、`fastapi/.venv/Scripts/python.exe -m ruff check .`，以及 `scripts/quality/compile.sh` 里那段字节码编译片段。macOS/Linux 上按默认命令执行 `uv run pytest` 即可
+  - 全服务形式同样禁止（Windows + WSL 场景）：`./mix compile`、`./mix test` 会把 fastapi 一起带上，要么写明确的服务名、要么改用 Git Bash
   - 唯一例外是技能同步：`./mix skills` 只在技能目录间做镜像复制，不碰依赖环境，在 WSL bash 下可用 `HOME=/mnt/c/Users/<user> ./mix skills` 显式指定目标（见本节的技能同步条目）；除此之外不要自行执行 `uv run` / `uv sync` / `uv venv`
-- **Windows 主机上出现下列任一信号就停止用 WSL bash 跑 `./mix`，改到 Windows 侧 shell（同样只在 Windows + WSL 下出现）**：`./mix skills` 把技能同步到 `/home/<user>` 而不是 `C:\Users\<user>`（IDE 看到的技能没更新）、`./mix lint gozero` 报 golangci-lint「未安装」而本机其实已安装、`./mix format fastapi` 实际调用的是 Linux ruff。三者都是「bash 解析到了 Linux 工具链」的同一根因，在 WSL bash 下继续跑 `./mix compile` / `./mix test` 就会踩到重建 `.venv` 那条
+- **Windows 主机上出现下列任一信号就停止用 WSL bash 跑 `./mix`，改用 Git Bash（同样只在 Windows + WSL 下出现）**：`./mix skills` 把技能同步到 `/home/<user>` 而不是 `C:\Users\<user>`（IDE 看到的技能没更新）、`./mix lint gozero` 报 golangci-lint「未安装」而本机其实已安装、`./mix format fastapi` 实际调用的是 Linux ruff。三者都是「bash 解析到了 Linux 工具链」的同一根因，在 WSL bash 下继续跑 `./mix compile` / `./mix test` 就会踩到重建 `.venv` 那条
 - 行尾由根目录 `.gitattributes`（`* text=auto eol=lf`）统一为 LF，仓库不再按 CRLF 维护；新建文件不需要手工转换行尾
 - 格式化统一走各服务的工具（`./mix format`）：Spring Spotless、GoZero golangci-lint + goctl api format、NestJS Prettier、FastAPI Ruff；不要再手工执行 `gofmt -w` 或 `prettier --write` 做全量重排
 - Go 的格式问题用 `./mix lint gozero` 判断（golangci-lint 的 gofmt formatter），不要用裸 `gofmt -l`：它对行尾差异会报大量假阳性
@@ -543,13 +543,13 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 本机环境参考：Go / gofmt 在 `C:\Program Files\Go\bin\`，goctl 在 `C:\Users\30708\go\bin\goctl.EXE`，git 在 `C:\Program Files\Git\cmd\git.EXE`（`usr\bin\` 下有 grep / tr / sed / basename 等，用完整路径调用），maven 在 `C:\apache-maven-3.9.11\bin\mvn.CMD`，javap 在 `C:\Program Files\Java\jdk-17\bin\javap.exe`
 - bash 环境的 `dirname` / `head` 等不稳定（PATH 时有时无），批量格式与行尾校验优先走 `./mix format` / `./mix lint`，需要脚本兜底时用 Python `subprocess` 调绝对路径
 - `mix` 脚本顶层子命令有 `setup`、`swag`、`apifox`、`apifox-readme`、`goctl-api`、`goctl-orm`、`lint`、`format`、`test`、`compile`、`token`、`hooks`、`skills`、`dev`、`dist`、`docker`、`docker-services`、`observability`（旧名 `loki` 仍可用，别名 `obs`）、`compose`、`help`；开发模式必须写全 `./mix dev multi|seq|stop`（**没有** `./mix seq` / `./mix multi` / `./mix stop`，README 历史版本里这三处写错）
-- **内部服务令牌用 `./mix token [service]` 获取，不要再靠单测打印**：只签一枚令牌（`scripts/internal-token.py`，只依赖 Python 标准库，密钥取各服务 `.env` 的 `INTERNAL_TOKEN_SECRET`）；不传服务时随机挑一个（四服务密钥一致、当前没有接口校验 `serviceName`，一枚通用），可选 `--user-id`（默认 -1）、`--ttl`（默认 24h）、`--header`、`--quiet`、`--json`、`--no-apifox`、`--dry-run`；**请求头必须带 Bearer 前缀**（`X-Internal-Token: Bearer <token>`），四个服务都会剥掉前缀再校验，漏掉会返回 401
+- **内部服务令牌用 `./mix token [service]` 获取，不要再靠单测打印**：只签一枚令牌（`scripts/tools/internal-token.py`，只依赖 Python 标准库，密钥取各服务 `.env` 的 `INTERNAL_TOKEN_SECRET`）；不传服务时随机挑一个（四服务密钥一致、当前没有接口校验 `serviceName`，一枚通用），可选 `--user-id`（默认 -1）、`--ttl`（默认 24h）、`--header`、`--quiet`、`--json`、`--no-apifox`、`--dry-run`；**请求头必须带 Bearer 前缀**（`X-Internal-Token: Bearer <token>`），四个服务都会剥掉前缀再校验，漏掉会返回 401
 - **`./mix token` 同时写 Apifox 变量（根目录 `.env` 配好 `APIFOX_ACCESS_TOKEN` / `APIFOX_PROJECT_ID` 时）**：默认 `apifox variables set --scope global` 写项目全局变量 `internal_token`（`--variable-name` 可改）并回读校验，Apifox 全局参数配 `X-Internal-Token: Bearer {{internal_token}}`（变量值不含 Bearer 前缀，前缀写在参数值里）；`--variable-scope environment` 时改写环境变量，**此时必须先用 `apifox export --format apifox` 回读已有 variables 再增量合并**：`environment get` / `list` 都不返回 `variables` 字段，直接 PUT 会把手工维护的变量清掉
-- `scripts/run.sh` 的运行工具默认值：`--java-build` 默认 `maven`、`--node-runtime` 默认 `bun`、`--python-runtime` 默认 `uv`
+- `scripts/dev/run.sh` 的运行工具默认值：`--java-build` 默认 `maven`、`--node-runtime` 默认 `bun`、`--python-runtime` 默认 `uv`
 - 两套容器编排的容器名不同：`./mix docker` 用 `mix-<service>-container`，`./mix compose` 用 `mix-<service>`（compose 的 `container_name`）
 - `README.md` 行尾由 `.gitattributes` 统一为 LF，批量改文档按「归一化 LF → 断言唯一性后替换」处理，不要逐处手工编辑
-- **数据库初始化脚本**统一放根目录 `db/<类型>/`（`mysql`、`postgresql`、`clickhouse`、`mongodb`、`es`、`neo4j`），只放表、扩展、索引、集合级别的脚本；`CREATE DATABASE` 与 `USE` 一律由使用方按需自行执行，**不在脚本中写死库名**，库名以各服务的数据库配置项为准（`DB_NAME`、`DB_MYSQL_DBNAME`、`DB_DATABASE`、`DB_MYSQL_DATABASE`、`DB_POSTGRES_DATABASE`、`DB_MONGODB_DATABASE`）。PostgreSQL 容器侧的初始库由 `scripts/docker-services.sh` 的 `POSTGRES_DB` 创建，需与 `DB_POSTGRES_DATABASE` 保持一致
-- 本技能包（`skills/mix-web-demo/`，目录名与 SKILL.md 的 `name` 一致）改完后用 `./mix skills` 同步到本机 Agent 技能目录：目标清单在 `scripts/skills-targets.conf`（只列用户级 `<home>` 技能目录，可自行追加工具，仓库内项目级目录不参与），只同步技能根目录已存在的目标，同步为镜像覆盖且内容一致时跳过；`--list` 看检测结果、`--dry-run` 预演，脚本为 `scripts/skills-sync.sh`（Windows 在 Git Bash 下执行）。脚本用 `HOME`（无则 `USERPROFILE`）解析清单里的 `<home>`，因此在 WSL 的 bash 里执行会把技能写到 Linux 侧主目录 `/home/<user>`，而 IDE 读的是 `C:\Users\<user>`，看起来「同步成功」但技能并未更新（同样是 Windows + WSL 才有的问题）；Windows 下要么用 Git Bash，要么先执行 `HOME=/mnt/c/Users/<user> ./mix skills`
+- **数据库初始化脚本**统一放根目录 `db/<类型>/`（`mysql`、`postgresql`、`clickhouse`、`mongodb`、`es`、`neo4j`），只放表、扩展、索引、集合级别的脚本；`CREATE DATABASE` 与 `USE` 一律由使用方按需自行执行，**不在脚本中写死库名**，库名以各服务的数据库配置项为准（`DB_NAME`、`DB_MYSQL_DBNAME`、`DB_DATABASE`、`DB_MYSQL_DATABASE`、`DB_POSTGRES_DATABASE`、`DB_MONGODB_DATABASE`）。PostgreSQL 容器侧的初始库由 `scripts/docker/docker-services.sh` 的 `POSTGRES_DB` 创建，需与 `DB_POSTGRES_DATABASE` 保持一致
+- 本技能包（`skills/mix-web-demo/`，目录名与 SKILL.md 的 `name` 一致）改完后用 `./mix skills` 同步到本机 Agent 技能目录：目标清单在 `scripts/tools/skills-targets.conf`（只列用户级 `<home>` 技能目录，可自行追加工具，仓库内项目级目录不参与），只同步技能根目录已存在的目标，同步为镜像覆盖且内容一致时跳过；`--list` 看检测结果、`--dry-run` 预演，脚本为 `scripts/tools/skills-sync.sh`（Windows 在 Git Bash 下执行）。脚本用 `HOME`（无则 `USERPROFILE`）解析清单里的 `<home>`，因此在 WSL 的 bash 里执行会把技能写到 Linux 侧主目录 `/home/<user>`，而 IDE 读的是 `C:\Users\<user>`，看起来「同步成功」但技能并未更新（同样是 Windows + WSL 才有的问题）；Windows 下统一用 Git Bash 执行；不要在 WSL bash 中调用，除非先显式设置 `HOME=/mnt/c/Users/<user>`
 
 ## 容器镜像与镜像分发
 
@@ -563,13 +563,13 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 - 统一镜像名的开关是根目录 `.env` 的 `DOCKER_IMAGE_PREFIX`，**取值必须以 `/` 结尾**（`docker.io/yourname/`、`registry.example.com/team/`）；未配置时保持纯本地模式，行为与引入该变量前完全一致
 - `docker-compose.yml` 四个业务服务的镜像写 `${DOCKER_IMAGE_PREFIX:-}mix-<service>:latest`：前缀为空退化为本地名，配置后为 `<前缀>mix-<service>:latest`，与推送出去的镜像名一致
-- `scripts/build_and_run_services.sh` 在构建成功后按前缀补打同名标签，保证 compose 命中的就是本次本地构建结果；`scripts/docker-compose-up.sh` 先按有效名检查，本地构建存在但有效名缺失时补标签，两者都缺失且配置了前缀时交给 compose 拉取，未配置前缀才走本地构建
+- `scripts/docker/build_and_run_services.sh` 在构建成功后按前缀补打同名标签，保证 compose 命中的就是本次本地构建结果；`scripts/docker/docker-compose-up.sh` 先按有效名检查，本地构建存在但有效名缺失时补标签，两者都缺失且配置了前缀时交给 compose 拉取，未配置前缀才走本地构建
 - 生效依赖 Compose 默认的 `pull_policy: missing`：本地有同名镜像直接使用，缺失才拉取。要强制以远端为准必须显式 `pull_policy: always`，代价是每次 `up` 都拉取、本地构建结果会被同名远端镜像覆盖
 - build / compose-up / push 三个脚本都会在环境变量未设置时读取根目录 `.env` 的同名变量，保持同一口径
 - `./mix compose up` 的本地镜像检查发生在 compose 合并逻辑之外：纯用远端镜像时直接 `docker compose up -d` 或先 `docker compose pull`，不要依赖该脚本跳过本地构建
 - 本机访问 Docker Hub 失败（`failed to fetch anonymous token`、`dial tcp` 超时）时，`docker build` 与 `docker buildx build --check` 都会停在拉取基础镜像元数据阶段，这是环境问题（未配置加速或代理），不要据此判定 Dockerfile 写法有误
-- **网关的 Nacos 发现只由 worker 0 拉全量、再经 resty-events 广播给其它 worker**：`fetch_full_registry` 在节点内容未变化时直接 return，不再补发事件。多 worker 下首次广播若早于某个 worker 完成 `init_worker`，该 worker 的 `applications` 永远是 nil，它接手的请求全部 503，`logs/gateway/error.log` 里是 `failed to set upstream: no valid upstream node: nil`；`docker compose restart` 会照样复现，失败比例约等于空 worker 的占比（12 核 WSL 实测 5/6 以上 503，且错误计数每次重启后继续累加）。**根治是 `gateway/apisix/config.yaml` 的 `nginx_config.worker_processes: 1`**：键必须在 `nginx_config` 下，写成 `nginx_config.main.worker_processes` 不生效（生成后 `conf/nginx.conf` 仍是 `worker_processes auto;`），单 worker 由自己拉取、拉取失败也会在 `fetch_interval` 周期自愈；实测连续重启两次、四服务各 10 次请求全 200，业务接口从 503 变为正常 401。单 worker 吞吐只适合本地/单机 compose，生产多实例需另配。`scripts/gateway-dev.sh` 与 `scripts/docker-compose-up.sh` 的 Swagger 轮询 + `restart` 仍作为启动期兜底；排查时先确认 `conf/nginx.conf` 的 worker 数，不要改 `apisix.yaml` 的 upstream 配置
-- **docker compose 需 ≥ v2.36.0**：v2.35.x 在 `up` 时并发拉取镜像会 `fatal error: concurrent map writes`，栈顶在 `pkg/compose.(*composeService).pullRequiredImages`（docker/compose#12747，v2.36.0 修复）；`scripts/prepull-images.sh` 在 `./mix dev seq` 启动网关前与 `./mix compose up` 前用 `docker CLI` 串行预拉缺失镜像做兜底（命中缓存即跳过、失败不阻断），根治仍是升级 compose 或临时降到 ≤ v2.27.x；遇到该崩溃先看 `docker compose version`，不要改项目编排文件
+- **网关的 Nacos 发现只由 worker 0 拉全量、再经 resty-events 广播给其它 worker**：`fetch_full_registry` 在节点内容未变化时直接 return，不再补发事件。多 worker 下首次广播若早于某个 worker 完成 `init_worker`，该 worker 的 `applications` 永远是 nil，它接手的请求全部 503，`logs/gateway/error.log` 里是 `failed to set upstream: no valid upstream node: nil`；`docker compose restart` 会照样复现，失败比例约等于空 worker 的占比（12 核 WSL 实测 5/6 以上 503，且错误计数每次重启后继续累加）。**根治是 `gateway/apisix/config.yaml` 的 `nginx_config.worker_processes: 1`**：键必须在 `nginx_config` 下，写成 `nginx_config.main.worker_processes` 不生效（生成后 `conf/nginx.conf` 仍是 `worker_processes auto;`），单 worker 由自己拉取、拉取失败也会在 `fetch_interval` 周期自愈；实测连续重启两次、四服务各 10 次请求全 200，业务接口从 503 变为正常 401。单 worker 吞吐只适合本地/单机 compose，生产多实例需另配。`scripts/gateway/gateway-dev.sh` 与 `scripts/docker/docker-compose-up.sh` 的 Swagger 轮询 + `restart` 仍作为启动期兜底；排查时先确认 `conf/nginx.conf` 的 worker 数，不要改 `apisix.yaml` 的 upstream 配置
+- **docker compose 需 ≥ v2.36.0**：v2.35.x 在 `up` 时并发拉取镜像会 `fatal error: concurrent map writes`，栈顶在 `pkg/compose.(*composeService).pullRequiredImages`（docker/compose#12747，v2.36.0 修复）；`scripts/docker/prepull-images.sh` 在 `./mix dev seq` 启动网关前与 `./mix compose up` 前用 `docker CLI` 串行预拉缺失镜像做兜底（命中缓存即跳过、失败不阻断），根治仍是升级 compose 或临时降到 ≤ v2.27.x；遇到该崩溃先看 `docker compose version`，不要改项目编排文件
 
 ### FastAPI 镜像只保留字节码
 
@@ -609,7 +609,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 ./mix swag
 
 # 直接调用脚本
-./scripts/swag-init.sh spring
+./scripts/docs/swag-init.sh spring
 ```
 
 产物落在各服务自己的 `docs/` 目录，每个服务输出 `openapi.json` 与 `openapi.yaml` 两份等价文档：
@@ -662,7 +662,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - **数据模型目录必须按服务隔离（`can't resolve reference` 的根本修复）**：`deleteUnmatchedResources` 的清理范围是「该服务的导入目录」。接口早有 `APIFOX_FOLDER_<服务>` 按服务分开，但数据模型此前都落在项目根目录，于是任一服务的全量对齐都会删掉其它服务刚同步的模型，而接口上的 `$ref` 不会回滚 —— 产物本身引用链完好，Apifox「校验响应」却报 `can't resolve reference #/definitions/<数字ID>`。现在脚本按服务下发 `targetSchemaFolderId`（`APIFOX_SCHEMA_FOLDER_SPRING/GOZERO/NESTJS/FASTAPI`，未配置时回退 `APIFOX_SCHEMA_FOLDER_ID`），全量对齐只清理本服务目录内的模型；开启全量对齐却有服务没配模型目录时，脚本直接告警并给出 `apifox folder create --project <项目ID> --type schema --name <服务名>` 的修复命令
 - **数据模型目录缺失时的断链排查与修复**：Apifox「校验响应」大面积报 `can't resolve reference #/definitions/<数字ID>` 时，先看 `./mix apifox-check` 输出的模型总数——若远少于各服务 `docs/openapi.json` 里 `components.schemas` 数量之和，说明模型没有落库，而不是产物引用写错。判定方式是 `apifox folder list --project <项目ID> --type schema` 取现存模型目录，与 `.env` 的 `APIFOX_SCHEMA_FOLDER_SPRING/GOZERO/NESTJS/FASTAPI` 逐一比对：目录缺失的服务，其模型在 `apifox schema list` 里同样查不到。原因是导入下发的 `targetSchemaFolderId` 指向已不存在的目录，模型无处落库（`apifox schema create` 同样返回 `404000 Not found`），而接口上原有的 `$ref` 不会回滚，最终整批断链。**此状态下 `./mix apifox <service>` 仍可能打印「新增 0 / 更新 0」**，不能据此判断同步成功，必须以 `./mix apifox-check` 的断链数为准。修复顺序：① `apifox folder create --project <项目ID> --type schema --name <服务名>` 重建目录并记下新 ID；② 把新 ID 写回 `.env` 的 `APIFOX_SCHEMA_FOLDER_<服务>`（本地文件、不入库，需同步给协作者）；③ `APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR=OVERWRITE_EXISTING APIFOX_SCHEMA_OVERWRITE_BEHAVIOR=OVERWRITE_EXISTING ./mix apifox <服务> --no-readme`，覆盖模式下接口会重新绑定到重建后的模型；④ `./mix apifox-check` 复核到「引用完整」。`apifox-sync.sh` 已内置预检 `assert_schema_folders_exist`：配置的目录不存在时在导入前直接报错并给出上述修复命令
 - **禁止手工删除 Apifox 的「数据模型」目录，也不要把多个服务配到同一个模型目录**：删目录不会回收接口上的 `$ref`，共用目录会被各服务的 `deleteUnmatchedResources` 互相清空，两者最终都表现为整批 `can't resolve reference`。调整模型目录后必须同步更新 `.env` 的 `APIFOX_SCHEMA_FOLDER_<服务>`，并按上一条的修复顺序重导一次
-- **同步后自检并自动修复断链**：导入结束后导出一次项目快照（`apifox export --format apifox`），由 `scripts/apifox-schema-refs.py` 比对接口里 `#/definitions/<模型ID>` 与 `apifox schema list` 的现存模型，统计断链；命中时对本轮服务按 `OVERWRITE_EXISTING` 重导一次重新绑定，再复核一遍，仍有残留才报错退出（`APIFOX_VERIFY_SCHEMA_REFS=false` 可关闭自检）
+- **同步后自检并自动修复断链**：导入结束后导出一次项目快照（`apifox export --format apifox`），由 `scripts/docs/apifox-schema-refs.py` 比对接口里 `#/definitions/<模型ID>` 与 `apifox schema list` 的现存模型，统计断链；命中时对本轮服务按 `OVERWRITE_EXISTING` 重导一次重新绑定，再复核一遍，仍有残留才报错退出（`APIFOX_VERIFY_SCHEMA_REFS=false` 可关闭自检）
 - **只读检查入口 `./mix apifox-check`**：不改代码、只确认远端引用状态时用它（`--keep <目录>` 保留快照、`--examples <n>` 调整示例条数、`--no-color` 关彩色），输出「接口 N 个，数据模型 M 个」并逐条列出断链位置，退出码 0 完整 / 1 断链 / 2 缺配置或依赖。它需要联网与 `.env` 令牌，因此**不并入离线的 `./mix lint`**
 - **责任人只补新增接口**：脚本先用一次 `apifox endpoint list` 取现有接口清单（`method path`），与产物求差集后只给新增接口注入扩展。原因是 Apifox 对「无差异导入」按不变处理（本地实测 `新增 0 / 更新 0 / 忽略 0 / 失败 0`），而每轮给全部接口重写扩展会让所有接口都被判定为已修改（修改时间与变更历史被刷新）；稳态下导入的就是原文档，计数全 0。要整体重写责任人时置 `APIFOX_MAINTAINER_FORCE=true`（此时退回逐接口全量注入）
 - 该扩展会被 Apifox 保留在接口 `oasExtensions` 里并在文档页多渲染一行 `x-apifox-maintainer`，**只有真的注入过**才会再导入一次不带扩展的原文档把它清掉（`APIFOX_MAINTAINER_CLEAN_EXTENSION=false` 可保留，此时按全量注入以保证每轮导入内容与 Apifox 现存一致），责任人字段不受影响
@@ -696,7 +696,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大量报错（主要在测试文件），作为门禁会一直失败；`pyright` 仍保留在 `fastapi/pyproject.toml` 供编辑器使用。`./mix compile` 对未安装工具的服务返回码 2 并跳过，不能把「跳过」当成「通过」。
 
-**Windows 主机上，fastapi 的 `./mix compile fastapi` 与 `./mix test fastapi` 不要用 WSL 的 bash 执行（仅 Windows + WSL 场景，Linux/macOS 按默认命令即可）**：底层是 `uv run`，WSL 里的 Linux uv 会清空并重建 Windows 创建的 `fastapi/.venv`（机制与处置见「仓库工程约束」的依赖环境条目）。这两步在 Windows 上只在 Git Bash / PowerShell 里跑，或改用 `fastapi/.venv/Scripts/python.exe` 的只读等价命令。
+**Windows 主机上，fastapi 的 `./mix compile fastapi` 与 `./mix test fastapi` 不要用 WSL 的 bash 执行（仅 Windows + WSL 场景，Linux/macOS 按默认命令即可）**：底层是 `uv run`，WSL 里的 Linux uv 会清空并重建 Windows 创建的 `fastapi/.venv`（机制与处置见「仓库工程约束」的依赖环境条目）。这两步在 Windows 上只在 Git Bash 里跑，或改用 `fastapi/.venv/Scripts/python.exe` 的只读等价命令。
 
 ### 单元测试与测试工具
 
@@ -720,8 +720,8 @@ FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大�
 
 ```bash
 # Spring：Eclipse formatter + import 四段分组，配置在 spring/eclipse-formatter.xml
-# lint 额外执行 scripts/controller-vo.py（控制器是否返回匿名 Map）、scripts/constants.py（常量注释与分类）
-# 与 scripts/java-method-order.py（方法可见性顺序）
+# lint 额外执行 scripts/quality/controller-vo.py（控制器是否返回匿名 Map）、scripts/quality/constants.py（常量注释与分类）
+# 与 scripts/quality/java-method-order.py（方法可见性顺序）
 ./mix format spring      # 方法可见性顺序整理（private 移到 public/protected 之后）+ mvn spotless:apply
 ./mix lint spring        # mvn spotless:check + 控制器返回类型检查 + 常量规范检查 + 方法可见性顺序检查
 
@@ -733,14 +733,14 @@ FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大�
 ./mix format nestjs      # npm run format + npm run lint:fix
 ./mix lint nestjs        # npm run lint + npm run format:check + 常量规范检查
 
-# FastAPI：配置在 fastapi/pyproject.toml；lint 额外执行 scripts/constants.py（常量注释与分类）、
-# scripts/package-imports.py（包导入规范）、scripts/local-imports.py（import 写在文件顶部）
-# 与 scripts/dependency-aliases.py（装配函数在前、依赖别名集中在末尾）
+# FastAPI：配置在 fastapi/pyproject.toml；lint 额外执行 scripts/quality/constants.py（常量注释与分类）、
+# scripts/quality/package-imports.py（包导入规范）、scripts/quality/local-imports.py（import 写在文件顶部）
+# 与 scripts/quality/dependency-aliases.py（装配函数在前、依赖别名集中在末尾）
 ./mix format fastapi     # 模块级导入上移 + ruff format . + ruff check --fix . + 包导入整理 + 依赖别名整理
 ./mix lint fastapi       # ruff check . + pyright + 常量规范检查 + 包导入规范 + 模块级导入规范 + 依赖别名规范
 ```
 
-底层脚本是 `scripts/format.sh` 与 `scripts/lint.sh`，对应工具未安装时该服务会自动跳过并提示；`gateway` 为 APISIX 配置，不参与。行尾由根目录 `.gitattributes` 统一为 LF。
+底层脚本是 `scripts/quality/format.sh` 与 `scripts/quality/lint.sh`，对应工具未安装时该服务会自动跳过并提示；`gateway` 为 APISIX 配置，不参与。行尾由根目录 `.gitattributes` 统一为 LF。
 
 ### 交付前校验顺序
 
@@ -753,7 +753,7 @@ FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大�
 ./mix test <service>      # 4. 单元测试
 ```
 
-Windows 主机上执行第 3、4 步时，fastapi 必须在 Git Bash / PowerShell 里跑（WSL bash 中的 `uv run` 会重建 `.venv`，此项只影响 Windows + WSL，Linux/macOS 不受影响）；用不带服务名的 `./mix compile` / `./mix test` 会连带 fastapi，同样要在 Windows 侧 shell 执行，或把 fastapi 换成 `fastapi/.venv/Scripts/python.exe` 的只读等价命令
+Windows 主机上执行第 3、4 步时，fastapi 必须在 Git Bash 里跑（WSL bash 中的 `uv run` 会重建 `.venv`，此项只影响 Windows + WSL，Linux/macOS 不受影响）；用不带服务名的 `./mix compile` / `./mix test` 会连带 fastapi，同样要在 Git Bash 执行，或把 fastapi 换成 `fastapi/.venv/Scripts/python.exe` 的只读等价命令
 
 ### Git 提交钩子
 
@@ -775,7 +775,7 @@ Windows 主机上执行第 3、4 步时，fastapi 必须在 Git Bash / PowerShel
 - 拉取联动：`.githooks/post-merge` 在普通 `git pull`（merge）完成后执行 `./mix skills`；`git pull --rebase` 不触发 `post-merge`，由 `.githooks/post-rewrite` 复用同一段逻辑。同步脚本幂等（内容一致时跳过），失败只提示、不影响 pull 结果
 - **Windows 下必须在 Git Bash 里执行 pull**：WSL 的 bash 里 `HOME` 指向 Linux 侧主目录，`./mix skills` 会同步到 `/home/<user>` 而 IDE 读的是 `C:\Users\<user>`，看起来成功但技能没更新
 - 临时跳过单次提交或拉取：`SKIP_HOOKS=1 git commit ...`、`SKIP_HOOKS=1 git pull ...` 或 `git commit --no-verify`
-- 钩子是 bash 脚本，由 Git 自带的 `sh` 执行：Linux/macOS 直接可用，Windows 走 Git for Windows 自带的 Git Bash（无需 PowerShell 版本）；换行符由 `.gitattributes` 统一为 LF
+- 钩子是 bash 脚本，由 Git 自带的 `sh` 执行：Linux/macOS 直接可用，Windows 走 Git for Windows 自带的 Git Bash；换行符由 `.gitattributes` 统一为 LF
 - 新克隆的仓库需执行一次 `./mix hooks` 才会启用；生成代码时不要依赖钩子替代手动校验，钩子有跨服务共享脚本的覆盖缺口（改 `scripts/` 下的检查脚本本身不会触发服务检查）
 
 `mix` 脚本顶层子命令新增 `compile` 与 `hooks`，完整列表见「仓库工程约束」章节。

@@ -133,7 +133,7 @@ show_help() {
     echo "    --list                 - 只列出目标清单与检测结果，不同步"
     echo ""
     echo "  说明: 只同步技能根目录已存在的目标，不存在的目录不创建也不迁移"
-    echo "  目标清单: scripts/skills-targets.conf（可自行追加其他 Agent 工具）"
+    echo "  目标清单: scripts/tools/skills-targets.conf（可自行追加其他 Agent 工具）"
     echo ""
     echo "Other:"
     echo "  help                     - Show this help message"
@@ -217,8 +217,8 @@ show_help() {
     echo "  ./mix observability stop                # 停止观测组件（保留数据卷）"
     echo ""
     echo "Notes (备注):"
-    echo "  - For Windows PowerShell: PowerShell -ExecutionPolicy Bypass -File ./scripts/run.ps1"
-    echo "  - Direct script calls are also supported: ./scripts/run_multi.sh"
+    echo "  - Windows: run ./mix from Git Bash (no PowerShell scripts in this repo)"
+    echo "  - Direct script calls are also supported: ./scripts/dev/run_multi.sh"
     echo "  - Use 'dist logs' command with exactly one service name"
     echo ""
 }
@@ -229,15 +229,15 @@ run_dev_command() {
     case $subcommand in
         multi)
             echo "Starting services in multi-pane layout..."
-            bash "$SCRIPTS_DIR/run_multi.sh"
+            bash "$SCRIPTS_DIR/dev/run_multi.sh"
             ;;
         seq)
             echo "Starting services in sequential window layout..."
-            bash "$SCRIPTS_DIR/run.sh" "${@:2}"
+            bash "$SCRIPTS_DIR/dev/run.sh" "${@:2}"
             ;;
         stop)
             echo "Stopping all tmux sessions..."
-            bash "$SCRIPTS_DIR/stop.sh"
+            bash "$SCRIPTS_DIR/dev/stop.sh"
             ;;
         help|--help|-h)
             echo "用法: ./mix dev <multi|seq|stop> [args]"
@@ -256,42 +256,42 @@ run_dist_command() {
     case $subcommand in
         build)
             echo "Building all services..."
-            bash "$SCRIPTS_DIR/build.sh"
+            bash "$SCRIPTS_DIR/build/build.sh"
             ;;
         start)
             if [ $# -le 1 ]; then
                 echo "Starting all built services..."
-                bash "$SCRIPTS_DIR/dist-control.sh" start
+                bash "$SCRIPTS_DIR/build/dist-control.sh" start
             else
                 echo "Starting specified services: ${@:2}"
-                bash "$SCRIPTS_DIR/dist-control.sh" start "${@:2}"
+                bash "$SCRIPTS_DIR/build/dist-control.sh" start "${@:2}"
             fi
             ;;
         stop)
             if [ $# -le 1 ]; then
                 echo "Stopping all built services..."
-                bash "$SCRIPTS_DIR/dist-control.sh" stop
+                bash "$SCRIPTS_DIR/build/dist-control.sh" stop
             else
                 echo "Stopping specified services: ${@:2}"
-                bash "$SCRIPTS_DIR/dist-control.sh" stop "${@:2}"
+                bash "$SCRIPTS_DIR/build/dist-control.sh" stop "${@:2}"
             fi
             ;;
         restart)
             if [ $# -le 1 ]; then
                 echo "Restarting all built services..."
-                bash "$SCRIPTS_DIR/dist-control.sh" restart
+                bash "$SCRIPTS_DIR/build/dist-control.sh" restart
             else
                 echo "Restarting specified services: ${@:2}"
-                bash "$SCRIPTS_DIR/dist-control.sh" restart "${@:2}"
+                bash "$SCRIPTS_DIR/build/dist-control.sh" restart "${@:2}"
             fi
             ;;
         status)
             if [ $# -le 1 ]; then
                 echo "Checking all services status..."
-                bash "$SCRIPTS_DIR/dist-control.sh" status
+                bash "$SCRIPTS_DIR/build/dist-control.sh" status
             else
                 echo "Checking specified services status: ${@:2}"
-                bash "$SCRIPTS_DIR/dist-control.sh" status "${@:2}"
+                bash "$SCRIPTS_DIR/build/dist-control.sh" status "${@:2}"
             fi
             ;;
         logs)
@@ -306,7 +306,7 @@ run_dist_command() {
                 exit 1
             else
                 echo "Viewing logs for service: $2"
-                bash "$SCRIPTS_DIR/dist-control.sh" logs "$2"
+                bash "$SCRIPTS_DIR/build/dist-control.sh" logs "$2"
             fi
             ;;
         help|--help|-h)
@@ -326,61 +326,61 @@ COMMAND=${1:-help}
 case $COMMAND in
     setup)
         echo "Initializing environment and installing dependencies..."
-        bash "$SCRIPTS_DIR/setup.sh"
+        bash "$SCRIPTS_DIR/dev/setup.sh"
         ;;
     swag)
         echo "Generating Swagger API documentation..."
-        bash "$SCRIPTS_DIR/swag-init.sh" "${@:2}"
-        bash "$SCRIPTS_DIR/check-error-codes.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/docs/swag-init.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/quality/check-error-codes.sh" "${@:2}"
         ;;
     check-error-codes)
         echo "Checking OpenAPI error status codes against source..."
-        bash "$SCRIPTS_DIR/check-error-codes.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/quality/check-error-codes.sh" "${@:2}"
         ;;
     apifox)
         echo "Syncing OpenAPI documentation to Apifox..."
-        bash "$SCRIPTS_DIR/apifox-sync.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/docs/apifox-sync.sh" "${@:2}"
         ;;
     apifox-check)
         echo "Checking Apifox endpoint/model references..."
-        bash "$SCRIPTS_DIR/apifox-check.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/docs/apifox-check.sh" "${@:2}"
         ;;
     apifox-readme)
         echo "Syncing README.md to Apifox Markdown document..."
-        bash "$SCRIPTS_DIR/apifox-readme-sync.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/docs/apifox-readme-sync.sh" "${@:2}"
         ;;
     goctl-api)
         echo "Generating GoZero API code..."
-        bash "$SCRIPTS_DIR/goctl-api-init.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/codegen/goctl-api-init.sh" "${@:2}"
         ;;
     goctl-orm)
         echo "Generating GoZero ORM code..."
-        bash "$SCRIPTS_DIR/goctl-orm-init.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/codegen/goctl-orm-init.sh" "${@:2}"
         ;;
     lint)
         echo "Checking code style..."
-        bash "$SCRIPTS_DIR/lint.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/quality/lint.sh" "${@:2}"
         ;;
     format)
         echo "Formatting code..."
-        bash "$SCRIPTS_DIR/format.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/quality/format.sh" "${@:2}"
         ;;
     test)
         echo "Running unit tests..."
-        bash "$SCRIPTS_DIR/test.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/quality/test.sh" "${@:2}"
         ;;
     compile)
         echo "Checking compilation..."
-        bash "$SCRIPTS_DIR/compile.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/quality/compile.sh" "${@:2}"
         ;;
     token)
-        bash "$SCRIPTS_DIR/internal-token.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/tools/internal-token.sh" "${@:2}"
         ;;
     hooks)
-        bash "$SCRIPTS_DIR/hooks-init.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/tools/hooks-init.sh" "${@:2}"
         ;;
     skills)
-        bash "$SCRIPTS_DIR/skills-sync.sh" "${@:2}"
+        bash "$SCRIPTS_DIR/tools/skills-sync.sh" "${@:2}"
         ;;
     dev)
         run_dev_command "${@:2}"
@@ -392,34 +392,34 @@ case $COMMAND in
         if [ $# -lt 2 ]; then
             # 默认执行up命令
             echo "Building and running all Docker containers..."
-            bash "$SCRIPTS_DIR/build_and_run_services.sh"
+            bash "$SCRIPTS_DIR/docker/build_and_run_services.sh"
         else
             case $2 in
                 up)
                     if [ $# -le 2 ]; then
                         echo "Building and running all Docker containers..."
-                        bash "$SCRIPTS_DIR/build_and_run_services.sh"
+                        bash "$SCRIPTS_DIR/docker/build_and_run_services.sh"
                     else
                         echo "Building and running specified services: ${@:3}"
-                        bash "$SCRIPTS_DIR/build_and_run_services.sh" "${@:3}"
+                        bash "$SCRIPTS_DIR/docker/build_and_run_services.sh" "${@:3}"
                     fi
                     ;;
                 start)
                     if [ $# -le 2 ]; then
                         echo "Starting all Docker containers from existing images..."
-                        bash "$SCRIPTS_DIR/build_and_run_services.sh" --start-only
+                        bash "$SCRIPTS_DIR/docker/build_and_run_services.sh" --start-only
                     else
                         echo "Starting specified containers from existing images: ${@:3}"
-                        bash "$SCRIPTS_DIR/build_and_run_services.sh" --start-only "${@:3}"
+                        bash "$SCRIPTS_DIR/docker/build_and_run_services.sh" --start-only "${@:3}"
                     fi
                     ;;
                 build)
                     if [ $# -le 2 ]; then
                         echo "Building all Docker images..."
-                        bash "$SCRIPTS_DIR/build_and_run_services.sh" --build-only
+                        bash "$SCRIPTS_DIR/docker/build_and_run_services.sh" --build-only
                     else
                         echo "Building specified images: ${@:3}"
-                        bash "$SCRIPTS_DIR/build_and_run_services.sh" --build-only "${@:3}"
+                        bash "$SCRIPTS_DIR/docker/build_and_run_services.sh" --build-only "${@:3}"
                     fi
                     ;;
                 push)
@@ -428,11 +428,11 @@ case $COMMAND in
                     else
                         echo "Pushing specified images: ${@:3}"
                     fi
-                    bash "$SCRIPTS_DIR/docker-push-images.sh" "${@:3}"
+                    bash "$SCRIPTS_DIR/docker/docker-push-images.sh" "${@:3}"
                     ;;
                 status)
                     echo "Showing Docker container status..."
-                    bash "$SCRIPTS_DIR/build_and_run_services.sh" --status
+                    bash "$SCRIPTS_DIR/docker/build_and_run_services.sh" --status
                     ;;
                 logs)
                     if [ $# -le 2 ]; then
@@ -444,11 +444,11 @@ case $COMMAND in
                     ;;
                 stop)
                     echo "Stopping all Docker containers..."
-                    bash "$SCRIPTS_DIR/build_and_run_services.sh" --clean
+                    bash "$SCRIPTS_DIR/docker/build_and_run_services.sh" --clean
                     ;;
                 delete)
                     echo "Deleting all Docker containers..."
-                    bash "$SCRIPTS_DIR/build_and_run_services.sh" --clean
+                    bash "$SCRIPTS_DIR/docker/build_and_run_services.sh" --clean
                     ;;
                 *)
                     echo "Unknown docker command: $2"
@@ -460,10 +460,10 @@ case $COMMAND in
     docker-services)
         if [ $# -lt 2 ]; then
             echo "Creating all base service containers..."
-            bash "$SCRIPTS_DIR/docker-services.sh" up
+            bash "$SCRIPTS_DIR/docker/docker-services.sh" up
         else
             echo "Executing base service command: ${@:2}"
-            bash "$SCRIPTS_DIR/docker-services.sh" "${@:2}"
+            bash "$SCRIPTS_DIR/docker/docker-services.sh" "${@:2}"
         fi
         ;;
     observability|obs|loki)
@@ -472,10 +472,10 @@ case $COMMAND in
         fi
         if [ $# -lt 2 ]; then
             echo "Starting observability stack (Loki/Promtail/Grafana/Tempo/Collector)..."
-            bash "$SCRIPTS_DIR/loki-control.sh" start
+            bash "$SCRIPTS_DIR/observability/loki-control.sh" start
         else
             echo "Executing observability command: ${@:2}"
-            bash "$SCRIPTS_DIR/loki-control.sh" "${@:2}"
+            bash "$SCRIPTS_DIR/observability/loki-control.sh" "${@:2}"
         fi
         ;;
     compose)
@@ -496,10 +496,10 @@ case $COMMAND in
 
         case $2 in
             up)
-                bash "$SCRIPTS_DIR/docker-compose-up.sh"
+                bash "$SCRIPTS_DIR/docker/docker-compose-up.sh"
                 ;;
             down)
-                bash "$SCRIPTS_DIR/docker-compose-down.sh" "${@:3}"
+                bash "$SCRIPTS_DIR/docker/docker-compose-down.sh" "${@:3}"
                 ;;
             status)
                 $COMPOSE_CMD -f "$WORKDIR/docker-compose.yml" ps

@@ -74,7 +74,7 @@ FORBIDDEN_DESCRIPTION = "无权访问该资源"
 # 网关 block-internal 路由返回的 403 描述文案，与 apisix.yaml 的 response_example 对齐
 GATEWAY_FORBIDDEN_DESCRIPTION = "内部接口禁止外部访问"
 
-# 共享的网关黑名单 JSON（由 scripts/swag-init.sh 在生成前从 apisix.yaml 抽取）
+# 共享的网关黑名单 JSON（由 scripts/docs/swag-init.sh 在生成前从 apisix.yaml 抽取）
 GATEWAY_BLOCKLIST_JSON = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
     "scripts",

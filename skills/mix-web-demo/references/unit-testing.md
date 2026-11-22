@@ -18,9 +18,9 @@
 | `gozero/`  | Go 标准库 `testing` + `net/http/httptest`，断言可用 `github.com/stretchr/testify/assert`（已引入，仅用 `assert`，未引入 `mock` / `suite` / `sqlmock`） | 测试与被测包同目录，命名 `xxx_test.go`                         | `cd gozero/app && go test ./... -count=1`            |
 | `gateway/` | 无单元测试（配置驱动）                                                                            | -                                                             | `./mix test gateway` 直接跳过                        |
 
-统一入口是 `./mix test <service>`（省略服务名时跑 spring、gozero、nestjs、fastapi，底层 `scripts/test.sh` 的实际命令与上表一致）。对应工具未安装时该服务返回码 2 并跳过，「跳过」不能当成「通过」；每个服务的 test 入口与 format、lint、compile 一样是交付前必跑项
+统一入口是 `./mix test <service>`（省略服务名时跑 spring、gozero、nestjs、fastapi，底层 `scripts/quality/test.sh` 的实际命令与上表一致）。对应工具未安装时该服务返回码 2 并跳过，「跳过」不能当成「通过」；每个服务的 test 入口与 format、lint、compile 一样是交付前必跑项
 
-**Windows + WSL 场景下不要用 WSL 的 bash 跑 fastapi 的测试**（只在 Windows 主机装了 WSL、且用 WSL bash 执行时出现；Linux/macOS 与 Windows 侧 Git Bash/PowerShell 均不受影响）：`scripts/test.sh` 优先走 `uv run pytest`，WSL 里的 Linux uv 会清空并重建 Windows 创建的 `fastapi/.venv`，属禁止操作；此时改用 `cd fastapi && .venv/Scripts/python.exe -m pytest -q`，或在不带服务名执行 `./mix test` 时明确只列其它服务
+**Windows + WSL 场景下不要用 WSL 的 bash 跑 fastapi 的测试**（只在 Windows 主机装了 WSL、且用 WSL bash 执行时出现；Linux/macOS 与 Windows 侧 Git Bash 均不受影响）：`scripts/quality/test.sh` 优先走 `uv run pytest`，WSL 里的 Linux uv 会清空并重建 Windows 创建的 `fastapi/.venv`，属禁止操作；此时改用 `cd fastapi && .venv/Scripts/python.exe -m pytest -q`，或在不带服务名执行 `./mix test` 时明确只列其它服务
 
 ### NestJS 双运行器约束（Jest 与 bun test）
 

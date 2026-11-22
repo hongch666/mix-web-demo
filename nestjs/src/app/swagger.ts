@@ -99,7 +99,7 @@ function isErrorStatus(code: string): boolean {
 /** 网关 block-internal 路由返回的 403 描述，与 apisix.yaml 的 response_example 对齐 */
 const GATEWAY_FORBIDDEN_DESCRIPTION = "内部接口禁止外部访问";
 
-/** 共享的网关黑名单 JSON（由 scripts/swag-init.sh 在生成前从 apisix.yaml 抽取） */
+/** 共享的网关黑名单 JSON（由 scripts/docs/swag-init.sh 在生成前从 apisix.yaml 抽取） */
 const GATEWAY_BLOCKLIST_JSON = resolve(
   process.cwd(),
   "../scripts/generated/gateway-blocklist.json",
