@@ -42,8 +42,10 @@ from app.internal.crud import ArticleMapper, get_article_mapper
 
 # Excel 单元格字符串上限，超长内容会被 Excel 判定为损坏并提示修复
 _EXCEL_CELL_MAX_CHARS: int = 32767
-# Excel 不接受的控制字符（保留 \t、\n、\r）
-_EXCEL_ILLEGAL_CHARS: re.Pattern[str] = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+# Excel 不接受的控制字符，含 C0（保留 \t、\n、\r）与 C1（\x7f-\x9f）区间
+_EXCEL_ILLEGAL_CHARS: re.Pattern[str] = re.compile(
+    r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]"
+)
 
 
 def _sanitize_excel_text(value: str) -> str:
