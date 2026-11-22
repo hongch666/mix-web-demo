@@ -183,12 +183,12 @@ NestJS 模块按职责划分为两层：
 
 配置文件位置：
 
-- `observability/otel-collector.yaml`：Receiver、脱敏动作、导出到 Tempo
-- `observability/tempo.yaml`：Tempo 存储与保留策略（block 保留 168 小时）
-- `observability/loki.yaml`：Loki 存储与保留策略（compactor 按 `retention_period` 回收，默认 720 小时）
-- `observability/promtail.yaml` / `observability/promtail-dist.yaml`：分别采集根目录 `logs/` 与 `dist/logs/`
+- `observability/otel-collector/otel-collector.yaml`：Receiver、脱敏动作、导出到 Tempo
+- `observability/tempo/tempo.yaml`：Tempo 存储与保留策略（block 保留 168 小时）
+- `observability/loki/loki.yaml`：Loki 存储与保留策略（compactor 按 `retention_period` 回收，默认 720 小时）
+- `observability/promtail/promtail.yaml` / `observability/promtail/promtail-dist.yaml`：分别采集根目录 `logs/` 与 `dist/logs/`
 - `observability/grafana/`：Grafana 数据源与面板预置配置
-- `observability/prometheus.yml` / `observability/prometheus-host.yml`：指标抓取配置，分别用于容器编排与独立观测栈；指标保留期由 `--storage.tsdb.retention.time` 控制（默认 30 天）
+- `observability/prometheus/prometheus.yml` / `observability/prometheus/prometheus-host.yml`：指标抓取配置，分别用于容器编排与独立观测栈；`observability/prometheus/rules/` 存放告警规则；指标保留期由 `--storage.tsdb.retention.time` 控制（默认 30 天）
 - `gateway/apisix/config.yaml`：APISIX 开启 `opentelemetry` 插件并调整 access log 格式
 
 观测数据保留：日志、链路、指标与 Grafana 配置分别落在命名卷 `loki-data`、`tempo-data`、`prometheus-data`、`grafana-data` 上，重启容器、重新部署、`./mix compose down` 都不会清空历史数据；过期数据由各自保留策略回收，需要彻底清空时显式执行 `./mix compose down --volumes`（或 `./mix observability delete`）
@@ -225,14 +225,14 @@ Prometheus 通过静态配置抓取四个服务的指标端点，抓取间隔 15
 
 两份抓取配置对应两种运行方式，目标地址不同：
 
-- `observability/prometheus.yml`：根 `docker-compose.yml` 使用，目标为容器服务名（`spring:9101` 等）
-- `observability/prometheus-host.yml`：`observability/docker-compose.yml` 使用，配合 `host.docker.internal` 抓取宿主机上 `./mix dev` 启动的服务
+- `observability/prometheus/prometheus.yml`：根 `docker-compose.yml` 使用，目标为容器服务名（`spring:9101` 等）
+- `observability/prometheus/prometheus-host.yml`：`observability/docker-compose.yml` 使用，配合 `host.docker.internal` 抓取宿主机上 `./mix dev` 启动的服务
 
 Grafana 的 Prometheus 数据源预置了 `exemplarTraceIdDestinations`，配置了 Exemplar 的指标可直接跳转到对应 Trace。
 
 ### 开关与访问地址
 
-- 观测栈与 OTel 由 `./mix observability start` / `./mix observability stop` 同步启停：脚本在 `.otel/` 下维护 `enabled` 标记，dev/dist 模式启动服务时由 `scripts/otel-env.sh`（Windows 为 `scripts/otel-env.ps1`）读取该标记决定是否注入 OTel 配置
+- 观测栈与 OTel 由 `./mix observability start` / `./mix observability stop` 同步启停：脚本在 `.otel/` 下维护 `enabled` 标记，dev/dist 模式启动服务时由 `scripts/observability/otel-env.sh` 读取该标记决定是否注入 OTel 配置；Windows 同样在 Git Bash 中执行
 - `./mix compose up` 的容器编排固定启用 OTel，无需额外开关
 - Grafana：`http://localhost:3000`（匿名 Admin，Loki、Tempo 与 Prometheus 数据源已预置）
 - Loki：`http://localhost:3100`
@@ -1000,7 +1000,7 @@ default = true
 
 ## 环境配置脚本
 
-为了简化项目初始化过程，我们提供了自动化配置脚本 `scripts/setup.sh`，可以自动检测环境、安装依赖并配置所有模块。
+为了简化项目初始化过程，我们提供了自动化配置脚本 `scripts/dev/setup.sh`，可以自动检测环境、安装依赖并配置所有模块。
 
 ### Linux/macOS 使用方式
 
@@ -1009,7 +1009,7 @@ default = true
 ./mix setup
 
 # 或直接调用
-./scripts/setup.sh
+./scripts/dev/setup.sh
 ```
 
 ### 交互式配置
@@ -1413,7 +1413,7 @@ pytest tests/core/auth/test_internal_token.py
 
 ## 运行脚本配置
 
-所有运行脚本已组织到 `scripts/` 目录中，便于项目管理和维护。
+所有运行脚本已按用途组织到 `scripts/` 的各子目录中，便于项目管理和维护。
 
 ### 快速启动（推荐）
 
@@ -1638,73 +1638,78 @@ pytest tests/core/auth/test_internal_token.py
 
 - `-i`/`--interactive`：交互式模式，让用户选择每个服务的工具
 
-#### Windows
+#### Windows（Git Bash）
 
-```powershell
-# 启动所有服务（PowerShell）
-PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
+在 Git Bash 中执行，命令与 Linux/macOS 完全一致（仓库不再提供 PowerShell 脚本）：
+
+```bash
+# 启动所有服务
+./mix dev seq
+
+# 使用 Gradle 构建 Java 服务
+./mix dev seq --java-build gradle
 ```
 
 ### 直接调用脚本
 
-如果需要直接调用 `scripts/` 目录下的脚本：
+如果需要直接调用 `scripts/` 子目录中的脚本：
 
 #### Linux/macOS
 
 ```bash
 # 启动服务（多窗格布局） - 使用 Gradle 构建
-./scripts/run_multi.sh
+./scripts/dev/run_multi.sh
 
 # 或指定构建工具参数（推荐）
-./scripts/run.sh --java-build gradle --node-runtime bun --python-runtime uv
+./scripts/dev/run.sh --java-build gradle --node-runtime bun --python-runtime uv
 
 # 启动服务（顺序窗口布局）
-./scripts/run.sh
+./scripts/dev/run.sh
 
 # 交互式选择工具
-./scripts/run.sh -i
+./scripts/dev/run.sh -i
 
 # 停止所有服务
-./scripts/stop.sh
+./scripts/dev/stop.sh
 
 # 构建所有服务
-./scripts/build.sh
+./scripts/build/build.sh
 
 # 管理分布式部署的服务
 
 # 启动所有服务或指定服务
-./scripts/dist-control.sh start              # 启动所有
-./scripts/dist-control.sh start spring gozero   # 启动指定
+./scripts/build/dist-control.sh start              # 启动所有
+./scripts/build/dist-control.sh start spring gozero   # 启动指定
 
 # 文档生成与同步
-./scripts/swag-init.sh                          # 生成四个服务的静态 OpenAPI 文档
-./scripts/swag-init.sh spring                   # 只生成指定服务
-./scripts/apifox-sync.sh                        # 同步全部服务到 Apifox
-./scripts/apifox-sync.sh spring --dry-run       # 只校验指定服务，不发起导入
+./scripts/docs/swag-init.sh                          # 生成四个服务的静态 OpenAPI 文档
+./scripts/docs/swag-init.sh spring                   # 只生成指定服务
+./scripts/docs/apifox-sync.sh                        # 同步全部服务到 Apifox
+./scripts/docs/apifox-sync.sh spring --dry-run       # 只校验指定服务，不发起导入
 
 # GoZero 代码生成
-./scripts/goctl-api-init.sh
-./scripts/goctl-orm-init.sh
+./scripts/codegen/goctl-api-init.sh
+./scripts/codegen/goctl-orm-init.sh
 
 # 参数会透传给 gozero/script/goctl 下的实际生成脚本
-./scripts/goctl-api-init.sh -s
-./scripts/goctl-orm-init.sh -s -pattern user.sql
+./scripts/codegen/goctl-api-init.sh -s
+./scripts/codegen/goctl-orm-init.sh -s -pattern user.sql
 
 # 停止所有服务或指定服务
-./scripts/dist-control.sh stop               # 停止所有
-./scripts/dist-control.sh stop fastapi       # 停止指定
+./scripts/build/dist-control.sh stop               # 停止所有
+./scripts/build/dist-control.sh stop fastapi       # 停止指定
 
 # 查看所有服务状态或指定服务状态
-./scripts/dist-control.sh status             # 查看所有
-./scripts/dist-control.sh status spring      # 查看指定
+./scripts/build/dist-control.sh status             # 查看所有
+./scripts/build/dist-control.sh status spring      # 查看指定
 
 # 重启所有服务或指定服务
-./scripts/dist-control.sh restart            # 重启所有
-./scripts/dist-control.sh restart nestjs     # 重启指定
+./scripts/build/dist-control.sh restart            # 重启所有
+./scripts/build/dist-control.sh restart nestjs     # 重启指定
 
 # 查看单个服务的最新日志
-./scripts/dist-control.sh logs spring
-./scripts/dist-control.sh logs fastapi
+./scripts/build/dist-control.sh logs spring
+./scripts/build/dist-control.sh logs fastapi
 ```
 
 **run.sh 脚本参数**：
@@ -1721,58 +1726,58 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 ```bash
 # 使用 Maven 和 npm 启动
-./scripts/run.sh --java-build maven --node-runtime npm
+./scripts/dev/run.sh --java-build maven --node-runtime npm
 
 # 使用 Python 启动 FastAPI
-./scripts/run.sh --python-runtime python
+./scripts/dev/run.sh --python-runtime python
 
 # 交互式选择
-./scripts/run.sh --interactive
+./scripts/dev/run.sh --interactive
 ```
 
-#### Windows
+#### Windows（Git Bash）
 
-```powershell
+```bash
 # 启动所有服务
-.\scripts\run.ps1
+./scripts/dev/run.sh
 ```
 
 ### 脚本说明
 
+Windows 统一使用 Git Bash 执行下列 bash 脚本，仓库不再提供 PowerShell 版本。
+
 | 脚本                        | 位置                 | 功能                                                                                              | 适用系统            |
 | --------------------------- | -------------------- | ------------------------------------------------------------------------------------------------- | ------------------- |
 | `mix`                       | 项目根目录           | 便捷启动器，用于快速调用 scripts/ 下的脚本                                                        | Linux/macOS         |
-| `run_multi.sh`              | scripts/             | 使用 tmux 多窗格布局启动所有服务（推荐）                                                          | Linux/macOS         |
-| `run.sh`                    | scripts/             | 使用 tmux 顺序窗口模式启动所有服务                                                                | Linux/macOS         |
-| `stop.sh`                   | scripts/             | 停止所有 tmux 服务                                                                                | Linux/macOS         |
-| `build.sh`                  | scripts/             | 编译所有服务到 dist/ 目录                                                                         | Linux/macOS         |
-| `dist-control.sh`           | scripts/             | 管理打包后的分布式服务（支持服务指定）                                                            | Linux/macOS         |
-| `docker-services.sh`        | scripts/             | 创建、启动、停止和清理基础中间件容器（读取根目录 `.env`，自动安装 ES IK 分词器）                  | Linux/macOS         |
-| `docker-compose-up.sh`      | scripts/             | 使用 Docker Compose 启动应用服务                                                                  | Linux/macOS         |
-| `docker-compose-down.sh`    | scripts/             | 使用 Docker Compose 停止应用服务                                                                  | Linux/macOS         |
-| `build_and_run_services.sh` | scripts/             | 构建并运行服务容器                                                                                | Linux/macOS         |
-| `docker-push-images.sh`     | scripts/             | 将已构建的 Docker 镜像推送到远程仓库                                                              | Linux/macOS         |
-| `loki-control.sh`           | scripts/             | 独立管理 Loki/Promtail/Prometheus/Grafana/Tempo/Collector 观测栈，并同步 dev/dist 的 OTel 开关    | Linux/macOS         |
-| `otel-env.sh`               | scripts/             | 为 dev/dist 启动的服务注入 OTel 环境变量（Spring 侧自动下载 Java Agent）                          | Linux/macOS         |
-| `otel-env.ps1`              | scripts/             | otel-env.sh 的 PowerShell 版本                                                                    | Windows             |
+| `run_multi.sh`              | scripts/dev/         | 使用 tmux 多窗格布局启动所有服务（推荐）                                                          | Linux/macOS         |
+| `run.sh`                    | scripts/dev/         | 使用 tmux 顺序窗口模式启动所有服务                                                                | Linux/macOS         |
+| `stop.sh`                   | scripts/dev/         | 停止所有 tmux 服务                                                                                | Linux/macOS         |
+| `setup.sh`                  | scripts/dev/         | 环境初始化和依赖安装                                                                              | Linux/macOS         |
+| `build.sh`                  | scripts/build/       | 编译所有服务到 dist/ 目录                                                                         | Linux/macOS         |
+| `dist-control.sh`           | scripts/build/       | 管理打包后的分布式服务（支持服务指定）                                                            | Linux/macOS         |
+| `docker-services.sh`        | scripts/docker/      | 创建、启动、停止和清理基础中间件容器（读取根目录 `.env`，自动安装 ES IK 分词器）                  | Linux/macOS         |
+| `docker-compose-up.sh`      | scripts/docker/      | 使用 Docker Compose 启动应用服务                                                                  | Linux/macOS         |
+| `docker-compose-down.sh`    | scripts/docker/      | 使用 Docker Compose 停止应用服务                                                                  | Linux/macOS         |
+| `build_and_run_services.sh` | scripts/docker/      | 构建并运行服务容器                                                                                | Linux/macOS         |
+| `docker-push-images.sh`     | scripts/docker/      | 将已构建的 Docker 镜像推送到远程仓库                                                              | Linux/macOS         |
+| `loki-control.sh`           | scripts/observability/ | 独立管理 Loki/Promtail/Prometheus/Grafana/Tempo/Collector 观测栈，并同步 dev/dist 的 OTel 开关   | Linux/macOS         |
+| `otel-env.sh`               | scripts/observability/ | 为 dev/dist 启动的服务注入 OTel 环境变量（Spring 侧自动下载 Java Agent）                         | Linux/macOS         |
 | `render-config.sh`          | gateway/apisix/      | 按 `APISIX_OTEL_ENABLED` 渲染网关配置后启动 APISIX                                                | 容器内              |
-| `gateway-cleanup.sh`        | scripts/             | 清理其他编排栈占用的网关容器，避免启动冲突                                                        | Linux/macOS         |
-| `setup.sh`                  | scripts/             | 环境初始化和依赖安装                                                                              | Linux/macOS         |
-| `swag-init.sh`              | scripts/             | 离线生成四个服务的静态 OpenAPI 文档（不启动服务、不依赖中间件）                                   | Linux/macOS         |
-| `apifox-sync.sh`            | scripts/             | 将各服务 docs/ 下的静态 OpenAPI 文档同步到 Apifox（读取根目录 `.env` 中的令牌）                   | Linux/macOS         |
-| `apifox-check.sh`           | scripts/             | 只读检查 Apifox 项目里接口与数据模型的引用完整性（导出项目快照后与现存模型比对）                  | Linux/macOS         |
-| `apifox-schema-refs.py`     | scripts/             | `apifox-check.sh` 与 `apifox-sync.sh` 自检共用的比对实现，可单独 `--check <快照> --models <清单>` | 有 Python 的环境    |
-| `apifox-readme-sync.sh`     | scripts/             | 将根目录 README.md 同步到 Apifox 指定 Markdown 文档（走 Apifox CLI 的 doc create/update）         | Linux/macOS         |
-| `goctl-api-init.sh`         | scripts/             | 生成 GoZero API 代码，参数透传给`genApi.sh`                                                       | Linux/macOS         |
-| `goctl-orm-init.sh`         | scripts/             | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                                       | Linux/macOS         |
+| `gateway-cleanup.sh`        | scripts/gateway/     | 清理其他编排栈占用的网关容器，避免启动冲突                                                        | Linux/macOS         |
+| `swag-init.sh`              | scripts/docs/        | 离线生成四个服务的静态 OpenAPI 文档（不启动服务、不依赖中间件）                                   | Linux/macOS         |
+| `apifox-sync.sh`            | scripts/docs/        | 将各服务 docs/ 下的静态 OpenAPI 文档同步到 Apifox（读取根目录 `.env` 中的令牌）                   | Linux/macOS         |
+| `apifox-check.sh`           | scripts/docs/        | 只读检查 Apifox 项目里接口与数据模型的引用完整性（导出项目快照后与现存模型比对）                  | Linux/macOS         |
+| `apifox-schema-refs.py`     | scripts/docs/        | `apifox-check.sh` 与 `apifox-sync.sh` 自检共用的比对实现，可单独 `--check <快照> --models <清单>` | 有 Python 的环境    |
+| `apifox-readme-sync.sh`     | scripts/docs/        | 将根目录 README.md 同步到 Apifox 指定 Markdown 文档（走 Apifox CLI 的 doc create/update）         | Linux/macOS         |
+| `goctl-api-init.sh`         | scripts/codegen/     | 生成 GoZero API 代码，参数透传给`genApi.sh`                                                       | Linux/macOS         |
+| `goctl-orm-init.sh`         | scripts/codegen/     | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                                       | Linux/macOS         |
 | `checkGenerated.sh`         | gozero/script/goctl/ | 校验 goctl 生成产物是否被人工改动（按`gozero/template`重新生成后比对）                            | Linux/macOS/Windows |
-| `lint.sh`                   | scripts/             | 检查四个服务的代码规范（Spotless/golangci-lint/goctl api format/ESLint/Prettier/Ruff）            | Linux/macOS         |
-| `format.sh`                 | scripts/             | 格式化四个服务的代码（Spotless/golangci-lint/goctl api format/Prettier/Ruff）                     | Linux/macOS         |
-| `test.sh`                   | scripts/             | 运行四个服务的单元测试（支持指定服务）                                                            | Linux/macOS         |
-| `compile.sh`                | scripts/             | 验证四个服务能否编译通过（只编译，不产出打包目录）                                                | Linux/macOS         |
-| `hooks-init.sh`             | scripts/             | 启用/停用/查看仓库的版本化 Git 提交钩子（`.githooks/`）                                           | Linux/macOS/Windows |
-| `skills-sync.sh`            | scripts/             | 把 skills/mix-web-demo 镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）        | Linux/macOS/Windows |
-| `run.ps1`                   | scripts/             | PowerShell 脚本，启动所有服务                                                                     | Windows             |
+| `lint.sh`                   | scripts/quality/     | 检查四个服务的代码规范（Spotless/golangci-lint/goctl api format/ESLint/Prettier/Ruff）            | Linux/macOS         |
+| `format.sh`                 | scripts/quality/     | 格式化四个服务的代码（Spotless/golangci-lint/goctl api format/Prettier/Ruff）                     | Linux/macOS         |
+| `test.sh`                   | scripts/quality/     | 运行四个服务的单元测试（支持指定服务）                                                            | Linux/macOS         |
+| `compile.sh`                | scripts/quality/     | 验证四个服务能否编译通过（只编译，不产出打包目录）                                                | Linux/macOS         |
+| `hooks-init.sh`             | scripts/tools/       | 启用/停用/查看仓库的版本化 Git 提交钩子（`.githooks/`）                                           | Linux/macOS/Windows |
+| `skills-sync.sh`            | scripts/tools/       | 把 skills/mix-web-demo 镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）        | Linux/macOS/Windows |
 
 ### 服务名称
 
@@ -1789,7 +1794,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 ### 注意事项
 
 1. **tmux 依赖**：Linux/macOS 脚本依赖 `tmux`，请确保已安装
-2. **执行权限**：Linux/macOS 脚本需要执行权限，可以通过 `chmod +x scripts/*.sh` 来设置
+2. **执行权限**：Linux/macOS 脚本需要执行权限，可以通过 `chmod +x scripts/*/*.sh` 来设置
 3. **相对路径**：所有脚本都使用相对路径，可以在任何目录下调用项目的脚本
 4. **服务依赖**：启动前请确保 MySQL、PostgreSQL（含 pgvector）、Redis、MongoDB、ElasticSearch、RabbitMQ、Nacos、ClickHouse、Neo4j 等基础服务已运行
 5. **logs 命令**：仅支持查看单个服务的日志，如需查看多个服务请依次调用
@@ -1821,19 +1826,19 @@ dist-control.sh 和 mix 支持以下服务名称：
 
 ```bash
 # 1. 一键打包所有服务
-./scripts/build.sh
+./scripts/build/build.sh
 
 # 2. 启动所有服务
-./scripts/dist-control.sh start
+./scripts/build/dist-control.sh start
 
 # 3. 查看服务状态
-./scripts/dist-control.sh status
+./scripts/build/dist-control.sh status
 
 # 4. 重启所有服务
-./scripts/dist-control.sh restart
+./scripts/build/dist-control.sh restart
 
 # 5. 停止所有服务
-./scripts/dist-control.sh stop
+./scripts/build/dist-control.sh stop
 ```
 
 打包后的文件统一位于 `dist/` 目录，每个服务都包含配置文件、启动/停止脚本和日志文件。
@@ -1845,14 +1850,14 @@ dist-control.sh 和 mix 支持以下服务名称：
   - `observability` 子命令用于启停可观测性组件（Loki/Promtail/Prometheus/Grafana/Tempo/Collector），并同步 dev/dist 的 OTel 开关；`obs` 为别名，旧名 `loki` 仍可用但不推荐
   - 支持开发环境和生产环境命令
 
-- **scripts/build.sh**
+- **scripts/build/build.sh**
   - 打包 Spring、FastAPI、GoZero、NestJS，并复制 APISIX 网关配置到 `dist/`
   - 将编译结果打包到 `dist/` 目录
   - 包含编译错误检查和日志输出
   - 打包 Spring 时按 `.otel/enabled` 标记决定是否启用链路追踪，下载 OpenTelemetry Java Agent 并复制到 `dist/spring/`，启动脚本按开关追加 `-javaagent`
   - 网关同样按该标记写入 `APISIX_OTEL_ENABLED`，由 `render-config.sh` 渲染出实际的 APISIX 配置
 
-- **scripts/dist-control.sh**
+- **scripts/build/dist-control.sh**
   - 管理打包后的分布式服务
   - 支持的操作：`start`、`stop`、`status`、`restart`、`logs`
 
@@ -1914,7 +1919,7 @@ Docker 启动时会把所有应用容器接入同一个 `hcsy` 网络，容器�
 ./mix docker build spring gozero
 
 # 仅构建镜像，不启动容器
-./scripts/build_and_run_services.sh --build-only
+./scripts/docker/build_and_run_services.sh --build-only
 
 # 手动启动容器时指定配置文件
 docker run -d --name mix-spring-custom \
@@ -1949,7 +1954,7 @@ docker restart mix-spring-container
 - prometheus（抓取四个服务的指标端点）
 - grafana
 
-第三方依赖（MySQL/PostgreSQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse/Neo4j）请继续使用现有启动脚本（如 `./scripts/docker-services.sh`），并确保它们与同一 Docker 网络 `hcsy` 运行。
+第三方依赖（MySQL/PostgreSQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse/Neo4j）请继续使用现有启动脚本（如 `./scripts/docker/docker-services.sh`），并确保它们与同一 Docker 网络 `hcsy` 运行。
 
 Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 
@@ -1973,16 +1978,16 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 - `nestjs/src/config/application.yaml -> /app/dist/config/application.yaml`
 - `fastapi/application.yaml -> /app/application.yaml`
 - `logs/<service> -> /app/logs/<service>`
-- `observability/otel-collector.yaml -> /etc/otel/config.yaml`
-- `observability/tempo.yaml -> /etc/tempo/tempo.yaml`
-- `observability/prometheus.yml -> /etc/prometheus/prometheus.yml`
+- `observability/otel-collector/otel-collector.yaml -> /etc/otel/config.yaml`
+- `observability/tempo/tempo.yaml -> /etc/tempo/tempo.yaml`
+- `observability/prometheus/prometheus.yml -> /etc/prometheus/prometheus.yml`
 - `static/pic`, `static/excel`, `static/upload`, `static/word`
 
 `static/` 下的四个目录是运行时可写数据目录，内容不随仓库发布：`pic` 存 FastAPI 词云输出图，`excel` 存导出表格，`upload` 存 multipart 上传文件，`word` 是 Word 模板的部署期覆盖位。Word 导出的默认模板唯一的来源是镜像内置的 `nestjs/src/assets/word/template.docx`（构建后位于 `dist/assets/word/`）；`static/word` 为空时导出会自动回退到该内置模板，需要替换模板时再通过 `FILES_WORD_PATH` 指向自定义目录。
 
-此外，`observability/` 统一存放 Loki/Promtail/Grafana、Collector/Tempo 与 Prometheus 配置；日志由 Promtail 读取并写入 Loki，Span 经 Collector 脱敏后写入 Tempo，指标由 Prometheus 抓取。Loki、Tempo、Prometheus 与 Grafana 的数据均保存在 Compose 命名卷中。
+此外，`observability/` 按组件分目录存放 Loki/Promtail/Grafana、Collector/Tempo 与 Prometheus 配置；日志由 Promtail 读取并写入 Loki，Span 经 Collector 脱敏后写入 Tempo，指标由 Prometheus 抓取。Loki、Tempo、Prometheus 与 Grafana 的数据均保存在 Compose 命名卷中。
 
-`./scripts/docker-compose-up.sh` 会自动创建运行所需的日志与静态目录；网关日志权限由 Compose 初始化容器处理。
+`./scripts/docker/docker-compose-up.sh` 会自动创建运行所需的日志与静态目录；网关日志权限由 Compose 初始化容器处理。
 
 通常直接执行 `./mix compose up` 即可；若要预先构建镜像，可使用 `./mix docker build`。
 
@@ -1995,7 +2000,7 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 
 ```bash
 # 启动依赖服务（如果尚未启动）
-./scripts/docker-services.sh
+./scripts/docker/docker-services.sh
 
 # 启动应用、网关与可观测性服务
 ./mix compose up
@@ -2035,10 +2040,10 @@ docker compose down -v       # 需要彻底重置观测历史时才用
 ### 文件说明
 
 - `docker-compose.yml`：应用、网关和 OTel Collector/Tempo/Loki/Promtail/Prometheus/Grafana 编排；数据库、缓存与消息队列由基础服务脚本管理
-- `scripts/docker-compose-up.sh`：快速启动脚本
-- `scripts/docker-compose-down.sh`：快速停止脚本
-- `scripts/docker-services.sh`：创建和管理基础中间件容器，账号密码读取根目录 `.env`，并在 ES 启动前自动安装 IK 分词器
-- `scripts/build_and_run_services.sh`：构建并运行服务容器
+- `scripts/docker/docker-compose-up.sh`：快速启动脚本
+- `scripts/docker/docker-compose-down.sh`：快速停止脚本
+- `scripts/docker/docker-services.sh`：创建和管理基础中间件容器，账号密码读取根目录 `.env`，并在 ES 启动前自动安装 IK 分词器
+- `scripts/docker/build_and_run_services.sh`：构建并运行服务容器
 
 ### 访问服务
 
@@ -2117,7 +2122,7 @@ docker system prune -af
 
 ### PostgreSQL 表创建
 
-LangChain 会自动创建，但需要先在目标库里执行 `db/postgresql/extensions.sql` 启用 `pgvector` 扩展。库本身由 `scripts/docker-services.sh` 创建 `pgvector-db` 容器时按根目录 `.env` 的 `POSTGRES_DB`（默认 `demo`）初始化，需要与 FastAPI 的 `DB_POSTGRES_DATABASE` 保持一致，否则会因目标库不存在而连接失败；已有 `~/pgdata` 数据卷时初始库不会重建，需手动执行 `CREATE DATABASE`
+LangChain 会自动创建，但需要先在目标库里执行 `db/postgresql/extensions.sql` 启用 `pgvector` 扩展。库本身由 `scripts/docker/docker-services.sh` 创建 `pgvector-db` 容器时按根目录 `.env` 的 `POSTGRES_DB`（默认 `demo`）初始化，需要与 FastAPI 的 `DB_POSTGRES_DATABASE` 保持一致，否则会因目标库不存在而连接失败；已有 `~/pgdata` 数据卷时初始库不会重建，需手动执行 `CREATE DATABASE`
 
 ### MongoDB 表创建
 
@@ -2268,7 +2273,7 @@ PDF 导出依赖 Chromium：运行镜像已安装 `chromium` + `font-noto-cjk`�
 ./mix swag spring gozero
 
 # 直接调用脚本
-./scripts/swag-init.sh
+./scripts/docs/swag-init.sh
 ```
 
 | 服务    | 生成方式                                                        | 静态产物                       | 前置工具  |
@@ -2445,7 +2450,7 @@ APIFOX_PROJECT_ID=你的项目ID
 ./mix apifox-check
 
 # 直接调用脚本
-./scripts/apifox-sync.sh spring --dry-run
+./scripts/docs/apifox-sync.sh spring --dry-run
 ```
 
 执行时按服务逐个串行导入，并打印各服务的「新增 / 更新 / 忽略 / 失败」计数；任一服务产物缺失或导入失败都会以非零状态码退出。
@@ -2460,8 +2465,8 @@ APIFOX_PROJECT_ID=你的项目ID
 | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `push` 到 `prod`，改动任一服务的 `docs/openapi.json`、`docs/openapi.yaml`（GoZero 另含 `gozero/app/docs/websocket.json`） | 只同步「文档真正变了的服务」的**接口与数据模型**，用 `dorny/paths-filter` 判定；`main` 是开发分支，不触发 |
 | `push` 到 `prod`，改动 `README.md`                                                                                        | 只同步**README 文档**（走 Apifox CLI 的 `doc update`），不碰接口                                          |
-| `push` 改动 `scripts/apifox-sync.sh`、`scripts/apifox-schema-refs.py`、本工作流文件                                       | 四个服务接口全量重跑一次，避免脚本改动只在本地生效                                                        |
-| `push` 改动 `scripts/apifox-readme-sync.sh`                                                                               | 只重跑 README 同步                                                                                        |
+| `push` 改动 `scripts/docs/apifox-sync.sh`、`scripts/docs/apifox-schema-refs.py`、本工作流文件                                       | 四个服务接口全量重跑一次，避免脚本改动只在本地生效                                                        |
+| `push` 改动 `scripts/docs/apifox-readme-sync.sh`                                                                               | 只重跑 README 同步                                                                                        |
 | `workflow_dispatch`                                                                                                       | 可指定服务列表、`dry-run`（只校验不写入）、强制同步 README                                                |
 | PR                                                                                                                        | **不触发**：多个 PR 写同一个 Apifox 项目会互相覆盖，只在合并后由 `push` 触发                              |
 
@@ -2503,7 +2508,7 @@ gh variable set APIFOX_README_DOC_ID --body "<文档ID>"
 1. 只在 CI 里装 Node 20 与 `apifox-cli`（WebSocket 接口同步、模型引用自检、README 文档同步依赖它），**不生成文档**：产物必须由本地 `./mix swag <service>` 生成后与服务代码同一次提交，工作流只做推送
 2. 令牌或项目 ID 缺失时工作流**直接失败**并给出 `::error::` 提示，不做静默跳过，避免门禁假绿
 3. `concurrency: apifox-sync` 全局串行：Apifox 同一项目不允许并发导入，连续推送时排队执行而不是并发覆盖
-4. 接口同步固定带 `--no-readme`：README 由独立步骤（`scripts/apifox-readme-sync.sh --skip-if-unset`）负责，两边都改了就先后各跑一次，只改 README 时不会触发接口导入
+4. 接口同步固定带 `--no-readme`：README 由独立步骤（`scripts/docs/apifox-readme-sync.sh --skip-if-unset`）负责，两边都改了就先后各跑一次，只改 README 时不会触发接口导入
 5. 同步成功后把 `.apifox/*.schemas.sha256` 数据模型指纹提交回当前分支（提交信息 `chore(apifox): 同步数据模型指纹基线`，用 `GITHUB_TOKEN` 推送不会再次触发工作流）。**这一步很关键**：指纹是「Apifox 项目已同步到哪个模型版本」的共享基线，不回写会让每次 CI 都误判为模型变更而走覆盖模式，冲掉手工维护的 Mock 与示例
    - `prod` 若开了分支保护（必须走 PR），`GITHUB_TOKEN` 直推会被拒，步骤只打 `::warning::` 不失败：此时下载本次运行的 `apifox-state` 制品，解压覆盖仓库里的 `.apifox/` 再提交即可（该制品用 `include-hidden-files: true` 上传，点开头的隐藏目录也能取到）
    - 不想让 CI 提交就删掉「回写数据模型基线」步骤，改由本地 `./mix apifox` 后提交指纹
@@ -2547,13 +2552,13 @@ gh run watch
 ./mix apifox-check --examples 10 --no-color
 
 # 直接调用脚本
-./scripts/apifox-check.sh --keep /tmp/apifox-check
+./scripts/docs/apifox-check.sh --keep /tmp/apifox-check
 ```
 
 - 输出形如 `接口 207 个，数据模型 259 个`；有断链时逐条打印「目录 | 方法 路径 | 字段 -> 悬空引用」，退出码 1
 - 返回码：`0` 引用完整、`1` 存在断链、`2` 缺少 `.env` 配置 / Apifox CLI / python
 - 需要联网并读 `.env` 的 `APIFOX_ACCESS_TOKEN`、`APIFOX_PROJECT_ID`，因此**不并入离线的 `./mix lint`**
-- `./mix apifox` 结束时会自动跑同一项检查（底层为 `scripts/apifox-schema-refs.py`），命中断链即按覆盖模式重导修复；单独执行本命令适合「不改代码、只确认远端状态」或排障前后对比
+- `./mix apifox` 结束时会自动跑同一项检查（底层为 `scripts/docs/apifox-schema-refs.py`），命中断链即按覆盖模式重导修复；单独执行本命令适合「不改代码、只确认远端状态」或排障前后对比
 - 断链的根治手段是按服务隔离数据模型目录（`APIFOX_SCHEMA_FOLDER_*`），否则任一服务的全量对齐都会删掉其它服务刚同步的模型
 
 ### README 同步到指定文档
@@ -2599,7 +2604,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 ./mix apifox-readme --dry-run
 
 # 直接调用脚本
-./scripts/apifox-readme-sync.sh --dry-run
+./scripts/docs/apifox-readme-sync.sh --dry-run
 ```
 
 同步行为：
@@ -2615,7 +2620,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 
 1. `doc` 系列命令需要 Apifox 账号权限，直接写主分支的放行方式见上面的「AI 编辑权限」，未放行时返回 `403075`
 2. README 体积较大时 Apifox 侧渲染与版本对比会偏慢；正文超过 200000 字节脚本会告警，必要时拆成多篇文档分别同步
-3. README 里的相对路径（`scripts/xxx.sh`、`static/`）与锚点链接在 Apifox 侧无法跳转，需要跳转请改成绝对 URL
+3. README 里的相对路径（`scripts/<分组>/xxx.sh`、`static/`）与锚点链接在 Apifox 侧无法跳转，需要跳转请改成绝对 URL
 4. 脚本依赖 `apifox`（缺失时自动安装）、`sed`、`tr`、`grep`、`awk`、`mktemp`，传给 CLI 的路径先经 `cygpath` 转成 Windows 原生路径
 5. README 的「## 目录」章节只在 Apifox 文档内被剔除，仓库里的 `README.md` 不做任何改写
 6. Apifox CLI 会在仓库根目录生成 `.apifox/` 本地状态目录（记录分支与守卫错误等），这部分已加入 `.gitignore`，不要提交；`.apifox/*.schemas.sha256` 是共享的指纹基线，需要随仓库提交
@@ -2638,7 +2643,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 
 | 文件              | 作用                                                                                                                                                                                                                                           |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/lint.sh` / `compile.sh` / `test.sh`；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿                       |
+| `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/quality/lint.sh` / `scripts/quality/compile.sh` / `scripts/quality/test.sh`；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿                       |
 | `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                                               |
 | `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`observability/` 有变更时按文件重启命中的容器（不重建业务服务） |
 | `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                                        |
@@ -2678,7 +2683,7 @@ gh workflow run smoke.yml
 3. 部署失败会自动按服务回滚到上一版本（状态记录在 `${RUNNER_WORKSPACE}/mix-deploy-state/last-deploy.txt`）；若回滚也失败会打出 `::warning::` 并要求人工介入
 4. 部署目录用 `git checkout -f -B prod <commit>` 而不是 detached HEAD，运维仍可直接在该目录 `git pull` 排查
 5. 任意服务缺少部署记录且不在本次变更内会直接失败，避免误用 `latest` 掩盖版本漂移（先做一次全量部署即可补齐）
-6. 本地等价命令：`./mix lint|compile|test <service>`、`./mix docker build <service>`、`./scripts/docker-push-images.sh`、`./mix docker up`
+6. 本地等价命令：`./mix lint|compile|test <service>`、`./mix docker build <service>`、`./scripts/docker/docker-push-images.sh`、`./mix docker up`
 
 ## 项目规范说明
 
@@ -2723,7 +2728,7 @@ skills/
 
 ### 同步到本机 Agent 工具（./mix skills）
 
-`./mix skills` 把仓库 `skills/mix-web-demo/` 镜像同步到本机各 Agent 工具的用户级技能目录，目标清单集中在 `scripts/skills-targets.conf`：
+`./mix skills` 把仓库 `skills/mix-web-demo/` 镜像同步到本机各 Agent 工具的用户级技能目录，目标清单集中在 `scripts/tools/skills-targets.conf`：
 
 ```bash
 # 同步到全部已存在的用户级技能目录
@@ -2742,7 +2747,7 @@ skills/
 2. **只同步技能根目录已存在的目标**，不存在的目录不创建也不迁移，未安装或未使用的工具不会被凭空写入
 3. 同步为镜像覆盖：先删除目标下的同名技能目录再整体复制，源目录删除或改名过的文件不会在目标里残留；内容完全一致时跳过复制，只打印状态
 4. 技能源目录为 `skills/mix-web-demo`，目录名需与 `SKILL.md` frontmatter 的 `name` 字段一致（当前为 `mix-web-demo`）
-5. 脚本为 `scripts/skills-sync.sh`，只使用 bash 内建与 `cp`、`diff`，Linux/macOS 与 Windows（Git Bash）行为一致，可直接调用：`bash scripts/skills-sync.sh --list`
+5. 脚本为 `scripts/tools/skills-sync.sh`，只使用 bash 内建与 `cp`、`diff`，Linux/macOS 与 Windows（Git Bash）行为一致，可直接调用：`bash scripts/tools/skills-sync.sh --list`
 
 > **本目录是项目专属技能的备份，实际生效的是对应 Agent 工具自己维护的 skills**。各工具的技能目录不同（`.codebuddy`、`.claude`、`.codex`、`.trae` 等已被 `.gitignore` 忽略，不随仓库分发），这里只保留一份可版本管理的副本，便于审阅、比对与迁移；修改约定时改本目录的文件，再执行 `./mix skills` 同步到实际使用的工具技能目录。
 
@@ -2804,7 +2809,7 @@ skills/
 
 FastAPI 侧不使用 Pyright 作为门禁：仓库既有类型检查基线存在大量报错（主要是测试文件），不适合阻断提交；`pyright` 仍保留在 `fastapi/pyproject.toml` 供编辑器使用。
 
-脚本为 `scripts/compile.sh`，返回码约定与 `lint.sh` / `test.sh` 一致：`0` 通过、`2` 对应工具未安装（自动跳过并提示）、其它为失败。`gateway` 为 APISIX 配置，不参与编译。
+脚本为 `scripts/quality/compile.sh`，返回码约定与 `scripts/quality/lint.sh` / `scripts/quality/test.sh` 一致：`0` 通过、`2` 对应工具未安装（自动跳过并提示）、其它为失败。`gateway` 为 APISIX 配置，不参与编译。
 
 | 服务    | 工具                         | 配置文件                                                                | 说明                                         |
 | ------- | ---------------------------- | ----------------------------------------------------------------------- | -------------------------------------------- |
@@ -2833,7 +2838,7 @@ gradle spotlessCheck
 
 规则要点：4 空格缩进、续行缩进 4 空格、行宽 120 列、保留人工换行、中文注释不自动重排；import 按 `java/javax → org → com.hcsy → 其他` 四段分组，同时移除未使用导入、行尾空格，并保证文件以换行结尾。
 
-`./mix lint spring` 除 Spotless 外还会执行 `scripts/controller-vo.py`，检查控制器是否直接返回匿名 `Map<String, Object>`：接口响应统一用具名 VO（字段加 `@Schema`）承载，便于 Swagger 展示字段说明；确实只能使用 Map 的动态结构（如列由运行时决定的查询结果）需在方法或其注解上方写 `// vo-exempt: 原因` 显式豁免，整个控制器可用 `// vo-exempt-class: 原因`。
+`./mix lint spring` 除 Spotless 外还会执行 `scripts/quality/controller-vo.py`，检查控制器是否直接返回匿名 `Map<String, Object>`：接口响应统一用具名 VO（字段加 `@Schema`）承载，便于 Swagger 展示字段说明；确实只能使用 Map 的动态结构（如列由运行时决定的查询结果）需在方法或其注解上方写 `// vo-exempt: 原因` 显式豁免，整个控制器可用 `// vo-exempt-class: 原因`。
 
 ### GoZero
 
@@ -2903,7 +2908,7 @@ SKIP_HOOKS=1 git commit -m "..."   # 保留钩子配置，仅本次跳过
 git commit --no-verify             # Git 原生跳过方式
 ```
 
-平台说明：钩子是 bash 脚本，由 Git 自带的 `sh` 执行。Linux/macOS 直接可用；Windows 需通过 **Git for Windows 自带的 Git Bash** 提交（无需 PowerShell 版本）。换行符由根目录 `.gitattributes` 的 `* text=auto eol=lf` 统一为 LF，避免 CRLF 导致脚本执行失败。仓库克隆后需执行一次 `./mix hooks` 才会生效。
+平台说明：钩子是 bash 脚本，由 Git 自带的 `sh` 执行。Linux/macOS 直接可用；Windows 需通过 **Git for Windows 自带的 Git Bash** 提交（仓库已不提供 PowerShell 版本）。换行符由根目录 `.gitattributes` 的 `* text=auto eol=lf` 统一为 LF，避免 CRLF 导致脚本执行失败。仓库克隆后需执行一次 `./mix hooks` 才会生效。
 
 ### 日志注解/中间件
 
@@ -3070,17 +3075,17 @@ app/internal/clients/nestjsClient.py                         # NestJS 客户端
 
 ### GoZero 代码生成
 
-GoZero 代码生成统一通过根目录 `mix` 脚本调用，`mix` 会把参数透传到 `scripts/goctl-api-init.sh` 或 `scripts/goctl-orm-init.sh`，再由这两个脚本调用 `gozero/script/goctl` 下的实际生成脚本。
+GoZero 代码生成统一通过根目录 `mix` 脚本调用，`mix` 会把参数透传到 `scripts/codegen/goctl-api-init.sh` 或 `scripts/codegen/goctl-orm-init.sh`，再由这两个脚本调用 `gozero/script/goctl` 下的实际生成脚本。
 
 调用链如下：
 
 ```bash
 ./mix goctl-api [args...]
-# -> scripts/goctl-api-init.sh [args...]
+# -> scripts/codegen/goctl-api-init.sh [args...]
 # -> gozero/script/goctl/genApi.sh [args...]
 
 ./mix goctl-orm [args...]
-# -> scripts/goctl-orm-init.sh [args...]
+# -> scripts/codegen/goctl-orm-init.sh [args...]
 # -> gozero/script/goctl/genOrm.sh [args...]
 ```
 
