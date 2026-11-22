@@ -67,4 +67,7 @@ public class ArticleExportVO {
 
     @Schema(description = "收藏数")
     private Long collectCount;
+
+    @Schema(description = "作者被关注数")
+    private Long authorFollowCount;
 }

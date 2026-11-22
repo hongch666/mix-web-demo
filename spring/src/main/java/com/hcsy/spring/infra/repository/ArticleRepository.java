@@ -10,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import com.hcsy.spring.entity.po.Article;
-import com.hcsy.spring.entity.projection.ArticleExcelRow;
 import com.hcsy.spring.entity.vo.CategoryCountVO;
 import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MonthlyCountVO;
@@ -107,25 +106,6 @@ public interface ArticleRepository extends ReactiveCrudRepository<Article, Long>
      * 查询指定状态下浏览量最高的前 10 篇文章，用于热门文章排行
      */
     Flux<Article> findTop10ByStatusOrderByViewsDesc(Integer status);
-
-    /**
-     * 多表 JOIN 查询文章及其作者、分类、点赞数与收藏数，返回 Excel 导出投影行
-     */
-    @Query("""
-        SELECT a.id AS id, a.title AS title, a.content AS content, a.user_id AS user_id,
-               u.name AS username, a.tags AS tags, a.status AS status,
-               a.create_at AS create_at, a.update_at AS update_at, a.views AS views,
-               a.sub_category_id AS sub_category_id, sc.name AS sub_category_name,
-               c.id AS category_id, c.name AS category_name,
-               (SELECT COUNT(*) FROM likes l WHERE l.article_id = a.id) AS like_count,
-               (SELECT COUNT(*) FROM collects cl WHERE cl.article_id = a.id) AS collect_count
-        FROM articles a
-        LEFT JOIN user u ON a.user_id = u.id
-        LEFT JOIN sub_category sc ON a.sub_category_id = sc.id
-        LEFT JOIN category c ON sc.category_id = c.id
-        ORDER BY a.id
-        """)
-    Flux<ArticleExcelRow> findArticlesForExcelExport();
 
     /**
      * 按子分类分组统计已发布文章数量并按数量降序返回，用于分类文章计数
