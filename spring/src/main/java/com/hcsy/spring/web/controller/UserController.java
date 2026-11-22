@@ -29,6 +29,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
@@ -55,6 +56,7 @@ import com.hcsy.spring.entity.vo.UserVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.DataSync;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -161,11 +163,12 @@ public class UserController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "查询用户", description = "根据id查询用户，返回用户信息及其登录状态和设备数")
+    @ApiErrorCode(code = "404", description = "用户不存在")
     @ApiLog("查询用户")
     public Mono<Result<UserVO>> getUserById(@PathVariable Long id) {
         return userService.getUserDetail(id)
             .map(Result::success)
-            .defaultIfEmpty(Result.<UserVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER)));
     }
 
     /**
@@ -278,7 +281,7 @@ public class UserController {
         return Mono.deferContextual(ctx -> {
             String accessToken = UserContext.getToken(ctx);
             if (accessToken == null) {
-                return Mono.just(Result.<Void>error(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID));
+                return Mono.error(new BusinessException(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID));
             }
             return tokenService.removeSessionByAccessToken(accessToken).thenReturn(Result.<Void>success());
         });
@@ -299,14 +302,15 @@ public class UserController {
      */
     @PostMapping("/force-logout/{user_id}")
     @Operation(summary = "手动下线用户", description = "管理员操作：将指定用户的所有登录会话强制下线")
+    @ApiErrorCode(code = "404", description = "用户不存在")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.USER, paramSource = ParamSource.PATH_SINGLE,
         paramName = "user_id")
     @ApiLog("手动下线用户")
     public Mono<Result<Void>> forceLogoutUser(@PathVariable("user_id") Long userId) {
         return userService.forceLogoutUser(userId)
-            .map(exists -> exists
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .flatMap(exists -> exists
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER)));
     }
 
     /**
@@ -321,7 +325,7 @@ public class UserController {
             Long userId = UserContext.getUserId(ctx);
 
             if (token == null || userId == null) {
-                return Mono.just(Result.<KickOtherDevicesVO>error(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID));
+                return Mono.error(new BusinessException(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID));
             }
 
             return userService.kickOtherDevices(userId, token).map(Result::success);
@@ -344,6 +348,10 @@ public class UserController {
      */
     @PostMapping("/email/send")
     @Operation(summary = "发送邮箱验证码", description = "向指定邮箱发送验证码，支持注册(register)和登录(login)两种场景")
+    @ApiErrorCode(code = "422", description = "邮箱格式不正确")
+    @ApiErrorCode(code = "400", description = "不支持的类型，请使用 register、login 或 reset")
+    @ApiErrorCode(code = "409", description = "邮箱已被注册")
+    @ApiErrorCode(code = "404", description = "邮箱未注册")
     @ApiLog("发送邮箱验证码")
     public Mono<Result<Void>> sendVerificationCode(@RequestParam(required = false) String email,
         @RequestParam(required = false) String type,
@@ -356,12 +364,15 @@ public class UserController {
         }
         resolvedType = resolvedType == null || resolvedType.isBlank() ? "register" : resolvedType;
         return userService.sendVerificationCode(resolvedEmail, resolvedType)
-            .map(outcome -> switch (outcome) {
-                case SENT -> Result.<Void>success();
-                case INVALID_EMAIL -> Result.<Void>error(HttpCode.UNPROCESSABLE_ENTITY, Messages.EMAIL);
-                case INVALID_TYPE -> Result.<Void>error(HttpCode.BAD_REQUEST, Messages.VERIFY_CODE_UNSUPPORT);
-                case EMAIL_EXISTS -> Result.<Void>error(HttpCode.CONFLICT, Messages.EMAIL_REGISTER);
-                case EMAIL_NOT_FOUND -> Result.<Void>error(HttpCode.NOT_FOUND, Messages.EMAIL_UNREGISTER);
+            .flatMap(outcome -> switch (outcome) {
+                case SENT -> Mono.just(Result.<Void>success());
+                case INVALID_EMAIL -> Mono
+                    .error(new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Messages.EMAIL));
+                case INVALID_TYPE -> Mono
+                    .error(new BusinessException(HttpCode.BAD_REQUEST, Messages.VERIFY_CODE_UNSUPPORT));
+                case EMAIL_EXISTS -> Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.EMAIL_REGISTER));
+                case EMAIL_NOT_FOUND -> Mono
+                    .error(new BusinessException(HttpCode.NOT_FOUND, Messages.EMAIL_UNREGISTER));
             });
     }
 

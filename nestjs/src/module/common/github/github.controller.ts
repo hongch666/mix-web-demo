@@ -1,5 +1,9 @@
 import { Controller, Get, Query, Res } from "@nestjs/common";
-import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import {
+  ApiOperation,
+  ApiResponse as ApiErrorResponse,
+  ApiTags,
+} from "@nestjs/swagger";
 import type { FastifyReply } from "fastify";
 import { HttpCode } from "src/common/constants";
 import { ApiResponse, success } from "src/common/utils/response";
@@ -30,6 +34,10 @@ export class GithubController {
   @ApiOperation({
     summary: "获取 GitHub 授权地址",
     description: "返回 GitHub OAuth 授权地址，前端拿到后直接跳转",
+  })
+  @ApiErrorResponse({
+    status: 503,
+    description: "Redis 客户端未就绪，无法生成 OAuth state",
   })
   @ApiLog("获取 GitHub 授权地址")
   @ApiResponseModel({ data: SwaggerGithubAuthorizeData })

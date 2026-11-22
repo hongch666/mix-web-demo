@@ -11,6 +11,7 @@ import {
   ApiConsumes,
   ApiOperation,
   ApiQuery,
+  ApiResponse as ApiErrorResponse,
   ApiTags,
 } from "@nestjs/swagger";
 import {
@@ -78,6 +79,12 @@ export class UploadController {
     summary: "上传图片到 OSS",
     description: "通过 multipart/form-data 上传图片到 OSS",
   })
+  @ApiErrorResponse({
+    status: 404,
+    description: "请求体中没有带 filename 的文件分片",
+  })
+  @ApiErrorResponse({ status: 413, description: "文件大小超过限制" })
+  @ApiErrorResponse({ status: 422, description: "文件对象无法读取" })
   @ApiLog("上传图片到 OSS")
   @ApiResponseModel({ data: SwaggerUploadResultData })
   async uploadImage(
@@ -123,6 +130,16 @@ export class UploadController {
     summary: "上传 PDF 到 OSS（管理员）",
     description: "通过 multipart/form-data 上传 PDF 到 OSS，仅管理员可用",
   })
+  @ApiErrorResponse({ status: 403, description: "非管理员无权上传 PDF" })
+  @ApiErrorResponse({
+    status: 404,
+    description: "请求体中没有带 filename 的文件分片",
+  })
+  @ApiErrorResponse({ status: 413, description: "文件大小超过限制" })
+  @ApiErrorResponse({
+    status: 422,
+    description: "扩展名不是 .pdf 或文件对象无法读取",
+  })
   @RequireAdmin()
   @ApiLog("上传 PDF 到 OSS")
   @ApiResponseModel({ data: SwaggerUploadResultData })
@@ -165,6 +182,12 @@ export class UploadController {
     summary: "匿名上传图片到 OSS",
     description: "注册阶段使用的匿名图片上传接口，仅图片格式，由网关限流",
   })
+  @ApiErrorResponse({
+    status: 404,
+    description: "请求体中没有带 filename 的文件分片",
+  })
+  @ApiErrorResponse({ status: 413, description: "文件大小超过限制" })
+  @ApiErrorResponse({ status: 422, description: "文件对象无法读取" })
   @ApiLog("匿名上传图片到 OSS")
   @ApiResponseModel({ data: SwaggerUploadResultData })
   async uploadPublicImage(

@@ -1,5 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Query } from "@nestjs/common";
-import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import {
+  ApiOperation,
+  ApiResponse as ApiErrorResponse,
+  ApiTags,
+} from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
 import {
   SwaggerApiLogAverageData,
@@ -32,6 +36,7 @@ export class ApiLogController {
     description:
       "可根据用户ID、用户名、API路径等条件查询，支持 page 分页与 nextCursor 游标翻页，无过滤条件时 total 为集合估算值",
   })
+  @ApiErrorResponse({ status: 403, description: "非管理员无权查询" })
   @ApiLog("查询API日志")
   @RequireAdmin()
   @ApiResponseModel({ data: SwaggerApiLogPageData })
@@ -50,6 +55,8 @@ export class ApiLogController {
     summary: "删除API日志",
     description: "通过日志ID删除单条日志",
   })
+  @ApiErrorResponse({ status: 403, description: "非管理员无权删除" })
+  @ApiErrorResponse({ status: 404, description: "日志 ID 不存在" })
   @ApiLog("删除API日志")
   @RequireAdmin()
   @ApiResponseModel({ data: SwaggerNullData })
@@ -66,6 +73,8 @@ export class ApiLogController {
     summary: "批量删除API日志",
     description: "通过日志ID路径参数批量删除，多个ID用英文逗号分隔",
   })
+  @ApiErrorResponse({ status: 403, description: "非管理员无权删除" })
+  @ApiErrorResponse({ status: 404, description: "存在不存在的日志 ID" })
   @ApiLog("批量删除API日志")
   @RequireAdmin()
   @ApiResponseModel({ data: SwaggerNullData })

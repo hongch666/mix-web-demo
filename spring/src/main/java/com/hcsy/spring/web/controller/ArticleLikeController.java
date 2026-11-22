@@ -18,6 +18,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
@@ -29,6 +30,7 @@ import com.hcsy.spring.entity.vo.PageVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.ArticleSync;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,6 +56,7 @@ public class ArticleLikeController {
      */
     @PostMapping
     @Operation(summary = "添加点赞", description = "为文章添加点赞")
+    @ApiErrorCode(code = "409", description = "已经点赞过该文章")
     @ArticleSync(action = SyncAction.LIKE, resource = SyncResource.LIKES, description = "点赞了1篇文章")
     @ApiLog("添加点赞")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
@@ -61,9 +64,9 @@ public class ArticleLikeController {
         paramName = "userId")
     public Mono<Result<Void>> addLike(@Valid @RequestBody ArticleLikeDTO dto) {
         return articleLikeService.addLike(dto.getArticleId(), dto.getUserId())
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.LIKE_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.LIKE_FAIL)));
     }
 
     /**
@@ -71,6 +74,7 @@ public class ArticleLikeController {
      */
     @DeleteMapping
     @Operation(summary = "取消点赞", description = "取消对文章的点赞")
+    @ApiErrorCode(code = "409", description = "点赞记录不存在")
     @ArticleSync(action = SyncAction.UNLIKE, resource = SyncResource.LIKES, description = "取消点赞了1篇文章")
     @ApiLog("取消点赞")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
@@ -82,9 +86,9 @@ public class ArticleLikeController {
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id",
             required = true) Long userId) {
         return articleLikeService.removeLike(articleId, userId)
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.UNLIKE_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.UNLIKE_FAIL)));
     }
 
     /**

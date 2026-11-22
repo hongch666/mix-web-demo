@@ -22,6 +22,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncChangeType;
 import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
@@ -36,6 +37,7 @@ import com.hcsy.spring.entity.vo.PageVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.DataSync;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,11 +61,12 @@ public class CommentsController {
      */
     @PostMapping
     @Operation(summary = "新增评论", description = "通过请求体创建评论信息")
+    @ApiErrorCode(code = "404", description = "文章或用户不存在")
     @DataSync(resource = SyncResource.COMMENTS, changeType = SyncChangeType.INSERT, description = "新增评论后同步图谱与数仓")
     @ApiLog("新增评论")
     public Mono<Result<Long>> createComment(@Valid @RequestBody CommentCreateDTO dto) {
         return commentsService.createComment(dto).map(saved -> Result.success(saved.getId()))
-            .defaultIfEmpty(Result.<Long>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT)));
     }
 
     /**
@@ -71,6 +74,7 @@ public class CommentsController {
      */
     @PutMapping
     @Operation(summary = "修改评论", description = "通过请求体修改评论信息")
+    @ApiErrorCode(code = "404", description = "评论不存在")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = BusinessType.COMMENT, paramSource = ParamSource.BODY,
         paramName = "id")
@@ -79,7 +83,7 @@ public class CommentsController {
     public Mono<Result<Void>> updateComment(@Valid @RequestBody CommentUpdateDTO dto) {
         return commentsService.updateComment(dto)
             .map(ignored -> Result.<Void>success())
-            .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT)));
     }
 
     /**
@@ -118,11 +122,12 @@ public class CommentsController {
     @GetMapping("/{id}")
     @Operation(summary = "根据id查询评论",
         description = "按评论ID返回单条评论详情，包含评论内容、所属文章、评论用户与评分信息；评论不存在时返回 404")
+    @ApiErrorCode(code = "404", description = "评论不存在")
     @ApiLog("根据id查询评论")
     public Mono<Result<CommentsVO>> getCommentsById(@PathVariable Long id) {
         return commentsService.getCommentDetail(id)
             .map(Result::success)
-            .defaultIfEmpty(Result.<CommentsVO>error(HttpCode.NOT_FOUND, Messages.COMMENT_ID + id));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.COMMENT_ID + id)));
     }
 
     /**
@@ -173,6 +178,7 @@ public class CommentsController {
     @GetMapping("/article/{id}")
     @Operation(summary = "根据文章id分页获取评论",
         description = "分页返回指定文章的评论，支持按创建时间或评分排序；排序参数非法时返回 400")
+    @ApiErrorCode(code = "400", description = "排序参数非法")
     @ApiLog("根据文章id分页获取评论")
     public Mono<Result<PageVO<CommentsVO>>> listCommentsByArticleId(
         @PathVariable Long id,
@@ -180,7 +186,7 @@ public class CommentsController {
         @RequestParam(defaultValue = "10") int size,
         @RequestParam(defaultValue = "1") int page) {
         if (!"create_time".equals(sortWay) && !"star".equals(sortWay)) {
-            return Mono.just(Result.error(HttpCode.BAD_REQUEST, Messages.SORT_WAY + sortWay));
+            return Mono.error(new BusinessException(HttpCode.BAD_REQUEST, Messages.SORT_WAY + sortWay));
         }
         return commentsService.listCommentsByArticleId(page, size, id, sortWay)
             .flatMap(commentsService::listCommentDetails)

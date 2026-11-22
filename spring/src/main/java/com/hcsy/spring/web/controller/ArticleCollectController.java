@@ -18,6 +18,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleCollectDTO;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
@@ -29,6 +30,7 @@ import com.hcsy.spring.entity.vo.PageVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.ArticleSync;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,6 +56,7 @@ public class ArticleCollectController {
      */
     @PostMapping
     @Operation(summary = "添加收藏", description = "为文章添加收藏")
+    @ApiErrorCode(code = "409", description = "已经收藏过该文章")
     @ArticleSync(action = SyncAction.COLLECT, resource = SyncResource.COLLECTS, description = "收藏了1篇文章")
     @ApiLog("添加收藏")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
@@ -61,9 +64,9 @@ public class ArticleCollectController {
         paramName = "userId")
     public Mono<Result<Void>> addCollect(@Valid @RequestBody ArticleCollectDTO dto) {
         return articleCollectService.addCollect(dto.getArticleId(), dto.getUserId())
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.COLLECT_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.COLLECT_FAIL)));
     }
 
     /**
@@ -71,6 +74,7 @@ public class ArticleCollectController {
      */
     @DeleteMapping
     @Operation(summary = "取消收藏", description = "取消对文章的收藏")
+    @ApiErrorCode(code = "409", description = "收藏记录不存在")
     @ArticleSync(action = SyncAction.UNCOLLECT, resource = SyncResource.COLLECTS, description = "取消收藏了1篇文章")
     @ApiLog("取消收藏")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
@@ -82,9 +86,9 @@ public class ArticleCollectController {
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id",
             required = true) Long userId) {
         return articleCollectService.removeCollect(articleId, userId)
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.UNCOLLECT_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.UNCOLLECT_FAIL)));
     }
 
     /**

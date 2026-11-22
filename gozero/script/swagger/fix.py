@@ -42,8 +42,45 @@ SSE_FRAME_SCHEMA_TITLE = "ChatSSEMessage"
 # 401 统一错误响应的描述文案
 UNAUTHORIZED_DESCRIPTION = "用户未登录或登录已失效"
 
-# 401 统一错误响应的 schema 名
-UNAUTHORIZED_SCHEMA_NAME = "UnauthorizedResponse"
+# 统一错误响应的 schema 名
+ERROR_SCHEMA_NAME = "ErrorResponse"
+
+# 全局通用错误码与描述：
+#   400  httpx.Parse / 全局 validator 校验失败
+#   401  鉴权中间件未取到登录身份
+#   500  RecoveryMiddleware 的 panic 兜底与未指定 code 的业务错误
+# 三类响应由中间件对所有接口生效，统一注入
+COMMON_ERROR_RESPONSES = (
+    ("400", "请求参数校验失败"),
+    ("401", UNAUTHORIZED_DESCRIPTION),
+    ("500", "服务器内部错误"),
+)
+
+# 需要鉴权中间件的路径前缀：
+#   AllowSelfMiddleware     非本人且非管理员时返回 403
+#   InternalServiceMiddleware 内部令牌服务名不匹配时返回 403
+# 这两类 403 来自路由中间件，.api 的 returns 推不出来，按前缀统一补
+AUTH_GUARDED_PREFIXES = (
+    "/user-chat/",
+    "/sse/chat",
+    "/search/history/",
+    "/sql-tools/",
+    "/task/",
+)
+
+# 403 越权响应的描述文案
+FORBIDDEN_DESCRIPTION = "无权访问该资源"
+
+# 网关 block-internal 路由返回的 403 描述文案，与 apisix.yaml 的 response_example 对齐
+GATEWAY_FORBIDDEN_DESCRIPTION = "内部接口禁止外部访问"
+
+# 共享的网关黑名单 JSON（由 scripts/swag-init.sh 在生成前从 apisix.yaml 抽取）
+GATEWAY_BLOCKLIST_JSON = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+    "scripts",
+    "generated",
+    "gateway-blocklist.json",
+)
 
 # 提升为具名响应模型时加的服务前缀
 # Apifox 的 targetSchemaFolderId 是四个服务共用的同一个模型目录，而 GoZero 与 NestJS
@@ -254,9 +291,15 @@ def add_chinese_tags_to_dict(swagger_data):
     # utils.Success/Error 统一包装为 {code, msg, data}，这里补齐文档外壳
     wrap_unified_responses(swagger_data)
 
-    # 401 未登录响应对所有接口通用，统一注入（必须在 wrap_unified_responses 之后，
-    # 否则会被当成业务数据再包一层 code/msg/data 外壳）
-    add_common_unauthorized_response(swagger_data)
+    # 鉴权中间件产生的 403 越权响应，按路由前缀补充（须在统一错误体补齐之前）
+    add_guard_forbidden_responses(swagger_data)
+
+    # 网关 block-internal 拦截的接口补 403（须在统一错误体补齐之前）
+    add_gateway_internal_responses(swagger_data)
+
+    # 全局通用错误响应（400/401/500）对所有接口通用，统一注入（必须在 wrap_unified_responses
+    # 之后，否则会被当成业务数据再包一层 code/msg/data 外壳）
+    add_common_error_responses(swagger_data)
 
     # 先摘出 WebSocket 接口的描述与标签，随后该路径会被剔除，改由 apifox-sync.sh
     # 通过 Apifox CLI 的 websocket 命令单独同步
@@ -353,11 +396,90 @@ def wrap_unified_responses(swagger_data):
                 }
 
 
-def add_common_unauthorized_response(swagger_data):
-    """为所有接口补统一的 401 未登录响应
+def add_guard_forbidden_responses(swagger_data):
+    """为受鉴权中间件保护的接口补 403 越权响应
 
-    未登录或令牌失效由 utils.Error 统一输出 {code, msg, data}，
-    该响应对所有接口通用，这里统一注入，避免每个 handler 重复声明。
+    AllowSelfMiddleware 与 InternalServiceMiddleware 命中越权时返回 403，
+    该响应由路由中间件产生，无法由 .api 的 returns 描述，按路径前缀统一补。
+    必须在 add_common_error_responses 之前调用，才能复用其响应体补齐逻辑
+    """
+    paths = swagger_data.get("paths")
+    if not isinstance(paths, dict):
+        return
+    for path, path_item in paths.items():
+        if not isinstance(path_item, dict) or not str(path).startswith(
+            AUTH_GUARDED_PREFIXES
+        ):
+            continue
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+            responses = operation.get("responses")
+            if not isinstance(responses, dict):
+                responses = {}
+                operation["responses"] = responses
+            if "403" in responses:
+                continue
+            responses["403"] = {"description": FORBIDDEN_DESCRIPTION}
+
+
+def load_gateway_blocklist():
+    """读取共享的网关黑名单 JSON，文件不存在时返回空列表（单独调用本脚本时跳过注入）"""
+    if not os.path.isfile(GATEWAY_BLOCKLIST_JSON):
+        return []
+    try:
+        with open(GATEWAY_BLOCKLIST_JSON, encoding="utf-8") as fh:
+            return json.load(fh).get("uris", [])
+    except (OSError, ValueError):
+        return []
+
+
+def is_gateway_blocked(path, blocklist):
+    """OpenAPI path 是否命中网关黑名单：精确匹配或以 * 结尾的前缀匹配"""
+    for uri in blocklist:
+        if uri.endswith("*"):
+            if path.startswith(uri[:-1]):
+                return True
+        elif path == uri:
+            return True
+    return False
+
+
+def add_gateway_internal_responses(swagger_data):
+    """为网关 block-internal 拦截的接口补 403（内部接口禁止外部访问）
+
+    网关按 URI 黑名单拦截，服务代码无法推导，只能从共享 JSON 读取；
+    只补描述，统一错误体由随后的 add_common_error_responses 补齐
+    """
+    blocklist = load_gateway_blocklist()
+    if not blocklist:
+        return
+    paths = swagger_data.get("paths")
+    if not isinstance(paths, dict):
+        return
+    for path, path_item in paths.items():
+        if not isinstance(path_item, dict) or not is_gateway_blocked(path, blocklist):
+            continue
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+            responses = operation.get("responses")
+            if not isinstance(responses, dict):
+                responses = {}
+                operation["responses"] = responses
+            if "403" in responses and isinstance(responses["403"], dict):
+                # 网关是外部第一道关，被拦截的接口统一用网关描述覆盖应用级 403
+                responses["403"]["description"] = GATEWAY_FORBIDDEN_DESCRIPTION
+            else:
+                responses["403"] = {"description": GATEWAY_FORBIDDEN_DESCRIPTION}
+
+
+def add_common_error_responses(swagger_data):
+    """为所有接口补全局通用错误响应（400、401、500）
+
+    参数解析失败、未登录/令牌失效与 panic 兜底分别由 httpx.Parse、鉴权中间件与
+    RecoveryMiddleware 统一输出 {code, msg, data}，这些响应对所有接口通用，
+    这里统一注入，避免每个 handler 重复声明。
     必须排在 wrap_unified_responses 之后：$ref 引用没有内联 properties，
     先注入会被误判成业务数据再包一层外壳
     """
@@ -367,15 +489,15 @@ def add_common_unauthorized_response(swagger_data):
     schemas = components.setdefault("schemas", {})
     if not isinstance(schemas, dict):
         return
-    if UNAUTHORIZED_SCHEMA_NAME not in schemas:
-        schemas[UNAUTHORIZED_SCHEMA_NAME] = {
+    if ERROR_SCHEMA_NAME not in schemas:
+        schemas[ERROR_SCHEMA_NAME] = {
             "type": "object",
             "description": "统一错误响应",
             "properties": {
                 "code": {
                     "type": "integer",
                     "format": "int32",
-                    "example": 401,
+                    "example": 400,
                     "description": "响应码，与 HTTP 状态码一致",
                 },
                 "msg": {"type": "string", "description": "响应消息"},
@@ -384,7 +506,7 @@ def add_common_unauthorized_response(swagger_data):
             "required": ["code", "msg", "data"],
         }
 
-    ref = f"#/components/schemas/{UNAUTHORIZED_SCHEMA_NAME}"
+    ref = f"#/components/schemas/{ERROR_SCHEMA_NAME}"
     paths = swagger_data.get("paths")
     if not isinstance(paths, dict):
         return
@@ -398,12 +520,23 @@ def add_common_unauthorized_response(swagger_data):
             if not isinstance(responses, dict):
                 responses = {}
                 operation["responses"] = responses
-            if "401" in responses:
-                continue
-            responses["401"] = {
-                "description": UNAUTHORIZED_DESCRIPTION,
-                "content": {"application/json": {"schema": {"$ref": ref}}},
-            }
+            error_content = {"application/json": {"schema": {"$ref": ref}}}
+            for code, description in COMMON_ERROR_RESPONSES:
+                if code in responses:
+                    continue
+                responses[code] = {
+                    "description": description,
+                    "content": error_content,
+                }
+            # .api 或后续映射表声明的业务错误码（如 403/404）可能只给描述，
+            # 统一错误体在这里补齐，保证每个错误响应都有可引用的结构
+            for code, response in responses.items():
+                if (
+                    isinstance(response, dict)
+                    and "content" not in response
+                    and is_error_status(code)
+                ):
+                    response["content"] = error_content
 
 
 def to_pascal_name(raw):
@@ -538,6 +671,18 @@ def is_empty_object_schema(schema):
         if key in schema:
             return False
     return True
+
+
+def is_error_status(code):
+    """判断响应状态码字符串是否落在 400~599 的错误区间
+
+    OpenAPI 的 responses 键既有数字也有 default 这类占位键，非数字一律视为非错误码
+    """
+    try:
+        value = int(str(code))
+    except (TypeError, ValueError):
+        return False
+    return 400 <= value <= 599
 
 
 def drop_volatile_fields(swagger_data):

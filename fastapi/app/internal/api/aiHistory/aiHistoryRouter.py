@@ -3,6 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Path, Query, Request
 
 from app.core.base import ApiResponse, success
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireSelf
 from app.dependencies import AiHistoryServiceDep, DbSession
 from app.internal.schemas import AiHistoryResponse
@@ -18,6 +19,7 @@ router: APIRouter = APIRouter(
     summary="获取所有AI历史记录",
     description="获取指定用户的所有AI历史记录",
     response_model=ApiResponse[list[AiHistoryResponse]],
+    responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireSelf
 @log("获取所有AI历史记录")
@@ -40,6 +42,11 @@ async def get_all_ai_history(
     summary="删除用户所有AI历史记录",
     description="删除指定用户的所有AI历史记录",
     response_model=ApiResponse[None],
+    responses={
+        **SwaggerConfig.FORBIDDEN_RESPONSE,
+        404: {"description": "用户不存在"},
+        502: {"description": "校验用户的 Spring 调用失败"},
+    },
 )
 @requireSelf
 @log("删除用户所有AI历史记录")

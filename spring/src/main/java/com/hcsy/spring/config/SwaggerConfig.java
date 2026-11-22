@@ -1,18 +1,30 @@
 package com.hcsy.spring.config;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.web.method.HandlerMethod;
 
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.config.properties.ServerProperties;
+import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
@@ -46,14 +58,26 @@ public class SwaggerConfig {
 
     private static final String OBJECT_TYPE = "object";
 
+    /** 400 统一错误响应的描述文案 */
+    private static final String BAD_REQUEST_DESCRIPTION = "请求参数校验失败";
+
     /** 401 统一错误响应的描述文案，与 Messages.USER_NOT_LOGIN 保持一致 */
     private static final String UNAUTHORIZED_DESCRIPTION = "用户未登录或登录已失效";
 
-    /** 401 统一错误响应的 schema 名，注册在 components 下供各接口引用 */
-    private static final String UNAUTHORIZED_SCHEMA_NAME = "UnauthorizedResponse";
+    /** 500 统一错误响应的描述文案 */
+    private static final String INTERNAL_SERVER_ERROR_DESCRIPTION = "服务器内部错误";
 
-    /** 401 响应的 JSON 媒体类型 */
+    /** 403 越权响应的描述文案 */
+    private static final String FORBIDDEN_DESCRIPTION = "无权限访问该资源";
+
+    /** 统一错误响应的 schema 名，注册在 components 下供各接口引用 */
+    private static final String ERROR_SCHEMA_NAME = "ErrorResponse";
+
+    /** 错误响应的 JSON 媒体类型 */
     private static final String JSON_MEDIA_TYPE = "application/json";
+
+    /** 网关 block-internal 路由返回的 403 描述，与 apisix.yaml 的 response_example 对齐 */
+    private static final String GATEWAY_FORBIDDEN_DESCRIPTION = "内部接口禁止外部访问";
 
     @Bean
     OpenAPI customOpenAPI() {
@@ -67,13 +91,35 @@ public class SwaggerConfig {
     }
 
     /**
-     * 定制 OpenAPI 文档，将 schema、参数与示例统一转为下划线命名并补充通用 401 响应
+     * 按接口声明补业务错误响应
+     *
+     * @ApiErrorCode 标注业务错误码（如 404/409/422），@RequirePermission 隐含 403，
+     * 两者都在 springdoc 生成 operation 之后注入，不影响自动生成的 200 成功响应
+     */
+    @Bean
+    OperationCustomizer errorResponseCustomizer() {
+        return (operation, handlerMethod) -> {
+            if (operation.getResponses() == null) {
+                operation.setResponses(new ApiResponses());
+            }
+            collectApiErrorCodes(handlerMethod).forEach(annotation -> addErrorResponse(operation,
+                annotation.code(), annotation.description()));
+            if (requiresPermission(handlerMethod)) {
+                addErrorResponse(operation, "403", FORBIDDEN_DESCRIPTION);
+            }
+            return operation;
+        };
+    }
+
+    /**
+     * 定制 OpenAPI 文档，将 schema、参数与示例统一转为下划线命名并补充通用错误响应
      */
     @Bean
     OpenApiCustomizer snakeCaseOpenApiCustomizer() {
         return openApi -> {
             normalizeVoidDataSchema(openApi);
-            addCommonUnauthorizedResponse(openApi);
+            addGatewayInternalResponses(openApi);
+            addCommonErrorResponses(openApi);
             if (openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
                 openApi.getComponents().getSchemas().values().forEach(this::transformSchema);
             }
@@ -237,47 +283,172 @@ public class SwaggerConfig {
     }
 
     /**
-     * 为所有接口补统一的 401 未登录响应
+     * 为所有接口补全局通用错误响应（400、401、500）
      *
-     * 未登录或访问令牌失效由 GlobalExceptionHandler 统一转为 Result.error(401, msg)，
-     * 该响应对所有接口通用，但 springdoc 只能收集单个接口显式声明的错误响应，
-     * 这里统一注入，避免每个控制器重复声明
+     * 参数校验失败、未登录/令牌失效与未捕获异常分别由 GlobalExceptionHandler 统一转为
+     * Result.error(code, msg)，这三类响应对所有接口通用，但 springdoc 只能收集单个接口
+     * 显式声明的错误响应，这里统一注入，避免每个控制器重复声明
      */
-    private void addCommonUnauthorizedResponse(OpenAPI openApi) {
+    private void addCommonErrorResponses(OpenAPI openApi) {
         if (openApi.getPaths() == null) {
             return;
         }
-        registerUnauthorizedSchema(openApi);
-        Content content = new Content()
-            .addMediaType(JSON_MEDIA_TYPE, new MediaType()
-                .schema(new Schema<>().$ref("#/components/schemas/" + UNAUTHORIZED_SCHEMA_NAME)));
+        registerErrorSchema(openApi);
+        Map<String, String> commonResponses = new LinkedHashMap<>();
+        commonResponses.put("400", BAD_REQUEST_DESCRIPTION);
+        commonResponses.put("401", UNAUTHORIZED_DESCRIPTION);
+        commonResponses.put("500", INTERNAL_SERVER_ERROR_DESCRIPTION);
         openApi.getPaths().values().forEach(pathItem -> pathItem.readOperations().forEach(operation -> {
-            if (operation.getResponses() != null && operation.getResponses().containsKey("401")) {
-                return;
-            }
             if (operation.getResponses() == null) {
                 operation.setResponses(new ApiResponses());
             }
-            operation.getResponses().addApiResponse("401", new ApiResponse()
-                .description(UNAUTHORIZED_DESCRIPTION)
-                .content(content));
+            commonResponses.forEach((code, description) -> {
+                if (!operation.getResponses().containsKey(code)) {
+                    operation.getResponses().addApiResponse(code, new ApiResponse()
+                        .description(description)
+                        .content(errorContent()));
+                }
+            });
+            // 接口上用 @ApiResponse 声明的业务错误码（如 404/409/422）只写描述，
+            // 统一错误体在这里补齐，避免每个控制器重复写 schema 引用
+            operation.getResponses().forEach((code, response) -> {
+                if (response.getContent() == null && isErrorStatus(code)) {
+                    response.setContent(errorContent());
+                }
+            });
         }));
     }
 
-    /** 注册 401 统一错误响应的 schema，结构与 Result.error(401, msg) 的实际输出一致 */
+    /** 统一错误响应体：引用 components 下的 ErrorResponse */
+    private Content errorContent() {
+        return new Content().addMediaType(JSON_MEDIA_TYPE, new MediaType()
+            .schema(new Schema<>().$ref("#/components/schemas/" + ERROR_SCHEMA_NAME)));
+    }
+
+    /**
+     * 为网关 block-internal 拦截的接口补 403
+     *
+     * 网关按 URI 黑名单拦截，服务代码无法推导，只能从 scripts/generated 下的共享 JSON 读取；
+     * 这里只补描述，统一错误体由 addCommonErrorResponses 补齐
+     */
+    private void addGatewayInternalResponses(OpenAPI openApi) {
+        if (openApi.getPaths() == null) {
+            return;
+        }
+        List<String> blocklist = loadGatewayBlocklist();
+        if (blocklist.isEmpty()) {
+            return;
+        }
+        openApi.getPaths().forEach((path, pathItem) -> {
+            if (!isGatewayBlocked(path, blocklist)) {
+                return;
+            }
+            pathItem.readOperations().forEach(operation -> {
+                if (operation.getResponses() == null) {
+                    operation.setResponses(new ApiResponses());
+                }
+                ApiResponse forbidden = operation.getResponses().get("403");
+                if (forbidden == null) {
+                    operation.getResponses().addApiResponse("403", new ApiResponse()
+                        .description(GATEWAY_FORBIDDEN_DESCRIPTION)
+                        .content(errorContent()));
+                } else {
+                    // 网关是外部第一道关，被拦截的接口统一用网关描述覆盖 @RequirePermission 等应用级 403
+                    forbidden.setDescription(GATEWAY_FORBIDDEN_DESCRIPTION);
+                }
+            });
+        });
+    }
+
+    /** 读取共享的网关黑名单 JSON，文件不存在时返回空列表 */
+    private List<String> loadGatewayBlocklist() {
+        for (Path candidate : gatewayBlocklistCandidates()) {
+            if (!Files.isRegularFile(candidate)) {
+                continue;
+            }
+            try {
+                JsonNode root = new ObjectMapper().readTree(candidate.toFile());
+                List<String> uris = new ArrayList<>();
+                root.path("uris").forEach(uri -> uris.add(uri.asText()));
+                return uris;
+            } catch (IOException ignored) {
+                return List.of();
+            }
+        }
+        return List.of();
+    }
+
+    /** 黑名单 JSON 候选路径：环境变量（swag-init.sh 注入）优先，再试常见工作目录 */
+    private List<Path> gatewayBlocklistCandidates() {
+        List<Path> candidates = new ArrayList<>();
+        String configured = System.getenv("GATEWAY_BLOCKLIST_JSON");
+        if (configured != null && !configured.isBlank()) {
+            candidates.add(Path.of(configured));
+        }
+        candidates.add(Path.of("scripts/generated/gateway-blocklist.json"));
+        candidates.add(Path.of("../scripts/generated/gateway-blocklist.json"));
+        return candidates;
+    }
+
+    /** OpenAPI path 是否命中网关黑名单：精确匹配或以 * 结尾的前缀匹配 */
+    private boolean isGatewayBlocked(String path, List<String> blocklist) {
+        return blocklist.stream().anyMatch(uri -> uri.endsWith("*")
+            ? path.startsWith(uri.substring(0, uri.length() - 1))
+            : path.equals(uri));
+    }
+
+    /** 收集接口方法与其控制器类上声明的业务错误码 */
+    private List<ApiErrorCode> collectApiErrorCodes(HandlerMethod handlerMethod) {
+        List<ApiErrorCode> codes = new ArrayList<>();
+        // 单个 @ApiErrorCode 不会生成容器注解，必须用 getRepeatableAnnotations 才能同时覆盖单次与重复声明
+        codes.addAll(AnnotationUtils.getRepeatableAnnotations(handlerMethod.getMethod(), ApiErrorCode.class));
+        codes.addAll(AnnotationUtils.getRepeatableAnnotations(handlerMethod.getBeanType(), ApiErrorCode.class));
+        return codes;
+    }
+
+    /** 向 operation 追加错误响应，已声明过的状态码保持原样 */
+    private void addErrorResponse(Operation operation, String code, String description) {
+        if (operation.getResponses().containsKey(code)) {
+            return;
+        }
+        operation.getResponses().addApiResponse(code, new ApiResponse()
+            .description(description)
+            .content(errorContent()));
+    }
+
+    /** 判断接口方法或其控制器类是否声明了 @RequirePermission */
+    private boolean requiresPermission(HandlerMethod handlerMethod) {
+        return AnnotatedElementUtils.hasAnnotation(handlerMethod.getMethod(), RequirePermission.class)
+            || AnnotatedElementUtils.hasAnnotation(handlerMethod.getBeanType(), RequirePermission.class);
+    }
+
+    /** 判断状态码字符串是否落在 4xx/5xx 区间，非数字状态码（如 default）返回 false */
+    private boolean isErrorStatus(String code) {
+        if (code == null) {
+            return false;
+        }
+        try {
+            int value = Integer.parseInt(code);
+            return value >= 400 && value <= 599;
+        } catch (NumberFormatException ex) {
+            return false;
+        }
+    }
+
+    /** 注册统一错误响应的 schema，结构与 Result.error(code, msg) 的实际输出一致 */
     @SuppressWarnings({ "rawtypes" })
-    private void registerUnauthorizedSchema(OpenAPI openApi) {
+    private void registerErrorSchema(OpenAPI openApi) {
         if (openApi.getComponents() == null || openApi.getComponents().getSchemas() == null) {
             return;
         }
         Map<String, Schema> schemas = openApi.getComponents().getSchemas();
-        if (schemas.containsKey(UNAUTHORIZED_SCHEMA_NAME)) {
+        if (schemas.containsKey(ERROR_SCHEMA_NAME)) {
             return;
         }
         Map<String, Schema> properties = new LinkedHashMap<>();
         Schema codeSchema = typedSchema("integer", "响应码，与 HTTP 状态码一致");
         codeSchema.setFormat("int32");
-        codeSchema.setExample(401);
+        codeSchema.setExample(400);
         properties.put("code", codeSchema);
         properties.put("msg", typedSchema("string", "响应信息"));
         properties.put("data", typedSchema(NULL_TYPE, "返回数据"));
@@ -285,7 +456,7 @@ public class SwaggerConfig {
         Schema schema = typedSchema(OBJECT_TYPE, "统一错误响应");
         schema.setProperties(properties);
         schema.setRequired(List.of("code", "msg", "data"));
-        schemas.put(UNAUTHORIZED_SCHEMA_NAME, schema);
+        schemas.put(ERROR_SCHEMA_NAME, schema);
     }
 
     /**

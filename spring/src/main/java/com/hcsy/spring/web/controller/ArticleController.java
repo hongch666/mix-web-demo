@@ -20,6 +20,7 @@ import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncAction;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleStatsBatchDTO;
@@ -36,6 +37,7 @@ import com.hcsy.spring.entity.vo.PageVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.ArticleSync;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,11 +63,12 @@ public class ArticleController {
      */
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
+    @ApiErrorCode(code = "404", description = "作者不存在")
     @ArticleSync(action = SyncAction.ADD, esSync = true, vectorSync = true, description = "创建了1篇文章")
     @ApiLog("创建文章")
     public Mono<Result<Long>> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
         return articleService.createArticle(dto).map(saved -> Result.success(saved.getId()))
-            .defaultIfEmpty(Result.<Long>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER)));
     }
 
     /**
@@ -102,11 +105,12 @@ public class ArticleController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "获取文章详情", description = "根据ID获取文章详情")
+    @ApiErrorCode(code = "404", description = "文章不存在")
     @ApiLog("获取文章详情")
     public Mono<Result<ArticleWithCategoryVO>> getArticleById(@PathVariable Long id) {
         return articleService.getArticleDetail(id)
             .map(Result::success)
-            .defaultIfEmpty(Result.<ArticleWithCategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE)));
     }
 
     /**
@@ -114,6 +118,7 @@ public class ArticleController {
      */
     @PutMapping
     @Operation(summary = "更新文章", description = "根据DTO更新文章信息")
+    @ApiErrorCode(code = "404", description = "文章或作者不存在")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = BusinessType.ARTICLE, paramSource = ParamSource.BODY,
         paramName = "id")
@@ -121,7 +126,7 @@ public class ArticleController {
     @ApiLog("更新文章")
     public Mono<Result<Void>> updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         return articleService.updateArticle(dto).map(ignored -> Result.<Void>success())
-            .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .switchIfEmpty(Mono.error(new BusinessException(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER)));
     }
 
     /**

@@ -49,6 +49,15 @@ class SwaggerConfig:
         }
     }
     """流式聊天接口的响应声明，200 同时挂 SSE 与两种帧结构"""
+    REMOTE_FAILURE_RESPONSES: dict[int | str, dict[str, Any]] = {
+        502: {"description": "下游 Spring 服务调用失败"},
+        503: {"description": "下游服务不可用或熔断降级"},
+    }
+    """依赖远程服务的接口通用失败响应，供各 router 的 responses 复用"""
+    FORBIDDEN_RESPONSE: dict[int | str, dict[str, Any]] = {
+        403: {"description": "无权限访问"},
+    }
+    """需管理员或本人权限的接口通用越权响应"""
     OPENAPI_TAGS = [
         {
             "name": "AI历史模块",

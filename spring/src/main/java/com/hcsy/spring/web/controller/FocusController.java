@@ -18,6 +18,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.ParamSource;
 import com.hcsy.spring.common.constants.SyncAction;
 import com.hcsy.spring.common.constants.SyncResource;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.FocusDTO;
 import com.hcsy.spring.entity.vo.CountVO;
@@ -29,6 +30,7 @@ import com.hcsy.spring.entity.vo.PageVO;
 import com.hcsy.spring.web.logging.annotation.ApiLog;
 import com.hcsy.spring.web.security.annotation.RequireInternalToken;
 import com.hcsy.spring.web.security.annotation.RequirePermission;
+import com.hcsy.spring.web.swagger.annotation.ApiErrorCode;
 import com.hcsy.spring.web.sync.annotation.ArticleSync;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,6 +56,7 @@ public class FocusController {
      */
     @PostMapping
     @Operation(summary = "新增关注", description = "用户关注另一个用户")
+    @ApiErrorCode(code = "409", description = "已经关注过该用户")
     @ArticleSync(action = SyncAction.FOCUS, resource = SyncResource.FOCUS, description = "关注了1个用户")
     @ApiLog("新增关注")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
@@ -61,9 +64,9 @@ public class FocusController {
         paramName = "userId")
     public Mono<Result<Void>> addFocus(@Valid @RequestBody FocusDTO dto) {
         return focusService.addFocus(dto.getUserId(), dto.getFocusId())
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.FOCUS_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.FOCUS_FAIL)));
     }
 
     /**
@@ -71,6 +74,7 @@ public class FocusController {
      */
     @DeleteMapping
     @Operation(summary = "取消关注", description = "用户取消关注另一个用户")
+    @ApiErrorCode(code = "409", description = "关注记录不存在")
     @ArticleSync(action = SyncAction.UNFOCUS, resource = SyncResource.FOCUS, description = "取消关注了1个用户")
     @ApiLog("取消关注")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = BusinessType.USER,
@@ -81,9 +85,9 @@ public class FocusController {
         @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id",
             required = true) Long focusId) {
         return focusService.removeFocus(userId, focusId)
-            .map(success -> success
-                ? Result.<Void>success()
-                : Result.<Void>error(HttpCode.CONFLICT, Messages.UNFOCUS_FAIL));
+            .flatMap(success -> success
+                ? Mono.just(Result.<Void>success())
+                : Mono.error(new BusinessException(HttpCode.CONFLICT, Messages.UNFOCUS_FAIL)));
     }
 
     /**
