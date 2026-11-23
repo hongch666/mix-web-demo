@@ -19,7 +19,8 @@ from app.internal.agents.permissions.toolScope import (
 class FastapiSqlTool:
     """FastAPI 本地 MySQL 数据查询工具（直连）
 
-    可查询的表: ai_history
+    可查询的表: ai_history、ai_user_summary
+    mcp_server_config 存放 MCP 凭据，不纳入白名单
     后续可能新增其他由 FastAPI 管理的表
     """
 
