@@ -1374,7 +1374,7 @@ def test_init_builds_llm_client_from_config(monkeypatch: pytest.MonkeyPatch) -> 
         },
     )
 
-    service = BaseAiService(AsyncMock())
+    service = BaseAiService(AsyncMock(), ai_user_summary_mapper=AsyncMock())
 
     assert service.model_name == "closeai-default"
     assert service._timeout == 18
@@ -1400,7 +1400,7 @@ def test_init_skips_temperature_for_deprecated_model(
         },
     )
 
-    BaseAiService(AsyncMock())
+    BaseAiService(AsyncMock(), ai_user_summary_mapper=AsyncMock())
 
     kwargs = fake_client.call_args.kwargs
     assert kwargs["model"] == "claude-haiku-5-5"
@@ -1424,7 +1424,7 @@ def test_init_resolves_structured_output_by_model_capability(
         },
     )
 
-    service = BaseAiService(AsyncMock())
+    service = BaseAiService(AsyncMock(), ai_user_summary_mapper=AsyncMock())
 
     assert service.use_structured_output is expected
 
@@ -1438,7 +1438,7 @@ def test_init_resets_runtime_state_when_config_incomplete(
         {"base_url": "https://llm.local/v1", "model_name": "m"},
     )
 
-    service = BaseAiService(AsyncMock())
+    service = BaseAiService(AsyncMock(), ai_user_summary_mapper=AsyncMock())
 
     assert service.llm is None
     assert fake_client.call_count == 0
@@ -1456,7 +1456,7 @@ def test_init_resets_runtime_state_when_config_load_fails(
         BaseAiService, "_initialize_agent_stack", lambda self, max_iterations=5: None
     )
 
-    service = BaseAiService(AsyncMock())
+    service = BaseAiService(AsyncMock(), ai_user_summary_mapper=AsyncMock())
 
     assert service.llm is None
 
@@ -1474,6 +1474,10 @@ def test_init_reads_model_key_with_default_fallback(
         },
     )
 
-    service = BaseAiService(AsyncMock(), model_config_key="gpt_model_name")
+    service = BaseAiService(
+        AsyncMock(),
+        ai_user_summary_mapper=AsyncMock(),
+        model_config_key="gpt_model_name",
+    )
 
     assert service.model_name == "fallback-model"

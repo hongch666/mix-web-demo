@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, success
@@ -29,7 +27,9 @@ async def get_search_weights(
     algorithm_service: AlgorithmServiceDep,
 ) -> ApiResponse:
     """获取搜索排序权重配置，返回 ES 复合打分和融合排序所需的全量权重参数"""
-    result: dict[str, Any] = algorithm_service.get_weights()
+    result: SearchWeightsResponse = SearchWeightsResponse.model_validate(
+        algorithm_service.get_weights()
+    )
     return success(result)
 
 
@@ -47,7 +47,9 @@ async def get_search_script(
     algorithm_service: AlgorithmServiceDep,
 ) -> ApiResponse:
     """获取已嵌入权重占位符的 ES Painless 搜索脚本及融合排序权重"""
-    result: dict[str, Any] = algorithm_service.get_es_script()
+    result: SearchScriptResponseData = SearchScriptResponseData.model_validate(
+        algorithm_service.get_es_script()
+    )
     return success(result)
 
 
@@ -65,5 +67,7 @@ async def get_search_script_params(
     algorithm_service: AlgorithmServiceDep,
 ) -> ApiResponse:
     """获取权重 key 到 Painless 脚本 params 参数名的映射，供 GoZero 端动态组装脚本参数"""
-    result: dict[str, Any] = algorithm_service.get_script_params()
+    result: ScriptParamsResponse = ScriptParamsResponse.model_validate(
+        algorithm_service.get_script_params()
+    )
     return success(result)

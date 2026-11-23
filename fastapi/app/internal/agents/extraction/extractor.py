@@ -136,12 +136,21 @@ class ReferenceContentExtractor:
                 )
             )
 
-            # 异步下载PDF到临时文件（PDF较大，使用独立客户端避免阻塞共享连接池超时）
+            # PDF 下载复用生命周期内的共享外部抓取客户端
             temp_pdf_path = Defaults.TEMP_PDF_PATH_TEMPLATE.format(hash(pdf_url))
-            async with (
-                httpx.AsyncClient(timeout=30.0) as client,
-                client.stream("GET", pdf_url) as response,
-            ):
+            shared_client = get_shared_http_client()
+            if shared_client is None:
+                Logger.warning(
+                    Messages.REFERENCE_EXTRACTOR_ERROR(
+                        Messages.REFERENCE_ERR_EXTRACT_PDF,
+                        RuntimeError(
+                            Messages.REFERENCE_ERR_SHARED_HTTP_CLIENT_UNINITIALIZED
+                        ),
+                    )
+                )
+                return ""
+
+            async with shared_client.stream("GET", pdf_url) as response:
                 response.raise_for_status()
                 # 使用 anyio 异步写文件，避免同步 open/write 阻塞事件循环
                 async with await anyio.open_file(temp_pdf_path, "wb") as file:
@@ -198,21 +207,24 @@ class ReferenceContentExtractor:
             # 构造浏览器请求头，避免被反爬虫机制拒绝
             headers = Defaults.EXTRACTOR_REQUEST_HEADERS
 
-            # 优先使用共享长连接池复用连接，不可用时创建临时客户端
+            # 链接抓取复用生命周期内的共享外部抓取客户端
             shared_client = get_shared_http_client()
-            if shared_client is not None:
-                response: httpx.Response = await shared_client.get(
-                    link_url, headers=headers
-                )
-                response.raise_for_status()
-                html_content: str = response.text
-            else:
-                async with httpx.AsyncClient(timeout=10) as client:
-                    response: httpx.Response = await client.get(
-                        link_url, headers=headers
+            if shared_client is None:
+                Logger.warning(
+                    Messages.REFERENCE_EXTRACTOR_ERROR(
+                        Messages.REFERENCE_ERR_EXTRACT_LINK,
+                        RuntimeError(
+                            Messages.REFERENCE_ERR_SHARED_HTTP_CLIENT_UNINITIALIZED
+                        ),
                     )
-                    response.raise_for_status()
-                    html_content: str = response.text
+                )
+                return ""
+
+            response: httpx.Response = await shared_client.get(
+                link_url, headers=headers
+            )
+            response.raise_for_status()
+            html_content: str = response.text
 
             # 清理文本
             full_text: str = cls._clean_text(html_content)

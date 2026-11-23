@@ -6,16 +6,13 @@ from typing import Any, Optional
 
 from dateutil.relativedelta import relativedelta
 
-from app.core.base import Logger, LoggerProtocol
+from app.core.base import LoggerProtocol
 from app.core.constants import Messages
 from app.internal.cache import (
     KeyedVersionedCache,
     UserDayCache,
     UserStatsCache,
     UserViewCache,
-    get_user_day_cache,
-    get_user_stats_cache,
-    get_user_view_cache,
 )
 from app.internal.clients import NestjsClient, SpringClient
 from app.internal.crud import UserMapper
@@ -29,25 +26,19 @@ class UserService:
         spring_client: SpringClient,
         nestjs_client: NestjsClient,
         user_mapper: UserMapper,
-        logger: LoggerProtocol | None = None,
-        day_cache: Optional[UserDayCache] = None,
-        stats_cache: Optional[UserStatsCache] = None,
-        view_cache: Optional[UserViewCache] = None,
+        logger: LoggerProtocol,
+        day_cache: UserDayCache,
+        stats_cache: UserStatsCache,
+        view_cache: UserViewCache,
     ) -> None:
         """注入客户端、Mapper、日志器与三类按键分片的分析缓存"""
         self._spring_client: SpringClient = spring_client
         self._nestjs_client: NestjsClient = nestjs_client
         self._user_mapper: UserMapper = user_mapper
-        # 日志器可注入，缺省回退全局单例
-        self._logger: LoggerProtocol = logger or Logger
-        # 缓存缺省取单例，保证与依赖注入链路的实例一致
-        self._day_cache: UserDayCache = day_cache or get_user_day_cache(self._logger)
-        self._stats_cache: UserStatsCache = stats_cache or get_user_stats_cache(
-            self._logger
-        )
-        self._view_cache: UserViewCache = view_cache or get_user_view_cache(
-            self._logger
-        )
+        self._logger: LoggerProtocol = logger
+        self._day_cache: UserDayCache = day_cache
+        self._stats_cache: UserStatsCache = stats_cache
+        self._view_cache: UserViewCache = view_cache
 
     async def _cached(
         self,
@@ -463,10 +454,10 @@ def get_user_service(
     spring_client: SpringClient,
     nestjs_client: NestjsClient,
     user_mapper: UserMapper,
-    logger: LoggerProtocol | None = None,
-    day_cache: Optional[UserDayCache] = None,
-    stats_cache: Optional[UserStatsCache] = None,
-    view_cache: Optional[UserViewCache] = None,
+    logger: LoggerProtocol,
+    day_cache: UserDayCache,
+    stats_cache: UserStatsCache,
+    view_cache: UserViewCache,
 ) -> UserService:
     """获取 UserService 单例实例"""
     return UserService(

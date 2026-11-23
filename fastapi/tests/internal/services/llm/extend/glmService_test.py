@@ -40,7 +40,9 @@ def test_glm_service_maps_config_and_disables_structured_output(
         },
     )
 
-    service = glm_module.GlmService(MagicMock(), spring_client=MagicMock())
+    service = glm_module.GlmService(
+        MagicMock(), spring_client=MagicMock(), ai_user_summary_mapper=MagicMock()
+    )
 
     assert service.service_name == "GLM"
     assert service.config_section == "closeai"
@@ -59,7 +61,9 @@ def test_glm_service_final_stream_options_enable_thinking(
         monkeypatch, {"api_key": "k", "base_url": "u", "glm_model_name": "m"}
     )
 
-    service = glm_module.GlmService(MagicMock(), spring_client=MagicMock())
+    service = glm_module.GlmService(
+        MagicMock(), spring_client=MagicMock(), ai_user_summary_mapper=MagicMock()
+    )
 
     assert service._final_stream_options() == {
         "extra_body": {"thinking": {"type": "enabled", "reasoning_effort": "low"}}
@@ -74,11 +78,12 @@ def test_glm_service_falls_back_to_shared_spring_client(
         monkeypatch, {"api_key": "k", "base_url": "u", "glm_model_name": "m"}
     )
     sentinel = MagicMock(name="spring-client")
-    monkeypatch.setattr(
-        glm_module, "get_spring_client", MagicMock(return_value=sentinel)
+    sentinel = MagicMock(name="spring-client")
+    service = glm_module.GlmService(
+        MagicMock(), spring_client=sentinel, ai_user_summary_mapper=MagicMock()
     )
 
-    service = glm_module.GlmService(MagicMock())
+    assert service._spring_client is sentinel
 
     assert service._spring_client is sentinel
 
@@ -93,8 +98,9 @@ def test_glm_service_factory_returns_cached_singleton(
     mapper = MagicMock(name="mapper")
     spring = MagicMock(name="spring")
 
-    first = glm_module.get_glm_service(mapper, spring)
-    second = glm_module.get_glm_service(mapper, spring)
+    summary_mapper = MagicMock(name="summary-mapper")
+    first = glm_module.get_glm_service(mapper, spring, None, summary_mapper)
+    second = glm_module.get_glm_service(mapper, spring, None, summary_mapper)
 
     assert first is second
     assert first._spring_client is spring

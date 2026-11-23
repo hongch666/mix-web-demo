@@ -11,7 +11,7 @@ from app.internal.agents.permissions.toolScope import (
     enforce_mongodb_row_scope,
     log_scope_denial,
 )
-from app.internal.clients import NestjsClient, get_nestjs_client
+from app.internal.clients import NestjsClient
 
 
 class MongoDBTools:
@@ -208,6 +208,6 @@ class MongoDBTools:
 
 
 @lru_cache
-def get_mongodb_tools(nestjs_client: Optional[NestjsClient] = None) -> MongoDBTools:
+def get_mongodb_tools(nestjs_client: NestjsClient) -> MongoDBTools:
     """获取 MongoDB 日志工具实例"""
-    return MongoDBTools(nestjs_client or get_nestjs_client())
+    return MongoDBTools(nestjs_client)

@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, success
@@ -31,9 +29,10 @@ async def get_api_average_speed(
 ) -> ApiResponse:
     """获取所有接口的平均响应速度"""
 
-    result: list[
-        dict[str, Any]
-    ] = await apilogService.get_api_average_response_time_service()
+    result: list[ApiLogAverageResponse] = [
+        ApiLogAverageResponse.model_validate(item)
+        for item in await apilogService.get_api_average_response_time_service()
+    ]
     return success(result)
 
 
@@ -54,5 +53,8 @@ async def get_called_count_apis(
 ) -> ApiResponse:
     """获取接口调用次数"""
 
-    result: list[dict[str, Any]] = await apilogService.get_called_count_apis_service()
+    result: list[ApiLogCalledCountResponse] = [
+        ApiLogCalledCountResponse.model_validate(item)
+        for item in await apilogService.get_called_count_apis_service()
+    ]
     return success(result)

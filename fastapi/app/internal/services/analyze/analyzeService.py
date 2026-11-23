@@ -14,7 +14,7 @@ from openpyxl.cell import WriteOnlyCell
 from sqlalchemy.ext.asyncio import AsyncSession
 from wordcloud import WordCloud
 
-from app.core.base import Logger, LoggerProtocol
+from app.core.base import LoggerProtocol
 from app.core.config import load_config
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
@@ -25,20 +25,9 @@ from app.internal.cache import (
     SingleFlight,
     StatisticsCache,
     WordcloudCache,
-    get_article_cache,
-    get_category_cache,
-    get_publish_time_cache,
-    get_statistics_cache,
-    get_wordcloud_cache,
 )
-from app.internal.clients import (
-    NestjsClient,
-    SpringClient,
-    get_nestjs_client,
-    get_spring_client,
-)
-from app.internal.crud import ArticleMapper, get_article_mapper
-
+from app.internal.clients import NestjsClient, SpringClient
+from app.internal.crud import ArticleMapper
 
 # Excel 单元格字符串上限，超长内容会被 Excel 判定为损坏并提示修复
 _EXCEL_CELL_MAX_CHARS: int = 32767
@@ -67,37 +56,32 @@ class AnalyzeService:
 
     def __init__(
         self,
-        articleMapper: Optional[ArticleMapper] = None,
-        article_cache: Optional[ArticleCache] = None,
-        category_cache: Optional[CategoryCache] = None,
-        publish_time_cache: Optional[PublishTimeCache] = None,
-        statistics_cache: Optional[StatisticsCache] = None,
-        wordcloud_cache: Optional[WordcloudCache] = None,
-        spring_client: Optional[SpringClient] = None,
-        nestjs_client: Optional[NestjsClient] = None,
-        logger: Optional[LoggerProtocol] = None,
+        articleMapper: ArticleMapper,
+        article_cache: ArticleCache,
+        category_cache: CategoryCache,
+        publish_time_cache: PublishTimeCache,
+        statistics_cache: StatisticsCache,
+        wordcloud_cache: WordcloudCache,
+        spring_client: SpringClient,
+        nestjs_client: NestjsClient,
+        logger: LoggerProtocol,
     ) -> None:
         """注入文章 Mapper、五类分析缓存、Spring 与 NestJS 客户端，并初始化单飞锁表与日志器"""
 
-        # 依赖由工厂显式传入，缺省时回退进程内单例，字段本身不再需要允许 None
-        self.articleMapper: ArticleMapper = articleMapper or get_article_mapper()
+        # 依赖由装配层显式传入，不在 Service 内解析进程级工厂
+        self.articleMapper: ArticleMapper = articleMapper
         # 注入缓存对象
-        self._article_cache: ArticleCache = article_cache or get_article_cache()
-        self._category_cache: CategoryCache = category_cache or get_category_cache()
-        self._publish_time_cache: PublishTimeCache = (
-            publish_time_cache or get_publish_time_cache()
-        )
-        self._statistics_cache: StatisticsCache = (
-            statistics_cache or get_statistics_cache()
-        )
-        self._wordcloud_cache: WordcloudCache = wordcloud_cache or get_wordcloud_cache()
+        self._article_cache: ArticleCache = article_cache
+        self._category_cache: CategoryCache = category_cache
+        self._publish_time_cache: PublishTimeCache = publish_time_cache
+        self._statistics_cache: StatisticsCache = statistics_cache
+        self._wordcloud_cache: WordcloudCache = wordcloud_cache
         # 分析类接口共用一份单飞表：同 key 只回源一次，避免缓存过期瞬间并发打爆数仓
         self._single_flight: SingleFlight = SingleFlight()
         # 远程服务客户端由工厂装配，缺省时取共享单例
-        self._nestjs_client: NestjsClient = nestjs_client or get_nestjs_client()
-        self._spring_client: SpringClient = spring_client or get_spring_client()
-        # 日志器可注入，缺省回退全局单例
-        self._logger: LoggerProtocol = logger or Logger
+        self._nestjs_client: NestjsClient = nestjs_client
+        self._spring_client: SpringClient = spring_client
+        self._logger: LoggerProtocol = logger
 
     async def clear_analyze_caches(self) -> None:
         """并行清除分析接口使用的五类缓存"""
@@ -877,7 +861,7 @@ def get_analyze_service(
     wordcloud_cache: WordcloudCache,
     spring_client: SpringClient,
     nestjs_client: NestjsClient,
-    logger: Optional[LoggerProtocol] = None,
+    logger: LoggerProtocol,
 ) -> AnalyzeService:
     """装配文章 Mapper、五类缓存与远程客户端依赖并缓存 AnalyzeService 单例"""
     return AnalyzeService(

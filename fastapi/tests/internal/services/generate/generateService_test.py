@@ -1,6 +1,6 @@
 import importlib
 from datetime import datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -30,6 +30,7 @@ def _make_service(
         claude_service=claude,
         qwen_service=qwen,
         spring_client=spring if spring is not None else AsyncMock(),
+        logger=Mock(),
     )
 
 

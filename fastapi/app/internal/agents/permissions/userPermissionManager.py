@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 
 from app.core.base import Logger
 from app.core.constants import Messages
-from .toolScope import clear_tool_scope, set_tool_scope
 from app.internal.clients import SpringClient, get_spring_client
+
+from .toolScope import clear_tool_scope, set_tool_scope
 
 
 class UserPermissionManager:
@@ -14,8 +15,8 @@ class UserPermissionManager:
 
     def __init__(
         self,
-        user_mapper: Optional[Any] = None,
-        spring_client: Optional[SpringClient] = None,
+        user_mapper: Optional[Any],
+        spring_client: SpringClient,
     ) -> None:
         """
         初始化权限管理器
@@ -25,7 +26,7 @@ class UserPermissionManager:
             spring_client: Spring 客户端实例，缺省取共享单例
         """
         self.user_mapper: Optional[Any] = user_mapper
-        self._spring_client: SpringClient = spring_client or get_spring_client()
+        self._spring_client: SpringClient = spring_client
 
     async def get_user_role_async(self, user_id: int, db: Session) -> str:
         """异步获取用户角色，任何分支都不会返回 None（取不到时回落普通用户）"""

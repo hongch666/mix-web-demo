@@ -7,11 +7,11 @@ from typing import Any, Optional
 
 from langchain_core.documents import Document
 
-from app.core.base import Logger, LoggerProtocol
+from app.core.base import LoggerProtocol
 from app.core.constants import Defaults, Messages
 from app.internal.agents import get_langsmith_context
 from app.internal.cache import VectorQueryCache
-from app.internal.crud import DocScore, VectorMapper, get_vector_store_mapper
+from app.internal.crud import DocScore, VectorMapper
 from app.internal.schemas import (
     VectorMatchedChunkDTO,
     VectorSearchEnhanceItemDTO,
@@ -25,15 +25,15 @@ class VectorSearchService:
 
     def __init__(
         self,
+        vector_mapper: VectorMapper,
+        logger: LoggerProtocol,
+        vector_query_cache: VectorQueryCache,
         enabled: bool = Defaults.VECTOR_SEARCH_ENABLED,
         candidate_limit: int = Defaults.VECTOR_SEARCH_CANDIDATE_LIMIT,
         fetch_multiplier: int = Defaults.VECTOR_SEARCH_FETCH_MULTIPLIER,
         max_matched_chunks: int = Defaults.VECTOR_SEARCH_MAX_MATCHED_CHUNKS,
         min_score: float = Defaults.VECTOR_SEARCH_MIN_SCORE,
         score_mode: str = Defaults.VECTOR_SEARCH_SCORE_MODE,
-        vector_mapper: VectorMapper | None = None,
-        logger: LoggerProtocol | None = None,
-        vector_query_cache: VectorQueryCache | None = None,
     ) -> None:
         """初始化向量搜索开关、候选上限、召回倍数、最低分阈值与打分模式，并注入向量 Mapper、检索缓存与日志器"""
         self.enabled = enabled
@@ -44,12 +44,9 @@ class VectorSearchService:
         self.score_mode = (
             score_mode if score_mode in {"similarity", "distance"} else "similarity"
         )
-        # 由依赖图注入；缺省时回退到工厂单例，保持手工构造可用
-        self._vector_mapper: VectorMapper | None = vector_mapper
-        # 检索结果缓存可注入，缺省时保持手工构造可用（不启用缓存）
-        self._vector_query_cache: VectorQueryCache | None = vector_query_cache
-        # 日志器可注入，缺省回退全局单例
-        self._logger: LoggerProtocol = logger or Logger
+        self._vector_mapper: VectorMapper = vector_mapper
+        self._vector_query_cache: VectorQueryCache = vector_query_cache
+        self._logger: LoggerProtocol = logger
 
     async def enhance(self, req: VectorSearchEnhanceReq) -> VectorSearchEnhanceResp:
         """执行向量增强, 返回候选文章的语义分和命中片段"""
@@ -68,7 +65,7 @@ class VectorSearchService:
         fetch_k = self._resolve_fetch_k(req.topK, len(article_ids))
 
         search_start = time.time()
-        vector_mapper = self._vector_mapper or get_vector_store_mapper()
+        vector_mapper = self._vector_mapper
         with get_langsmith_context(
             name="vector.enhance",
             tags=["feature:vector_search"],
@@ -290,9 +287,9 @@ class VectorSearchService:
 
 @lru_cache
 def get_vector_search_service(
-    vector_mapper: Optional[VectorMapper] = None,
-    logger: LoggerProtocol | None = None,
-    vector_query_cache: Optional[VectorQueryCache] = None,
+    vector_mapper: VectorMapper,
+    logger: LoggerProtocol,
+    vector_query_cache: VectorQueryCache,
 ) -> VectorSearchService:
     """获取 VectorSearchService 单例"""
     return VectorSearchService(

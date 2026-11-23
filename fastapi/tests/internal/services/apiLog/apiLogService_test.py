@@ -2,12 +2,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from app.internal.services.apiLog import ApiLogService, apiLogService as service_module
-
-
-@pytest.fixture(autouse=True)
-def _silence_logger(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(service_module, "Logger", Mock())
+from app.internal.services.apiLog import ApiLogService
 
 
 class NoopCache:
@@ -33,6 +28,7 @@ def _make_service() -> tuple[ApiLogService, AsyncMock, AsyncMock]:
         ApiLogService(
             nestjs_client,
             api_log_mapper,
+            logger=Mock(),
             speed_cache=NoopCache(),
             called_count_cache=NoopCache(),
         ),

@@ -11,7 +11,7 @@ from app.internal.agents.permissions.toolScope import (
     enforce_sql_row_scope,
     log_scope_denial,
 )
-from app.internal.clients import NestjsClient, get_nestjs_client
+from app.internal.clients import NestjsClient
 
 
 class NestjsSqlTool:
@@ -91,6 +91,6 @@ class NestjsSqlTool:
 
 
 @lru_cache
-def get_nestjs_sql_tool(nestjs_client: Optional[NestjsClient] = None) -> NestjsSqlTool:
+def get_nestjs_sql_tool(nestjs_client: NestjsClient) -> NestjsSqlTool:
     """获取 NestJS SQL 工具实例"""
-    return NestjsSqlTool(nestjs_client or get_nestjs_client())
+    return NestjsSqlTool(nestjs_client)

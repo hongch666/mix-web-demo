@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import APIRouter, Path, Query, Request
 
 from app.core.base import ApiResponse, success
@@ -31,7 +29,7 @@ async def get_all_ai_history(
 ) -> ApiResponse:
     """获取所有AI历史记录接口"""
 
-    histories: list[dict[str, Any]] = await ai_history_service.get_all_ai_history(
+    histories: list[AiHistoryResponse] = await ai_history_service.get_all_ai_history(
         user_id, db
     )
     return success(data=histories)

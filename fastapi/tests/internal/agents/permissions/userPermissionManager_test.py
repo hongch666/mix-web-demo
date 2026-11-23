@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from app.core.constants import Messages
 import app.internal.agents.permissions.userPermissionManager as upm_module
+from app.core.constants import Messages
 from app.internal.agents.permissions.toolScope import (
     clear_tool_scope,
     get_tool_scope,
@@ -30,7 +30,7 @@ def _manager(users: list[dict] | None = None, side_effect: Exception | None = No
         client.get_users_by_ids.side_effect = side_effect
     else:
         client.get_users_by_ids.return_value = users if users is not None else []
-    return UserPermissionManager(spring_client=client), client
+    return UserPermissionManager(user_mapper=Mock(), spring_client=client), client
 
 
 # 远程客户端返回 admin 角色时按用户 ID 查询并返回该角色

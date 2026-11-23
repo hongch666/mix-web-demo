@@ -24,9 +24,14 @@ def test_provide_agent_tool_factories_reuses_instance_for_same_dependencies(
     gozero = MagicMock(name="gozero-client")
     nestjs = MagicMock(name="nestjs-client")
     vector = MagicMock(name="vector-mapper")
+    mcp_mapper = MagicMock(name="mcp-mapper")
 
-    first = tools_module.provide_agent_tool_factories(spring, gozero, nestjs, vector)
-    second = tools_module.provide_agent_tool_factories(spring, gozero, nestjs, vector)
+    first = tools_module.provide_agent_tool_factories(
+        spring, gozero, nestjs, vector, mcp_mapper
+    )
+    second = tools_module.provide_agent_tool_factories(
+        spring, gozero, nestjs, vector, mcp_mapper
+    )
 
     assert first is second
 
@@ -36,10 +41,10 @@ def test_provide_agent_tool_factories_separates_different_dependencies(
 ) -> None:
     """不同客户端单例装配出不同的工具工厂集合"""
     first = tools_module.provide_agent_tool_factories(
-        MagicMock(), MagicMock(), MagicMock(), MagicMock()
+        MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()
     )
     second = tools_module.provide_agent_tool_factories(
-        MagicMock(), MagicMock(), MagicMock(), MagicMock()
+        MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()
     )
 
     assert first is not second

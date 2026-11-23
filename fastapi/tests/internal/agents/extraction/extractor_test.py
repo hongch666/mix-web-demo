@@ -155,25 +155,18 @@ async def test_link_content_uses_shared_client_and_cleans_html(
     assert call.kwargs["headers"] == Defaults.EXTRACTOR_REQUEST_HEADERS
 
 
-# 无共享客户端时临时创建 AsyncClient 抓取并只调用一次
+# 共享客户端未初始化时直接降级，不再创建生命周期外的临时 AsyncClient
 @pytest.mark.anyio
-async def test_link_content_falls_back_to_temporary_client(
+async def test_link_content_returns_empty_when_shared_client_unavailable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    temp_client = _FakeLinkClient(_FakeResponse("<p>知识图谱召回</p>"))
     monkeypatch.setattr(extractor_module, "get_shared_http_client", lambda: None)
-    monkeypatch.setattr(
-        extractor_module,
-        "httpx",
-        SimpleNamespace(AsyncClient=lambda timeout=None: temp_client),
-    )
 
     result = await ReferenceContentExtractor.extract_link_content(
         "http://example.com/b"
     )
 
-    assert "知识图谱召回" in result
-    temp_client.get.assert_awaited_once()
+    assert result == ""
 
 
 # 请求异常时链接抓取降级返回空字符串
@@ -291,6 +284,11 @@ async def test_pdf_content_downloads_parses_and_cleans_up(
         SimpleNamespace(open_file=lambda path, mode: _FakeOpenFile(written)),
     )
     monkeypatch.setattr(extractor_module, "PyPDFLoader", _FakePyPDFLoader)
+    monkeypatch.setattr(
+        extractor_module,
+        "get_shared_http_client",
+        lambda: _FakePdfAsyncClientWithBytes(),
+    )
     monkeypatch.setattr(extractor_module, "_cleanup_temp_file", cleanup)
 
     result = await ReferenceContentExtractor.extract_pdf_content(
@@ -323,6 +321,11 @@ async def test_pdf_content_returns_empty_when_parsing_fails(
         SimpleNamespace(open_file=lambda path, mode: _FakeOpenFile(written)),
     )
     monkeypatch.setattr(extractor_module, "PyPDFLoader", _FailingPyPDFLoader)
+    monkeypatch.setattr(
+        extractor_module,
+        "get_shared_http_client",
+        lambda: _FakePdfAsyncClientWithBytes(),
+    )
     monkeypatch.setattr(extractor_module, "_cleanup_temp_file", cleanup)
 
     assert (

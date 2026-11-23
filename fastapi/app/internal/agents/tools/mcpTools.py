@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.core.base import Logger
 from app.core.constants import Messages
 from app.core.db import ASYNC_DATABASE_URL, AUTOCOMMIT
-from app.internal.crud import McpServerConfigMapper, get_mcp_server_config_mapper
+from app.internal.crud import McpServerConfigMapper
 from app.internal.models import McpServerConfig
 
 # MCP 工具名前缀，避免与内置 SQL/RAG 等工具重名
@@ -27,9 +27,9 @@ class MCPServerTools:
     绑定问题，同时让配置表变更无需重启即可生效
     """
 
-    def __init__(self, mapper: Optional[McpServerConfigMapper] = None) -> None:
-        """初始化 MCP 工具组并注入服务配置 Mapper，缺省取共享单例"""
-        self._mapper: McpServerConfigMapper = mapper or get_mcp_server_config_mapper()
+    def __init__(self, mapper: McpServerConfigMapper) -> None:
+        """初始化 MCP 工具组并注入服务配置 Mapper"""
+        self._mapper: McpServerConfigMapper = mapper
 
     def get_langchain_tools(self) -> list[StructuredTool]:
         """获取 LangChain MCP 工具对象列表
@@ -71,9 +71,8 @@ class MCPServerTools:
         # gather 保序返回，configs 与 results 一一对应
         for config, result in zip(configs, results, strict=False):
             if isinstance(result, BaseException):
-                # Column 标注的属性静态类型是 Column[T]，先按运行期值转为 str
                 Logger.warning(
-                    Messages.MCP_SERVER_LOAD_FAILED(str(config.server_name), result)
+                    Messages.MCP_SERVER_LOAD_FAILED(config.server_name, result)
                 )
             else:
                 tools.extend(result)
@@ -83,8 +82,7 @@ class MCPServerTools:
         self, config: McpServerConfig
     ) -> list[StructuredTool]:
         """连接单个 MCP 服务发现工具并包装为 LangChain 工具"""
-        # Column 标注的属性静态类型是 Column[T]，先读入运行期 str 局部变量
-        server_name: str = str(config.server_name)
+        server_name: str = config.server_name
         server_key: str = self._sanitize_server_name(server_name)
         # langchain-mcp-adapters >= 0.3 已移除 async 上下文管理器，直接实例化后 get_tools：会话在每次工具调用时按需建立并关闭
         client = MultiServerMCPClient(self._build_connections(config, server_key))
@@ -100,8 +98,7 @@ class MCPServerTools:
         self, config: McpServerConfig, remote_tool: BaseTool
     ) -> StructuredTool:
         """包装远程工具：工具名加服务前缀隔离，执行时按短连接调用"""
-        # Column 标注的属性静态类型是 Column[T]，先读入运行期 str 局部变量
-        server_name: str = str(config.server_name)
+        server_name: str = config.server_name
         description: str = str(remote_tool.description or config.description or "")
 
         async def run_tool(**kwargs: Any) -> Any:
@@ -129,8 +126,7 @@ class MCPServerTools:
         self, config: McpServerConfig, remote_tool_name: str, arguments: dict[str, Any]
     ) -> Any:
         """执行远程 MCP 工具，失败时返回可读错误文案供模型参考"""
-        # Column 标注的属性静态类型是 Column[T]，先读入运行期 str 局部变量
-        server_name: str = str(config.server_name)
+        server_name: str = config.server_name
         server_key: str = self._sanitize_server_name(server_name)
         try:
             # langchain-mcp-adapters >= 0.3 已移除 async 上下文管理器，直接实例化后 get_tools：会话在每次工具调用时按需建立并关闭
@@ -174,8 +170,6 @@ class MCPServerTools:
         )
 
 
-def get_mcp_tools(
-    mapper: Optional[McpServerConfigMapper] = None,
-) -> MCPServerTools:
+def get_mcp_tools(mapper: McpServerConfigMapper) -> MCPServerTools:
     """获取 MCP 工具组实例，每次装配重新读取配置表，保证变更即时生效"""
     return MCPServerTools(mapper)

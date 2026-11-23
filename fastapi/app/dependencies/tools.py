@@ -26,10 +26,10 @@ from app.internal.agents import (
     get_warehouse_tools,
 )
 from app.internal.clients import GozeroClient, NestjsClient, SpringClient
-from app.internal.crud import VectorMapper
+from app.internal.crud import McpServerConfigMapper, VectorMapper
 
 from .clients import GozeroClientDep, NestjsClientDep, SpringClientDep
-from .mappers import VectorMapperDep
+from .mappers import McpServerConfigMapperDep, VectorMapperDep
 
 
 def provide_fastapi_sql_tool() -> FastapiSqlTool:
@@ -72,12 +72,12 @@ def provide_warehouse_tools() -> ClickHouseWarehouseTools:
     return get_warehouse_tools()
 
 
-def provide_mcp_tools() -> MCPServerTools:
+def provide_mcp_tools(mapper: McpServerConfigMapperDep) -> MCPServerTools:
     """装配 MCP 工具组工厂，工具实例在 initialize_ai_tools 中延迟构造
 
     构造与发现阶段读取 mcp_server_config 表；模型服务按单例复用后 MCP 工具在首次装配时发现，配置变更需清理工具工厂集合与模型服务的 lru_cache 才能重新发现
     """
-    return get_mcp_tools()
+    return get_mcp_tools(mapper)
 
 
 @lru_cache
@@ -86,6 +86,7 @@ def build_agent_tool_factories(
     gozero_client: GozeroClient,
     nestjs_client: NestjsClient,
     vector_mapper: VectorMapper,
+    mcp_mapper: McpServerConfigMapper,
 ) -> AgentToolFactories:
     """按稳定依赖单例构造一次工具工厂集合，供六个模型服务的 lru_cache 命中"""
     return AgentToolFactories(
@@ -99,7 +100,7 @@ def build_agent_tool_factories(
         neo4j=(ToolLabels.NEO4J, provide_neo4j_tools),
         mongodb=(ToolLabels.MONGODB, partial(provide_mongodb_tools, nestjs_client)),
         warehouse=(ToolLabels.WAREHOUSE, provide_warehouse_tools),
-        mcp_servers=(("MCP 服务", provide_mcp_tools),),
+        mcp_servers=(("MCP 服务", partial(provide_mcp_tools, mcp_mapper)),),
     )
 
 
@@ -108,6 +109,7 @@ def provide_agent_tool_factories(
     gozero_client: GozeroClientDep,
     nestjs_client: NestjsClientDep,
     vector_mapper: VectorMapperDep,
+    mcp_mapper: McpServerConfigMapperDep,
 ) -> AgentToolFactories:
     """装配 agent 工具组工厂集合
 
@@ -115,7 +117,7 @@ def provide_agent_tool_factories(
     从而保留单组失败隔离；集合本身按依赖单例缓存，避免每次请求新建 partial 破坏下游缓存
     """
     return build_agent_tool_factories(
-        spring_client, gozero_client, nestjs_client, vector_mapper
+        spring_client, gozero_client, nestjs_client, vector_mapper, mcp_mapper
     )
 
 
