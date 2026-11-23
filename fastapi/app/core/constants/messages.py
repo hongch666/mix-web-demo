@@ -3331,8 +3331,8 @@ class Messages:
     WAREHOUSE_DATE_INVALID: str = "日期格式必须为 YYYY-MM-DD"
     """数仓日期格式错误的提示"""
 
-    SQL_TOOL_FASTAPI_TABLE_WHITELIST: list[str] = ["ai_history"]
-    """FastAPI 侧 SQL 工具的表名白名单"""
+    SQL_TOOL_FASTAPI_TABLE_WHITELIST: list[str] = ["ai_history", "ai_user_summary"]
+    """FastAPI 侧 SQL 工具的表名白名单，mcp_server_config 存放 MCP 凭据不纳入"""
 
     # ===== SQL 代理工具（本地直连 FastAPI）安全约束配置 =====
 
@@ -3378,8 +3378,42 @@ class Messages:
                 "comment": "更新时间",
             },
         ],
+        "ai_user_summary": [
+            {"name": "id", "type": "bigint", "key": "PRI", "comment": "主键ID"},
+            {"name": "user_id", "type": "bigint", "key": "UNI", "comment": "用户ID"},
+            {
+                "name": "summary",
+                "type": "text",
+                "key": "",
+                "comment": "用户级聊天记忆摘要",
+            },
+            {
+                "name": "last_summarized_history_id",
+                "type": "bigint",
+                "key": "",
+                "comment": "已折叠进摘要的 ai_history.id 水位线",
+            },
+            {
+                "name": "summarized_count",
+                "type": "int",
+                "key": "",
+                "comment": "已折叠进摘要的历史条数",
+            },
+            {
+                "name": "created_at",
+                "type": "datetime",
+                "key": "",
+                "comment": "创建时间",
+            },
+            {
+                "name": "updated_at",
+                "type": "datetime",
+                "key": "",
+                "comment": "更新时间",
+            },
+        ],
     }
-    """FastAPI 侧表结构说明，供 SQL 工具做字段校验"""
+    """FastAPI 侧表结构说明，供 SQL 工具做字段校验，需与 db/mysql/fastapi 下的 DDL 保持一致"""
 
     START_INITIALIZING_ARTICLE_HASH_CACHE_MESSAGE: str = (
         "开始初始化文章内容 hash 缓存..."

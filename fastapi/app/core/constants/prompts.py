@@ -227,6 +227,7 @@ class Prompts:
     耗时、状态码、时间范围、用户范围这类阈值条件必须写入 filter_dict，
     例如统计耗时超过 200 毫秒的接口要用 {"response_time": {"$gt": 200}}，不能靠放大 limit 实现。
     需要计数、分组、排序、取 TOP 这类聚合统计时改用 aggregate_mongodb 工具，本工具只返回原始样本。
+    logdeletions 是删除墓碑集合，只服务数仓删除传播，不在本工具的可查范围内。
     """
     """MongoDB 日志查询工具的说明"""
 
@@ -254,19 +255,19 @@ class Prompts:
     # ===== FastAPI 本地 SQL 工具描述 =====
 
     FASTAPI_SQL_TABLE_TOOL_DESC: str = """获取 FastAPI 本地 MySQL 数据库的表结构信息。
-    可查表: ai_history (AI对话历史记录)
+    可查表: ai_history (AI对话历史记录)、ai_user_summary (用户级聊天记忆摘要)
     参数格式: 表名(字符串)，如 'ai_history'，留空则返回所有表。
-    使用场景: 查询AI对话记录、对话统计分析前，先了解表结构。
+    使用场景: 查询AI对话记录、对话统计分析、用户记忆摘要前，先了解表结构。
     """
     """FastAPI 数据库表结构工具的说明"""
 
     FASTAPI_SQL_QUERY_TOOL_DESC: str = """执行 FastAPI 本地 MySQL 只读 SQL 查询。
-    可查表: ai_history (AI对话历史记录)
+    可查表: ai_history (AI对话历史记录)、ai_user_summary (用户级聊天记忆摘要)
     必须使用参数化占位符（:paramName），禁止拼接值。
     必须包含 LIMIT 子句（最大 100 行）。
     参数格式: query 为完整只读SQL，params 为参数字典。
     示例: query="SELECT * FROM ai_history WHERE user_id = :uid LIMIT 10", params={"uid": 123}
-    使用场景: 查询AI对话历史、对话统计分析。
+    使用场景: 查询AI对话历史、对话统计分析、用户级记忆摘要。
     """
     """FastAPI 只读 SQL 查询工具的说明"""
 
@@ -296,19 +297,21 @@ class Prompts:
     # ===== NestJS SQL 代理工具描述 =====
 
     NESTJS_SQL_TABLE_TOOL_DESC: str = """获取 NestJS 服务的 MySQL 设置数据库表结构信息。
-    可查表: user_table_settings(用户表格列设置)
+    可查表: user_table_settings(用户表格列设置)、oss_object(OSS对象账本)
     参数格式: 表名(字符串)，如 'user_table_settings'，留空则返回所有表。
-    使用场景: 查询用户自定义的表格列配置前，先了解表结构。
+    使用场景: 查询用户自定义的表格列配置、OSS 上传账本前，先了解表结构。
     """
     """NestJS 日志库表结构工具的说明"""
 
     NESTJS_SQL_QUERY_TOOL_DESC: str = """执行 NestJS 服务的 MySQL 设置数据库只读 SQL 查询。
-    可查表: user_table_settings(用户表格列设置)
+    可查表: user_table_settings(用户表格列设置)、oss_object(OSS对象账本)
     必须使用参数化占位符（:paramName），禁止拼接值。
     必须包含 LIMIT 子句（最大 100 行）。
     参数格式: query 为完整只读SQL，params 为参数字典。
-    示例: query="SELECT * FROM user_table_settings WHERE user_id = :uid LIMIT 10", params={"uid": 123}
-    使用场景: 查询用户自定义的表格列配置。
+    示例: query="SELECT * FROM oss_object WHERE prefix_type = :prefix LIMIT 10", params={"prefix": "pic"}
+    oss_object 没有 user_id 列，按上传者过滤要用 uploader_user_id，按来源过滤用 source，
+    按前缀类型过滤用 prefix_type，按时间过滤用 create_at 或 update_at。
+    使用场景: 查询用户自定义的表格列配置、OSS 上传账本与对象统计。
     """
     """NestJS 日志库只读 SQL 查询工具的说明"""
 
