@@ -79,5 +79,7 @@ var SqlToolsTableSchemas = map[string][]SqlToolsColumnInfo{
 		{Name: "content", Type: "text", Key: "", Comment: "消息内容"},
 		{Name: "is_read", Type: "tinyint", Key: "", Comment: "是否已读，0未读，1已读"},
 		{Name: "created_at", Type: "datetime(3)", Key: "", Comment: "创建时间"},
+		{Name: "conversation_low", Type: "bigint", Key: "", Comment: "会话对端较小ID，MySQL 生成列"},
+		{Name: "conversation_high", Type: "bigint", Key: "", Comment: "会话对端较大ID，MySQL 生成列"},
 	},
 }
