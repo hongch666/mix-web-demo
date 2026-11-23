@@ -1902,8 +1902,8 @@ docker system prune -af
 - `db/mysql/`：MySQL 建表脚本，按服务拆分为子目录（spring/gozero/nestjs/fastapi），每个服务只管理自己的表，每个表独立一个 SQL 文件：
   - `spring/`：user、articles、category、sub_category、category_reference、comments、likes、collects、focus
   - `gozero/`：chat_messages
-  - `nestjs/`：user_table_settings
-  - `fastapi/`：ai_history
+  - `nestjs/`：user_table_settings、oss_object
+  - `fastapi/`：ai_history、ai_user_summary、mcp_server_config
 - `db/postgresql/`：PostgreSQL 扩展与向量索引脚本，`extensions.sql` 启用 `pgvector`，`vector_index.sql` 建向量 ANN 索引与 `cmetadata ->> 'article_id'` 表达式索引，不含建库语句
 - `db/clickhouse/`：ClickHouse 初始化脚本，按数仓分层拆分为子目录（ods/dwd/dws/dim/ads），每个表独立一个 SQL 文件
 - `db/mongodb/`：MongoDB 初始化脚本，主要用于集合和索引创建
@@ -2984,14 +2984,14 @@ SQL 工具按服务做了完全隔离：FastAPI Agent 会为每个服务加载�
 
 | 工具名称                    | 所属服务 | 功能          | 可访问表                                                                                     |
 | --------------------------- | -------- | ------------- | -------------------------------------------------------------------------------------------- |
-| `get_fastapi_table_schema`  | FastAPI  | 获取表结构    | `ai_history`                                                                                 |
-| `execute_fastapi_sql_query` | FastAPI  | 执行 SQL 查询 | `ai_history`                                                                                 |
+| `get_fastapi_table_schema`  | FastAPI  | 获取表结构    | `ai_history`、`ai_user_summary`                                                              |
+| `execute_fastapi_sql_query` | FastAPI  | 执行 SQL 查询 | `ai_history`、`ai_user_summary`                                                              |
 | `get_spring_table_schema`   | Spring   | 获取表结构    | articles、user、comments、likes、collects、focus、category、sub_category、category_reference |
 | `execute_spring_sql_query`  | Spring   | 执行 SQL 查询 | 同上                                                                                         |
 | `get_gozero_table_schema`   | GoZero   | 获取表结构    | `chat_messages`                                                                              |
 | `execute_gozero_sql_query`  | GoZero   | 执行 SQL 查询 | `chat_messages`                                                                              |
-| `get_nestjs_table_schema`   | NestJS   | 获取表结构    | `user_table_settings`                                                                        |
-| `execute_nestjs_sql_query`  | NestJS   | 执行 SQL 查询 | `user_table_settings`                                                                        |
+| `get_nestjs_table_schema`   | NestJS   | 获取表结构    | `user_table_settings`、`oss_object`                                                          |
+| `execute_nestjs_sql_query`  | NestJS   | 执行 SQL 查询 | `user_table_settings`、`oss_object`                                                          |
 
 安全约束（所有服务统一生效）：
 
@@ -3002,8 +3002,9 @@ SQL 工具按服务做了完全隔离：FastAPI Agent 会为每个服务加载�
 
 其中：
 
-- FastAPI 工具本地直连自己的 `ai_history` 表
+- FastAPI 工具本地直连自己的 `ai_history`、`ai_user_summary` 表
 - Spring、GoZero、NestJS 工具通过各服务暴露的内部 SQL 代理接口远程执行，表结构信息在对应服务侧维护
+- 明确不纳入 Agent SQL 工具的表：FastAPI 的 `mcp_server_config`（`env_json` / `headers_json` 存放 MCP 凭据与令牌，且无 `user_id` 列无法做行级过滤）；MongoDB 的 `logdeletions`（删除墓碑，只服务数仓删除传播，不含日志正文）
 
 #### 2.RAG 向量搜索工具
 
@@ -3216,19 +3217,19 @@ token 估算不使用各家分词器，按字符类别保守折算（`app/core/c
 
 设计原则：
 
-1. **表级隔离**：每个服务拥有独立的数据库和表集合，服务之间不共享。例如 Spring 管理 `articles`/`user`/`comments` 等核心业务表，GoZero 管理 `chat_messages` 聊天表，NestJS 管理 `user_table_settings` 配置表，FastAPI 管理 `ai_history` AI 聊天记录表。
+1. **表级隔离**：每个服务拥有独立的数据库和表集合，服务之间不共享。例如 Spring 管理 `articles`/`user`/`comments` 等核心业务表，GoZero 管理 `chat_messages` 聊天表，NestJS 管理 `user_table_settings` 配置表与 `oss_object` 对象账本表，FastAPI 管理 `ai_history` AI 聊天记录、`ai_user_summary` 记忆摘要与 `mcp_server_config` MCP 配置表。
 2. **SQL 工具白名单**：每个服务内置的 SQL Tools 均通过表名白名单限制访问范围，仅允许查询本服务归属的表，实现查询层面的隔离。
 3. **DDL 脚本组织**：建表脚本按服务拆分到 `db/mysql/<service>/` 子目录下，每个表一个独立 `.sql` 文件，文件名即表名，便于按服务独立初始化和维护。
 4. **跨服务数据访问**：服务间不直接访问对方的表，数据交互通过 REST API 或消息队列完成，保持服务边界清晰。
 
 当前分表策略：
 
-| 服务    | 归属表（共 12 张）                                                                                      | 说明           |
-| ------- | ------------------------------------------------------------------------------------------------------- | -------------- |
-| Spring  | user、articles、category、sub_category、category_reference、comments、likes、collects、focus（共 9 张） | 核心业务数据   |
-| GoZero  | chat_messages（共 1 张）                                                                                | 聊天消息存储   |
-| NestJS  | user_table_settings（共 1 张）                                                                          | 用户表格列设置 |
-| FastAPI | ai_history（共 1 张）                                                                                   | AI 聊天记录    |
+| 服务    | 归属表（共 15 张）                                                                                      | 说明                     |
+| ------- | ------------------------------------------------------------------------------------------------------- | ------------------------ |
+| Spring  | user、articles、category、sub_category、category_reference、comments、likes、collects、focus（共 9 张） | 核心业务数据             |
+| GoZero  | chat_messages（共 1 张）                                                                                | 聊天消息存储             |
+| NestJS  | user_table_settings、oss_object（共 2 张）                                                              | 用户表格列设置与 OSS 账本 |
+| FastAPI | ai_history、ai_user_summary、mcp_server_config（共 3 张）                                               | AI 对话、记忆摘要与 MCP 配置 |
 
 > 各服务通过独立的数据库连接配置指向各自的库，DDL 脚本已按服务划分到 `db/mysql/<service>/` 子目录，拆分后只需修改各服务的数据库连接配置即可。
 
