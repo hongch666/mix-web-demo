@@ -3629,16 +3629,16 @@
             "title": "Title",
             "description": "文章标题"
           },
-          "view_count": {
+          "views": {
             "type": "integer",
-            "title": "View Count",
+            "title": "Views",
             "description": "文章阅读量"
           }
         },
         "type": "object",
         "required": [
           "article_id",
-          "view_count"
+          "views"
         ],
         "title": "ArticleViewItem",
         "description": "单篇文章阅读分布响应项"
