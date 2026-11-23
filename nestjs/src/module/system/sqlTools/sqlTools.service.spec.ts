@@ -99,9 +99,22 @@ describe("SqlToolsService", () => {
 
     await expect(service.getTables()).resolves.toEqual([
       { table: "user_table_settings", rowCount: -1 },
+      { table: "oss_object", rowCount: -1 },
     ]);
     expect(query).toHaveBeenCalledWith(
       "SELECT COUNT(*) AS cnt FROM `user_table_settings` WHERE 1 LIMIT 1",
     );
+    expect(query).toHaveBeenCalledWith(
+      "SELECT COUNT(*) AS cnt FROM `oss_object` WHERE 1 LIMIT 1",
+    );
+  });
+
+  it("允许查询 oss_object 账本表", async () => {
+    query.mockResolvedValue([]);
+
+    await expect(
+      service.executeQuery("SELECT id FROM oss_object LIMIT 1", {}),
+    ).resolves.toEqual({ columns: [], rows: [], rowCount: 0 });
+    expect(query).toHaveBeenCalledWith("SELECT id FROM oss_object LIMIT 1", []);
   });
 });

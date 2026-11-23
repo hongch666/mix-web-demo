@@ -18,8 +18,11 @@ export class SqlTools {
 
   // ===== 表名白名单（仅开放 NestJS 自管的表） =====
 
-  /** SQL 工具允许访问的表名白名单 */
-  static readonly TABLE_WHITELIST = new Set<string>(["user_table_settings"]);
+  /** SQL 工具允许访问的表名白名单，仅限 NestJS 自管且不含凭据的表 */
+  static readonly TABLE_WHITELIST = new Set<string>([
+    "user_table_settings",
+    "oss_object",
+  ]);
 
   // ===== 只读语句前缀白名单 =====
 
