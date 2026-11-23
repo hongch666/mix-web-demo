@@ -12,14 +12,13 @@ import {
   Max,
   Min,
 } from "class-validator";
-import { MongoTools } from "src/common/constants";
+import { Messages, MongoTools } from "src/common/constants";
 import { ExposeName } from "src/common/utils/snakeCase";
 
 /**
  * MongoDB 查询 DTO
  *
- * 说明：class-validator 注解内的校验消息使用内联字符串，
- * 保证注解与消息就地可读，不走常量类
+ * 校验消息统一引用 Messages 常量，动态上限由函数型成员拼接
  */
 export class QueryMongoDto {
   @ApiProperty({
@@ -27,8 +26,8 @@ export class QueryMongoDto {
     example: "articlelogs",
   })
   @ExposeName()
-  @IsString({ message: "集合名称必须是字符串" })
-  @IsNotEmpty({ message: "集合名称不能为空" })
+  @IsString({ message: Messages.DTO_COLLECTION_NAME_MUST_BE_STRING })
+  @IsNotEmpty({ message: Messages.DTO_COLLECTION_NAME_NOT_EMPTY })
   collectionName!: string;
 
   @ApiPropertyOptional({
@@ -36,7 +35,7 @@ export class QueryMongoDto {
     example: { action: "view" },
   })
   @IsOptional()
-  @IsObject({ message: "过滤条件必须是对象" })
+  @IsObject({ message: Messages.DTO_FILTER_MUST_BE_OBJECT })
   filter?: Record<string, unknown>;
 
   @ApiPropertyOptional({
@@ -46,9 +45,9 @@ export class QueryMongoDto {
   })
   @Type(() => Number)
   @IsOptional()
-  @IsInt({ message: "返回条数必须是整数" })
-  @Min(1, { message: "返回条数最小为1" })
-  @Max(50, { message: "返回条数最大为50" })
+  @IsInt({ message: Messages.DTO_LIMIT_MUST_BE_INT })
+  @Min(1, { message: Messages.DTO_LIMIT_MIN_ONE })
+  @Max(50, { message: Messages.DTO_LIMIT_MAX_FIFTY })
   limit?: number;
 }
 
@@ -64,8 +63,8 @@ export class AggregateMongoDto {
     example: "apilogs",
   })
   @ExposeName()
-  @IsString({ message: "集合名称必须是字符串" })
-  @IsNotEmpty({ message: "集合名称不能为空" })
+  @IsString({ message: Messages.DTO_COLLECTION_NAME_MUST_BE_STRING })
+  @IsNotEmpty({ message: Messages.DTO_COLLECTION_NAME_NOT_EMPTY })
   collectionName!: string;
 
   @ApiProperty({
@@ -81,10 +80,12 @@ export class AggregateMongoDto {
   // 全局 ValidationPipe 开启了 enableImplicitConversion，装饰器又让 design:type 成为 Array，
   // 不声明 @Type 时 class-transformer 会把每个阶段对象转成空数组，阶段内容全部丢失
   @Type(() => Object)
-  @IsArray({ message: "聚合管道必须是数组" })
-  @ArrayMinSize(1, { message: "聚合管道至少需要一个阶段" })
+  @IsArray({ message: Messages.DTO_PIPELINE_MUST_BE_ARRAY })
+  @ArrayMinSize(1, { message: Messages.DTO_PIPELINE_MIN_ONE_STAGE })
   @ArrayMaxSize(MongoTools.MAX_PIPELINE_STAGES, {
-    message: `聚合管道阶段数不能超过 ${MongoTools.MAX_PIPELINE_STAGES}`,
+    message: Messages.MONGO_PIPELINE_STAGES_EXCEEDED(
+      MongoTools.MAX_PIPELINE_STAGES,
+    ),
   })
   pipeline!: Record<string, unknown>[];
 
@@ -95,10 +96,12 @@ export class AggregateMongoDto {
   })
   @Type(() => Number)
   @IsOptional()
-  @IsInt({ message: "返回条数必须是整数" })
-  @Min(1, { message: "返回条数最小为1" })
+  @IsInt({ message: Messages.DTO_LIMIT_MUST_BE_INT })
+  @Min(1, { message: Messages.DTO_LIMIT_MIN_ONE })
   @Max(MongoTools.MAX_AGGREGATE_DOCS, {
-    message: `返回条数最大为${MongoTools.MAX_AGGREGATE_DOCS}`,
+    message: Messages.MONGO_RESULT_LIMIT_EXCEEDED(
+      MongoTools.MAX_AGGREGATE_DOCS,
+    ),
   })
   limit?: number;
 }

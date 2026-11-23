@@ -1,11 +1,13 @@
 package com.hcsy.spring.web.filter;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HeaderNames;
 import com.hcsy.spring.common.utils.UserContext;
 
@@ -28,8 +30,8 @@ public class UserContextWebFilter implements WebFilter {
         Long userId = parseLong(request.getHeaders().getFirst(HeaderNames.USER_ID));
         String username = request.getHeaders().getFirst(HeaderNames.USERNAME);
         String sessionId = request.getHeaders().getFirst(HeaderNames.SESSION_ID);
-        String token = extractToken(request.getHeaders().getFirst("Authorization"));
-        String internalToken = extractToken(request.getHeaders().getFirst("X-Internal-Token"));
+        String token = extractToken(request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
+        String internalToken = extractToken(request.getHeaders().getFirst(HeaderNames.INTERNAL_TOKEN));
 
         return chain.filter(exchange)
             .contextWrite(ctx -> UserContext.writeContext(ctx, userId, username, sessionId, token, internalToken));
@@ -52,8 +54,8 @@ public class UserContextWebFilter implements WebFilter {
      * 从 Authorization 或内部令牌请求头中剥离 Bearer 前缀提取令牌原文
      */
     private String extractToken(String authHeader) {
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
+        if (authHeader != null && authHeader.startsWith(Defaults.BEARER_PREFIX)) {
+            return authHeader.substring(Defaults.BEARER_PREFIX.length());
         }
         return null;
     }

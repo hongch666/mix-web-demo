@@ -2,6 +2,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from app.core.constants import ToolLabels
 from app.internal.crud import get_vector_store_mapper
 
 from ..tools.fastapiSqlTool import get_fastapi_sql_tool
@@ -42,13 +43,13 @@ def default_agent_tool_factories() -> AgentToolFactories:
     """
     return AgentToolFactories(
         sql_tools=(
-            ("FastAPI", get_fastapi_sql_tool),
-            ("Spring", get_spring_sql_tool),
-            ("GoZero", get_gozero_sql_tool),
-            ("NestJS", get_nestjs_sql_tool),
+            (ToolLabels.SQL_FASTAPI, get_fastapi_sql_tool),
+            (ToolLabels.SQL_SPRING, get_spring_sql_tool),
+            (ToolLabels.SQL_GOZERO, get_gozero_sql_tool),
+            (ToolLabels.SQL_NESTJS, get_nestjs_sql_tool),
         ),
         rag=("RAG", _default_rag_tools),
-        neo4j=("Neo4j 知识图谱", get_neo4j_tools),
-        mongodb=("MongoDB 日志", get_mongodb_tools),
-        warehouse=("ClickHouse 数仓", get_warehouse_tools),
+        neo4j=(ToolLabels.NEO4J, get_neo4j_tools),
+        mongodb=(ToolLabels.MONGODB, get_mongodb_tools),
+        warehouse=(ToolLabels.WAREHOUSE, get_warehouse_tools),
     )

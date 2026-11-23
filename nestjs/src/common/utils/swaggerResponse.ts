@@ -1,6 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiResponse as SwaggerApiResponse } from "@nestjs/swagger";
 import type { SchemaObject } from "@nestjs/swagger/dist/interfaces/open-api-spec.interface";
+import { SwaggerConfig } from "src/common/constants";
 
 /**
  * ApiResponseModel 装饰器的配置项，指定响应 data 的 schema、描述文案与 HTTP 状态码
@@ -16,7 +17,7 @@ export interface SwaggerResponseOptions {
  */
 function describeSchema(
   schema: SchemaObject,
-  fieldName = "返回数据",
+  fieldName = SwaggerConfig.SCHEMA_DATA_DESCRIPTION,
 ): SchemaObject {
   const properties = schema.properties as
     | Record<string, SchemaObject>
@@ -49,15 +50,19 @@ export function ApiResponseModel(
   const data: SchemaObject = options.data ?? { type: "object" };
   const responseSchema: SchemaObject = {
     type: "object",
-    description: "统一接口响应体",
+    description: SwaggerConfig.SUCCESS_SCHEMA_DESCRIPTION,
     properties: {
       code: {
         type: "integer",
         format: "int32",
         example: 200,
-        description: "响应码，与 HTTP 状态码一致",
+        description: SwaggerConfig.SCHEMA_CODE_DESCRIPTION,
       },
-      msg: { type: "string", example: "success", description: "响应消息" },
+      msg: {
+        type: "string",
+        example: "success",
+        description: SwaggerConfig.SCHEMA_MSG_DESCRIPTION,
+      },
       data: describeSchema(data),
     },
     required: ["code", "msg", "data"],

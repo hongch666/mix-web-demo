@@ -30,7 +30,7 @@ import reactor.core.scheduler.Schedulers;
 @Component
 @RequiredArgsConstructor
 public class CacheUtil {
-    private static final String INVALIDATION_MESSAGE = "evict";
+    private static final String INVALIDATION_MESSAGE = Defaults.CACHE_INVALIDATION_MESSAGE;
 
     private final RedisUtil redisUtil;
     private final ObjectMapper objectMapper;

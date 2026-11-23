@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import Request, Response
 from opentelemetry.trace import get_current_span
 
-from app.core.constants import TelemetryConstants
+from app.core.constants import HeaderNames, TelemetryConstants
 from starlette.middleware.base import BaseHTTPMiddleware
 
 user_id_ctx_var: contextvars.ContextVar[Optional[int]] = contextvars.ContextVar(
@@ -63,8 +63,9 @@ def get_current_trace_id() -> Optional[str]:
 
 def _extract_bearer_token(header: Optional[str]) -> Optional[str]:
     """从 Authorization 头中提取 Bearer token"""
-    if header and header.startswith("Bearer "):
-        return header[7:]
+    prefix: str = HeaderNames.BEARER_PREFIX
+    if header and header.startswith(prefix):
+        return header[len(prefix) :]
     return None
 
 
@@ -75,20 +76,20 @@ class ContextMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         """解析请求头中的用户 ID、用户名、会话 ID 与两类令牌并设置到上下文，请求结束后重置全部上下文变量"""
-        raw_user_id: Optional[str] = request.headers.get("X-User-Id")
+        raw_user_id: Optional[str] = request.headers.get(HeaderNames.USER_ID)
         user_id: Optional[int] = None
         if raw_user_id:
             try:
                 user_id = int(raw_user_id)
             except ValueError:
                 user_id = None
-        username: Optional[str] = request.headers.get("X-Username")
-        session_id: Optional[str] = request.headers.get("X-Session-Id")
+        username: Optional[str] = request.headers.get(HeaderNames.USERNAME)
+        session_id: Optional[str] = request.headers.get(HeaderNames.SESSION_ID)
         token: Optional[str] = _extract_bearer_token(
-            request.headers.get("Authorization")
+            request.headers.get(HeaderNames.AUTHORIZATION)
         )
         internal_token: Optional[str] = _extract_bearer_token(
-            request.headers.get("X-Internal-Token")
+            request.headers.get(HeaderNames.INTERNAL_TOKEN)
         )
         user_id_token: contextvars.Token[Optional[int]] = user_id_ctx_var.set(user_id)
         username_token: contextvars.Token[Optional[str]] = username_ctx_var.set(

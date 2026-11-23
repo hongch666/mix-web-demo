@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
 from app.core.base import ApiResponse, success
-from app.core.constants import SwaggerConfig
+from app.core.constants import Messages, SwaggerConfig
 from app.core.decorators import log
 from app.dependencies import ChatApplicationServiceDep, ChatServiceDep, DbSession
 from app.internal.schemas import (
@@ -28,7 +28,7 @@ router: APIRouter = APIRouter(
         "供前端渲染模型选择项"
     ),
 )
-@log("获取聊天模型列表")
+@log(Messages.API_LOG_DESC_CHAT_MODELS)
 async def get_chat_models(chat_service: ChatServiceDep) -> ApiResponse:
     """获取聊天模型列表"""
 
@@ -41,7 +41,7 @@ async def get_chat_models(chat_service: ChatServiceDep) -> ApiResponse:
     summary="普通聊天",
     description="发送聊天消息并返回响应",
 )
-@log("普通聊天")
+@log(Messages.API_LOG_DESC_CHAT_SEND)
 async def send_message(
     http_request: Request,
     request: ChatRequest,
@@ -64,7 +64,7 @@ async def send_message(
     ),
     responses=SwaggerConfig.STREAM_CHAT_RESPONSES,
 )
-@log("流式聊天")
+@log(Messages.API_LOG_DESC_CHAT_STREAM)
 async def stream_message(
     http_request: Request,
     request: ChatStreamRequest,

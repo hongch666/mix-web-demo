@@ -22,10 +22,12 @@ import (
 )
 
 const (
-	esArticlesIndexName = "articles"
-	esSyncBatchSize     = 500
+	// esArticlesIndexName ES 文章索引名，与索引创建及检索链路共用同一常量
+	esArticlesIndexName = constants.ES_ARTICLES_INDEX_NAME
+	// esSyncBatchSize ES 批量写入的单批条数
+	esSyncBatchSize = 500
 	// esChangeTypeDelete 表示删除变更，其余类型统一按写入处理
-	esChangeTypeDelete = "delete"
+	esChangeTypeDelete = constants.SYNC_CHANGE_TYPE_DELETE
 )
 
 // 统计一次 ES 同步过程中新增、更新、删除的文章数量

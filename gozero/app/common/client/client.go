@@ -177,9 +177,9 @@ func (sd *ServiceDiscovery) CallService(ctx context.Context, serviceName string,
 	startedAt := time.Now()
 	method := strings.ToUpper(opts.Method)
 	result, err := sd.callWithRetry(ctx, serviceName, path, opts)
-	outcome := "success"
+	outcome := constants.RESULT_SUCCESS
 	if err != nil {
-		outcome = "failure"
+		outcome = constants.RESULT_FAILURE
 	}
 	metrics.ClientRequests.WithLabelValues(serviceName, method, outcome).Inc()
 	metrics.ClientDuration.WithLabelValues(serviceName, method).Observe(time.Since(startedAt).Seconds())
@@ -311,19 +311,19 @@ func buildRequestBody(data any) ([]byte, string, error) {
 		if err != nil {
 			return nil, "", err
 		}
-		return jsonData, "application/json", nil
+		return jsonData, constants.ContentTypeJSON, nil
 	case string:
-		return []byte(v), "application/json", nil
+		return []byte(v), constants.ContentTypeJSON, nil
 	case []byte:
-		return v, "application/json", nil
+		return v, constants.ContentTypeJSON, nil
 	case url.Values:
-		return []byte(v.Encode()), "application/x-www-form-urlencoded", nil
+		return []byte(v.Encode()), constants.ContentTypeFormURLEncoded, nil
 	default:
 		jsonData, err := json.Marshal(v)
 		if err != nil {
 			return nil, "", err
 		}
-		return jsonData, "application/json", nil
+		return jsonData, constants.ContentTypeJSON, nil
 	}
 }
 

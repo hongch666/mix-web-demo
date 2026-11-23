@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 from pydantic_core import PydanticCustomError
 
 from app.core.base import Alias
-from app.core.constants import HttpCode
+from app.core.constants import HttpCode, Messages
 
 
 class AIServiceType(StrEnum):
@@ -48,7 +48,7 @@ class ChatRequest(BaseModel):
     def validate_message(cls, value: str) -> str:
         """校验聊天请求的用户消息不能为空字符串"""
         if not value.strip():
-            raise PydanticCustomError("message_empty", "用户消息不能为空")
+            raise PydanticCustomError("message_empty", Messages.CHAT_MESSAGE_EMPTY)
         return value
 
     @field_validator("service", mode="before")
@@ -68,7 +68,7 @@ class ChatRequest(BaseModel):
         if not isinstance(value, str) or value not in allowed_values:
             raise PydanticCustomError(
                 "service_invalid",
-                "AI服务类型必须是gpt、gemini、glm、deepseek、claude或qwen",
+                Messages.CHAT_SERVICE_INVALID,
             )
         return value
 

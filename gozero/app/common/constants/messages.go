@@ -9,6 +9,8 @@ const (
 	SELF_OR_ADMIN_REQUIRED = "只能访问本人数据，或使用管理员权限"
 	// 管理员权限校验失败的日志消息
 	ADMIN_PERMISSION_CHECK_FAILED = "管理员权限校验失败"
+	// allowSelf 越权校验失败的警告日志格式串
+	ALLOW_SELF_PERMISSION_CHECK_FAILED = "allowSelf 权限校验失败: path=%s, targetUserId=%d, error=%v"
 )
 
 // 消息类常量 — 日志消息、用户提示、状态描述
@@ -578,4 +580,26 @@ const (
 	SQL_TOOLS_MYSQL_UNINITIALIZED = "MySQL 连接未初始化"
 	// SQL 工具使用的 MySQL 驱动名
 	SQL_TOOLS_MYSQL_DRIVER = "mysql"
+
+	// ===== 结果标签 =====
+
+	// 统一响应 msg 与监控指标结果标签中标识成功的取值
+	RESULT_SUCCESS = "success"
+	// 监控指标结果标签中标识失败的取值
+	RESULT_FAILURE = "failure"
+
+	// ===== Prometheus 指标说明 =====
+
+	// 下游服务调用次数指标的说明文案
+	METRIC_HELP_CLIENT_REQUESTS = "下游服务调用次数"
+	// 下游服务调用耗时指标的说明文案
+	METRIC_HELP_CLIENT_DURATION = "下游服务调用耗时"
+	// 定时任务执行次数指标的说明文案
+	METRIC_HELP_TASK_RUNS = "定时任务执行次数"
+	// 定时任务执行耗时指标的说明文案
+	METRIC_HELP_TASK_DURATION = "定时任务执行耗时"
+	// 搜索请求次数指标的说明文案
+	METRIC_HELP_SEARCH_REQUESTS = "搜索请求次数"
+	// 搜索请求耗时指标的说明文案
+	METRIC_HELP_SEARCH_DURATION = "搜索请求耗时"
 )

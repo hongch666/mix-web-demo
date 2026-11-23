@@ -1,5 +1,6 @@
 package com.hcsy.spring.common.utils;
 
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,12 +27,12 @@ public class Result<T> {
 
     // 增删改 成功响应
     public static <T> Result<T> success() {
-        return new Result<>(HttpCode.OK, "success", null);
+        return new Result<>(HttpCode.OK, Defaults.METRIC_STATUS_SUCCESS, null);
     }
 
     // 查询 成功响应
     public static <T> Result<T> success(T data) {
-        return new Result<>(HttpCode.OK, "success", data);
+        return new Result<>(HttpCode.OK, Defaults.METRIC_STATUS_SUCCESS, data);
     }
 
     // 失败响应（默认500）

@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty, IsString } from "class-validator";
+import { Messages } from "src/common/constants";
 import { ExposeName } from "src/common/utils/snakeCase";
 
 /**
@@ -20,8 +21,8 @@ export class UploadDto {
     example: "/tmp/test.docx",
   })
   @ExposeName()
-  @IsString({ message: "本地文件路径必须是字符串" })
-  @IsNotEmpty({ message: "本地文件路径不能为空" })
+  @IsString({ message: Messages.DTO_LOCAL_FILE_MUST_BE_STRING })
+  @IsNotEmpty({ message: Messages.DTO_LOCAL_FILE_NOT_EMPTY })
   localFile!: string;
 
   @ApiProperty({
@@ -29,7 +30,7 @@ export class UploadDto {
     example: "articles/test.docx",
   })
   @ExposeName()
-  @IsString({ message: "OSS目标路径必须是字符串" })
-  @IsNotEmpty({ message: "OSS目标路径不能为空" })
+  @IsString({ message: Messages.DTO_OSS_FILE_MUST_BE_STRING })
+  @IsNotEmpty({ message: Messages.DTO_OSS_FILE_NOT_EMPTY })
   ossFile!: string;
 }

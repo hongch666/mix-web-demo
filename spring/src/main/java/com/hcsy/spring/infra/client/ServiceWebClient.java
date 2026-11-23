@@ -14,6 +14,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
 
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HeaderNames;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.InternalTokenUtil;
@@ -35,12 +36,12 @@ import reactor.core.publisher.Mono;
 @Component
 public class ServiceWebClient {
 
-    private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
+    private static final String INTERNAL_TOKEN_HEADER = HeaderNames.INTERNAL_TOKEN;
     private static final String USER_ID_HEADER = HeaderNames.USER_ID;
     private static final String USERNAME_HEADER = HeaderNames.USERNAME;
     private static final String SESSION_ID_HEADER = HeaderNames.SESSION_ID;
-    private static final String BEARER_PREFIX = "Bearer ";
-    private static final String SERVICE_NAME = "spring";
+    private static final String BEARER_PREFIX = Defaults.BEARER_PREFIX;
+    private static final String SERVICE_NAME = Defaults.SPRING_SERVICE_NAME;
     private static final ParameterizedTypeReference<Result<Object>> RESULT_TYPE = new ParameterizedTypeReference<>() {
     };
 
@@ -130,11 +131,11 @@ public class ServiceWebClient {
                 .doOnNext(result -> metricsRecorder.recordClientCall(
                     serviceName,
                     method.name(),
-                    result.getCode() == HttpCode.OK ? "success" : "failure",
+                    result.getCode() == HttpCode.OK ? Defaults.METRIC_STATUS_SUCCESS : Defaults.METRIC_STATUS_FAILURE,
                     System.nanoTime() - startedAt))
                 .onErrorResume(error -> {
                     metricsRecorder.recordClientCall(
-                        serviceName, method.name(), "failure", System.nanoTime() - startedAt);
+                        serviceName, method.name(), Defaults.METRIC_STATUS_FAILURE, System.nanoTime() - startedAt);
                     logger.error(fallbackMessage + error.getMessage(), error);
                     return Mono.just(Result.error(HttpCode.SERVICE_UNAVAILABLE, fallbackMessage));
                 });

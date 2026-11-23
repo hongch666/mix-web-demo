@@ -16,6 +16,8 @@ public final class HeaderNames {
     public static final String USERNAME = "X-Username";
     /** 网关透传的会话 ID 请求头 */
     public static final String SESSION_ID = "X-Session-Id";
+    /** 服务间内部令牌请求头 */
+    public static final String INTERNAL_TOKEN = "X-Internal-Token";
 
     /**
      * 聚合网关与微服务间透传的自定义 HTTP 请求头名称常量

@@ -2,6 +2,7 @@
 export { Defaults } from "./defaults.constants";
 export { ErrorIds } from "./errorIds.constants";
 export { ExportTemplate } from "./exportTemplate.constants";
+export { HeaderNames } from "./headerNames.constants";
 export { HttpCode } from "./httpCode.constants";
 export { LogTypes } from "./logType.constants";
 export { Messages } from "./messages.constants";

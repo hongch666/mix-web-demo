@@ -77,6 +77,43 @@ public class Defaults {
     /** 日志与响应中隐藏密码时使用的掩码 */
     public static final String HIDE_PASSWORD = "******";
 
+    // ===== 认证协议 =====
+
+    /** Authorization 与内部令牌请求头里令牌值的前缀 */
+    public static final String BEARER_PREFIX = "Bearer ";
+    /** 登录与刷新响应中返回的令牌类型 */
+    public static final String TOKEN_TYPE_BEARER = "Bearer";
+    /** 长连接从 query 读取令牌时使用的参数名 */
+    public static final String QUERY_PARAM_TOKEN = "token";
+
+    // ===== 指标状态 =====
+
+    /** 指标与响应中成功状态字面量 */
+    public static final String METRIC_STATUS_SUCCESS = "success";
+    /** 指标中失败状态字面量 */
+    public static final String METRIC_STATUS_FAILURE = "failure";
+
+    // ===== 邮件验证码 TTL（秒） =====
+
+    /** 邮箱验证码在 Redis 中的有效期秒数 */
+    public static final long EMAIL_CODE_TTL_SECONDS = 10 * 60L;
+    /** 传给 NestJS 邮件服务的验证码有效期分钟数，需与 EMAIL_CODE_TTL_SECONDS 保持一致 */
+    public static final int EMAIL_CODE_TTL_MINUTES = 10;
+    /** 邮箱已验证标记的保留秒数 */
+    public static final long EMAIL_VERIFIED_TTL_SECONDS = 24 * 60 * 60L;
+
+    // ===== 缓存失效通知 =====
+
+    /** 本地缓存失效频道发布的通知消息内容 */
+    public static final String CACHE_INVALIDATION_MESSAGE = "evict";
+
+    // ===== 服务与任务名 =====
+
+    /** 本服务在 Nacos 与内部令牌中的服务名 */
+    public static final String SPRING_SERVICE_NAME = "spring";
+    /** 过期 Token 清理任务的任务名，用于指标与 tracer */
+    public static final String TOKEN_CLEANUP_TASK_NAME = "token-cleanup";
+
     // ===== 启动 =====
 
     /** 服务启动成功的日志消息 */

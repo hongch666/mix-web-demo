@@ -39,7 +39,7 @@ func NewTaskScheduler(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory) 
 
 	// 每小时同步一次 ES
 	addTask(scheduler, svcCtx, lockFactory, TaskConfig{
-		Name:       "es-sync",
+		Name:       constants.TASK_ES_SYNC_NAME,
 		Schedule:   "0 * * * *",
 		LockKey:    constants.LOCK_TASK_ES_SYNC,
 		LockExpire: constants.LOCK_TASK_ES_SYNC_EXPIRE,
@@ -71,7 +71,7 @@ func runWithLock(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory, cfg T
 
 	// 定时任务没有请求入口，手动开启一段根 span，让任务日志与内部调用关联到同一次执行，TracerFromContext 在上下文无 span 时回退到全局 tracer，OTel 关闭时自动退化为 noop
 	tracer := zerotrace.TracerFromContext(ctx)
-	ctx, span := tracer.Start(ctx, fmt.Sprintf("job:%s", cfg.Name))
+	ctx, span := tracer.Start(ctx, constants.TASK_SPAN_PREFIX+cfg.Name)
 	defer span.End()
 
 	logger := svcCtx.Logger.WithContext(ctx)
@@ -95,7 +95,7 @@ func runWithLock(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory, cfg T
 	logger.Info(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_SUCCESS, cfg.LockKey))
 
 	taskStartedAt := time.Now()
-	taskResult := "success"
+	taskResult := constants.RESULT_SUCCESS
 	defer func() {
 		metrics.TaskRuns.WithLabelValues(cfg.Name, taskResult).Inc()
 		metrics.TaskDuration.WithLabelValues(cfg.Name).Observe(time.Since(taskStartedAt).Seconds())
@@ -116,7 +116,7 @@ func runWithLock(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory, cfg T
 	}()
 
 	if runErr := cfg.Run(ctx, logger, svcCtx); runErr != nil {
-		taskResult = "failure"
+		taskResult = constants.RESULT_FAILURE
 	}
 }
 

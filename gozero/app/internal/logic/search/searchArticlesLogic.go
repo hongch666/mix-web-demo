@@ -43,9 +43,9 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	// 命中缓存时不回源，指标按请求参数归因，避免 keyword 模式被统一记成 hybrid
 	mode := normalizeSearchMode(req)
 	defer func() {
-		result := "success"
+		result := constants.RESULT_SUCCESS
 		if err != nil {
-			result = "failure"
+			result = constants.RESULT_FAILURE
 		}
 		metrics.SearchRequests.WithLabelValues(mode, result).Inc()
 		metrics.SearchDuration.WithLabelValues(mode).Observe(time.Since(startedAt).Seconds())

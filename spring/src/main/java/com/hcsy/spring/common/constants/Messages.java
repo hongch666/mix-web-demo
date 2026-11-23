@@ -412,6 +412,27 @@ public class Messages {
     /** .env 文件加载失败的日志消息 */
     public static final String DOTENV_LOAD_FAIL = "[DotenvLoader] 加载.env文件失败: ";
 
+    // ===== 响应与文档 =====
+
+    /** 400 统一错误响应的描述文案 */
+    public static final String BAD_REQUEST_DESCRIPTION = "请求参数校验失败";
+    /** 500 统一错误响应的描述文案 */
+    public static final String INTERNAL_SERVER_ERROR_DESCRIPTION = "服务器内部错误";
+    /** 403 越权响应的描述文案 */
+    public static final String FORBIDDEN_DESCRIPTION = "无权限访问该资源";
+    /** 网关 block-internal 路由返回的 403 描述，与 apisix.yaml 的 response_example 对齐 */
+    public static final String GATEWAY_FORBIDDEN_DESCRIPTION = "内部接口禁止外部访问";
+    /** 统一错误响应里响应码字段的文档描述 */
+    public static final String SCHEMA_RESPONSE_CODE = "响应码，与 HTTP 状态码一致";
+    /** 统一错误响应里响应信息字段的文档描述 */
+    public static final String SCHEMA_RESPONSE_MESSAGE = "响应信息";
+    /** 统一错误响应里返回数据字段的文档描述 */
+    public static final String SCHEMA_RESPONSE_DATA = "返回数据";
+    /** 统一错误响应模型整体的文档描述 */
+    public static final String SCHEMA_ERROR_RESPONSE = "统一错误响应";
+    /** 批量删除文章同步日志的描述模板 */
+    public static final String SYNC_ARTICLE_BATCH_DELETE = "%s%d篇文章";
+
     // ===== 分布式锁消息 =====
 
     /** 分布式锁获取成功的日志消息 */

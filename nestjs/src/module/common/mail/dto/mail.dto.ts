@@ -8,6 +8,7 @@ import {
   IsString,
   Min,
 } from "class-validator";
+import { Messages } from "src/common/constants";
 import { ExposeName } from "src/common/utils/snakeCase";
 
 /**
@@ -15,13 +16,13 @@ import { ExposeName } from "src/common/utils/snakeCase";
  */
 export class InternalEmailCodeSendDto {
   @ApiProperty({ description: "收件邮箱", example: "user@example.com" })
-  @IsEmail({}, { message: "邮箱格式不正确" })
-  @IsNotEmpty({ message: "邮箱不能为空" })
+  @IsEmail({}, { message: Messages.DTO_EMAIL_FORMAT_INVALID })
+  @IsNotEmpty({ message: Messages.DTO_EMAIL_NOT_EMPTY })
   email!: string;
 
   @ApiProperty({ description: "验证码", example: "123456" })
-  @IsString({ message: "验证码必须是字符串" })
-  @IsNotEmpty({ message: "验证码不能为空" })
+  @IsString({ message: Messages.DTO_VERIFICATION_CODE_MUST_BE_STRING })
+  @IsNotEmpty({ message: Messages.DTO_VERIFICATION_CODE_NOT_EMPTY })
   code!: string;
 
   @ApiProperty({
@@ -30,9 +31,9 @@ export class InternalEmailCodeSendDto {
     enum: ["register", "login", "reset"],
   })
   @IsIn(["register", "login", "reset"], {
-    message: "验证码类型只能是 register、login 或 reset",
+    message: Messages.DTO_VERIFICATION_CODE_TYPE_INVALID,
   })
-  @IsNotEmpty({ message: "验证码类型不能为空" })
+  @IsNotEmpty({ message: Messages.DTO_VERIFICATION_CODE_TYPE_NOT_EMPTY })
   type!: string;
 
   @ApiProperty({
@@ -42,7 +43,7 @@ export class InternalEmailCodeSendDto {
   })
   @ExposeName()
   @IsOptional()
-  @IsInt({ message: "过期时间必须是整数" })
-  @Min(1, { message: "过期时间不能小于 1 分钟" })
+  @IsInt({ message: Messages.DTO_EXPIRE_MINUTES_MUST_BE_INT })
+  @Min(1, { message: Messages.DTO_EXPIRE_MINUTES_TOO_SMALL })
   expireMinutes?: number;
 }

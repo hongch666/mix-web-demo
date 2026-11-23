@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, LiteralString, Optional
 
 
 class Messages:
@@ -262,6 +262,11 @@ class Messages:
             f"权限拒绝：当前账户仅允许查询本人日志。"
             f'请在 filter_dict 中增加 {{"userId": {user_id}}} 后重新执行查询。'
         )
+
+    @staticmethod
+    def TOOL_SCOPE_DENIAL_LOG(tool_name: str, denial: str) -> str:
+        """构造工具行级范围拒绝执行的审计日志消息"""
+        return f"[工具权限] {tool_name} 拒绝执行: {denial}"
 
     @staticmethod
     def ADMIN_TOOL_ACCESS_GRANTED(user_id: int, role: str, tool_type: str) -> str:
@@ -1207,9 +1212,9 @@ class Messages:
         return f"子分类 {sub_category_id} 无权威参考文本"
 
     @staticmethod
-    def ANALYZE_CACHE_UPDATE_FAILED(cache_name: str, error: Exception) -> str:
+    def ANALYZE_CACHE_UPDATE_FAILED(cache_action: str, error: Exception) -> str:
         """构造分析接口缓存更新失败的日志消息"""
-        return f"{cache_name}缓存更新失败: {error}"
+        return f"{cache_action}失败: {error}"
 
     @staticmethod
     def ANALYZE_CACHE_TASK_FAILED(error: Exception) -> str:
@@ -2475,6 +2480,21 @@ class Messages:
     )
     """月度统计缓存刷新成功的日志消息"""
 
+    ANALYZE_CACHE_LABEL_TOP10: str = "前10篇文章"
+    """前十文章缓存刷新失败日志里的操作名"""
+
+    ANALYZE_CACHE_LABEL_WORDCLOUD: str = "词云图"
+    """词云图缓存刷新失败日志里的操作名"""
+
+    ANALYZE_CACHE_LABEL_STATISTICS: str = "文章统计信息"
+    """文章统计信息缓存刷新失败日志里的操作名"""
+
+    ANALYZE_CACHE_LABEL_CATEGORY_STATISTICS: str = "按分类统计文章数量"
+    """分类统计缓存刷新失败日志里的操作名"""
+
+    ANALYZE_CACHE_LABEL_MONTHLY_STATISTICS: str = "月度文章发布统计"
+    """月度统计缓存刷新失败日志里的操作名"""
+
     UPDATE_ANALYZE_CACHES_COMPLETE_MESSAGE: str = "分析接口缓存更新完成"
     """分析缓存刷新全部完成的日志消息"""
 
@@ -3511,3 +3531,126 @@ class Messages:
         "User-[:LIKES]->Article-[:TAGGED_AS]->Tag<-[:TAGGED_AS]->Article"
     )
     """图谱扩召回信号的匹配路径文案"""
+
+    # ===== 请求参数校验 =====
+
+    # PydanticCustomError 的 message_template 参数要求 LiteralString，三个校验文案按该类型声明
+    CHAT_MESSAGE_EMPTY: LiteralString = "用户消息不能为空"
+    """聊天请求的用户消息为空时的校验提示"""
+
+    CHAT_SERVICE_INVALID: LiteralString = (
+        "AI服务类型必须是gpt、gemini、glm、deepseek、claude或qwen"
+    )
+    """聊天请求的 AI 服务类型不在受支持取值内时的校验提示"""
+
+    GENERATE_TEXT_EMPTY: LiteralString = "需要生成标签的文本内容不能为空"
+    """标签生成请求的文本内容为空时的校验提示"""
+
+    # ===== API 日志描述 =====
+
+    API_LOG_DESC_TOP10_ARTICLES: str = "获取前10篇文章"
+    """前十文章分析接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_WORDCLOUD: str = "生成词云图"
+    """词云图分析接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_ARTICLE_EXCEL: str = "获取文章数据Excel"
+    """文章数据 Excel 导出接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_ARTICLE_STATISTICS: str = "获取文章统计信息"
+    """文章统计信息接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_ARTICLE_CATEGORY_COUNT: str = "按分类统计文章数量"
+    """分类文章数量统计接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_MONTHLY_PUBLISH_COUNT: str = "获取月度文章发布统计"
+    """月度文章发布统计接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_NEW_FOLLOWERS: str = "获取新增粉丝数统计"
+    """新增粉丝数统计接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_ARTICLE_VIEW_DISTRIBUTION: str = "获取文章浏览分布"
+    """文章浏览分布接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_AUTHOR_FOLLOW_STATISTICS: str = "获取关注作者统计"
+    """关注作者统计接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_MONTHLY_COMMENT_TREND: str = "获取本月评论趋势"
+    """本月评论趋势接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_MONTHLY_LIKE_TREND: str = "获取本月点赞趋势"
+    """本月点赞趋势接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_MONTHLY_COLLECT_TREND: str = "获取本月收藏趋势"
+    """本月收藏趋势接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_USER_PROFILE: str = "获取用户画像总览"
+    """用户画像总览接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_TRIGGER_ANALYZE_CACHE: str = "手动触发更新分析接口缓存任务"
+    """手动刷新分析缓存接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_TRIGGER_VECTOR_SYNC: str = "手动触发向量数据库同步任务"
+    """手动触发向量同步接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_INIT_ARTICLE_HASH_CACHE: str = "初始化文章内容 hash 缓存"
+    """初始化文章内容 hash 缓存接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_CLEAR_ANALYZE_CACHES: str = "清除分析相关缓存"
+    """清除分析缓存接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_TRIGGER_NEO4J_SYNC: str = "手动触发同步 MySQL 到 Neo4j 知识图谱任务"
+    """手动触发 Neo4j 同步接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_TRIGGER_WAREHOUSE_SYNC: str = "手动触发 ClickHouse 数仓同步任务"
+    """手动触发数仓同步接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_CHAT_MODELS: str = "获取聊天模型列表"
+    """聊天模型列表接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_CHAT_SEND: str = "普通聊天"
+    """普通聊天接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_CHAT_STREAM: str = "流式聊天"
+    """流式聊天接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_AI_HISTORY_LIST: str = "获取所有AI历史记录"
+    """AI 历史列表接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_AI_HISTORY_DELETE: str = "删除用户所有AI历史记录"
+    """删除全部 AI 历史接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_GENERATE_TAGS: str = "生成tags"
+    """标签生成接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_ARTICLE_AI_COMMENT: str = "文章创建AI评论"
+    """文章 AI 评论创建接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_ARTICLE_AI_COMMENT_WITH_REFERENCE: str = (
+        "文章创建基于权威参考文本的AI评论"
+    )
+    """基于权威参考文本的文章 AI 评论创建接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_API_AVERAGE_SPEED: str = "获取所有接口的平均响应速度"
+    """接口平均响应速度接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_API_CALLED_COUNT: str = "获取接口调用次数"
+    """接口调用次数接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_VECTOR_SEARCH_ENHANCE: str = "向量搜索增强"
+    """向量搜索增强接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_SEARCH_WEIGHTS: str = "获取搜索权重"
+    """搜索权重接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_SEARCH_SCRIPT: str = "获取ES搜索脚本"
+    """ES 搜索脚本接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_SEARCH_SCRIPT_PARAMS: str = "获取脚本参数名映射"
+    """ES 脚本参数名映射接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_GRAPH_SEARCH_ENHANCE: str = "知识图谱搜索增强"
+    """知识图谱搜索增强接口写入 api-log-queue 的接口描述"""
+
+    API_LOG_DESC_TEST_FASTAPI: str = "测试FastAPI服务"
+    """服务连通性测试接口写入 api-log-queue 的接口描述"""

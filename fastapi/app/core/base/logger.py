@@ -55,7 +55,11 @@ class _TraceIdFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """格式化前补上 trace_id 字段，缺失时使用空值占位"""
-        record.trace_id = get_current_trace_id() or TelemetryConstants.EMPTY_TRACE_ID
+        setattr(
+            record,
+            TelemetryConstants.TRACE_ID_FIELD,
+            get_current_trace_id() or TelemetryConstants.EMPTY_TRACE_ID,
+        )
         return super().format(record)
 
 
@@ -69,12 +73,15 @@ def _logs_config() -> dict[str, Any]:
 
 def _build_formatter(include_timestamp: bool) -> logging.Formatter:
     """按是否输出时间戳构造文件日志格式，保持与原逐行写文件一致的文本形态"""
+    # trace 字段名同时是 LogRecord 的属性名与格式占位符名，两处必须取同一常量
+    trace_field: str = TelemetryConstants.TRACE_ID_FIELD
+    trace_part: str = f" - {trace_field}=%({trace_field})s - "
     if include_timestamp:
         return _TraceIdFormatter(
-            "%(asctime)s - %(levelname)s - trace_id=%(trace_id)s - %(message)s",
+            f"%(asctime)s - %(levelname)s{trace_part}%(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
-    return _TraceIdFormatter("%(levelname)s - trace_id=%(trace_id)s - %(message)s")
+    return _TraceIdFormatter(f"%(levelname)s{trace_part}%(message)s")
 
 
 def _ensure_file_handler(logs_config: dict[str, Any]) -> Handler | None:

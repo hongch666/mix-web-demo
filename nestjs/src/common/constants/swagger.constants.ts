@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 /**
  * Swagger/OpenAPI 配置常量
  */
@@ -44,4 +46,79 @@ export class SwaggerConfig {
     ["表格列设置", "用户表格列配置相关API，包括列配置的查询、保存与删除"],
     ["SQL工具", "SQL 执行工具相关API，用于安全的数据库查询与操作"],
   ];
+
+  // ===== 错误响应 =====
+
+  /** 401 响应描述，用户未登录或令牌失效 */
+  static readonly UNAUTHORIZED_DESCRIPTION = "用户未登录或登录已失效";
+  /** 统一错误响应注入到 components.schemas 的 schema 名 */
+  static readonly ERROR_SCHEMA_NAME = "ErrorResponse";
+  /** 统一错误响应 schema 的描述 */
+  static readonly ERROR_SCHEMA_DESCRIPTION = "统一错误响应";
+  /** 统一成功响应 schema 的描述 */
+  static readonly SUCCESS_SCHEMA_DESCRIPTION = "统一接口响应体";
+  /** 响应体 code 字段的描述，成功与错误响应共用 */
+  static readonly SCHEMA_CODE_DESCRIPTION = "响应码，与 HTTP 状态码一致";
+  /** 响应体 msg 字段的描述，成功与错误响应共用 */
+  static readonly SCHEMA_MSG_DESCRIPTION = "响应消息";
+  /** 响应体 data 字段的默认描述 */
+  static readonly SCHEMA_DATA_DESCRIPTION = "返回数据";
+  /** 400 响应描述，参数校验失败 */
+  static readonly BAD_REQUEST_DESCRIPTION = "请求参数校验失败";
+  /** 500 响应描述，未捕获异常 */
+  static readonly INTERNAL_ERROR_DESCRIPTION = "服务器内部错误";
+  /** 网关 block-internal 拦截的 403 响应描述，与 apisix.yaml 的 response_example 对齐 */
+  static readonly FORBIDDEN_DESCRIPTION = "内部接口禁止外部访问";
+  /** 各接口统一注入的 400、401、500 错误响应码与描述 */
+  static readonly COMMON_ERROR_RESPONSES: ReadonlyArray<
+    readonly [string, string]
+  > = [
+    ["400", this.BAD_REQUEST_DESCRIPTION],
+    ["401", this.UNAUTHORIZED_DESCRIPTION],
+    ["500", this.INTERNAL_ERROR_DESCRIPTION],
+  ];
+
+  // ===== 模型提升 =====
+
+  /** 具名模型的服务前缀，避免与其他服务在同名路径上互相覆盖模型 */
+  static readonly SERVICE_MODEL_PREFIX = "Nestjs";
+  /** 参与模型提升与可空标记的 HTTP 方法 */
+  static readonly OPERATION_METHODS: ReadonlySet<string> = new Set([
+    "get",
+    "post",
+    "put",
+    "delete",
+    "patch",
+    "head",
+    "options",
+    "trace",
+  ]);
+  /** 判定内联 schema 是否值得提升为具名模型的结构键 */
+  static readonly STRUCTURAL_SCHEMA_KEYS: readonly string[] = [
+    "properties",
+    "items",
+    "allOf",
+    "anyOf",
+    "oneOf",
+    "enum",
+  ];
+  /** SSE 事件流的媒体类型，响应需保持内联以便 Apifox 渲染帧节点 */
+  static readonly STREAM_MEDIA_TYPE = "text/event-stream";
+  /** 不参与模型提升的媒体类型集合 */
+  static readonly NON_HOISTED_MEDIA_TYPES: ReadonlySet<string> = new Set([
+    this.STREAM_MEDIA_TYPE,
+  ]);
+
+  // ===== 可空标记 =====
+
+  /** OpenAPI 3.1 里表示允许为 null 的类型标记 */
+  static readonly NULL_TYPE = "null";
+
+  // ===== 网关黑名单 =====
+
+  /** 网关黑名单 JSON 路径，由 swag-init.sh 在文档生成前从 apisix.yaml 抽取 */
+  static readonly GATEWAY_BLOCKLIST_JSON = resolve(
+    process.cwd(),
+    "../scripts/generated/gateway-blocklist.json",
+  );
 }

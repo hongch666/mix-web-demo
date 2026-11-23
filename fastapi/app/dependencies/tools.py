@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from app.core.constants import ToolLabels
 from app.internal.agents import (
     AgentToolFactories,
     ClickHouseWarehouseTools,
@@ -89,15 +90,15 @@ def build_agent_tool_factories(
     """按稳定依赖单例构造一次工具工厂集合，供六个模型服务的 lru_cache 命中"""
     return AgentToolFactories(
         sql_tools=(
-            ("FastAPI", provide_fastapi_sql_tool),
-            ("Spring", partial(provide_spring_sql_tool, spring_client)),
-            ("GoZero", partial(provide_gozero_sql_tool, gozero_client)),
-            ("NestJS", partial(provide_nestjs_sql_tool, nestjs_client)),
+            (ToolLabels.SQL_FASTAPI, provide_fastapi_sql_tool),
+            (ToolLabels.SQL_SPRING, partial(provide_spring_sql_tool, spring_client)),
+            (ToolLabels.SQL_GOZERO, partial(provide_gozero_sql_tool, gozero_client)),
+            (ToolLabels.SQL_NESTJS, partial(provide_nestjs_sql_tool, nestjs_client)),
         ),
         rag=("RAG", partial(provide_rag_tools, vector_mapper)),
-        neo4j=("Neo4j 知识图谱", provide_neo4j_tools),
-        mongodb=("MongoDB 日志", partial(provide_mongodb_tools, nestjs_client)),
-        warehouse=("ClickHouse 数仓", provide_warehouse_tools),
+        neo4j=(ToolLabels.NEO4J, provide_neo4j_tools),
+        mongodb=(ToolLabels.MONGODB, partial(provide_mongodb_tools, nestjs_client)),
+        warehouse=(ToolLabels.WAREHOUSE, provide_warehouse_tools),
         mcp_servers=(("MCP 服务", provide_mcp_tools),),
     )
 

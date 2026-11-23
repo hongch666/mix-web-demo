@@ -746,6 +746,33 @@ export class Messages {
   static readonly OSS_CLEANUP_FAILED = (message: string): string =>
     `OSS 对象清理任务失败: ${message}`;
 
+  // ===== 动态校验与日志文案 =====
+
+  /** 构造聚合管道阶段数超过上限的校验消息 */
+  static readonly MONGO_PIPELINE_STAGES_EXCEEDED = (
+    maxStages: number,
+  ): string => `聚合管道阶段数不能超过 ${maxStages}`;
+
+  /** 构造 MongoDB 返回条数超过上限的校验消息 */
+  static readonly MONGO_RESULT_LIMIT_EXCEEDED = (maxDocs: number): string =>
+    `返回条数最大为${maxDocs}`;
+
+  /** 构造 multipart 请求类型的日志文本 */
+  static readonly MULTIPART_REQUEST_TYPE = (uploadMark: string): string =>
+    `RequestType: multipart/form-data ${uploadMark}`;
+
+  /** 构造 OpenAPI 文档生成成功的日志消息 */
+  static readonly OPENAPI_DOC_GENERATED = (
+    jsonPath: string,
+    yamlPath: string,
+    pathCount: number,
+  ): string =>
+    `NestJS OpenAPI 文档已生成: ${jsonPath}、${yamlPath}（接口路径 ${pathCount} 个）`;
+
+  /** 构造 OpenAPI 文档生成失败的日志消息 */
+  static readonly OPENAPI_DOC_GENERATION_FAILED = (): string =>
+    "NestJS OpenAPI 文档生成失败";
+
   /** 在用引用来源查询不完整时跳过删除的日志消息 */
   static readonly OSS_CLEANUP_SKIP_DELETE_ON_PARTIAL_SCAN =
     "在用引用来源查询不完整，跳过本轮删除以避免误删";
@@ -979,9 +1006,6 @@ export class Messages {
   static readonly FILE_NO_VALID_METHOD =
     "文件对象既没有 file 属性也没有 toBuffer 方法";
 
-  /** Word 文件保存路径未配置的错误消息 */
-  static readonly WORD_FILE_PATH_NOT_CONFIGURED = "Word 文件保存路径未配置";
-
   /** 未找到文件分片的错误消息 */
   static readonly FILE_PART_NOT_FOUND = "未找到文件部分";
 
@@ -1053,4 +1077,183 @@ export class Messages {
   /** 禁止执行多条 SQL 的校验消息 */
   static readonly SQL_PROXY_MULTIPLE_STATEMENTS =
     "安全限制：禁止执行多条SQL语句";
+
+  // ===== API 日志参数文案 =====
+
+  /** 文件上传请求体在日志中的占位标记 */
+  static readonly FILE_UPLOAD_MARK = "[文件上传]";
+
+  /** GET 请求无法推断查询参数名时使用的兜底名称 */
+  static readonly QUERY_PARAM_FALLBACK = "Query参数";
+
+  // ===== 通用 DTO 校验消息 =====
+
+  /** 用户 ID 必须为数字的校验消息 */
+  static readonly DTO_USER_ID_MUST_BE_NUMBER = "用户ID必须是数字";
+
+  /** 用户 ID 不能为空的校验消息 */
+  static readonly DTO_USER_ID_NOT_EMPTY = "用户ID不能为空";
+
+  /** 用户名必须为字符串的校验消息 */
+  static readonly DTO_USERNAME_MUST_BE_STRING = "用户名必须是字符串";
+
+  /** 用户名不能为空的校验消息 */
+  static readonly DTO_USERNAME_NOT_EMPTY = "用户名不能为空";
+
+  /** 开始时间必须为字符串的校验消息 */
+  static readonly DTO_START_TIME_MUST_BE_STRING = "开始时间必须是字符串";
+
+  /** 结束时间必须为字符串的校验消息 */
+  static readonly DTO_END_TIME_MUST_BE_STRING = "结束时间必须是字符串";
+
+  /** 页码必须为数字字符串的校验消息 */
+  static readonly DTO_PAGE_MUST_BE_NUMBER_STRING = "页码必须是数字字符串";
+
+  /** 每页条数必须为数字字符串的校验消息 */
+  static readonly DTO_PAGE_SIZE_MUST_BE_NUMBER_STRING =
+    "每页条数必须是数字字符串";
+
+  /** 翻页游标必须为字符串的校验消息 */
+  static readonly DTO_CURSOR_MUST_BE_STRING = "翻页游标必须是字符串";
+
+  /** 用户 ID 必须为数字字符串的校验消息 */
+  static readonly DTO_USER_ID_MUST_BE_NUMBER_STRING = "用户ID必须是数字字符串";
+
+  // ===== API 日志 DTO 校验消息 =====
+
+  /** API 描述必须为字符串的校验消息 */
+  static readonly DTO_API_DESCRIPTION_MUST_BE_STRING = "API描述必须是字符串";
+
+  /** API 描述不能为空的校验消息 */
+  static readonly DTO_API_DESCRIPTION_NOT_EMPTY = "API描述不能为空";
+
+  /** API 路径必须为字符串的校验消息 */
+  static readonly DTO_API_PATH_MUST_BE_STRING = "API路径必须是字符串";
+
+  /** API 路径不能为空的校验消息 */
+  static readonly DTO_API_PATH_NOT_EMPTY = "API路径不能为空";
+
+  /** API 方法必须为有效枚举值的校验消息 */
+  static readonly DTO_API_METHOD_INVALID_ENUM = "API方法必须是有效的枚举值";
+
+  /** API 方法不能为空的校验消息 */
+  static readonly DTO_API_METHOD_NOT_EMPTY = "API方法不能为空";
+
+  /** 响应时间必须为数字的校验消息 */
+  static readonly DTO_RESPONSE_TIME_MUST_BE_NUMBER = "响应时间必须是数字";
+
+  /** 响应时间不能为空的校验消息 */
+  static readonly DTO_RESPONSE_TIME_NOT_EMPTY = "响应时间不能为空";
+
+  // ===== 文章日志 DTO 校验消息 =====
+
+  /** 文章 ID 必须为数字的校验消息 */
+  static readonly DTO_ARTICLE_ID_MUST_BE_NUMBER = "文章ID必须是数字";
+
+  /** 文章 ID 不能为空的校验消息 */
+  static readonly DTO_ARTICLE_ID_NOT_EMPTY = "文章ID不能为空";
+
+  /** 文章 ID 必须为数字字符串的校验消息 */
+  static readonly DTO_ARTICLE_ID_MUST_BE_NUMBER_STRING =
+    "文章ID必须是数字字符串";
+
+  /** 操作类型必须为有效枚举值的校验消息 */
+  static readonly DTO_ACTION_INVALID_ENUM = "操作类型必须是有效的枚举值";
+
+  /** 操作说明必须为字符串的校验消息 */
+  static readonly DTO_ACTION_MESSAGE_MUST_BE_STRING = "操作说明必须是字符串";
+
+  /** 文章标题必须为字符串的校验消息 */
+  static readonly DTO_ARTICLE_TITLE_MUST_BE_STRING = "文章标题必须是字符串";
+
+  // ===== MongoDB DTO 校验消息 =====
+
+  /** 集合名称必须为字符串的校验消息 */
+  static readonly DTO_COLLECTION_NAME_MUST_BE_STRING = "集合名称必须是字符串";
+
+  /** 集合名称不能为空的校验消息 */
+  static readonly DTO_COLLECTION_NAME_NOT_EMPTY = "集合名称不能为空";
+
+  /** 过滤条件必须为对象的校验消息 */
+  static readonly DTO_FILTER_MUST_BE_OBJECT = "过滤条件必须是对象";
+
+  /** 返回条数必须为整数的校验消息 */
+  static readonly DTO_LIMIT_MUST_BE_INT = "返回条数必须是整数";
+
+  /** 返回条数不得小于 1 的校验消息 */
+  static readonly DTO_LIMIT_MIN_ONE = "返回条数最小为1";
+
+  /** 返回条数不得大于 50 的校验消息 */
+  static readonly DTO_LIMIT_MAX_FIFTY = "返回条数最大为50";
+
+  /** 聚合管道必须为数组的校验消息 */
+  static readonly DTO_PIPELINE_MUST_BE_ARRAY = "聚合管道必须是数组";
+
+  /** 聚合管道至少需要一个阶段的校验消息 */
+  static readonly DTO_PIPELINE_MIN_ONE_STAGE = "聚合管道至少需要一个阶段";
+
+  // ===== 表格设置 DTO 校验消息 =====
+
+  /** 列标识不能为空的校验消息 */
+  static readonly DTO_COLUMN_KEY_NOT_EMPTY = "列标识不能为空";
+
+  /** 列配置必须为数组的校验消息 */
+  static readonly DTO_COLUMNS_MUST_BE_ARRAY = "列配置必须是数组";
+
+  /** 列配置项格式不正确的校验消息 */
+  static readonly DTO_COLUMN_ITEM_INVALID = "列配置项格式不正确";
+
+  /** 目标用户 ID 必须为整数的校验消息 */
+  static readonly DTO_TARGET_USER_ID_MUST_BE_INT = "目标用户ID必须是整数";
+
+  /** 目标用户 ID 必须大于 0 的校验消息 */
+  static readonly DTO_TARGET_USER_ID_POSITIVE = "目标用户ID必须大于0";
+
+  /** 页面标识长度超出范围的校验消息 */
+  static readonly DTO_TABLE_KEY_LENGTH_INVALID = "页面标识长度必须在1到64之间";
+
+  /** 页面标识包含非法字符的校验消息 */
+  static readonly DTO_TABLE_KEY_CHARSET_INVALID =
+    "页面标识只能包含字母、数字、下划线与中划线";
+
+  // ===== 上传 DTO 校验消息 =====
+
+  /** 本地文件路径必须为字符串的校验消息 */
+  static readonly DTO_LOCAL_FILE_MUST_BE_STRING = "本地文件路径必须是字符串";
+
+  /** 本地文件路径不能为空的校验消息 */
+  static readonly DTO_LOCAL_FILE_NOT_EMPTY = "本地文件路径不能为空";
+
+  /** OSS 目标路径必须为字符串的校验消息 */
+  static readonly DTO_OSS_FILE_MUST_BE_STRING = "OSS目标路径必须是字符串";
+
+  /** OSS 目标路径不能为空的校验消息 */
+  static readonly DTO_OSS_FILE_NOT_EMPTY = "OSS目标路径不能为空";
+
+  // ===== 邮件 DTO 校验消息 =====
+
+  /** 邮箱格式不正确的校验消息 */
+  static readonly DTO_EMAIL_FORMAT_INVALID = "邮箱格式不正确";
+
+  /** 邮箱不能为空的校验消息 */
+  static readonly DTO_EMAIL_NOT_EMPTY = "邮箱不能为空";
+
+  /** 验证码必须为字符串的校验消息 */
+  static readonly DTO_VERIFICATION_CODE_MUST_BE_STRING = "验证码必须是字符串";
+
+  /** 验证码不能为空的校验消息 */
+  static readonly DTO_VERIFICATION_CODE_NOT_EMPTY = "验证码不能为空";
+
+  /** 验证码类型取值非法的校验消息 */
+  static readonly DTO_VERIFICATION_CODE_TYPE_INVALID =
+    "验证码类型只能是 register、login 或 reset";
+
+  /** 验证码类型不能为空的校验消息 */
+  static readonly DTO_VERIFICATION_CODE_TYPE_NOT_EMPTY = "验证码类型不能为空";
+
+  /** 过期时间必须为整数的校验消息 */
+  static readonly DTO_EXPIRE_MINUTES_MUST_BE_INT = "过期时间必须是整数";
+
+  /** 过期时间小于下限的校验消息 */
+  static readonly DTO_EXPIRE_MINUTES_TOO_SMALL = "过期时间不能小于 1 分钟";
 }

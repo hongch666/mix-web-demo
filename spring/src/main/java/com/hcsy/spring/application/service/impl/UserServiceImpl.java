@@ -228,8 +228,10 @@ public class UserServiceImpl implements UserService {
                 .switchIfEmpty(Mono.error(unauthorized(Messages.LOGIN))))
             .flatMap(user -> validatePassword(loginDTO.getPassword(), user).then(loginUser(user)))
             .flatMap(login -> imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId()).thenReturn(login))
-            .doOnSuccess(ignored -> metricsRecorder.increment(MetricNames.USER_LOGIN, "result", "success"))
-            .doOnError(ignored -> metricsRecorder.increment(MetricNames.USER_LOGIN, "result", "failure"));
+            .doOnSuccess(ignored -> metricsRecorder.increment(
+                MetricNames.USER_LOGIN, "result", Defaults.METRIC_STATUS_SUCCESS))
+            .doOnError(ignored -> metricsRecorder.increment(
+                MetricNames.USER_LOGIN, "result", Defaults.METRIC_STATUS_FAILURE));
     }
 
     /**
@@ -328,8 +330,10 @@ public class UserServiceImpl implements UserService {
             })
             // 返回注册用户，便于上层把新增主键用于精确同步
             .flatMap(user -> emailVerificationService.markEmailAsVerified(dto.getEmail()).thenReturn(user))
-            .doOnSuccess(ignored -> metricsRecorder.increment(MetricNames.USER_REGISTER, "result", "success"))
-            .doOnError(ignored -> metricsRecorder.increment(MetricNames.USER_REGISTER, "result", "failure"));
+            .doOnSuccess(ignored -> metricsRecorder.increment(
+                MetricNames.USER_REGISTER, "result", Defaults.METRIC_STATUS_SUCCESS))
+            .doOnError(ignored -> metricsRecorder.increment(
+                MetricNames.USER_REGISTER, "result", Defaults.METRIC_STATUS_FAILURE));
     }
 
     /**

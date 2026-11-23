@@ -18,7 +18,7 @@ router: APIRouter = APIRouter(
     description="根据输入文本生成tags数组",
     response_model=ApiResponse[list[str]],
 )
-@log("生成tags")
+@log(Messages.API_LOG_DESC_GENERATE_TAGS)
 async def generate_tags(
     request: Request,
     data: GenerateDTO,
@@ -36,7 +36,7 @@ async def generate_tags(
     description="为指定文章创建AI评论",
     response_model=ApiResponse[GenerateCommentTaskResponse],
 )
-@log("文章创建AI评论")
+@log(Messages.API_LOG_DESC_ARTICLE_AI_COMMENT)
 async def create_article_ai_comment(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -61,7 +61,7 @@ async def create_article_ai_comment(
     description="为指定文章创建基于权威参考文本的AI评论，使用权威参考文本进行评价打分",
     response_model=ApiResponse[GenerateCommentTaskResponse],
 )
-@log("文章创建基于权威参考文本的AI评论")
+@log(Messages.API_LOG_DESC_ARTICLE_AI_COMMENT_WITH_REFERENCE)
 async def create_article_ai_comment_with_reference(
     request: Request,
     background_tasks: BackgroundTasks,

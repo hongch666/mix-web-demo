@@ -10,21 +10,9 @@ import {
   TraceIdRatioBasedSampler,
 } from "@opentelemetry/sdk-trace-base";
 import { Messages, TelemetryConstants } from "src/common/constants";
+import type { TelemetryConfig } from "src/common/interfaces/telemetryConfig.interface";
 import config from "src/config";
 import { startMetricsServer } from "./metrics.server";
-
-/**
- * OpenTelemetry 遥测配置结构，包含开关、服务名、链路上报地址、采样器及指标服务端口与路径
- */
-interface TelemetryConfig {
-  enabled: boolean;
-  serviceName: string;
-  tracesEndpoint: string;
-  sampler: string;
-  samplerArg: string;
-  metricsPort: number;
-  metricsEndpoint: string;
-}
 
 const telemetryConfig: TelemetryConfig = config.telemetry as TelemetryConfig;
 let metricsServer: Server | undefined;

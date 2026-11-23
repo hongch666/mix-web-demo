@@ -10,13 +10,14 @@ import {
   Min,
   ValidateNested,
 } from "class-validator";
+import { Messages } from "src/common/constants";
 
 /**
  * 单列配置项
  */
 export class ColumnConfigDto {
   @ApiProperty({ description: "列标识", example: "title" })
-  @IsNotEmpty({ message: "列标识不能为空" })
+  @IsNotEmpty({ message: Messages.DTO_COLUMN_KEY_NOT_EMPTY })
   key!: string;
 
   @ApiProperty({ description: "是否可见", example: true })
@@ -42,8 +43,8 @@ export class SaveTableSettingsDto {
       { key: "category", visible: false, order: 2, width: 100 },
     ],
   })
-  @IsArray({ message: "列配置必须是数组" })
-  @ValidateNested({ each: true, message: "列配置项格式不正确" })
+  @IsArray({ message: Messages.DTO_COLUMNS_MUST_BE_ARRAY })
+  @ValidateNested({ each: true, message: Messages.DTO_COLUMN_ITEM_INVALID })
   @Type(() => ColumnConfigDto)
   columns!: ColumnConfigDto[];
 }
@@ -60,8 +61,8 @@ export class TableSettingsQueryDto {
   })
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: "目标用户ID必须是整数" })
-  @Min(1, { message: "目标用户ID必须大于0" })
+  @IsInt({ message: Messages.DTO_TARGET_USER_ID_MUST_BE_INT })
+  @Min(1, { message: Messages.DTO_TARGET_USER_ID_POSITIVE })
   user_id?: number;
 }
 
@@ -71,9 +72,9 @@ export class TableSettingsQueryDto {
  */
 export class TableKeyParamDto {
   @ApiProperty({ description: "页面标识", example: "articles" })
-  @Length(1, 64, { message: "页面标识长度必须在1到64之间" })
+  @Length(1, 64, { message: Messages.DTO_TABLE_KEY_LENGTH_INVALID })
   @Matches(/^[A-Za-z0-9_-]+$/, {
-    message: "页面标识只能包含字母、数字、下划线与中划线",
+    message: Messages.DTO_TABLE_KEY_CHARSET_INVALID,
   })
   table_key!: string;
 }

@@ -65,7 +65,7 @@ func serveEmbeddedDocs(w http.ResponseWriter, name, notFound string) {
 		return
 	}
 	if contentType, ok := swaggerContentTypes[path.Ext(name)]; ok {
-		w.Header().Set("Content-Type", contentType)
+		w.Header().Set(constants.HeaderContentType, contentType)
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(content)

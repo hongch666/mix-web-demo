@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"app/common/client"
+	"app/common/constants"
 	"app/common/utils"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -25,7 +26,7 @@ func NewNestjsClient(
 	tokenUtil *utils.InternalTokenUtil,
 ) *NestjsClient {
 	return &NestjsClient{
-		serviceName:  "nestjs",
+		serviceName:  constants.NestjsServiceName,
 		namingClient: nc,
 		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig, logger, tokenUtil),
 	}

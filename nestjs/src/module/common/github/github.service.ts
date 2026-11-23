@@ -4,6 +4,7 @@ import axios, { AxiosResponse } from "axios";
 import { randomUUID } from "crypto";
 import { Defaults, ErrorIds, Messages, RedisKeys } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
+import type { GithubOAuthConfig } from "src/common/interfaces/githubConfig.interface";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { SpringClientService } from "src/module/common/client/springClient.service";
 import { RedisService } from "src/module/common/redis/redis.service";
@@ -11,23 +12,6 @@ import {
   GithubAuthorizeQueryDto,
   GithubCallbackQueryDto,
 } from "./dto/github.dto";
-
-/**
- * GitHub OAuth 配置，包含客户端凭据、授权与令牌端点地址及前端成功失败跳转页
- */
-interface GithubOAuthConfig {
-  clientId: string;
-  clientSecret: string;
-  redirectUri: string;
-  scope: string;
-  authorizeUrl: string;
-  accessTokenUrl: string;
-  userApiUrl: string;
-  emailsApiUrl: string;
-  apiVersion: string;
-  frontendSuccessUrl: string;
-  frontendFailureUrl: string;
-}
 
 /**
  * 获取授权地址的结果，包含拼接好的授权 URL 与对应的 state 值

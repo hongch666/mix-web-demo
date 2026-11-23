@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 
 import type { INestApplication } from "@nestjs/common";
 import type { OpenAPIObject } from "@nestjs/swagger";
@@ -7,24 +6,6 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import type { OperationObject } from "@nestjs/swagger/dist/interfaces/open-api-spec.interface";
 import { SwaggerConfig } from "src/common/constants";
 import { applySwaggerSnakeCase } from "src/common/utils/swaggerSnakeCase";
-
-/** 401 统一错误响应的描述文案 */
-const UNAUTHORIZED_DESCRIPTION = "用户未登录或登录已失效";
-
-/** 统一错误响应的 schema 名 */
-const ERROR_SCHEMA_NAME = "ErrorResponse";
-
-/**
- * 全局通用错误码与描述
- *
- * 400 由全局 ValidationPipe 与守卫参数校验抛出，401 由鉴权守卫抛出，
- * 500 由 AllExceptionsFilter 兜底，三类响应对所有接口通用
- */
-const COMMON_ERROR_RESPONSES: ReadonlyArray<readonly [string, string]> = [
-  ["400", "请求参数校验失败"],
-  ["401", UNAUTHORIZED_DESCRIPTION],
-  ["500", "服务器内部错误"],
-];
 
 /**
  * 为所有接口补全局通用错误响应（400、401、500）
@@ -35,18 +16,24 @@ const COMMON_ERROR_RESPONSES: ReadonlyArray<readonly [string, string]> = [
 function applyCommonErrorResponses(document: OpenAPIObject): void {
   const schemas = document.components?.schemas;
   if (schemas) {
-    schemas[ERROR_SCHEMA_NAME] = {
+    schemas[SwaggerConfig.ERROR_SCHEMA_NAME] = {
       type: "object",
-      description: "统一错误响应",
+      description: SwaggerConfig.ERROR_SCHEMA_DESCRIPTION,
       properties: {
         code: {
           type: "integer",
           format: "int32",
           example: 400,
-          description: "响应码，与 HTTP 状态码一致",
+          description: SwaggerConfig.SCHEMA_CODE_DESCRIPTION,
         },
-        msg: { type: "string", description: "响应消息" },
-        data: { type: "null", description: "返回数据" },
+        msg: {
+          type: "string",
+          description: SwaggerConfig.SCHEMA_MSG_DESCRIPTION,
+        },
+        data: {
+          type: "null",
+          description: SwaggerConfig.SCHEMA_DATA_DESCRIPTION,
+        },
       },
       required: ["code", "msg", "data"],
     };
@@ -61,10 +48,12 @@ function applyCommonErrorResponses(document: OpenAPIObject): void {
       const responses = { ...(op.responses ?? {}) };
       const errorContent = {
         "application/json": {
-          schema: { $ref: `#/components/schemas/${ERROR_SCHEMA_NAME}` },
+          schema: {
+            $ref: `#/components/schemas/${SwaggerConfig.ERROR_SCHEMA_NAME}`,
+          },
         },
       };
-      for (const [code, description] of COMMON_ERROR_RESPONSES) {
+      for (const [code, description] of SwaggerConfig.COMMON_ERROR_RESPONSES) {
         if (responses[code]) {
           continue;
         }
@@ -96,19 +85,12 @@ function isErrorStatus(code: string): boolean {
   return Number.isInteger(value) && value >= 400 && value <= 599;
 }
 
-/** 网关 block-internal 路由返回的 403 描述，与 apisix.yaml 的 response_example 对齐 */
-const GATEWAY_FORBIDDEN_DESCRIPTION = "内部接口禁止外部访问";
-
-/** 共享的网关黑名单 JSON（由 scripts/docs/swag-init.sh 在生成前从 apisix.yaml 抽取） */
-const GATEWAY_BLOCKLIST_JSON = resolve(
-  process.cwd(),
-  "../scripts/generated/gateway-blocklist.json",
-);
-
 /** 读取网关黑名单，文件不存在时返回空数组（单独构建文档时跳过注入） */
 function loadGatewayBlocklist(): string[] {
   try {
-    const data = JSON.parse(readFileSync(GATEWAY_BLOCKLIST_JSON, "utf-8")) as {
+    const data = JSON.parse(
+      readFileSync(SwaggerConfig.GATEWAY_BLOCKLIST_JSON, "utf-8"),
+    ) as {
       uris?: string[];
     };
     return data.uris ?? [];
@@ -149,16 +131,18 @@ function applyGatewayInternalResponses(document: OpenAPIObject): void {
         | undefined;
       if (existing) {
         // 网关是外部第一道关，被拦截的接口统一用网关描述覆盖应用级 403
-        existing.description = GATEWAY_FORBIDDEN_DESCRIPTION;
+        existing.description = SwaggerConfig.FORBIDDEN_DESCRIPTION;
         continue;
       }
       op.responses = {
         ...(op.responses ?? {}),
         "403": {
-          description: GATEWAY_FORBIDDEN_DESCRIPTION,
+          description: SwaggerConfig.FORBIDDEN_DESCRIPTION,
           content: {
             "application/json": {
-              schema: { $ref: `#/components/schemas/${ERROR_SCHEMA_NAME}` },
+              schema: {
+                $ref: `#/components/schemas/${SwaggerConfig.ERROR_SCHEMA_NAME}`,
+              },
             },
           },
         },
@@ -166,36 +150,6 @@ function applyGatewayInternalResponses(document: OpenAPIObject): void {
     }
   }
 }
-
-/** 提升为具名响应模型时加的服务前缀，避免与其他服务在同名路径上互相覆盖模型 */
-const SERVICE_MODEL_PREFIX = "Nestjs";
-
-/** 参与模型提升的 HTTP 方法 */
-const OPERATION_METHODS: ReadonlySet<string> = new Set([
-  "get",
-  "post",
-  "put",
-  "delete",
-  "patch",
-  "head",
-  "options",
-  "trace",
-]);
-
-/** 只有带结构信息的内联 schema 才提升为具名模型，裸 object 与标量提升后只是噪音 */
-const STRUCTURAL_SCHEMA_KEYS: readonly string[] = [
-  "properties",
-  "items",
-  "allOf",
-  "anyOf",
-  "oneOf",
-  "enum",
-];
-
-/** SSE 帧必须保持内联：Apifox 依赖内联的帧 schema 渲染 text/event-stream 响应 */
-const NON_HOISTED_MEDIA_TYPES: ReadonlySet<string> = new Set([
-  "text/event-stream",
-]);
 
 /** 文档树上的宽松对象视图，便于按结构遍历而不逐层声明类型 */
 type LooseRecord = Record<string, unknown>;
@@ -237,7 +191,7 @@ function buildModelName(
   const statusSuffix: string =
     status === undefined || status === "200" ? "" : toPascalName(status);
   const methodSuffix: string = toPascalName(method);
-  return `${SERVICE_MODEL_PREFIX}${segments}${methodSuffix}${statusSuffix}${suffix}`;
+  return `${SwaggerConfig.SERVICE_MODEL_PREFIX}${segments}${methodSuffix}${statusSuffix}${suffix}`;
 }
 
 /**
@@ -274,7 +228,7 @@ function hoistMediaSchemas(
   status?: string,
 ): void {
   for (const [mediaType, rawMedia] of Object.entries(content)) {
-    if (NON_HOISTED_MEDIA_TYPES.has(mediaType)) {
+    if (SwaggerConfig.NON_HOISTED_MEDIA_TYPES.has(mediaType)) {
       continue;
     }
     const media = rawMedia as LooseRecord | undefined;
@@ -285,7 +239,9 @@ function hoistMediaSchemas(
     if ("$ref" in schema) {
       continue;
     }
-    if (!STRUCTURAL_SCHEMA_KEYS.some((key: string) => key in schema)) {
+    if (
+      !SwaggerConfig.STRUCTURAL_SCHEMA_KEYS.some((key: string) => key in schema)
+    ) {
       continue;
     }
     const name: string = reserveModelName(
@@ -320,7 +276,7 @@ function hoistInlineSchemas(document: OpenAPIObject): void {
     for (const [method, rawOperation] of Object.entries(
       rawPathItem as unknown as LooseRecord,
     )) {
-      if (!OPERATION_METHODS.has(method)) {
+      if (!SwaggerConfig.OPERATION_METHODS.has(method)) {
         continue;
       }
       const operation = rawOperation as LooseRecord | undefined;
@@ -346,7 +302,7 @@ function hoistInlineSchemas(document: OpenAPIObject): void {
           continue;
         }
         // 事件流响应整体保持内联，换成 $ref 会丢掉帧节点名
-        if ("text/event-stream" in content) {
+        if (SwaggerConfig.STREAM_MEDIA_TYPE in content) {
           continue;
         }
         hoistMediaSchemas(schemas, path, method, "Response", content, status);
@@ -354,9 +310,6 @@ function hoistInlineSchemas(document: OpenAPIObject): void {
     }
   }
 }
-
-/** OpenAPI 3.1 里表示「允许为 null」的类型标记 */
-const NULL_TYPE = "null";
 
 /**
  * 给可空字段补上 null 类型
@@ -378,7 +331,7 @@ function markNullableProperties(document: OpenAPIObject): void {
     for (const [method, rawOperation] of Object.entries(
       rawPathItem as unknown as LooseRecord,
     )) {
-      if (!OPERATION_METHODS.has(method)) {
+      if (!SwaggerConfig.OPERATION_METHODS.has(method)) {
         continue;
       }
       const operation = rawOperation as LooseRecord | undefined;
@@ -466,15 +419,15 @@ function markPropertyNullable(property: LooseRecord | undefined): void {
   }
   const type = property.type;
   if (Array.isArray(type)) {
-    if (!type.includes(NULL_TYPE)) {
-      type.push(NULL_TYPE);
+    if (!type.includes(SwaggerConfig.NULL_TYPE)) {
+      type.push(SwaggerConfig.NULL_TYPE);
     }
     return;
   }
-  if (typeof type !== "string" || type === NULL_TYPE) {
+  if (typeof type !== "string" || type === SwaggerConfig.NULL_TYPE) {
     return;
   }
-  property.type = [type, NULL_TYPE];
+  property.type = [type, SwaggerConfig.NULL_TYPE];
 }
 
 /**

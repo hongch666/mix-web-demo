@@ -10,8 +10,15 @@ import { ClsService } from "nestjs-cls";
 import CircuitBreaker from "opossum";
 import * as os from "os";
 import qs from "qs";
-import { Defaults, ErrorIds, HttpCode, Messages } from "src/common/constants";
+import {
+  Defaults,
+  ErrorIds,
+  HeaderNames,
+  HttpCode,
+  Messages,
+} from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
+import type { RemoteCallConfig } from "src/common/interfaces/remoteCallConfig.interface";
 import { InternalTokenUtil } from "src/common/utils/internalToken.util";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { clientDuration, clientRequests } from "../telemetry/metrics";
@@ -27,22 +34,6 @@ interface CallOptions {
   queryParams?: Record<string, string>;
   body?: Record<string, unknown>;
   headers?: Record<string, string>;
-}
-
-/**
- * 远程调用配置，包含超时、重试与指数退避参数及熔断器各项阈值
- */
-interface RemoteCallConfig {
-  timeout: number;
-  maxRetries: number;
-  initialBackoff: number;
-  maxBackoff: number;
-  circuitBreaker: {
-    timeout: number;
-    errorThresholdPercentage: number;
-    resetTimeout: number;
-    volumeThreshold: number;
-  };
 }
 
 /** 注册到 Nacos 的实例参数，注销时需要回传同一份 */
@@ -378,12 +369,13 @@ export class NacosService implements OnModuleInit, OnModuleDestroy {
     const safeUserName: string =
       userName.replace(/[^\x20-\x7E]/g, "").trim() || "system";
     const defaultHeaders: Record<string, string> = {
-      "X-User-Id": String(userId || 0),
-      "X-Username": safeUserName,
-      "X-Session-Id": sessionId,
+      [HeaderNames.USER_ID]: String(userId || 0),
+      [HeaderNames.USERNAME]: safeUserName,
+      [HeaderNames.SESSION_ID]: sessionId,
     };
     if (token) {
-      defaultHeaders["Authorization"] = `Bearer ${token}`;
+      defaultHeaders[HeaderNames.AUTHORIZATION] =
+        `${HeaderNames.BEARER_PREFIX}${token}`;
     }
 
     // 生成并添加内部服务令牌 (没有用户ID时用-1代表系统调用)
@@ -393,7 +385,8 @@ export class NacosService implements OnModuleInit, OnModuleDestroy {
         finalUserId,
         this.configService.get<string>("server.serviceName")!,
       );
-    defaultHeaders["X-Internal-Token"] = `Bearer ${internalToken}`;
+    defaultHeaders[HeaderNames.INTERNAL_TOKEN] =
+      `${HeaderNames.BEARER_PREFIX}${internalToken}`;
 
     // 合并默认请求头和自定义请求头
     const headers: Record<string, string> = {
