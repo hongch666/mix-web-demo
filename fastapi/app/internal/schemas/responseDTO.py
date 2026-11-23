@@ -83,7 +83,7 @@ class ArticleViewItem(BaseModel):
 
     article_id: int = Field(description="文章 ID")
     title: Optional[str] = Field(default=None, description="文章标题")
-    view_count: int = Field(description="文章阅读量")
+    views: int = Field(description="文章阅读量")
 
 
 class ArticleViewDistributionResponse(BaseModel):
