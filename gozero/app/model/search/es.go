@@ -11,7 +11,6 @@ import (
 	"app/internal/client/springClient"
 
 	"github.com/olivere/elastic/v7"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 const (
@@ -243,9 +242,9 @@ func (m *searchModel) fillArticleStats(ctx context.Context, articles []ArticleES
 	stats, statsErr := m.springClient.FetchArticleStats(ctx, articleIDs, authorUserIDs)
 
 	// 实时统计整体失败或响应结构不符契约时全部指标降级，不阻断搜索主链路：解析静默失败会让统计与评分长期显示 ES 旧值
-	if statsErr != nil {
-		logx.WithContext(ctx).Slow("[WARN] " + fmt.Sprintf(constants.SEARCH_STATS_FILL_DEGRADE_LOG,
-			strings.Join(constants.SEARCH_STATS_FILL_METRICS, ","), statsErr))
+	if statsErr != nil && m.logger != nil {
+		m.logger.WithContext(ctx).Warningf(constants.SEARCH_STATS_FILL_DEGRADE_LOG,
+			strings.Join(constants.SEARCH_STATS_FILL_METRICS, ","), statsErr)
 	}
 
 	for i := range articles {
