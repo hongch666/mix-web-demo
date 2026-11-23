@@ -258,7 +258,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_list_ApiLogAverageResponse__'
+                $ref: '#/components/schemas/ApiResponse_list_ApiLogResponse__'
         '403':
           description: 无权限访问
           content: &id008
@@ -290,7 +290,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_list_ApiLogCalledCountResponse__'
+                $ref: '#/components/schemas/ApiResponse_list_ApiLogResponse__'
         '403':
           description: 无权限访问
           content: &id009
@@ -1192,7 +1192,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_SearchScriptResponseData_'
+                $ref: '#/components/schemas/ApiResponse_SearchScriptResponse_'
         '403':
           description: 无权限访问
           content: &id035
@@ -1317,7 +1317,7 @@ components:
       - ai_type
       title: AiHistoryResponse
       description: AI 历史记录
-    ApiLogAverageResponse:
+    ApiLogResponse:
       properties:
         api_path:
           type: string
@@ -1346,39 +1346,8 @@ components:
       - api_description
       - avg_response_time
       - call_count
-      title: ApiLogAverageResponse
-      description: 单个接口平均响应时间与调用次数的响应模型
-    ApiLogCalledCountResponse:
-      properties:
-        api_path:
-          type: string
-          title: Api Path
-          description: API 路径
-        api_method:
-          type: string
-          title: Api Method
-          description: 请求方法
-        api_description:
-          type: string
-          title: Api Description
-          description: API 描述
-        call_count:
-          type: integer
-          title: Call Count
-          description: 调用次数
-        avg_response_time:
-          type: number
-          title: Avg Response Time
-          description: 平均响应时间
-      type: object
-      required:
-      - api_path
-      - api_method
-      - api_description
-      - call_count
-      - avg_response_time
-      title: ApiLogCalledCountResponse
-      description: 单个接口调用次数与平均响应时间的响应模型
+      title: ApiLogResponse
+      description: 接口日志统计响应模型，包含平均响应时间与调用次数
     ApiResponse:
       properties:
         code:
@@ -1620,7 +1589,7 @@ components:
       required:
       - code
       title: ApiResponse[ScriptParamsResponse]
-    ApiResponse_SearchScriptResponseData_:
+    ApiResponse_SearchScriptResponse_:
       properties:
         code:
           type: integer
@@ -1628,7 +1597,7 @@ components:
           description: 响应码
         data:
           anyOf:
-          - $ref: '#/components/schemas/SearchScriptResponseData'
+          - $ref: '#/components/schemas/SearchScriptResponse'
           - type: 'null'
           description: 返回数据
         msg:
@@ -1639,7 +1608,7 @@ components:
       type: object
       required:
       - code
-      title: ApiResponse[SearchScriptResponseData]
+      title: ApiResponse[SearchScriptResponse]
     ApiResponse_SearchWeightsResponse_:
       properties:
         code:
@@ -1743,7 +1712,7 @@ components:
       required:
       - code
       title: ApiResponse[list[AiHistoryResponse]]
-    ApiResponse_list_ApiLogAverageResponse__:
+    ApiResponse_list_ApiLogResponse__:
       properties:
         code:
           type: integer
@@ -1752,7 +1721,7 @@ components:
         data:
           anyOf:
           - items:
-              $ref: '#/components/schemas/ApiLogAverageResponse'
+              $ref: '#/components/schemas/ApiLogResponse'
             type: array
           - type: 'null'
           title: Data
@@ -1765,30 +1734,7 @@ components:
       type: object
       required:
       - code
-      title: ApiResponse[list[ApiLogAverageResponse]]
-    ApiResponse_list_ApiLogCalledCountResponse__:
-      properties:
-        code:
-          type: integer
-          title: Code
-          description: 响应码
-        data:
-          anyOf:
-          - items:
-              $ref: '#/components/schemas/ApiLogCalledCountResponse'
-            type: array
-          - type: 'null'
-          title: Data
-          description: 返回数据
-        msg:
-          type: string
-          title: Msg
-          description: 响应消息
-          default: success
-      type: object
-      required:
-      - code
-      title: ApiResponse[list[ApiLogCalledCountResponse]]
+      title: ApiResponse[list[ApiLogResponse]]
     ApiResponse_list_str__:
       properties:
         code:
@@ -2563,17 +2509,17 @@ components:
       - script_params
       title: ScriptParamsResponse
       description: 返回搜索脚本参数映射的响应模型
-    SearchScriptResponseData:
+    SearchScriptResponse:
       properties:
         es_script:
           type: string
           title: Es Script
-          description: ES 搜索脚本
+          description: ES Painless 搜索脚本
       type: object
       required:
       - es_script
-      title: SearchScriptResponseData
-      description: 返回 ES 搜索脚本的响应数据模型
+      title: SearchScriptResponse
+      description: ES 搜索脚本响应 — 包含使用 params.xxx 占位符的 Painless 脚本，由调用方传入权重参数后使用
     SearchWeightsResponse:
       properties:
         weights:

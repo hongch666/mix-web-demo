@@ -19,3 +19,10 @@ class GenerateDTO(BaseModel):
         if not value.strip():
             raise PydanticCustomError("text_empty", Messages.GENERATE_TEXT_EMPTY)
         return value
+
+
+class GenerateCommentTaskResponse(BaseModel):
+    """AI 评论生成任务提交结果的响应模型"""
+
+    message: str = Field(description="任务提交消息")
+    article_id: int = Field(description="文章 ID")

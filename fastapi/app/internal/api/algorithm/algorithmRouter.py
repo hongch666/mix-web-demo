@@ -6,7 +6,7 @@ from app.core.decorators import log, requireInternalToken
 from app.dependencies import AlgorithmServiceDep
 from app.internal.schemas import (
     ScriptParamsResponse,
-    SearchScriptResponseData,
+    SearchScriptResponse,
     SearchWeightsResponse,
 )
 
@@ -37,7 +37,7 @@ async def get_search_weights(
     "/search/script",
     summary="获取 ES 搜索脚本",
     description="返回已嵌入权重参数的 ES Painless 搜索脚本及融合排序权重",
-    response_model=ApiResponse[SearchScriptResponseData],
+    response_model=ApiResponse[SearchScriptResponse],
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @log(Messages.API_LOG_DESC_SEARCH_SCRIPT)
@@ -47,7 +47,7 @@ async def get_search_script(
     algorithm_service: AlgorithmServiceDep,
 ) -> ApiResponse:
     """获取已嵌入权重占位符的 ES Painless 搜索脚本及融合排序权重"""
-    result: SearchScriptResponseData = SearchScriptResponseData.model_validate(
+    result: SearchScriptResponse = SearchScriptResponse.model_validate(
         algorithm_service.get_es_script()
     )
     return success(result)
