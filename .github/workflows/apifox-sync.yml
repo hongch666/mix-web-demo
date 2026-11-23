@@ -9,8 +9,8 @@ name: Apifox Sync
 #   main 为开发分支，不触发（中间态文档不推送，只在合并到 prod 后同步一次）
 #
 # 接口与 README 是两条独立通道，任一侧变更只跑对应那一步：
-#   接口走 Apifox 开放 API（import-openapi），由 scripts/apifox-sync.sh 执行（固定 --no-readme）
-#   README 走 Apifox CLI 的 doc update，由 scripts/apifox-readme-sync.sh 执行
+#   接口走 Apifox 开放 API（import-openapi），由 scripts/docs/apifox-sync.sh 执行（固定 --no-readme）
+#   README 走 Apifox CLI 的 doc update，由 scripts/docs/apifox-readme-sync.sh 执行
 #
 # 只读取仓库内的静态产物，不生成文档：产物由 ./mix swag 在本地生成后与服务代码同一次提交，
 # 所以这里不需要 Maven / Go / Bun / uv，只要 Node（Apifox CLI：WebSocket 接口、模型引用自检、
@@ -36,9 +36,9 @@ on:
       - 'fastapi/docs/openapi.yaml'
       - 'README.md'
       # 同步脚本或工作流自身改动时，重新跑一次，避免改动只在本地生效
-      - 'scripts/apifox-sync.sh'
-      - 'scripts/apifox-readme-sync.sh'
-      - 'scripts/apifox-schema-refs.py'
+      - 'scripts/docs/apifox-sync.sh'
+      - 'scripts/docs/apifox-readme-sync.sh'
+      - 'scripts/docs/apifox-schema-refs.py'
       - '.github/workflows/apifox-sync.yml'
   workflow_dispatch:
     inputs:
@@ -128,12 +128,12 @@ jobs:
               - 'fastapi/docs/openapi.json'
               - 'fastapi/docs/openapi.yaml'
             shared:
-              - 'scripts/apifox-sync.sh'
-              - 'scripts/apifox-schema-refs.py'
+              - 'scripts/docs/apifox-sync.sh'
+              - 'scripts/docs/apifox-schema-refs.py'
               - '.github/workflows/apifox-sync.yml'
             readme:
               - 'README.md'
-              - 'scripts/apifox-readme-sync.sh'
+              - 'scripts/docs/apifox-readme-sync.sh'
 
       - id: plan
         name: 计算本次需要同步的内容
@@ -272,8 +272,8 @@ jobs:
           if [ "$DRY_RUN" = "true" ]; then
             args+=( --dry-run )
           fi
-          echo "执行: bash scripts/apifox-sync.sh ${args[*]}"
-          bash scripts/apifox-sync.sh "${args[@]}"
+          echo "执行: bash scripts/docs/apifox-sync.sh ${args[*]}"
+          bash scripts/docs/apifox-sync.sh "${args[@]}"
 
       # README：独立通道，只有 README.md（或 readme 同步脚本）变更、或手工强制时才跑
       - name: 同步 README 文档
@@ -286,8 +286,8 @@ jobs:
           if [ "$DRY_RUN" = "true" ]; then
             args+=( --dry-run )
           fi
-          echo "执行: bash scripts/apifox-readme-sync.sh ${args[*]}"
-          bash scripts/apifox-readme-sync.sh "${args[@]}"
+          echo "执行: bash scripts/docs/apifox-readme-sync.sh ${args[*]}"
+          bash scripts/docs/apifox-readme-sync.sh "${args[@]}"
 
       # 数据模型指纹是「Apifox 项目已同步到哪个模型版本」的共享基线，
       # 不回写的话下次 CI 会一直误判为「模型有变」而按覆盖模式同步（冲掉手工 Mock 与示例）
