@@ -11,7 +11,7 @@ from app.internal.agents.permissions.toolScope import (
     enforce_sql_row_scope,
     log_scope_denial,
 )
-from app.internal.clients import SpringClient, get_spring_client
+from app.internal.clients import SpringClient
 
 
 class SpringSqlTool:
@@ -91,6 +91,6 @@ class SpringSqlTool:
 
 
 @lru_cache
-def get_spring_sql_tool(spring_client: Optional[SpringClient] = None) -> SpringSqlTool:
+def get_spring_sql_tool(spring_client: SpringClient) -> SpringSqlTool:
     """获取 Spring SQL 工具实例"""
-    return SpringSqlTool(spring_client or get_spring_client())
+    return SpringSqlTool(spring_client)

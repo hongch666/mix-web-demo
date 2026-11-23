@@ -23,7 +23,6 @@ class _FakeDoc:
 @pytest.fixture(autouse=True)
 def langsmith_calls(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
     """替换日志与 LangSmith 上下文，并记录上下文入参"""
-    monkeypatch.setattr(service_module, "Logger", Mock())
     captured: list[dict] = []
 
     def _context(**kwargs):
@@ -32,6 +31,22 @@ def langsmith_calls(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
 
     monkeypatch.setattr(service_module, "get_langsmith_context", _context)
     return captured
+
+
+class _NoopVectorCache:
+    """固定未命中的向量检索缓存替身"""
+
+    async def get_entry(self, key: str):
+        """始终视为缓存未命中"""
+        return None
+
+    async def run_single_flight(self, key: str, loader):
+        """直接执行回源并返回结果"""
+        return await loader()
+
+    async def set_entry(self, key: str, value: object) -> None:
+        """丢弃回填数据"""
+        return None
 
 
 def _make_service(mapper, **overrides) -> VectorSearchService:
@@ -43,6 +58,8 @@ def _make_service(mapper, **overrides) -> VectorSearchService:
         "min_score": 0.3,
         "score_mode": "similarity",
         "vector_mapper": mapper,
+        "logger": Mock(),
+        "vector_query_cache": _NoopVectorCache(),
     }
     params.update(overrides)
     return VectorSearchService(**params)
@@ -163,13 +180,10 @@ async def test_enhance_truncates_matched_chunks() -> None:
 
 # 未注入 mapper 时回退到工厂 mapper 并执行查询
 @pytest.mark.anyio
-async def test_enhance_falls_back_to_factory_mapper_when_none(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+async def test_enhance_uses_explicit_mapper_when_provided() -> None:
     mapper = AsyncMock()
     mapper.similarity_search_with_score.return_value = []
-    monkeypatch.setattr(service_module, "get_vector_store_mapper", lambda: mapper)
-    service = _make_service(None)
+    service = _make_service(mapper)
 
     resp = await service.enhance(VectorSearchEnhanceReq(keyword="k", articleIds=[1]))
 
@@ -187,7 +201,7 @@ async def test_enhance_falls_back_to_factory_mapper_when_none(
     ],
 )
 def test_generate_reason_maps_score_bands(score: float, expected: str) -> None:
-    assert VectorSearchService()._generate_reason(score) == expected
+    assert _make_service(AsyncMock())._generate_reason(score) == expected
 
 
 # similarity 模式分数裁剪到 0 到 1 区间
@@ -210,7 +224,7 @@ def test_normalize_score_distance_mode_inverts() -> None:
 
 # 默认评分模式按距离解释，与 PGVector 返回余弦距离的口径一致
 def test_default_score_mode_is_distance() -> None:
-    service = VectorSearchService()
+    service = _make_service(AsyncMock(), score_mode="distance")
 
     assert service.score_mode == "distance"
     assert service._normalize_score(0.2) == pytest.approx(0.8)
@@ -305,4 +319,10 @@ def test_trim_content_appends_ellipsis_when_too_long() -> None:
 
 # 工厂函数返回同一缓存单例
 def test_factory_returns_cached_singleton() -> None:
-    assert get_vector_search_service() is get_vector_search_service()
+    mapper = AsyncMock()
+    logger = Mock()
+    cache = _NoopVectorCache()
+
+    assert get_vector_search_service(
+        mapper, logger, cache
+    ) is get_vector_search_service(mapper, logger, cache)

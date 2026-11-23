@@ -42,7 +42,7 @@ async def create_article_ai_comment(
     background_tasks: BackgroundTasks,
     generate_service: GenerateServiceDep,
     articleId: int = Path(alias="article_id"),
-) -> ApiResponse[dict[str, object]]:
+) -> ApiResponse[GenerateCommentTaskResponse]:
     """文章创建AI评论接口"""
 
     # 添加后台任务
@@ -51,7 +51,10 @@ async def create_article_ai_comment(
         articleId,
     )
     return success(
-        data={"message": Messages.AI_COMMENT_TASK_SUBMITTED, "article_id": articleId}
+        GenerateCommentTaskResponse(
+            message=Messages.AI_COMMENT_TASK_SUBMITTED,
+            article_id=articleId,
+        )
     )
 
 
@@ -67,7 +70,7 @@ async def create_article_ai_comment_with_reference(
     background_tasks: BackgroundTasks,
     generate_service: GenerateServiceDep,
     articleId: int = Path(alias="article_id"),
-) -> ApiResponse[dict[str, object]]:
+) -> ApiResponse[GenerateCommentTaskResponse]:
     """文章创建基于权威参考文本的AI评论接口"""
 
     # 添加后台任务
@@ -76,8 +79,8 @@ async def create_article_ai_comment_with_reference(
         articleId,
     )
     return success(
-        data={
-            "message": Messages.AI_COMMENT_WITH_REFERENCE_TASK_SUBMITTED,
-            "article_id": articleId,
-        }
+        GenerateCommentTaskResponse(
+            message=Messages.AI_COMMENT_WITH_REFERENCE_TASK_SUBMITTED,
+            article_id=articleId,
+        )
     )

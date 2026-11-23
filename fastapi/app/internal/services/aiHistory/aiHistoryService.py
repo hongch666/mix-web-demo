@@ -1,17 +1,13 @@
 from functools import lru_cache
 from typing import Any, Optional
 
-from app.core.base import Logger, LoggerProtocol
+from app.core.base import LoggerProtocol
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
-from app.internal.clients import SpringClient, get_spring_client
-from app.internal.crud import (
-    AiHistoryMapper,
-    AiUserSummaryMapper,
-    get_ai_history_mapper,
-    get_ai_user_summary_mapper,
-)
+from app.internal.clients import SpringClient
+from app.internal.crud import AiHistoryMapper, AiUserSummaryMapper
 from app.internal.models import AiHistory
+from app.internal.schemas import AiHistoryResponse
 
 
 class AiHistoryService:
@@ -19,21 +15,16 @@ class AiHistoryService:
 
     def __init__(
         self,
-        ai_history_mapper: Optional[AiHistoryMapper] = None,
-        spring_client: Optional[SpringClient] = None,
-        ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
-        logger: Optional[LoggerProtocol] = None,
+        ai_history_mapper: AiHistoryMapper,
+        spring_client: SpringClient,
+        ai_user_summary_mapper: AiUserSummaryMapper,
+        logger: LoggerProtocol,
     ) -> None:
         """注入 AI 历史 Mapper、Spring 客户端、用户记忆摘要 Mapper 与日志器"""
-        self.ai_history_mapper: AiHistoryMapper = (
-            ai_history_mapper or get_ai_history_mapper()
-        )
-        self._spring_client: SpringClient = spring_client or get_spring_client()
-        self._ai_user_summary_mapper: AiUserSummaryMapper = (
-            ai_user_summary_mapper or get_ai_user_summary_mapper()
-        )
-        # 日志器可注入，缺省回退全局单例
-        self._logger: LoggerProtocol = logger or Logger
+        self.ai_history_mapper: AiHistoryMapper = ai_history_mapper
+        self._spring_client: SpringClient = spring_client
+        self._ai_user_summary_mapper: AiUserSummaryMapper = ai_user_summary_mapper
+        self._logger: LoggerProtocol = logger
 
     async def create_ai_history(self, ai_history: Any, db: Any) -> Any:
         """归一化入参后构建 AiHistory 实体并写入数据库，空 thinking 统一置为 NULL"""
@@ -52,8 +43,10 @@ class AiHistoryService:
 
         return await self.ai_history_mapper.create_ai_history_async(history, db)
 
-    async def get_all_ai_history(self, user_id: int, db: Any) -> list[dict[str, Any]]:
-        """查询指定用户的全部 AI 历史并序列化为响应字典列表"""
+    async def get_all_ai_history(
+        self, user_id: int, db: Any
+    ) -> list[AiHistoryResponse]:
+        """查询指定用户的全部 AI 历史并序列化为响应模型列表"""
         histories = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
             db, user_id, None
         )
@@ -82,23 +75,26 @@ class AiHistoryService:
         self._logger.info(Messages.AI_MEMORY_SUMMARY_CLEARED(user_id))
 
     @staticmethod
-    def _serialize_ai_history(ai_history: AiHistory) -> dict[str, Any]:
-        """将 ORM 对象转换为可序列化的响应字典"""
+    def _serialize_ai_history(ai_history: AiHistory) -> AiHistoryResponse:
+        """将 ORM 对象转换为具名响应模型"""
         fmt = "%Y-%m-%d %H:%M:%S"
-        return {
-            "id": ai_history.id,
-            "user_id": ai_history.user_id,
-            "ask": ai_history.ask,
-            "reply": ai_history.reply,
-            "thinking": ai_history.thinking,
-            "ai_type": ai_history.ai_type,
-            "created_at": ai_history.created_at.strftime(fmt)
-            if getattr(ai_history, "created_at", None)
-            else None,
-            "updated_at": ai_history.updated_at.strftime(fmt)
-            if getattr(ai_history, "updated_at", None)
-            else None,
-        }
+        history_id = ai_history.id
+        user_id = ai_history.user_id
+        if history_id is None or user_id is None:
+            raise ValueError(Messages.AI_HISTORY_REQUIRED_ID_MISSING)
+
+        created_at = ai_history.created_at
+        updated_at = ai_history.updated_at
+        return AiHistoryResponse(
+            id=history_id,
+            user_id=user_id,
+            ask=ai_history.ask,
+            reply=ai_history.reply,
+            thinking=ai_history.thinking,
+            ai_type=ai_history.ai_type,
+            created_at=created_at.strftime(fmt) if created_at is not None else None,
+            updated_at=updated_at.strftime(fmt) if updated_at is not None else None,
+        )
 
     @staticmethod
     def _normalize_ai_history_data(ai_history: Any) -> dict[str, Any]:
@@ -125,8 +121,8 @@ class AiHistoryService:
 def get_ai_history_service(
     ai_history_mapper: AiHistoryMapper,
     spring_client: SpringClient,
-    ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
-    logger: Optional[LoggerProtocol] = None,
+    ai_user_summary_mapper: AiUserSummaryMapper,
+    logger: LoggerProtocol,
 ) -> AiHistoryService:
     """按依赖参数缓存并返回 AiHistoryService 单例"""
     return AiHistoryService(

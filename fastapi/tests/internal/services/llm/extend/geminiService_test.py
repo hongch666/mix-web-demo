@@ -42,7 +42,9 @@ def test_gemini_service_maps_config_to_llm_client(
         },
     )
 
-    service = gemini_module.GeminiService(MagicMock(), spring_client=MagicMock())
+    service = gemini_module.GeminiService(
+        MagicMock(), spring_client=MagicMock(), ai_user_summary_mapper=MagicMock()
+    )
 
     assert service.service_name == "Gemini"
     assert service.config_section == "closeai"
@@ -62,11 +64,12 @@ def test_gemini_service_falls_back_to_shared_spring_client(
         monkeypatch, {"api_key": "k", "base_url": "u", "gemini_model_name": "m"}
     )
     sentinel = MagicMock(name="spring-client")
-    monkeypatch.setattr(
-        gemini_module, "get_spring_client", MagicMock(return_value=sentinel)
+    sentinel = MagicMock(name="spring-client")
+    service = gemini_module.GeminiService(
+        MagicMock(), spring_client=sentinel, ai_user_summary_mapper=MagicMock()
     )
 
-    service = gemini_module.GeminiService(MagicMock())
+    assert service._spring_client is sentinel
 
     assert service._spring_client is sentinel
 
@@ -81,8 +84,9 @@ def test_gemini_service_factory_returns_cached_singleton(
     mapper = MagicMock(name="mapper")
     spring = MagicMock(name="spring")
 
-    first = gemini_module.get_gemini_service(mapper, spring)
-    second = gemini_module.get_gemini_service(mapper, spring)
+    summary_mapper = MagicMock(name="summary-mapper")
+    first = gemini_module.get_gemini_service(mapper, spring, None, summary_mapper)
+    second = gemini_module.get_gemini_service(mapper, spring, None, summary_mapper)
 
     assert first is second
     assert first._spring_client is spring

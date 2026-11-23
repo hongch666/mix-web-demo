@@ -9,11 +9,11 @@ from typing import Any, Optional, cast
 
 import jieba.analyse
 
-from app.core.base import Logger, LoggerProtocol
+from app.core.base import LoggerProtocol
 from app.core.constants import AiUsers, HttpCode, Messages, Prompts
 from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
-from app.internal.clients import SpringClient, get_spring_client
+from app.internal.clients import SpringClient
 
 from ..llm.extend import (
     ClaudeService,
@@ -40,14 +40,14 @@ class GenerateService:
 
     def __init__(
         self,
+        spring_client: SpringClient,
+        logger: LoggerProtocol,
         glm_service: Optional[GlmService] = None,
         gemini_service: Optional[GeminiService] = None,
         gpt_service: Optional[GptService] = None,
         deepseek_service: Optional[DeepseekService] = None,
         claude_service: Optional[ClaudeService] = None,
         qwen_service: Optional[QwenService] = None,
-        spring_client: Optional[SpringClient] = None,
-        logger: Optional[LoggerProtocol] = None,
     ) -> None:
         """注入六个大模型服务、Spring 客户端与日志器，模型服务允许缺省由调用点降级"""
 
@@ -58,9 +58,8 @@ class GenerateService:
         self.deepseek_service: Any = deepseek_service
         self.claude_service: Any = claude_service
         self.qwen_service: Any = qwen_service
-        self._spring_client: SpringClient = spring_client or get_spring_client()
-        # 日志器可注入，缺省回退全局单例
-        self._logger: LoggerProtocol = logger or Logger
+        self._spring_client: SpringClient = spring_client
+        self._logger: LoggerProtocol = logger
 
     async def extract_tags(self, text: str, topK: int = 5) -> list[str]:
         """
@@ -640,25 +639,25 @@ def get_generate_service(
     claude_service: ClaudeService,
     qwen_service: QwenService,
     spring_client: SpringClient,
-    logger: Optional[LoggerProtocol] = None,
+    logger: LoggerProtocol,
 ) -> GenerateService:
     """装配六个大模型服务与 Spring 客户端并缓存 GenerateService 单例"""
     return GenerateService(
-        glm_service,
-        gemini_service,
-        gpt_service,
-        deepseek_service,
-        claude_service,
-        qwen_service,
-        spring_client,
-        logger,
+        spring_client=spring_client,
+        logger=logger,
+        glm_service=glm_service,
+        gemini_service=gemini_service,
+        gpt_service=gpt_service,
+        deepseek_service=deepseek_service,
+        claude_service=claude_service,
+        qwen_service=qwen_service,
     )
 
 
 @lru_cache
 def get_tag_service(
-    spring_client: Optional[SpringClient] = None,
-    logger: Optional[LoggerProtocol] = None,
+    spring_client: SpringClient,
+    logger: LoggerProtocol,
 ) -> GenerateService:
     """装配仅含关键词提取能力的轻量生成服务单例，不引入大模型依赖"""
     return GenerateService(spring_client=spring_client, logger=logger)

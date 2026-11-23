@@ -4,11 +4,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from dateutil.relativedelta import relativedelta
 
-from app.internal.services.user import (
-    UserService,
-    get_user_service,
-    userService as service_module,
-)
+from app.internal.services.user import UserService, get_user_service
 
 
 class NoopKeyedCache:
@@ -31,7 +27,6 @@ class NoopKeyedCache:
 def service_deps(
     monkeypatch: pytest.MonkeyPatch,
 ) -> tuple[UserService, AsyncMock, AsyncMock, AsyncMock]:
-    monkeypatch.setattr(service_module, "Logger", Mock())
     spring_client = AsyncMock()
     nestjs_client = AsyncMock()
     user_mapper = AsyncMock()
@@ -39,6 +34,7 @@ def service_deps(
         spring_client,
         nestjs_client,
         user_mapper,
+        logger=Mock(),
         day_cache=NoopKeyedCache(),
         stats_cache=NoopKeyedCache(),
         view_cache=NoopKeyedCache(),
@@ -457,7 +453,25 @@ def test_factory_returns_cached_singleton() -> None:
     spring_client = AsyncMock()
     nestjs_client = AsyncMock()
     user_mapper = AsyncMock()
+    logger = Mock()
+    day_cache = NoopKeyedCache()
+    stats_cache = NoopKeyedCache()
+    view_cache = NoopKeyedCache()
 
     assert get_user_service(
-        spring_client, nestjs_client, user_mapper
-    ) is get_user_service(spring_client, nestjs_client, user_mapper)
+        spring_client,
+        nestjs_client,
+        user_mapper,
+        logger,
+        day_cache,
+        stats_cache,
+        view_cache,
+    ) is get_user_service(
+        spring_client,
+        nestjs_client,
+        user_mapper,
+        logger,
+        day_cache,
+        stats_cache,
+        view_cache,
+    )

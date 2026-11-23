@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import APIRouter, Query, Request
 
 from app.core.base import ApiResponse, success
@@ -37,8 +35,8 @@ async def get_new_followers(
 ) -> ApiResponse:
     """获取新增粉丝数统计"""
 
-    result: dict[str, Any] = await userService.get_new_followers_service(
-        user_id, period
+    result: UserFollowerResponse = UserFollowerResponse.model_validate(
+        await userService.get_new_followers_service(user_id, period)
     )
     return success(result)
 
@@ -59,8 +57,10 @@ async def get_article_view_distribution(
 ) -> ApiResponse:
     """获取文章浏览分布"""
 
-    result: dict[str, Any] = await userService.get_article_view_distribution_service(
-        user_id
+    result: ArticleViewDistributionResponse = (
+        ArticleViewDistributionResponse.model_validate(
+            await userService.get_article_view_distribution_service(user_id)
+        )
     )
     return success(result)
 
@@ -81,8 +81,10 @@ async def get_author_follow_statistics(
 ) -> ApiResponse:
     """获取关注作者统计"""
 
-    result: dict[str, Any] = await userService.get_author_follow_statistics_service(
-        user_id
+    result: AuthorFollowStatisticsResponse = (
+        AuthorFollowStatisticsResponse.model_validate(
+            await userService.get_author_follow_statistics_service(user_id)
+        )
     )
     return success(result)
 
@@ -103,8 +105,8 @@ async def get_monthly_comment_trend(
 ) -> ApiResponse:
     """获取本月评论趋势"""
 
-    result: dict[str, Any] = await userService.get_monthly_comment_trend_service(
-        user_id
+    result: ActionTrendResponse = ActionTrendResponse.model_validate(
+        await userService.get_monthly_comment_trend_service(user_id)
     )
     return success(result)
 
@@ -125,7 +127,9 @@ async def get_monthly_like_trend(
 ) -> ApiResponse:
     """获取本月点赞趋势"""
 
-    result: dict[str, Any] = await userService.get_monthly_like_trend_service(user_id)
+    result: ActionTrendResponse = ActionTrendResponse.model_validate(
+        await userService.get_monthly_like_trend_service(user_id)
+    )
     return success(result)
 
 
@@ -145,8 +149,8 @@ async def get_monthly_collect_trend(
 ) -> ApiResponse:
     """获取本月收藏趋势"""
 
-    result: dict[str, Any] = await userService.get_monthly_collect_trend_service(
-        user_id
+    result: ActionTrendResponse = ActionTrendResponse.model_validate(
+        await userService.get_monthly_collect_trend_service(user_id)
     )
     return success(result)
 
@@ -170,5 +174,7 @@ async def get_user_profile(
 ) -> ApiResponse:
     """获取用户画像总览"""
 
-    result: dict[str, Any] = await userService.get_user_profile_service(user_id)
+    result: UserProfileResponse = UserProfileResponse.model_validate(
+        await userService.get_user_profile_service(user_id)
+    )
     return success(result)

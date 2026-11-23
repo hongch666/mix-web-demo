@@ -16,7 +16,7 @@ def _make_service_with_summary() -> tuple[
     mapper = AsyncMock()
     spring_client = AsyncMock()
     summary_mapper = AsyncMock()
-    service = AiHistoryService(mapper, spring_client, summary_mapper)
+    service = AiHistoryService(mapper, spring_client, summary_mapper, Mock())
     return service, mapper, spring_client, summary_mapper
 
 
@@ -109,7 +109,7 @@ async def test_get_all_ai_history_serializes_rows_and_binds_user() -> None:
 
     rows = await service.get_all_ai_history(7, db)
 
-    assert rows == [
+    assert [row.model_dump() for row in rows] == [
         {
             "id": 1,
             "user_id": 7,
@@ -199,15 +199,17 @@ def test_serialize_returns_none_for_absent_timestamps() -> None:
 
     payload = AiHistoryService._serialize_ai_history(history)
 
-    assert payload["created_at"] is None
-    assert payload["updated_at"] is None
+    assert payload.created_at is None
+    assert payload.updated_at is None
 
 
 # 工厂函数对相同依赖返回同一缓存单例
 def test_factory_returns_cached_singleton() -> None:
     mapper = AsyncMock()
     spring_client = AsyncMock()
+    summary_mapper = AsyncMock()
+    logger = Mock()
 
-    assert get_ai_history_service(mapper, spring_client) is get_ai_history_service(
-        mapper, spring_client
-    )
+    assert get_ai_history_service(
+        mapper, spring_client, summary_mapper, logger
+    ) is get_ai_history_service(mapper, spring_client, summary_mapper, logger)

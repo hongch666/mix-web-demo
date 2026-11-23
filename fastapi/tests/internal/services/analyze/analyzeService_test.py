@@ -30,6 +30,7 @@ def _make_service(**overrides) -> AnalyzeService:
         "wordcloud_cache": _fake_cache(),
         "spring_client": AsyncMock(),
         "nestjs_client": AsyncMock(),
+        "logger": MagicMock(),
     }
     defaults.update(overrides)
     return AnalyzeService(**defaults)

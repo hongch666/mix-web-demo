@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, ListResponse, success
@@ -8,6 +6,7 @@ from app.core.decorators import log, requireAdmin, requireInternalToken
 from app.dependencies import AnalyzeServiceDep, DbSession
 from app.internal.schemas import (
     ArticleStatisticsResponse,
+    ArticleTop10Response,
     CategoryArticleCountResponse,
     MonthlyPublishCountResponse,
 )
@@ -22,7 +21,7 @@ router: APIRouter = APIRouter(
     "/top10",
     summary="获取前10篇文章",
     description="获取阅读量前10的文章",
-    response_model=ApiResponse[ListResponse[dict[str, Any]]],
+    response_model=ApiResponse[ListResponse[ArticleTop10Response]],
     responses=SwaggerConfig.REMOTE_FAILURE_RESPONSES,
 )
 @log(Messages.API_LOG_DESC_TOP10_ARTICLES)
@@ -33,9 +32,10 @@ async def get_top10_articles(
 ) -> ApiResponse:
     """获取前10篇文章接口"""
 
-    articles: list[dict[str, Any]] = await analyzeService.get_top10_articles_service_sf(
-        db
-    )
+    articles: list[ArticleTop10Response] = [
+        ArticleTop10Response.model_validate(item)
+        for item in await analyzeService.get_top10_articles_service_sf(db)
+    ]
     return success(ListResponse(total=len(articles), list=articles))
 
 
@@ -108,7 +108,9 @@ async def get_article_statistics(
 ) -> ApiResponse:
     """获取文章统计信息"""
 
-    result: dict[str, Any] = await analyzeService.get_article_statistics_service_sf(db)
+    result: ArticleStatisticsResponse = ArticleStatisticsResponse.model_validate(
+        await analyzeService.get_article_statistics_service_sf(db)
+    )
     return success(result)
 
 
@@ -127,9 +129,10 @@ async def get_article_count_by_category(
 ) -> ApiResponse:
     """按大分类统计文章数量"""
 
-    result: list[
-        dict[str, Any]
-    ] = await analyzeService.get_category_article_count_service_sf(db)
+    result: list[CategoryArticleCountResponse] = [
+        CategoryArticleCountResponse.model_validate(item)
+        for item in await analyzeService.get_category_article_count_service_sf(db)
+    ]
     return success(ListResponse(total=len(result), list=result))
 
 
@@ -148,7 +151,8 @@ async def get_monthly_publish_count(
 ) -> ApiResponse:
     """获取月度文章发布统计"""
 
-    result: list[
-        dict[str, Any]
-    ] = await analyzeService.get_monthly_publish_count_service_sf(db)
+    result: list[MonthlyPublishCountResponse] = [
+        MonthlyPublishCountResponse.model_validate(item)
+        for item in await analyzeService.get_monthly_publish_count_service_sf(db)
+    ]
     return success(ListResponse(total=len(result), list=result))

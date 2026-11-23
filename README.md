@@ -679,209 +679,6 @@ Body 参数：
     FastAPI -.-> MQ
   ```
 
-- 项目功能结构图
-
-  ```mermaid
-  flowchart TB
-      Root["多语言微服务智能文章平台"]
-      Root --> Nav["系统导航"]
-      Root --> UserMgr["用户管理"]
-      Root --> AdminMgr["后台管理"]
-      Root --> ApiTest["接口测试"]
-      Root --> Browse["内容浏览"]
-      Root --> Track["我的足迹"]
-      Root --> Create["创作中心"]
-      Root --> Audit["审核管理"]
-      Root --> LogMgr["日志管理"]
-      Root --> Analysis["分析工具"]
-      Root --> Other["其他"]
-      Nav --> Home["首页"]
-      Nav --> About["关于"]
-      Home --> SysMod["系统模块"]
-      Home --> SysTech["系统技术栈"]
-      About --> SysIntro["系统介绍"]
-      About --> TechArch["技术架构"]
-      About --> SysFeature["系统特色"]
-      About --> DevHistory["研发历程"]
-      About --> SysValue["系统价值"]
-      UserMgr --> UserShow["用户展示"]
-      UserMgr --> UserOp["用户操作"]
-      UserMgr --> PwdReset["密码重置"]
-      UserMgr --> ForceOffline["强制下线"]
-      AdminMgr --> ArticleMgr["文章管理"]
-      AdminMgr --> CategoryMgr["分类管理"]
-      AdminMgr --> CommentMgr["评论管理"]
-      ArticleMgr --> ArtShow["文章展示"]
-      ArticleMgr --> ArtDetail["文章详情查看"]
-      ArticleMgr --> ArtOp["文章操作"]
-      ArtDetail --> ArtContent["文章内容详情"]
-      ArtDetail --> ArtDownload["文章下载"]
-      ArtDetail --> LikeCollect["点赞收藏"]
-      ArtDetail --> AuthorFollow["作者关注"]
-      ArtDetail --> AIComment["AI 评论"]
-      ArtDetail --> UserComment["用户评论"]
-      CategoryMgr --> CatShow["分类展示"]
-      CategoryMgr --> CatOp["分类操作"]
-      CategoryMgr --> CatRefMgr["分类权威文章管理"]
-      CommentMgr --> UserCmt["用户评论"]
-      CommentMgr --> AICmt["AI 评论"]
-      UserCmt --> UserCmtShow["用户评论展示"]
-      UserCmt --> UserCmtOp["用户评论操作"]
-      AICmt --> AICmtShow["AI 评论展示"]
-      ApiTest --> ApiDoc["API 文档"]
-      ApiDoc --> SpringDoc["Spring Swagger 文档"]
-      ApiDoc --> GoZeroDoc["GoZero Swagger 文档"]
-      ApiDoc --> NestDoc["NestJS Swagger 文档"]
-      ApiDoc --> FastAPIDoc["FastAPI Swagger 文档"]
-      Browse --> ArticleBrowse["文章浏览"]
-      ArticleBrowse --> ArticleShow["文章展示"]
-      ArticleBrowse --> ArticleSearch["文章搜索筛选"]
-      ArticleBrowse --> ArticleSearchDetail["文章搜索详情"]
-      Track --> MyLikes["我的点赞"]
-      Track --> MyCollects["我的收藏"]
-      Track --> MyComments["我的评论"]
-      Track --> MyFollows["我的关注"]
-      MyLikes --> LikeList["点赞文章列表"]
-      MyLikes --> CancelLike["取消点赞"]
-      MyCollects --> CollectList["收藏文章列表"]
-      MyCollects --> CancelCollect["取消收藏"]
-      MyComments --> CommentList["评论列表"]
-      MyComments --> CommentEdit["评论修改删除"]
-      MyFollows --> FollowList["关注列表"]
-      MyFollows --> CancelFollow["取消关注"]
-      MyFollows --> FollowArticle["关注文章查看"]
-      Create --> MyArticles["我的文章"]
-      Create --> MyFans["我的粉丝"]
-      MyArticles --> MyArticleList["我的文章列表"]
-      MyArticles --> ArticleEdit["文章修改删除"]
-      MyArticles --> CreateArticle["创作文章"]
-      MyFans --> FansList["粉丝列表"]
-      MyFans --> FansDetail["粉丝详情查看"]
-      Audit --> ArticleAudit["文章审核"]
-      ArticleAudit --> PendingList["待审核的文章列表"]
-      ArticleAudit --> AuditPublish["审核发布文章"]
-      LogMgr --> ArticleLog["文章日志"]
-      LogMgr --> ApiLog["API 日志"]
-      ArticleLog --> ArtLogSearch["文章日志筛选查看"]
-      ArticleLog --> ArtLogDetail["文章日志详情查看"]
-      ArticleLog --> ArtLogDelete["文章日志删除"]
-      ApiLog --> ApiLogSearch["API 日志筛选查看"]
-      ApiLog --> ApiLogDetail["API 日志详情查看"]
-      ApiLog --> ApiLogDelete["API 日志删除"]
-      Analysis --> ArticleStats["文章统计"]
-      Analysis --> PersonalData["个人数据"]
-      ArticleStats --> ArtBaseData["文章基础数据"]
-      ArticleStats --> ArtReadRank["文章阅读排行"]
-      ArticleStats --> SearchWordCloud["搜索词云图"]
-      ArticleStats --> CategoryDist["分类文章分布"]
-      ArticleStats --> MonthlyTrend["月度发布文章趋势"]
-      PersonalData --> NewFans["新增粉丝"]
-      PersonalData --> ViewDist["浏览分布"]
-      PersonalData --> FollowStats["关注统计"]
-      PersonalData --> CommentTrend["评论趋势"]
-      PersonalData --> LikeTrend["点赞趋势"]
-      PersonalData --> CollectTrend["收藏趋势"]
-      Other --> UserChat["用户聊天"]
-      Other --> AIAssistant["AI 助手"]
-      Other --> Profile["个人简介"]
-      Other --> ApiAnalysis["API 分析"]
-      UserChat --> UserList["用户列表"]
-      UserChat --> OnlineCount["在线人数"]
-      UserChat --> ChatWith["用户聊天"]
-      AIAssistant --> AIChat["AI 聊天"]
-      AIAssistant --> AIHistory["AI 历史记录"]
-      AIAssistant --> ModelSelect["模型选择"]
-      AIAssistant --> AIThinkChat["AI 思考聊天"]
-      Profile --> PersonalInfo["个人信息"]
-      Profile --> UserAvatar["用户头像"]
-      Profile --> InfoEdit["信息修改"]
-      ApiAnalysis --> ApiAvgTime["API 平均耗时"]
-      ApiAnalysis --> ApiCallCount["API 调用次数"]
-  ```
-
-- 管理员用例图
-
-  ```mermaid
-  flowchart LR
-      Admin(["管理员"])
-      PwdLogin(["用户名密码"])
-      EmailLogin(["邮箱验证码"])
-      LoginUseCase(["登录"])
-      Admin --> PwdLogin
-      Admin --> EmailLogin
-      PwdLogin --> LoginUseCase
-      EmailLogin --> LoginUseCase
-      UC1(["用户管理"])
-      UC2(["文章管理"])
-      UC3(["分类管理"])
-      UC4(["评论管理"])
-      UC5(["API 文档"])
-      UC6(["我的点赞"])
-      UC7(["我的收藏"])
-      UC8(["我的评论"])
-      UC9(["我的关注"])
-      UC10(["我的文章"])
-      UC11(["我的粉丝"])
-      UC12(["文章审核"])
-      UC13(["文章日志"])
-      UC14(["API 日志"])
-      UC15(["文章统计"])
-      UC16(["个人数据"])
-      UC17(["API 分析"])
-      LoginUseCase --> UC1
-      LoginUseCase --> UC2
-      LoginUseCase --> UC3
-      LoginUseCase --> UC4
-      LoginUseCase --> UC5
-      LoginUseCase --> UC6
-      LoginUseCase --> UC7
-      LoginUseCase --> UC8
-      LoginUseCase --> UC9
-      LoginUseCase --> UC10
-      LoginUseCase --> UC11
-      LoginUseCase --> UC12
-      LoginUseCase --> UC13
-      LoginUseCase --> UC14
-      LoginUseCase --> UC15
-      LoginUseCase --> UC16
-      LoginUseCase --> UC17
-  ```
-
-- 用户用例图
-
-  ```mermaid
-  flowchart LR
-      User(["用户"])
-      Register(["注册"])
-      PwdLogin(["用户名密码"])
-      EmailLogin(["邮箱验证码"])
-      LoginUseCase(["登录"])
-      User --> Register
-      User --> PwdLogin
-      User --> EmailLogin
-      Register --> PwdLogin
-      PwdLogin --> LoginUseCase
-      EmailLogin --> LoginUseCase
-      UC1(["文章浏览"])
-      UC2(["我的点赞"])
-      UC3(["我的收藏"])
-      UC4(["我的评论"])
-      UC5(["我的关注"])
-      UC6(["我的文章"])
-      UC7(["我的粉丝"])
-      UC8(["文章统计"])
-      UC9(["个人数据"])
-      LoginUseCase --> UC1
-      LoginUseCase --> UC2
-      LoginUseCase --> UC3
-      LoginUseCase --> UC4
-      LoginUseCase --> UC5
-      LoginUseCase --> UC6
-      LoginUseCase --> UC7
-      LoginUseCase --> UC8
-      LoginUseCase --> UC9
-  ```
-
 ## 技术栈
 
 - Spring Boot WebFlux：Java 响应式后端框架，支撑系统核心业务
@@ -1746,38 +1543,38 @@ pytest tests/core/auth/test_internal_token.py
 
 Windows 统一使用 Git Bash 执行下列 bash 脚本，仓库不再提供 PowerShell 版本。
 
-| 脚本                        | 位置                 | 功能                                                                                              | 适用系统            |
-| --------------------------- | -------------------- | ------------------------------------------------------------------------------------------------- | ------------------- |
-| `mix`                       | 项目根目录           | 便捷启动器，用于快速调用 scripts/ 下的脚本                                                        | Linux/macOS         |
-| `run_multi.sh`              | scripts/dev/         | 使用 tmux 多窗格布局启动所有服务（推荐）                                                          | Linux/macOS         |
-| `run.sh`                    | scripts/dev/         | 使用 tmux 顺序窗口模式启动所有服务                                                                | Linux/macOS         |
-| `stop.sh`                   | scripts/dev/         | 停止所有 tmux 服务                                                                                | Linux/macOS         |
-| `setup.sh`                  | scripts/dev/         | 环境初始化和依赖安装                                                                              | Linux/macOS         |
-| `build.sh`                  | scripts/build/       | 编译所有服务到 dist/ 目录                                                                         | Linux/macOS         |
-| `dist-control.sh`           | scripts/build/       | 管理打包后的分布式服务（支持服务指定）                                                            | Linux/macOS         |
-| `docker-services.sh`        | scripts/docker/      | 创建、启动、停止和清理基础中间件容器（读取根目录 `.env`，自动安装 ES IK 分词器）                  | Linux/macOS         |
-| `docker-compose-up.sh`      | scripts/docker/      | 使用 Docker Compose 启动应用服务                                                                  | Linux/macOS         |
-| `docker-compose-down.sh`    | scripts/docker/      | 使用 Docker Compose 停止应用服务                                                                  | Linux/macOS         |
-| `build_and_run_services.sh` | scripts/docker/      | 构建并运行服务容器                                                                                | Linux/macOS         |
-| `docker-push-images.sh`     | scripts/docker/      | 将已构建的 Docker 镜像推送到远程仓库                                                              | Linux/macOS         |
-| `loki-control.sh`           | scripts/observability/ | 独立管理 Loki/Promtail/Prometheus/Grafana/Tempo/Collector 观测栈，并同步 dev/dist 的 OTel 开关   | Linux/macOS         |
-| `otel-env.sh`               | scripts/observability/ | 为 dev/dist 启动的服务注入 OTel 环境变量（Spring 侧自动下载 Java Agent）                         | Linux/macOS         |
-| `render-config.sh`          | gateway/apisix/      | 按 `APISIX_OTEL_ENABLED` 渲染网关配置后启动 APISIX                                                | 容器内              |
-| `gateway-cleanup.sh`        | scripts/gateway/     | 清理其他编排栈占用的网关容器，避免启动冲突                                                        | Linux/macOS         |
-| `swag-init.sh`              | scripts/docs/        | 离线生成四个服务的静态 OpenAPI 文档（不启动服务、不依赖中间件）                                   | Linux/macOS         |
-| `apifox-sync.sh`            | scripts/docs/        | 将各服务 docs/ 下的静态 OpenAPI 文档同步到 Apifox（读取根目录 `.env` 中的令牌）                   | Linux/macOS         |
-| `apifox-check.sh`           | scripts/docs/        | 只读检查 Apifox 项目里接口与数据模型的引用完整性（导出项目快照后与现存模型比对）                  | Linux/macOS         |
-| `apifox-schema-refs.py`     | scripts/docs/        | `apifox-check.sh` 与 `apifox-sync.sh` 自检共用的比对实现，可单独 `--check <快照> --models <清单>` | 有 Python 的环境    |
-| `apifox-readme-sync.sh`     | scripts/docs/        | 将根目录 README.md 同步到 Apifox 指定 Markdown 文档（走 Apifox CLI 的 doc create/update）         | Linux/macOS         |
-| `goctl-api-init.sh`         | scripts/codegen/     | 生成 GoZero API 代码，参数透传给`genApi.sh`                                                       | Linux/macOS         |
-| `goctl-orm-init.sh`         | scripts/codegen/     | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                                       | Linux/macOS         |
-| `checkGenerated.sh`         | gozero/script/goctl/ | 校验 goctl 生成产物是否被人工改动（按`gozero/template`重新生成后比对）                            | Linux/macOS/Windows |
-| `lint.sh`                   | scripts/quality/     | 检查四个服务的代码规范（Spotless/golangci-lint/goctl api format/ESLint/Prettier/Ruff）            | Linux/macOS         |
-| `format.sh`                 | scripts/quality/     | 格式化四个服务的代码（Spotless/golangci-lint/goctl api format/Prettier/Ruff）                     | Linux/macOS         |
-| `test.sh`                   | scripts/quality/     | 运行四个服务的单元测试（支持指定服务）                                                            | Linux/macOS         |
-| `compile.sh`                | scripts/quality/     | 验证四个服务能否编译通过（只编译，不产出打包目录）                                                | Linux/macOS         |
-| `hooks-init.sh`             | scripts/tools/       | 启用/停用/查看仓库的版本化 Git 提交钩子（`.githooks/`）                                           | Linux/macOS/Windows |
-| `skills-sync.sh`            | scripts/tools/       | 把 skills/mix-web-demo 镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）        | Linux/macOS/Windows |
+| 脚本                        | 位置                   | 功能                                                                                              | 适用系统            |
+| --------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------- | ------------------- |
+| `mix`                       | 项目根目录             | 便捷启动器，用于快速调用 scripts/ 下的脚本                                                        | Linux/macOS         |
+| `run_multi.sh`              | scripts/dev/           | 使用 tmux 多窗格布局启动所有服务（推荐）                                                          | Linux/macOS         |
+| `run.sh`                    | scripts/dev/           | 使用 tmux 顺序窗口模式启动所有服务                                                                | Linux/macOS         |
+| `stop.sh`                   | scripts/dev/           | 停止所有 tmux 服务                                                                                | Linux/macOS         |
+| `setup.sh`                  | scripts/dev/           | 环境初始化和依赖安装                                                                              | Linux/macOS         |
+| `build.sh`                  | scripts/build/         | 编译所有服务到 dist/ 目录                                                                         | Linux/macOS         |
+| `dist-control.sh`           | scripts/build/         | 管理打包后的分布式服务（支持服务指定）                                                            | Linux/macOS         |
+| `docker-services.sh`        | scripts/docker/        | 创建、启动、停止和清理基础中间件容器（读取根目录 `.env`，自动安装 ES IK 分词器）                  | Linux/macOS         |
+| `docker-compose-up.sh`      | scripts/docker/        | 使用 Docker Compose 启动应用服务                                                                  | Linux/macOS         |
+| `docker-compose-down.sh`    | scripts/docker/        | 使用 Docker Compose 停止应用服务                                                                  | Linux/macOS         |
+| `build_and_run_services.sh` | scripts/docker/        | 构建并运行服务容器                                                                                | Linux/macOS         |
+| `docker-push-images.sh`     | scripts/docker/        | 将已构建的 Docker 镜像推送到远程仓库                                                              | Linux/macOS         |
+| `loki-control.sh`           | scripts/observability/ | 独立管理 Loki/Promtail/Prometheus/Grafana/Tempo/Collector 观测栈，并同步 dev/dist 的 OTel 开关    | Linux/macOS         |
+| `otel-env.sh`               | scripts/observability/ | 为 dev/dist 启动的服务注入 OTel 环境变量（Spring 侧自动下载 Java Agent）                          | Linux/macOS         |
+| `render-config.sh`          | gateway/apisix/        | 按 `APISIX_OTEL_ENABLED` 渲染网关配置后启动 APISIX                                                | 容器内              |
+| `gateway-cleanup.sh`        | scripts/gateway/       | 清理其他编排栈占用的网关容器，避免启动冲突                                                        | Linux/macOS         |
+| `swag-init.sh`              | scripts/docs/          | 离线生成四个服务的静态 OpenAPI 文档（不启动服务、不依赖中间件）                                   | Linux/macOS         |
+| `apifox-sync.sh`            | scripts/docs/          | 将各服务 docs/ 下的静态 OpenAPI 文档同步到 Apifox（读取根目录 `.env` 中的令牌）                   | Linux/macOS         |
+| `apifox-check.sh`           | scripts/docs/          | 只读检查 Apifox 项目里接口与数据模型的引用完整性（导出项目快照后与现存模型比对）                  | Linux/macOS         |
+| `apifox-schema-refs.py`     | scripts/docs/          | `apifox-check.sh` 与 `apifox-sync.sh` 自检共用的比对实现，可单独 `--check <快照> --models <清单>` | 有 Python 的环境    |
+| `apifox-readme-sync.sh`     | scripts/docs/          | 将根目录 README.md 同步到 Apifox 指定 Markdown 文档（走 Apifox CLI 的 doc create/update）         | Linux/macOS         |
+| `goctl-api-init.sh`         | scripts/codegen/       | 生成 GoZero API 代码，参数透传给`genApi.sh`                                                       | Linux/macOS         |
+| `goctl-orm-init.sh`         | scripts/codegen/       | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                                       | Linux/macOS         |
+| `checkGenerated.sh`         | gozero/script/goctl/   | 校验 goctl 生成产物是否被人工改动（按`gozero/template`重新生成后比对）                            | Linux/macOS/Windows |
+| `lint.sh`                   | scripts/quality/       | 检查四个服务的代码规范（Spotless/golangci-lint/goctl api format/ESLint/Prettier/Ruff）            | Linux/macOS         |
+| `format.sh`                 | scripts/quality/       | 格式化四个服务的代码（Spotless/golangci-lint/goctl api format/Prettier/Ruff）                     | Linux/macOS         |
+| `test.sh`                   | scripts/quality/       | 运行四个服务的单元测试（支持指定服务）                                                            | Linux/macOS         |
+| `compile.sh`                | scripts/quality/       | 验证四个服务能否编译通过（只编译，不产出打包目录）                                                | Linux/macOS         |
+| `hooks-init.sh`             | scripts/tools/         | 启用/停用/查看仓库的版本化 Git 提交钩子（`.githooks/`）                                           | Linux/macOS/Windows |
+| `skills-sync.sh`            | scripts/tools/         | 把 skills/mix-web-demo 镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）        | Linux/macOS/Windows |
 
 ### 服务名称
 
@@ -2202,14 +1999,14 @@ NestJS 的文章导出（Word / Markdown / PDF）以 `FILES_WORD_PATH` 作为 Wo
 
 三种格式通过 `ExportTemplate` 的 `ArticleExportMeta` 统一取值，同一篇文章导出后信息一致：
 
-| 区块     | 内容                                                         | 数据来源                                                            |
-| -------- | ------------------------------------------------------------ | ------------------------------------------------------------------- |
-| 标题     | 文章标题                                                     | `articles.title`                                                    |
-| 元信息   | 作者、分类（父分类 / 子分类）、状态（已发布 / 草稿）、浏览量  | `user.name`、`category_name` + `sub_category_name`、`status`、`views` |
-| 标签     | 按中英文逗号与分号拆分后逐项展示，为空显示「无标签」          | `articles.tags`                                                     |
-| 时间     | 创作时间与更新时间，缺失显示 `—`                              | `create_at`、`update_at`                                            |
-| 正文     | Word 转纯文本并保留换行；PDF 经 marked 渲染 HTML；Markdown 保留原始内容 | `articles.content`                                                  |
-| 页脚     | 文章编号与平台署名                                           | `articles.id`                                                       |
+| 区块   | 内容                                                                    | 数据来源                                                              |
+| ------ | ----------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 标题   | 文章标题                                                                | `articles.title`                                                      |
+| 元信息 | 作者、分类（父分类 / 子分类）、状态（已发布 / 草稿）、浏览量            | `user.name`、`category_name` + `sub_category_name`、`status`、`views` |
+| 标签   | 按中英文逗号与分号拆分后逐项展示，为空显示「无标签」                    | `articles.tags`                                                       |
+| 时间   | 创作时间与更新时间，缺失显示 `—`                                        | `create_at`、`update_at`                                              |
+| 正文   | Word 转纯文本并保留换行；PDF 经 marked 渲染 HTML；Markdown 保留原始内容 | `articles.content`                                                    |
+| 页脚   | 文章编号与平台署名                                                      | `articles.id`                                                         |
 
 格式差异：Word 模板为 `nestjs/src/assets/word/template.docx`，占位符与元信息字段一一对应；PDF 采用 A4 版式并带 `第 N / M 页` 页码；Markdown 带 YAML front matter（`title`、`article_id`、`author`、`category`、`status`、`tags`、`views`、`created_at`、`updated_at`），可直接被静态站点生成器消费。
 
@@ -2465,8 +2262,8 @@ APIFOX_PROJECT_ID=你的项目ID
 | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `push` 到 `prod`，改动任一服务的 `docs/openapi.json`、`docs/openapi.yaml`（GoZero 另含 `gozero/app/docs/websocket.json`） | 只同步「文档真正变了的服务」的**接口与数据模型**，用 `dorny/paths-filter` 判定；`main` 是开发分支，不触发 |
 | `push` 到 `prod`，改动 `README.md`                                                                                        | 只同步**README 文档**（走 Apifox CLI 的 `doc update`），不碰接口                                          |
-| `push` 改动 `scripts/docs/apifox-sync.sh`、`scripts/docs/apifox-schema-refs.py`、本工作流文件                                       | 四个服务接口全量重跑一次，避免脚本改动只在本地生效                                                        |
-| `push` 改动 `scripts/docs/apifox-readme-sync.sh`                                                                               | 只重跑 README 同步                                                                                        |
+| `push` 改动 `scripts/docs/apifox-sync.sh`、`scripts/docs/apifox-schema-refs.py`、本工作流文件                             | 四个服务接口全量重跑一次，避免脚本改动只在本地生效                                                        |
+| `push` 改动 `scripts/docs/apifox-readme-sync.sh`                                                                          | 只重跑 README 同步                                                                                        |
 | `workflow_dispatch`                                                                                                       | 可指定服务列表、`dry-run`（只校验不写入）、强制同步 README                                                |
 | PR                                                                                                                        | **不触发**：多个 PR 写同一个 Apifox 项目会互相覆盖，只在合并后由 `push` 触发                              |
 
@@ -2641,13 +2438,13 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 
 ### 工作流清单
 
-| 文件              | 作用                                                                                                                                                                                                                                           |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/quality/lint.sh` / `scripts/quality/compile.sh` / `scripts/quality/test.sh`；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿                       |
-| `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                                               |
-| `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`observability/` 有变更时按文件重启命中的容器（不重建业务服务） |
-| `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                                        |
-| `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)                                                                                                                 |
+| 文件              | 作用                                                                                                                                                                                                                                                             |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/quality/lint.sh` / `scripts/quality/compile.sh` / `scripts/quality/test.sh`；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿 |
+| `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                                                                 |
+| `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`observability/` 有变更时按文件重启命中的容器（不重建业务服务）                                                       |
+| `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                                                          |
+| `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)                                                                                                                                   |
 
 ### 需要的仓库配置
 

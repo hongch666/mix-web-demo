@@ -39,7 +39,9 @@ def test_gpt_service_maps_config_to_llm_client(monkeypatch: pytest.MonkeyPatch) 
         },
     )
 
-    service = gpt_module.GptService(MagicMock(), spring_client=MagicMock())
+    service = gpt_module.GptService(
+        MagicMock(), spring_client=MagicMock(), ai_user_summary_mapper=MagicMock()
+    )
 
     assert service.service_name == "GPT"
     assert service.config_section == "closeai"
@@ -69,7 +71,9 @@ def test_gpt_service_omits_reasoning_effort_when_unset(
         },
     )
 
-    gpt_module.GptService(MagicMock(), spring_client=MagicMock())
+    gpt_module.GptService(
+        MagicMock(), spring_client=MagicMock(), ai_user_summary_mapper=MagicMock()
+    )
 
     assert "reasoning_effort" not in fake_client.call_args.kwargs
 
@@ -82,11 +86,12 @@ def test_gpt_service_falls_back_to_shared_spring_client(
         monkeypatch, {"api_key": "k", "base_url": "u", "gpt_model_name": "m"}
     )
     sentinel = MagicMock(name="spring-client")
-    monkeypatch.setattr(
-        gpt_module, "get_spring_client", MagicMock(return_value=sentinel)
+    sentinel = MagicMock(name="spring-client")
+    service = gpt_module.GptService(
+        MagicMock(), spring_client=sentinel, ai_user_summary_mapper=MagicMock()
     )
 
-    service = gpt_module.GptService(MagicMock())
+    assert service._spring_client is sentinel
 
     assert service._spring_client is sentinel
 
@@ -101,8 +106,9 @@ def test_gpt_service_factory_returns_cached_singleton(
     mapper = MagicMock(name="mapper")
     spring = MagicMock(name="spring")
 
-    first = gpt_module.get_gpt_service(mapper, spring)
-    second = gpt_module.get_gpt_service(mapper, spring)
+    summary_mapper = MagicMock(name="summary-mapper")
+    first = gpt_module.get_gpt_service(mapper, spring, None, summary_mapper)
+    second = gpt_module.get_gpt_service(mapper, spring, None, summary_mapper)
 
     assert first is second
     assert first._spring_client is spring

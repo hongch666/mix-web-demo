@@ -8,12 +8,14 @@ from app.internal.crud import (
     AiUserSummaryMapper,
     ApiLogMapper,
     ArticleMapper,
+    McpServerConfigMapper,
     UserMapper,
     VectorMapper,
     get_ai_history_mapper,
     get_ai_user_summary_mapper,
     get_api_log_mapper,
     get_article_mapper,
+    get_mcp_server_config_mapper,
     get_user_mapper,
     get_vector_store_mapper,
 )
@@ -59,5 +61,8 @@ AiUserSummaryMapperDep = Annotated[
 ]
 ApiLogMapperDep = Annotated[ApiLogMapper, Depends(provide_api_log_mapper)]
 ArticleMapperDep = Annotated[ArticleMapper, Depends(provide_article_mapper)]
+McpServerConfigMapperDep = Annotated[
+    McpServerConfigMapper, Depends(get_mcp_server_config_mapper)
+]
 UserMapperDep = Annotated[UserMapper, Depends(provide_user_mapper)]
 VectorMapperDep = Annotated[VectorMapper, Depends(provide_vector_store_mapper)]

@@ -24,7 +24,7 @@ from app.internal.agents import (
     supports_structured_output,
     supports_temperature,
 )
-from app.internal.crud import AiUserSummaryMapper, get_ai_user_summary_mapper
+from app.internal.crud import AiUserSummaryMapper
 from app.internal.models import AiUserSummary
 
 from .contextBudget import (
@@ -180,7 +180,7 @@ class BaseAiService:
         temperature: float = 0.7,
         use_structured_output: bool = True,
         tool_factories: Optional[AgentToolFactories] = None,
-        ai_user_summary_mapper: Optional[AiUserSummaryMapper] = None,
+        ai_user_summary_mapper: AiUserSummaryMapper | None = None,
         logger: Optional[LoggerProtocol] = None,
     ) -> None:
         """归一化代理环境变量后注入历史 Mapper、记忆摘要 Mapper、服务名配置与工具装配工厂，并触发 LLM 服务初始化"""
@@ -188,10 +188,10 @@ class BaseAiService:
         # 日志器可注入，缺省回退全局单例
         self._logger: LoggerProtocol = logger or Logger
         self.ai_history_mapper: Any = ai_history_mapper
-        # 用户级记忆摘要 Mapper，缺省时回退进程内单例（与 spring_client 处理方式一致）
-        self.ai_summary_mapper: AiUserSummaryMapper = (
-            ai_user_summary_mapper or get_ai_user_summary_mapper()
-        )
+        # 用户级记忆摘要 Mapper 由装配层显式注入
+        if ai_user_summary_mapper is None:
+            raise ValueError("ai_user_summary_mapper is required")
+        self.ai_summary_mapper: AiUserSummaryMapper = ai_user_summary_mapper
         self.service_name: str = service_name
         self.config_section: str = config_section
         self.model_config_key: str = model_config_key
@@ -397,15 +397,9 @@ class BaseAiService:
             tuple[str, list[ChatHistoryItem]]: 历史摘要与注入的原文轮次
         """
         summary_row = await self._load_memory_summary(user_id, db)
-        # 模型沿用 SQLAlchemy 旧式 Column 标注，字段静态类型是 Column[T]，取值时按运行期值处理
-        summary_values: Any = summary_row
-        watermark = (
-            int(summary_values.last_summarized_history_id or 0) if summary_row else 0
-        )
-        existing_summary = str(summary_values.summary or "") if summary_row else ""
-        summarized_count = (
-            int(summary_values.summarized_count or 0) if summary_row else 0
-        )
+        watermark = summary_row.last_summarized_history_id if summary_row else 0
+        existing_summary = summary_row.summary if summary_row else ""
+        summarized_count = summary_row.summarized_count if summary_row else 0
         candidate_rounds = self._context_budget.candidate_rounds
 
         try:

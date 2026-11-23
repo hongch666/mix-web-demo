@@ -34,7 +34,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_ListResponse_dict_str__Any___'
+                $ref: '#/components/schemas/ApiResponse_ListResponse_ArticleTop10Response__'
         '502':
           description: 下游 Spring 服务调用失败
           content: &id001
@@ -1521,6 +1521,26 @@ components:
       required:
       - code
       title: ApiResponse[GraphSearchEnhanceResp]
+    ApiResponse_ListResponse_ArticleTop10Response__:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ListResponse_ArticleTop10Response_'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[ListResponse[ArticleTop10Response]]
     ApiResponse_ListResponse_CategoryArticleCountResponse__:
       properties:
         code:
@@ -1561,26 +1581,6 @@ components:
       required:
       - code
       title: ApiResponse[ListResponse[MonthlyPublishCountResponse]]
-    ApiResponse_ListResponse_dict_str__Any___:
-      properties:
-        code:
-          type: integer
-          title: Code
-          description: 响应码
-        data:
-          anyOf:
-          - $ref: '#/components/schemas/ListResponse_dict_str__Any__'
-          - type: 'null'
-          description: 返回数据
-        msg:
-          type: string
-          title: Msg
-          description: 响应消息
-          default: success
-      type: object
-      required:
-      - code
-      title: ApiResponse[ListResponse[dict[str, Any]]]
     ApiResponse_NoneType_:
       properties:
         code:
@@ -1879,6 +1879,62 @@ components:
       - average_collects
       title: ArticleStatisticsResponse
       description: 平台文章统计响应，包含阅读、文章、点赞、收藏等汇总指标
+    ArticleTop10Response:
+      properties:
+        id:
+          type: integer
+          title: Id
+          description: 文章 ID
+        title:
+          type: string
+          title: Title
+          description: 文章标题
+        user_id:
+          type: integer
+          title: User Id
+          description: 作者用户 ID
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+          description: 作者用户名
+        views:
+          type: integer
+          title: Views
+          description: 文章阅读量
+        likes:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Likes
+          description: 文章点赞数
+        collects:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Collects
+          description: 文章收藏数
+        create_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Create At
+          description: 创建时间
+        update_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Update At
+          description: 更新时间
+      type: object
+      required:
+      - id
+      - title
+      - user_id
+      - views
+      title: ArticleTop10Response
+      description: 文章阅读量前十榜单响应项
     ArticleViewDistributionResponse:
       properties:
         total_views:
@@ -1887,8 +1943,7 @@ components:
           description: 总阅读量
         articles:
           items:
-            additionalProperties: true
-            type: object
+            $ref: '#/components/schemas/ArticleViewItem'
           type: array
           title: Articles
           description: 文章阅读分布
@@ -1898,6 +1953,28 @@ components:
       - articles
       title: ArticleViewDistributionResponse
       description: 用户文章阅读分布响应，含总阅读量与各文章明细
+    ArticleViewItem:
+      properties:
+        article_id:
+          type: integer
+          title: Article Id
+          description: 文章 ID
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Title
+          description: 文章标题
+        view_count:
+          type: integer
+          title: View Count
+          description: 文章阅读量
+      type: object
+      required:
+      - article_id
+      - view_count
+      title: ArticleViewItem
+      description: 单篇文章阅读分布响应项
     AuthorFollowStatisticsResponse:
       properties:
         total_authors:
@@ -2261,6 +2338,23 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ListResponse_ArticleTop10Response_:
+      properties:
+        total:
+          type: integer
+          title: Total
+          description: 总记录数
+        list:
+          items:
+            $ref: '#/components/schemas/ArticleTop10Response'
+          type: array
+          title: List
+          description: 列表数据
+      type: object
+      required:
+      - total
+      - list
+      title: ListResponse[ArticleTop10Response]
     ListResponse_CategoryArticleCountResponse_:
       properties:
         total:
@@ -2295,24 +2389,6 @@ components:
       - total
       - list
       title: ListResponse[MonthlyPublishCountResponse]
-    ListResponse_dict_str__Any__:
-      properties:
-        total:
-          type: integer
-          title: Total
-          description: 总记录数
-        list:
-          items:
-            additionalProperties: true
-            type: object
-          type: array
-          title: List
-          description: 列表数据
-      type: object
-      required:
-      - total
-      - list
-      title: ListResponse[dict[str, Any]]
     MonthlyPublishCountResponse:
       properties:
         year_month:

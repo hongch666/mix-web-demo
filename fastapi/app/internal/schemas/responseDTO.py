@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -64,11 +64,33 @@ class UserFollowerResponse(BaseModel):
     timeline: list[UserTimelineItem] = Field(description="周期统计")
 
 
+class ArticleTop10Response(BaseModel):
+    """文章阅读量前十榜单响应项"""
+
+    id: int = Field(description="文章 ID")
+    title: str = Field(description="文章标题")
+    user_id: int = Field(description="作者用户 ID")
+    username: Optional[str] = Field(default=None, description="作者用户名")
+    views: int = Field(description="文章阅读量")
+    likes: Optional[int] = Field(default=None, description="文章点赞数")
+    collects: Optional[int] = Field(default=None, description="文章收藏数")
+    create_at: Optional[str] = Field(default=None, description="创建时间")
+    update_at: Optional[str] = Field(default=None, description="更新时间")
+
+
+class ArticleViewItem(BaseModel):
+    """单篇文章阅读分布响应项"""
+
+    article_id: int = Field(description="文章 ID")
+    title: Optional[str] = Field(default=None, description="文章标题")
+    view_count: int = Field(description="文章阅读量")
+
+
 class ArticleViewDistributionResponse(BaseModel):
     """用户文章阅读分布响应，含总阅读量与各文章明细"""
 
     total_views: int = Field(description="总阅读量")
-    articles: list[dict[str, Any]] = Field(description="文章阅读分布")
+    articles: list[ArticleViewItem] = Field(description="文章阅读分布")
 
 
 class AuthorFollowStatisticsResponse(BaseModel):

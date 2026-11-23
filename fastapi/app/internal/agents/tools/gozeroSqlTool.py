@@ -11,7 +11,7 @@ from app.internal.agents.permissions.toolScope import (
     enforce_sql_row_scope,
     log_scope_denial,
 )
-from app.internal.clients import GozeroClient, get_gozero_client
+from app.internal.clients import GozeroClient
 
 
 class GozeroSqlTool:
@@ -91,6 +91,6 @@ class GozeroSqlTool:
 
 
 @lru_cache
-def get_gozero_sql_tool(gozero_client: Optional[GozeroClient] = None) -> GozeroSqlTool:
+def get_gozero_sql_tool(gozero_client: GozeroClient) -> GozeroSqlTool:
     """获取 GoZero SQL 工具实例"""
-    return GozeroSqlTool(gozero_client or get_gozero_client())
+    return GozeroSqlTool(gozero_client)

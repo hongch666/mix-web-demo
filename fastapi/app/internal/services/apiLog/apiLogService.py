@@ -2,14 +2,9 @@ import traceback
 from functools import lru_cache
 from typing import Any, Optional
 
-from app.core.base import Logger, LoggerProtocol
+from app.core.base import LoggerProtocol
 from app.core.constants import Messages
-from app.internal.cache import (
-    ApiLogCalledCountCache,
-    ApiLogSpeedCache,
-    get_api_log_called_count_cache,
-    get_api_log_speed_cache,
-)
+from app.internal.cache import ApiLogCalledCountCache, ApiLogSpeedCache
 from app.internal.clients import NestjsClient
 from app.internal.crud import ApiLogMapper
 
@@ -21,22 +16,16 @@ class ApiLogService:
         self,
         nestjs_client: NestjsClient,
         api_log_mapper: ApiLogMapper,
-        logger: LoggerProtocol | None = None,
-        speed_cache: Optional[ApiLogSpeedCache] = None,
-        called_count_cache: Optional[ApiLogCalledCountCache] = None,
+        logger: LoggerProtocol,
+        speed_cache: ApiLogSpeedCache,
+        called_count_cache: ApiLogCalledCountCache,
     ) -> None:
         """注入 NestJS 客户端、API 日志 Mapper、日志器与两个结果缓存"""
         self._nestjs_client: NestjsClient = nestjs_client
         self._apiLogMapper: ApiLogMapper = api_log_mapper
-        # 日志器可注入，缺省回退全局单例
-        self._logger: LoggerProtocol = logger or Logger
-        # 缓存缺省取单例，保证与依赖注入链路的实例一致
-        self._speed_cache: ApiLogSpeedCache = speed_cache or get_api_log_speed_cache(
-            self._logger
-        )
-        self._called_count_cache: ApiLogCalledCountCache = (
-            called_count_cache or get_api_log_called_count_cache(self._logger)
-        )
+        self._logger: LoggerProtocol = logger
+        self._speed_cache: ApiLogSpeedCache = speed_cache
+        self._called_count_cache: ApiLogCalledCountCache = called_count_cache
 
     async def _query_ads_with_fallback(
         self,
@@ -82,9 +71,9 @@ class ApiLogService:
 def get_apilog_service(
     nestjs_client: NestjsClient,
     api_log_mapper: ApiLogMapper,
-    logger: LoggerProtocol | None = None,
-    speed_cache: Optional[ApiLogSpeedCache] = None,
-    called_count_cache: Optional[ApiLogCalledCountCache] = None,
+    logger: LoggerProtocol,
+    speed_cache: ApiLogSpeedCache,
+    called_count_cache: ApiLogCalledCountCache,
 ) -> ApiLogService:
     """按依赖参数缓存并返回 ApiLogService 单例"""
     return ApiLogService(

@@ -2672,6 +2672,8 @@ class Messages:
     """文本分割失败的错误消息"""
     REFERENCE_ERR_AI_SUMMARIZE_FALLBACK: str = "AI总结失败，使用原始内容"
     """AI 总结失败改用原始正文的错误消息"""
+    REFERENCE_ERR_SHARED_HTTP_CLIENT_UNINITIALIZED: str = "共享外部 HTTP 客户端未初始化"
+    """共享外部抓取客户端尚未初始化的错误消息"""
 
     ERROR_AI_CHAT_NO_INSTANCE: str = "AI_CHAT_NO_INSTANCE"
     """错误标识：没有可用的 AI 对话实例"""
@@ -3616,6 +3618,9 @@ class Messages:
 
     API_LOG_DESC_AI_HISTORY_LIST: str = "获取所有AI历史记录"
     """AI 历史列表接口写入 api-log-queue 的接口描述"""
+
+    AI_HISTORY_REQUIRED_ID_MISSING: str = "AI历史记录缺少主键或用户 ID"
+    """序列化 AI 历史记录时缺少必需主键或用户 ID 的错误消息"""
 
     API_LOG_DESC_AI_HISTORY_DELETE: str = "删除用户所有AI历史记录"
     """删除全部 AI 历史接口写入 api-log-queue 的接口描述"""
