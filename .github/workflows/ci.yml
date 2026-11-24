@@ -289,12 +289,15 @@ jobs:
       # genSwagger.sh 的 fix.py 依赖 PyYAML，且它探测的是 python（跳过 /usr/bin 系统解释器）
       # 显式 setup-python 让 python 落在 tool cache 路径，下面用同一个 python 安装，避免 python/python3 环境不一致
       - if: contains(steps.gate.outputs.services, 'gozero')
+        id: setup-py
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - if: contains(steps.gate.outputs.services, 'gozero')
         name: 安装 goctl 与文档后处理依赖
+        env:
+          PY_BIN: ${{ steps.setup-py.outputs.python-path }}
         run: |
           set -euo pipefail
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
@@ -302,8 +305,11 @@ jobs:
             || GOWORK=off go install github.com/zeromicro/go-zero/tools/goctl@latest
           goctl --version
           npm install -g swagger2openapi
-          python -m pip install pyyaml
-          python -c "import yaml; print('PyYAML', yaml.__version__)"
+          # 用 setup-python 的绝对路径安装，记录到 GITHUB_ENV 供后续步骤使用，
+          # 避免 setup-uv 注入的 .venv/bin 覆盖 command -v python
+          "$PY_BIN" -m pip install pyyaml
+          "$PY_BIN" -c "import yaml; print('PyYAML', yaml.__version__, 'at', '$PY_BIN')"
+          echo "SWAGGER_PYTHON=$PY_BIN" >> "$GITHUB_ENV"
 
       # ---------- nestjs：Node 20 + npm ci + Bun（生成器必须用 Bun 加载 ESM 依赖）----------
       - if: contains(steps.gate.outputs.services, 'nestjs')
@@ -353,34 +359,15 @@ jobs:
             fi
           done
           echo "::endgroup::"
-          # setup-uv 会把根目录 .venv/bin 注入 PATH 并设 VIRTUAL_ENV，该环境没有 PyYAML，
-          # genSwagger.sh 的自动探测会误选它。这里显式解析出装了 PyYAML 的解释器传给下游
-          SWAGGER_PYTHON=""
-          for candidate in python python3; do
-            resolved="$(command -v "$candidate" 2>/dev/null || true)"
-            case "$resolved" in
-              */.venv/bin/*|*/site-packages/*) continue ;;
-            esac
-            if [ -n "$resolved" ] && "$resolved" -c 'import yaml' >/dev/null 2>&1; then
-              SWAGGER_PYTHON="$resolved"
-              break
-            fi
-          done
-          if [ -z "$SWAGGER_PYTHON" ]; then
-            # 兜底：setup-python 的解释器（PATH 里非 venv 的那个）当场补装 PyYAML
-            for candidate in python python3; do
-              resolved="$(command -v "$candidate" 2>/dev/null || true)"
-              case "$resolved" in
-                */.venv/bin/*) continue ;;
-              esac
-              if [ -n "$resolved" ]; then
-                "$resolved" -m pip install pyyaml
-                SWAGGER_PYTHON="$resolved"
-                break
-              fi
-            done
+          # SWAGGER_PYTHON 由 gozero 安装步骤写入 GITHUB_ENV，是 setup-python 的绝对路径，
+          # 已装 PyYAML 且不受 setup-uv 注入的 .venv/bin 污染；genSwagger.sh 会优先用它
+          if [ -z "${SWAGGER_PYTHON:-}" ]; then
+            # 未触发 gozero（本次只检测其它服务）：无需 fix.py，留空即可
+            echo "::notice::本次未设置 SWAGGER_PYTHON（gozero 未在变更服务内）"
+          else
+            "$SWAGGER_PYTHON" -c 'import yaml' || { echo "::error::SWAGGER_PYTHON 缺少 PyYAML"; exit 1; }
           fi
-          echo "SWAGGER_PYTHON=$SWAGGER_PYTHON"
+          echo "SWAGGER_PYTHON=${SWAGGER_PYTHON:-<empty>}"
           export SWAGGER_PYTHON
           echo "执行: ./mix swag-check $SERVICES"
           bash scripts/docs/swag-check.sh $SERVICES
