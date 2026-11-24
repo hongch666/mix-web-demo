@@ -286,6 +286,13 @@ jobs:
           go-version-file: gozero/app/go.mod
           cache-dependency-path: gozero/app/go.sum
 
+      # genSwagger.sh 的 fix.py 依赖 PyYAML，且它探测的是 python（跳过 /usr/bin 系统解释器）
+      # 显式 setup-python 让 python 落在 tool cache 路径，下面用同一个 python 安装，避免 python/python3 环境不一致
+      - if: contains(steps.gate.outputs.services, 'gozero')
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - if: contains(steps.gate.outputs.services, 'gozero')
         name: 安装 goctl 与文档后处理依赖
         run: |
@@ -295,7 +302,8 @@ jobs:
             || GOWORK=off go install github.com/zeromicro/go-zero/tools/goctl@latest
           goctl --version
           npm install -g swagger2openapi
-          python3 -m pip install --user pyyaml
+          python -m pip install pyyaml
+          python -c "import yaml; print('PyYAML', yaml.__version__)"
 
       # ---------- nestjs：Node 20 + npm ci + Bun（生成器必须用 Bun 加载 ESM 依赖）----------
       - if: contains(steps.gate.outputs.services, 'nestjs')
