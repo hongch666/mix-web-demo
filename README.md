@@ -2440,8 +2440,8 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 
 | 文件              | 作用                                                                                                                                                                                                                                                             |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/quality/lint.sh` / `scripts/quality/compile.sh` / `scripts/quality/test.sh`；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿 |
-| `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                                                                 |
+| `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/quality/lint.sh` / `scripts/quality/compile.sh` / `scripts/quality/test.sh`；filter 覆盖生产源码与测试代码，测试代码变更照常触发对应服务门禁，`gozero` 的 `.api`/模板/脚本也保留以校验格式与生成一致性；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿 |
+| `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；filter 与 Dockerfile 的 COPY 范围对齐，测试代码与不进镜像的源文件（`gozero` 的 `.api`/模板/脚本等）变更不触发构建，并由 `paths-ignore` 让这类 push 连流水线都不启动；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                                  |
 | `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`observability/` 有变更时按文件重启命中的容器（不重建业务服务）                                                       |
 | `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                                                          |
 | `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)                                                                                                                                   |
@@ -2475,7 +2475,8 @@ gh workflow run smoke.yml
 
 ### 注意事项
 
-1. 只改 `**.md`、`docs/**`、`db/**`、`scripts/**`、`skills/**`、`static/**`、`.github/**` 时不触发流水线；改 `observability/`（或根 `docker-compose.yml`）会触发一次 `Release Images`，但变更检测为 0、不构建任何镜像，部署侧走 `CONFIG_ONLY` 同步代码与配置，并按目录重启命中的容器（Grafana / Loki / Promtail / Prometheus / otel-collector / tempo / gateway），业务容器不重建
+1. 只改 `**.md`、`docs/**`、`db/**`、`scripts/**`、`skills/**`、`static/**`、`.github/**`、测试代码（`**/*_test.go` / `**/*.spec.ts` / `**/*-spec.ts` / `fastapi/tests/**`）或不进镜像的源文件（`gozero/api/**`、`gozero/template/**`、`gozero/script/**`）时不触发流水线；改 `observability/`（或根 `docker-compose.yml`）会触发一次 `Release Images`，但变更检测为 0、不构建任何镜像，部署侧走 `CONFIG_ONLY` 同步代码与配置，并按目录重启命中的容器（Grafana / Loki / Promtail / Prometheus / otel-collector / tempo / gateway），业务容器不重建
+   - 变更检测分两套口径：`ci.yml` 覆盖生产源码与测试代码，测试代码变更照常触发对应服务门禁，`gozero` 的 `.api`/模板/脚本也保留以校验格式与生成代码一致性（4 个 required check 恒定产出）；`release.yml` 与 Dockerfile 的 COPY 范围对齐，只列真正进镜像的文件，测试与非构建文件一律不触发构建，并由 `paths-ignore` 让这类 push 连流水线都不启动
 2. 部署机是「一次配置、长期复用」：runner 以 systemd 服务注册，仓库目录里的 `.env`、四个 `.env.docker` 都不随 `checkout` 重置；`docker compose` 需要 runner 用户具备 docker 权限
 3. 部署失败会自动按服务回滚到上一版本（状态记录在 `${RUNNER_WORKSPACE}/mix-deploy-state/last-deploy.txt`）；若回滚也失败会打出 `::warning::` 并要求人工介入
 4. 部署目录用 `git checkout -f -B prod <commit>` 而不是 detached HEAD，运维仍可直接在该目录 `git pull` 排查
