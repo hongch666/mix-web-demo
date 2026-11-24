@@ -8495,6 +8495,12 @@ components:
           - "null"
           format: "int64"
           description: "收藏数"
+        author_follow_count:
+          type:
+          - "integer"
+          - "null"
+          format: "int64"
+          description: "作者被关注数"
     ResultListArticleExportVO:
       description: "统一响应"
       properties:
