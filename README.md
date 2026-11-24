@@ -109,7 +109,7 @@
     - [静态产物生成（./mix swag）](#静态产物生成mix-swag)
     - [Spring 部分](#spring-部分-1)
     - [GoZero 部分](#gozero-部分-1)
-    - [NestJS](#nestjs)
+    - [NestJS 部分](#nestjs-部分-1)
     - [FastAPI 部分](#fastapi-部分-1)
   - [Apifox 文档同步](#apifox-文档同步)
     - [前置配置](#前置配置)
@@ -135,7 +135,7 @@
     - [编译校验（./mix compile）](#编译校验mix-compile)
     - [Spring](#spring)
     - [GoZero](#gozero)
-    - [NestJS](#nestjs-1)
+    - [NestJS](#nestjs)
     - [FastAPI](#fastapi)
   - [Git 提交钩子](#git-提交钩子)
     - [日志注解/中间件](#日志注解中间件)
@@ -168,7 +168,6 @@
   - [下载说明](#下载说明)
   - [AI 说明](#ai-说明)
   - [LangSmith 可观测性说明](#langsmith-可观测性说明)
-  - [用户聊天相关说明](#用户聊天相关说明)
   - [AI 用户说明](#ai-用户说明)
   - [分库分表说明](#分库分表说明)
   - [邮箱说明](#邮箱说明)
@@ -3266,24 +3265,15 @@ sequenceDiagram
 
 ### 下载说明
 
-1. Word 下载文件的模板路径在 NestJS 部分 yaml 配置文件中配置，使用 `${字段名}`进行模板书写，目前提供如下的示例
-2. 内容示例
-
-   ```word
-   ${title}
-
-   ${tags}
-
-   ${content}
-   ```
-
-3. PDF 下载需要使用下面指令安装 `puppeteer`的 Chrome 浏览器
+1. Word 模板默认取自 `nestjs/src/assets/word/template.docx`（构建后位于 `dist/assets/word/`），可通过 `FILES_WORD_PATH` 指向自定义目录或 `.docx` 文件；配置路径不可读时自动回退到内置模板，`static/word` 只是部署期覆盖位，Docker 下默认留空
+2. 模板占位符写作 `${字段名}`，与 `ArticleExportMeta` 字段一一对应：`${id}`、`${title}`、`${author}`、`${category}`、`${status}`、`${tags}`、`${views}`、`${createTime}`、`${updateTime}`、`${content}`
+3. 正文统一经 marked 渲染：Word 再把 HTML 转为纯文本并保留换行，PDF 套用 `ExportTemplate` 的 A4 版式并带 `第 N / M 页` 页码，Markdown 保留原文并带 YAML front matter
+4. 导出中间文件写在系统临时目录，上传 OSS 后立即删除，不依赖静态目录写权限
+5. PDF 导出依赖 Chromium：镜像已内置 `chromium` 与中文字体，并通过 `PUPPETEER_EXECUTABLE_PATH` 指定；本地未设置该变量时使用 puppeteer 自带浏览器，必要时执行：
 
    ```bash
    npx puppeteer browsers install chrome
    ```
-
-4. 当前 Word 下载只支持文章内容为纯文本，无法显示 Markdown 格式
 
 ### AI 说明
 
@@ -3296,10 +3286,6 @@ sequenceDiagram
 ### LangSmith 可观测性说明
 
 1. FastAPI 部分集成 [LangSmith](https://smith.langchain.com/) 作为 LLM 链路可观测性平台，对 AI 聊天（普通 + SSE 流式）、RAG 检索、向量搜索、意图路由和向量同步任务进行全链路 Trace 记录，追踪功能默认关闭，不影响既有业务
-
-### 用户聊天相关说明
-
-1. GoZero 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数
 
 ### AI 用户说明
 
