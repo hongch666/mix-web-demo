@@ -20,13 +20,10 @@ import { InternalTokenGuard } from "src/framework/guards/internalToken.guard";
 import { RequireAdminGuard } from "src/framework/guards/requireAdmin.guard";
 import { RequireSelfGuard } from "src/framework/guards/requireSelf.guard";
 import { ApiLogInterceptor } from "src/framework/interceptors/apiLog.interceptor";
-import { CacheModule } from "src/module/common/cache/cache.module";
 import { CommonModule } from "src/module/common/common.module";
 import { LoggerModule } from "src/module/common/logger/logger.module";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { createMongooseDebugLogger } from "src/module/common/logger/mongooseDebugLogger";
-import { NacosModule } from "src/module/common/nacos/nacos.module";
-import { RedisModule } from "src/module/common/redis/redis.module";
 import { SystemModule } from "src/module/system/system.module";
 import { ClsMiddleware } from "../framework/middleware/cls.middleware";
 
@@ -95,8 +92,6 @@ import { ClsMiddleware } from "../framework/middleware/cls.middleware";
     }),
     // 定时任务开关关闭时不注册 ScheduleModule，@Cron 任务不再触发（改由 Dolphin 调度器触发 /task/* 接口）
     ...(isTaskEnabled(config) ? [ScheduleModule.forRoot()] : []),
-    RedisModule,
-    CacheModule,
     RabbitMQModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -130,7 +125,6 @@ import { ClsMiddleware } from "../framework/middleware/cls.middleware";
       },
     }),
     CommonModule,
-    NacosModule,
     SystemModule,
   ],
   controllers: [],
