@@ -714,6 +714,42 @@ with open(output_file, "w", encoding="utf-8", newline="\n") as handle:
 PY
 }
 
+# 比对 Apifox 现有 WebSocket 接口的 description/tags 与静态产物是否一致
+# 完全一致输出 false 跳过更新，任一字段不同输出 true；产物里找不到该 path 时也输出 false，避免误覆盖
+websocket_needs_update() {
+    local python_bin="$1"
+    local detail_file="$2"
+    local spec_file="$3"
+    local path_file="$4"
+    "$python_bin" - "$detail_file" "$spec_file" "$path_file" <<'PY'
+import json
+import sys
+
+detail_file, spec_file, path_file = sys.argv[1:4]
+
+with open(path_file, encoding="utf-8") as handle:
+    target_path = handle.readline().rstrip("\r\n")
+
+with open(detail_file, encoding="utf-8") as handle:
+    detail = json.load(handle).get("data") or {}
+
+with open(spec_file, encoding="utf-8") as handle:
+    endpoints = json.load(handle).get("websockets") or []
+
+endpoint = next((item for item in endpoints if item.get("path") == target_path), None)
+if endpoint is None:
+    print("false")
+    sys.exit(0)
+
+for key in ("description", "tags"):
+    if detail.get(key) != endpoint.get(key):
+        print("true")
+        sys.exit(0)
+
+print("false")
+PY
+}
+
 sync_websocket_endpoints() {
     local service="$1"
     local is_dry_run="$2"
@@ -759,7 +795,7 @@ print("\n".join(item["path"] for item in endpoints if item.get("path")))
         return 1
     fi
 
-    local path id synced=0 missing=0
+    local path id synced=0 missing=0 unchanged=0
     while IFS= read -r path; do
         [ -n "$path" ] || continue
 
@@ -770,12 +806,6 @@ print("\n".join(item["path"] for item in endpoints if item.get("path")))
             continue
         fi
 
-        if [ "$is_dry_run" = "true" ]; then
-            print_info "[$service] dry-run：将用产物覆盖 WebSocket 接口 $path（id=$id）的 description 与 tags"
-            synced=$((synced + 1))
-            continue
-        fi
-
         local detail_file="$TMP_DIR/websocket-detail.json"
         local payload_file="$TMP_DIR/websocket-payload.json"
         local path_file="$TMP_DIR/websocket-target-path.txt"
@@ -783,6 +813,20 @@ print("\n".join(item["path"] for item in endpoints if item.get("path")))
         if ! apifox websocket get "$id" --project "$project_id" --access-token "$token" >"$detail_file" 2>/dev/null; then
             print_error "[$service] 获取 WebSocket 接口 $path 详情失败"
             return 1
+        fi
+
+        # 先比对再决定是否更新：description 与 tags 都没变时不发 update，避免刷新修改时间与变更历史
+        local needs_update
+        needs_update=$(websocket_needs_update "$python_bin" "$detail_file" "$ws_spec" "$path_file")
+        if [ "$needs_update" != "true" ]; then
+            unchanged=$((unchanged + 1))
+            continue
+        fi
+
+        if [ "$is_dry_run" = "true" ]; then
+            print_info "[$service] dry-run：将用产物覆盖 WebSocket 接口 $path（id=$id）的 description 与 tags"
+            synced=$((synced + 1))
+            continue
         fi
 
         if ! merge_websocket_payload "$python_bin" "$detail_file" "$ws_spec" "$path_file" "$payload_file"; then
@@ -803,7 +847,7 @@ print("\n".join(item["path"] for item in endpoints if item.get("path")))
         synced=$((synced + 1))
     done <<< "$paths"
 
-    print_info "[$service] WebSocket 接口：更新 $synced，缺失跳过 $missing（仅同步 description 与 tags）"
+    print_info "[$service] WebSocket 接口：更新 $synced，未变跳过 $unchanged，缺失跳过 $missing（仅同步 description 与 tags）"
     return 0
 }
 
