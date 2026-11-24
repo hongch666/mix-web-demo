@@ -14,39 +14,175 @@
 <details>
 <summary>点击展开目录</summary>
 
-- [描述](#描述)
-- [功能说明](#功能说明)
-- [服务说明](#服务说明)
-- [可观测性组件](#可观测性组件)
-- [登录相关](#登录相关)
-- [设计图](#设计图)
-- [技术栈](#技术栈)
-- [第三方服务](#第三方服务)
-- [环境要求](#环境要求)
-- [环境设置](#环境设置)
-- [环境配置脚本](#环境配置脚本)
-- [Docker 基础中间件容器部署](#docker-基础中间件容器部署)
-- [编译和运行项目](#编译和运行项目)
-- [测试说明](#测试说明)
-- [运行脚本配置](#运行脚本配置)
-- [生产环境部署](#生产环境部署)
-- [Docker 容器部署](#docker-容器部署)
-- [Docker Compose 部署](#docker-compose-部署)
-- [基础服务组件初始化](#基础服务组件初始化)
-- [环境变量配置文件](#环境变量配置文件)
-- [Swagger 说明](#swagger-说明)
-- [Apifox 文档同步](#apifox-文档同步)
-- [CI/CD 工作流](#cicd-工作流)
-- [项目规范说明](#项目规范说明)
-- [代码规范与格式化工具](#代码规范与格式化工具)
-- [Git 提交钩子](#git-提交钩子)
-- [项目可用工具说明](#项目可用工具说明)
+- [项目概览](#项目概览)
+  - [描述](#描述)
+  - [功能说明](#功能说明)
+  - [服务说明](#服务说明)
+    - [Spring 服务（端口 8081）](#spring-服务端口-8081)
+    - [GoZero 服务（端口 8082）](#gozero-服务端口-8082)
+    - [NestJS 服务（端口 8083）](#nestjs-服务端口-8083)
+    - [FastAPI 服务（端口 8084）](#fastapi-服务端口-8084)
+    - [Apache APISIX 网关（端口 8080）](#apache-apisix-网关端口-8080)
+  - [可观测性组件](#可观测性组件)
+    - [组件一览](#组件一览)
+    - [链路与日志关联](#链路与日志关联)
+    - [服务接入方式](#服务接入方式)
+    - [指标采集](#指标采集)
+    - [开关与访问地址](#开关与访问地址)
+  - [设计图](#设计图)
+  - [技术栈](#技术栈)
+  - [第三方服务](#第三方服务)
+- [环境准备与部署](#环境准备与部署)
+  - [环境要求](#环境要求)
+  - [环境设置](#环境设置)
+    - [Spring 部分](#spring-部分)
+    - [GoZero 部分](#gozero-部分)
+    - [NestJS 部分](#nestjs-部分)
+    - [FastAPI 部分](#fastapi-部分)
+  - [环境配置脚本](#环境配置脚本)
+    - [Linux/macOS 使用方式](#linuxmacos-使用方式)
+    - [交互式配置](#交互式配置)
+    - [脚本功能特性](#脚本功能特性)
+    - [脚本执行流程](#脚本执行流程)
+    - [注意事项](#注意事项)
+    - [配置完成后](#配置完成后)
+  - [Docker 基础中间件容器部署](#docker-基础中间件容器部署)
+    - [基础容器部署命令](#基础容器部署命令)
+    - [创建的容器服务](#创建的容器服务)
+    - [自定义账号密码配置](#自定义账号密码配置)
+    - [ElasticSearch IK 分词器](#elasticsearch-ik-分词器)
+    - [数据持久化目录](#数据持久化目录)
+    - [注意事项](#注意事项-1)
+  - [编译和运行项目](#编译和运行项目)
+    - [Spring 服务](#spring-服务)
+    - [APISIX 网关](#apisix-网关)
+    - [GoZero 服务](#gozero-服务)
+    - [NestJS 服务](#nestjs-服务)
+    - [FastAPI 服务](#fastapi-服务)
+  - [测试说明](#测试说明)
+    - [使用 mix 快速运行](#使用-mix-快速运行)
+    - [测试运行方式](#测试运行方式)
+    - [测试代码规范](#测试代码规范)
+  - [运行脚本配置](#运行脚本配置)
+    - [快速启动（推荐）](#快速启动推荐)
+      - [Linux/macOS](#linuxmacos)
+      - [Windows（Git Bash）](#windowsgit-bash)
+    - [直接调用脚本](#直接调用脚本)
+      - [Linux/macOS](#linuxmacos-1)
+      - [Windows（Git Bash）](#windowsgit-bash-1)
+    - [脚本说明](#脚本说明)
+    - [服务名称](#服务名称)
+    - [注意事项](#注意事项-2)
+  - [生产环境部署](#生产环境部署)
+    - [脚本说明](#脚本说明-1)
+  - [Docker 容器部署](#docker-容器部署)
+    - [微服务 Docker 快速开始](#微服务-docker-快速开始)
+    - [微服务容器说明](#微服务容器说明)
+    - [高级用法](#高级用法)
+  - [Docker Compose 部署](#docker-compose-部署)
+    - [前置要求](#前置要求)
+    - [启动服务](#启动服务)
+    - [停止服务](#停止服务)
+    - [状态查看](#状态查看)
+    - [查看日志](#查看日志)
+    - [手动命令（可选）](#手动命令可选)
+    - [文件说明](#文件说明)
+    - [访问服务](#访问服务)
+    - [高级用法](#高级用法-1)
+  - [基础服务组件初始化](#基础服务组件初始化)
+    - [确保已安装并启动以下数据库服务：](#确保已安装并启动以下数据库服务)
+    - [SQL 初始化脚本说明](#sql-初始化脚本说明)
+    - [MySQL 表创建](#mysql-表创建)
+    - [PostgreSQL 表创建](#postgresql-表创建)
+    - [MongoDB 表创建](#mongodb-表创建)
+    - [ElasticSearch 索引创建](#elasticsearch-索引创建)
+    - [ClickHouse 创建](#clickhouse-创建)
+    - [Neo4j 初始化](#neo4j-初始化)
+  - [环境变量配置文件](#环境变量配置文件)
+    - [各服务配置说明](#各服务配置说明)
+      - [NestJS 文件目录解析（`FILES_WORD_PATH`）](#nestjs-文件目录解析files_word_path)
+      - [导出文档内容](#导出文档内容)
+    - [环境变量使用说明](#环境变量使用说明)
+- [接口文档](#接口文档)
+  - [Swagger 说明](#swagger-说明)
+    - [运行期访问（网关聚合）](#运行期访问网关聚合)
+    - [静态产物生成（./mix swag）](#静态产物生成mix-swag)
+    - [Spring 部分](#spring-部分-1)
+    - [GoZero 部分](#gozero-部分-1)
+    - [NestJS](#nestjs)
+    - [FastAPI 部分](#fastapi-部分-1)
+  - [Apifox 文档同步](#apifox-文档同步)
+    - [前置配置](#前置配置)
+    - [使用方式](#使用方式)
+    - [GitHub Actions 自动同步（OpenAPI 产物与 README 变更触发）](#github-actions-自动同步openapi-产物与-readme-变更触发)
+    - [注意事项](#注意事项-3)
+    - [引用完整性检查（./mix apifox-check）](#引用完整性检查mix-apifox-check)
+    - [README 同步到指定文档](#readme-同步到指定文档)
+  - [CI/CD 工作流](#cicd-工作流)
+    - [分支与触发](#分支与触发)
+    - [工作流清单](#工作流清单)
+    - [需要的仓库配置](#需要的仓库配置)
+    - [常用操作](#常用操作)
+    - [注意事项](#注意事项-4)
+- [CI/CD 与工程规范](#cicd-与工程规范)
+  - [项目规范说明](#项目规范说明)
+    - [架构与目录概要](#架构与目录概要)
+    - [返回与字段命名](#返回与字段命名)
+    - [定时任务](#定时任务)
+    - [Agent 技能包（skills/mix-\*）](#agent-技能包skillsmix-)
+    - [同步到本机 Agent 工具（./mix skills）](#同步到本机-agent-工具mix-skills)
+  - [代码规范与格式化工具](#代码规范与格式化工具)
+    - [编译校验（./mix compile）](#编译校验mix-compile)
+    - [Spring](#spring)
+    - [GoZero](#gozero)
+    - [NestJS](#nestjs-1)
+    - [FastAPI](#fastapi)
+  - [Git 提交钩子](#git-提交钩子)
+    - [日志注解/中间件](#日志注解中间件)
+    - [权限校验注解/中间件](#权限校验注解中间件)
+    - [内部服务令牌注解/中间件](#内部服务令牌注解中间件)
+    - [内部服务令牌的获取方式（接口测试用）](#内部服务令牌的获取方式接口测试用)
+    - [服务间调用工具](#服务间调用工具)
+    - [内部调用客户端（Client）规范](#内部调用客户端client规范)
 - [其他说明](#其他说明)
+  - [GoZero 代码生成](#gozero-代码生成)
+  - [生成产物校验](#生成产物校验)
+  - [FastAPI MCP 工具扩展说明](#fastapi-mcp-工具扩展说明)
+  - [FastAPI Agent 工具说明](#fastapi-agent-工具说明)
+    - [1.SQL 数据库工具](#1sql-数据库工具)
+    - [2.RAG 向量搜索工具](#2rag-向量搜索工具)
+    - [3.MongoDB 日志查询工具](#3mongodb-日志查询工具)
+    - [4.Neo4j 知识图谱工具](#4neo4j-知识图谱工具)
+    - [5.其他工具](#5其他工具)
+  - [FastAPI Agent 上下文压缩说明](#fastapi-agent-上下文压缩说明)
+    - [1.记忆摘要表](#1记忆摘要表)
+    - [2.历史预算推导](#2历史预算推导)
+    - [3.裁剪与触发规则](#3裁剪与触发规则)
+    - [4.压缩调用与失败降级](#4压缩调用与失败降级)
+    - [5.配置项](#5配置项)
+    - [6.相关代码](#6相关代码)
+  - [登录相关](#登录相关)
+    - [GitHub OAuth 登录流程](#github-oauth-登录流程)
+    - [前置条件](#前置条件)
+  - [词云图说明](#词云图说明)
+  - [下载说明](#下载说明)
+  - [AI 说明](#ai-说明)
+  - [LangSmith 可观测性说明](#langsmith-可观测性说明)
+  - [用户聊天相关说明](#用户聊天相关说明)
+  - [AI 用户说明](#ai-用户说明)
+  - [分库分表说明](#分库分表说明)
+  - [邮箱说明](#邮箱说明)
+  - [Fresh 热启动工具说明](#fresh-热启动工具说明)
+  - [搜索算法公式说明](#搜索算法公式说明)
+    - [1. ES 候选综合评分](#1-es-候选综合评分)
+    - [2. 向量与图谱增强后的最终融合评分](#2-向量与图谱增强后的最终融合评分)
 - [许可证](#许可证)
 
 </details>
 
-## 描述
+## 项目概览
+
+### 描述
 
 这是一个基于多语言微服务构建的智能文章平台，涵盖内容社区、融合搜索、RAG 知识问答、知识图谱与数据分析等能力，主要包含以下框架：
 
@@ -59,7 +195,7 @@
 
 [前端对应仓库地址](https://gitee.com/chu-shichao/react-web-demo)
 
-## 功能说明
+### 功能说明
 
 1. 基于 Spring Boot WebFlux 和 Spring Data R2DBC 实现文章发布、修改等操作，文章的创建和显示都支持 Markdown
 2. 基于 Spring Boot WebFlux 和 Spring Data R2DBC 实现用户、分类、评论、点赞、收藏、关注等业务模块
@@ -86,11 +222,11 @@
 23. 基于 GitHub Actions 和 GHCR 实现 CI/CD
 24. 基于 Docker Compose 一键拉起四个服务、APISIX 网关与基础中间件，并内置 Prometheus、Grafana、Loki、Tempo 可观测栈
 
-## 服务说明
+### 服务说明
 
 > 四个业务服务与网关均已接入 OpenTelemetry 链路追踪，四个业务服务同时暴露 Prometheus 指标端点；组件构成、接入方式与开关见[可观测性组件](#可观测性组件)章节。
 
-### Spring 服务（端口 8081）
+#### Spring 服务（端口 8081）
 
 | 项目     | 说明                                                                                                   |
 | -------- | ------------------------------------------------------------------------------------------------------ |
@@ -103,7 +239,7 @@
 | 主要功能 | 用户认证（密码登录/邮箱登录/Token 管理）、文章 CRUD、分类管理、评论点赞收藏关注、权限校验              |
 | 代码位置 | `spring/`                                                                                              |
 
-### GoZero 服务（端口 8082）
+#### GoZero 服务（端口 8082）
 
 | 项目     | 说明                                              |
 | -------- | ------------------------------------------------- |
@@ -116,7 +252,7 @@
 | 主要功能 | 文章搜索引擎、ES 数据同步、用户实时聊天、消息通知 |
 | 代码位置 | `gozero/`                                         |
 
-### NestJS 服务（端口 8083）
+#### NestJS 服务（端口 8083）
 
 | 项目     | 说明                                                                                                 |
 | -------- | ---------------------------------------------------------------------------------------------------- |
@@ -134,7 +270,7 @@ NestJS 模块按职责划分为两层：
 - `src/module/common/`：通用能力和基础设施模块，包括 GitHub OAuth、邮件、Nacos、OSS、Redis、客户端和 Word 文档处理。
 - `src/module/system/`：系统业务和接口模块，包括文章、用户、文章日志、API 日志、下载、上传、定时任务和测试模块。
 
-### FastAPI 服务（端口 8084）
+#### FastAPI 服务（端口 8084）
 
 | 项目     | 说明                                                                                                                                                                                                                                     |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -146,7 +282,7 @@ NestJS 模块按职责划分为两层：
 | 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（NeoModel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询/MCP 扩展工具）、多模型（GPT/Gemini/GLM/DeepSeek/Claude/Qwen）、LangSmith LLM 链路追踪、Agent 上下文压缩（预算裁剪 + 记忆摘要） |
 | 代码位置 | `fastapi/`                                                                                                                                                                                                                               |
 
-### Apache APISIX 网关（端口 8080）
+#### Apache APISIX 网关（端口 8080）
 
 | 项目     | 说明                                                                                                          |
 | -------- | ------------------------------------------------------------------------------------------------------------- |
@@ -165,11 +301,11 @@ NestJS 模块按职责划分为两层：
 4. **业务服务端口收敛**：根 `docker-compose.yml` 只给网关映射宿主机端口，四个业务服务只在容器网络内可达。
 5. **限流不依赖 Redis**：`limit-req` 用 `policy: local`，与 `nginx_config.worker_processes: 1` 配套，进程内计数即全局配额；扩多 worker 或多副本时配额会按实例数放大，须改回 `policy: redis` 并补齐 `redis_*` 与密码配置。
 
-## 可观测性组件
+### 可观测性组件
 
 系统通过 OpenTelemetry 打通网关与四个服务的链路，日志与 Trace 在 Grafana 中统一检索；四个服务的运行指标由 Prometheus 抓取，同样汇总到 Grafana 查询。
 
-### 组件一览
+#### 组件一览
 
 | 组件                    | 镜像 / 依赖                                    | 作用                                                                         |
 | ----------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------- |
@@ -193,14 +329,14 @@ NestJS 模块按职责划分为两层：
 
 观测数据保留：日志、链路、指标与 Grafana 配置分别落在命名卷 `loki-data`、`tempo-data`、`prometheus-data`、`grafana-data` 上，重启容器、重新部署、`./mix compose down` 都不会清空历史数据；过期数据由各自保留策略回收，需要彻底清空时显式执行 `./mix compose down --volumes`（或 `./mix observability delete`）
 
-### 链路与日志关联
+#### 链路与日志关联
 
 1. 各服务把 Span 以 OTLP 上报到 Collector，容器内地址为 `otel-collector:4318`，本地开发默认 `127.0.0.1:4318`
 2. Collector 先删除 `authorization`、`x-internal-token` 等敏感请求头，再全量导出到 Tempo（当前不启用采样，所有链路均可在 Tempo 中查到）
 3. Trace 写入 Tempo；Grafana 的 Loki 数据源配置了 `derivedFields`，点击日志中的 TraceID 可跳转到 Tempo，Tempo 数据源也配置了 `tracesToLogsV2` 反向跳回日志
 4. 日志中的 `trace_id` 由各服务自身写入，格式统一为 `trace_id=<32 位十六进制>`，无有效链路时记为 `-`：Spring 取 `Span.current()`、GoZero 取 `TraceIDFromContext`、NestJS 与 FastAPI 取当前上下文
 
-### 服务接入方式
+#### 服务接入方式
 
 | 服务    | 接入方式                                                                                          |
 | ------- | ------------------------------------------------------------------------------------------------- |
@@ -210,7 +346,7 @@ NestJS 模块按职责划分为两层：
 | FastAPI | OpenTelemetry SDK + FastAPI/HTTPX/Redis/SQLAlchemy 埋点，由 `app/core/telemetry` 统一初始化       |
 | 网关    | APISIX `opentelemetry` 插件（`global_rules` 中声明）与 `plugin_attr.opentelemetry` 指向 Collector |
 
-### 指标采集
+#### 指标采集
 
 Prometheus 通过静态配置抓取四个服务的指标端点，抓取间隔 15 秒，按 `service` 标签区分来源：
 
@@ -230,7 +366,7 @@ Prometheus 通过静态配置抓取四个服务的指标端点，抓取间隔 15
 
 Grafana 的 Prometheus 数据源预置了 `exemplarTraceIdDestinations`，配置了 Exemplar 的指标可直接跳转到对应 Trace。
 
-### 开关与访问地址
+#### 开关与访问地址
 
 - 观测栈与 OTel 由 `./mix observability start` / `./mix observability stop` 同步启停：脚本在 `.otel/` 下维护 `enabled` 标记，dev/dist 模式启动服务时由 `scripts/observability/otel-env.sh` 读取该标记决定是否注入 OTel 配置；Windows 同样在 Git Bash 中执行
 - `./mix compose up` 的容器编排固定启用 OTel，无需额外开关
@@ -240,113 +376,7 @@ Grafana 的 Prometheus 数据源预置了 `exemplarTraceIdDestinations`，配置
 - OTLP 接收端（独立观测栈映射到宿主机）：`http://localhost:4318`，gRPC 为 4317，仅绑定 `127.0.0.1`
 - Tempo 查询接口 3200 只在容器网络内暴露，统一通过 Grafana 查看
 
-## 登录相关
-
-### GitHub OAuth 登录流程
-
-```mermaid
-sequenceDiagram
-    participant 前端 as 前端
-    participant NestJS as NestJS
-    participant GitHub as GitHub
-    participant Spring as Spring
-    participant Redis as Redis
-
-    前端->>NestJS: GET /github/authorize?redirect=/profile
-    NestJS-->>前端: 302 跳转 GitHub 授权页
-    前端->>GitHub: 用户授权
-    GitHub-->>NestJS: GET /github/callback（回调）
-    NestJS->>NestJS: 获取 GitHub 用户信息，创建或关联本地用户
-    NestJS->>Spring: POST /users/github/token-ticket（通过 Nacos）
-    Spring->>Redis: 存储 ticket（TTL 60 秒）
-    Redis-->>Spring: 确认
-    Spring-->>NestJS: 返回 ticket
-    NestJS-->>前端: 302 /oauth/github/success?ticket=xxx
-    前端->>Spring: POST /users/github/token
-    Spring->>Spring: 验证 ticket
-    Spring-->>前端: 返回 JWT（access + refresh token）
-    前端->>前端: 保存 token，登录完成
-```
-
-网关负责路由：
-
-- `/github/**` -> NestJS（GitHub OAuth 流程）
-- `/users/github/token` -> Spring（token 换取）
-
-### 用户名密码登录流程
-
-```mermaid
-sequenceDiagram
-    participant 前端 as 前端
-    participant Spring as Spring
-    participant Redis as Redis
-
-    前端->>Spring: POST /users/login<br/>Content-Type: application/json<br/>Body: { "username": "hcsy", "password": "123456" }
-    Spring->>Spring: 校验用户名和密码（bcrypt 匹配）
-    Spring->>Spring: 调用 TokenService 生成 JWT（access + refresh token）
-    Spring->>Redis: 写入 session 信息<br/>（user:access / user:session）
-    Redis-->>Spring: 确认
-    Spring-->>前端: 返回 UserLoginVO<br/>（accessToken / refreshToken / userId / username / sessionId）
-    前端->>前端: 保存 token，后续请求携带<br/>Authorization: Bearer xxx
-```
-
-Body 参数：
-
-| 参数     | 类型   | 必填 | 说明   |
-| -------- | ------ | ---- | ------ |
-| username | string | 是   | 用户名 |
-| password | string | 是   | 密码   |
-
-返回结构与 GitHub 登录的 token 换取接口一致。
-
-### 邮箱验证码登录流程
-
-```mermaid
-sequenceDiagram
-    participant 前端 as 前端
-    participant Spring as Spring
-    participant Redis as Redis
-
-    Note over 前端,Spring: 前置：用户需有已验证的邮箱
-    前端->>Spring: GET /users/email/send?email=xxx@example.com&type=login
-    Spring->>Spring: 校验邮箱是否存在
-    Spring-->>前端: 发送验证码到邮箱
-
-    前端->>Spring: POST /users/email-login<br/>Content-Type: application/json<br/>Body: { "email": "xxx@example.com", "verificationCode": "123456" }
-    Spring->>Spring: 校验验证码是否正确且未过期
-    Spring->>Spring: 调用 TokenService 生成 JWT
-    Spring-->>前端: 返回 UserLoginVO<br/>（结构同用户名密码登录）
-    前端->>前端: 保存 token，登录成功
-```
-
-发送验证码接口：
-
-```
-GET /users/email/send?email=xxx@example.com&type=login
-```
-
-| 参数  | 类型   | 必填 | 说明             |
-| ----- | ------ | ---- | ---------------- |
-| email | string | 是   | 注册时填写的邮箱 |
-| type  | string | 否   | 固定传`login`    |
-
-邮箱验证码登录接口：
-
-```
-POST /users/email-login
-Content-Type: application/json
-```
-
-Body 参数：
-
-| 参数             | 类型   | 必填 | 说明              |
-| ---------------- | ------ | ---- | ----------------- |
-| email            | string | 是   | 邮箱地址          |
-| verificationCode | string | 是   | 收到的 6 位验证码 |
-
-> 验证码有效期默认为 5 分钟，发送间隔为 60 秒。
-
-## 设计图
+### 设计图
 
 > 本章节正文以 mermaid 源码内嵌，便于随代码 review 差异。另附 drawio 导出的 PNG 版本，存放于 `docs/diagrams/`，用于 Apifox 等不渲染 mermaid 的场景；各图表达的内容与使用场景见 [项目结构与流程说明](docs/architecture.md)。
 >
@@ -679,7 +709,7 @@ Body 参数：
     FastAPI -.-> MQ
   ```
 
-## 技术栈
+### 技术栈
 
 - Spring Boot WebFlux：Java 响应式后端框架，支撑系统核心业务
 - Spring Data R2DBC：关系型数据库响应式访问框架
@@ -708,7 +738,7 @@ Body 参数：
 - Prometheus：抓取四个服务的运行指标
 - Grafana：日志、链路与指标的统一查询面板，支持 Loki 与 Tempo 互跳
 
-## 第三方服务
+### 第三方服务
 
 - [阿里云百炼平台](https://bailian.console.aliyun.com/)
 - [Close AI](https://platform.closeai-asia.com/dashboard)
@@ -716,7 +746,9 @@ Body 参数：
 - [GitHub OAuth](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)（GitHub 第三方登录/注册）
 - [LangSmith](https://smith.langchain.com/)（LLM 链路可观测性平台）
 
-## 环境要求
+## 环境准备与部署
+
+### 环境要求
 
 - Java 17+
 - Maven 3.6+
@@ -735,20 +767,20 @@ Body 参数：
 - RabbitMQ 3.8+
 - ClickHouse 21.8+(可选)
 
-## 环境设置
+### 环境设置
 
 > **提示**: 推荐使用 `setup.sh` 配置脚本自动完成以下所有安装步骤。
 >
 > 如果需要手动配置，可以按照下面的步骤逐个模块进行。
 
-### Spring 部分
+#### Spring 部分
 
 ```bash
 cd spring # 进入文件夹
 mvn clean install # 下载依赖
 ```
 
-### GoZero 部分
+#### GoZero 部分
 
 ```bash
 cd gozero/app # 进入文件夹
@@ -756,7 +788,7 @@ go mod tidy # 安装依赖
 go install github.com/zeromicro/go-zero/tools/goctl@latest # 安装 goctl 代码生成工具
 ```
 
-### NestJS 部分
+#### NestJS 部分
 
 ```bash
 cd nestjs # 进入文件夹
@@ -764,7 +796,7 @@ npm install # 安装npm包
 bun install # 或者使用bun安装
 ```
 
-### FastAPI 部分
+#### FastAPI 部分
 
 ```bash
 # 使用标准 venv 和 requirements.txt
@@ -795,11 +827,11 @@ url = "https://mirrors.aliyun.com/pypi/simple"
 default = true
 ```
 
-## 环境配置脚本
+### 环境配置脚本
 
 为了简化项目初始化过程，我们提供了自动化配置脚本 `scripts/dev/setup.sh`，可以自动检测环境、安装依赖并配置所有模块。
 
-### Linux/macOS 使用方式
+#### Linux/macOS 使用方式
 
 ```bash
 # 1. 使用便捷脚本调用（推荐）
@@ -809,7 +841,7 @@ default = true
 ./scripts/dev/setup.sh
 ```
 
-### 交互式配置
+#### 交互式配置
 
 运行脚本后会出现以下交互界面：
 
@@ -823,7 +855,7 @@ default = true
 # 5) 全部        - 配置所有模块
 ```
 
-### 脚本功能特性
+#### 脚本功能特性
 
 1. **环境检查**
    - 自动检测 Python、Go、Java、Node.js 等必要工具的安装状态和版本
@@ -849,7 +881,7 @@ default = true
 - 自动创建 logs 目录（spring、gozero、nestjs、fastapi）
 - 自动创建 static 目录（pic、excel、word）
 
-### 脚本执行流程
+#### 脚本执行流程
 
 ```bash
 ./mix setup
@@ -864,7 +896,7 @@ default = true
 5. **安装依赖** - 根据选择自动安装各模块依赖
 6. **完成提示** - 显示后续配置步骤
 
-### 注意事项
+#### 注意事项
 
 - **首次运行**: 建议首次配置时选择"全部"选项，确保所有依赖都正确安装
 - **系统权限**: 安装系统依赖时可能需要 sudo 权限
@@ -874,7 +906,7 @@ default = true
   - npm 使用默认源，建议配置国内镜像（如淘宝镜像）
 - **虚拟环境**: FastAPI 会使用 uv 自动创建虚拟环境（venv），无需手动创建
 
-### 配置完成后
+#### 配置完成后
 
 脚本执行完成后，还需要：
 
@@ -882,11 +914,11 @@ default = true
 2. **启动基础服务**（MySQL、PostgreSQL、Redis、MongoDB、ElasticSearch、RabbitMQ、Nacos、ClickHouse、Neo4j），推荐直接执行 `./mix docker-services up`：会自动创建全部容器、读取根目录 `.env` 中的账号密码，并完成 ES IK 分词器的安装与验证
 3. **使用运行脚本启动服务**（见"运行脚本配置"章节）
 
-## Docker 基础中间件容器部署
+### Docker 基础中间件容器部署
 
 项目提供了基础依赖容器部署脚本，用于快速创建和管理 MySQL、PostgreSQL、Redis、MongoDB、ElasticSearch、Nacos、RabbitMQ 和 Neo4j 等服务，供下方微服务部署使用。
 
-### 基础容器部署命令
+#### 基础容器部署命令
 
 `mix docker-services` 用于创建、启动、查看和清理基础中间件容器；下面的 `Docker 容器部署` 章节才是应用服务编排内容。
 
@@ -910,7 +942,7 @@ default = true
 ./mix docker-services help
 ```
 
-### 创建的容器服务
+#### 创建的容器服务
 
 脚本会自动创建以下 Docker 容器（账号密码可在项目根目录 `.env` 中自定义，参考根目录 `.env.example`）：
 
@@ -926,7 +958,7 @@ default = true
 | **RabbitMQ**      | 5672, 15672 | hcsy     | 123456   | 消息队列(管理界面 15672)             |
 | **Neo4j**         | 7474, 7687  | neo4j    | 12345678 | 知识图谱数据库                       |
 
-### 自定义账号密码配置
+#### 自定义账号密码配置
 
 先复制示例文件，再按需修改；脚本会优先读取根目录 `.env` 中的变量，未设置时使用上表默认值：
 
@@ -980,7 +1012,7 @@ NEO4J_PASSWORD=你的Neo4j密码
 > 修改用户名（`POSTGRES_USER`、`MONGO_USER`、`CLICKHOUSE_USER`、`RABBITMQ_USER`、`NEO4J_USER`）后，
 > 还需同步修改各服务 `.env` 中的对应用户名，否则服务无法连接。
 
-### ElasticSearch IK 分词器
+#### ElasticSearch IK 分词器
 
 GoZero 文章搜索的索引映射使用 `ik_smart` 分词器（见 `gozero/app/common/constants/scripts.go`），缺少插件时索引创建会失败，因此 `docker-services up` 会自动完成以下步骤：
 
@@ -998,7 +1030,7 @@ ES_IK_OFFLINE_ZIP=/opt/packages/elasticsearch-analysis-ik-7.12.1.zip
 `ES_IK_OFFLINE=false`（默认）时也会优先使用已配置的离线包，安装失败再回退在线下载地址；
 在线地址依次为 `release.infinilabs.com` 与 `get.infini.cloud`，离线包版本必须与 `ES_VERSION` 一致。
 
-### 数据持久化目录
+#### 数据持久化目录
 
 | 服务          | 宿主机目录                                                       |
 | ------------- | ---------------------------------------------------------------- |
@@ -1011,7 +1043,7 @@ ES_IK_OFFLINE_ZIP=/opt/packages/elasticsearch-analysis-ik-7.12.1.zip
 | RabbitMQ      | Docker Volume:`mq-plugins`                                       |
 | Neo4j         | `~/neo4j/data`, `~/neo4j/conf`, `~/neo4j/logs`, `~/neo4j/import` |
 
-### 注意事项
+#### 注意事项
 
 - **首次创建**: 首次执行 `docker-services up` 时会自动创建 Docker 网络 `hcsy` 和所有数据持久化目录
 - **数据持久化**: 所有容器的数据都会持久化到宿主机目录
@@ -1024,11 +1056,11 @@ ES_IK_OFFLINE_ZIP=/opt/packages/elasticsearch-analysis-ik-7.12.1.zip
 - **应用侧配置**: 根目录 `.env` 只作用于基础容器，四个服务连接数据库的变量名不同，需在各服务目录的 `.env` / `.env.docker` 中单独配置（见"环境变量配置文件"章节）
 - 如果有额外创建的组件，按照个人的配置改动配置文件
 
-## 编译和运行项目
+### 编译和运行项目
 
 > 每个服务都可以独立运行：
 
-### Spring 服务
+#### Spring 服务
 
 **使用 Maven 运行**：
 
@@ -1049,7 +1081,7 @@ gradle bootRun # 启动项目
 
 ```
 
-### APISIX 网关
+#### APISIX 网关
 
 ```bash
 cd gateway
@@ -1068,7 +1100,7 @@ docker compose logs -f gateway
 docker compose down
 ```
 
-### GoZero 服务
+#### GoZero 服务
 
 ```bash
 # 运行 GoZero 服务
@@ -1077,7 +1109,7 @@ go build -o bin/gozero main.go # 构建项目
 go run main.go # 运行项目
 ```
 
-### NestJS 服务
+#### NestJS 服务
 
 **使用 npm 运行**：
 
@@ -1099,7 +1131,7 @@ npm run bun:dev # bun watch 模式运行
 npm run bun:prod # bun production 模式运行
 ```
 
-### FastAPI 服务
+#### FastAPI 服务
 
 **使用 venv 运行**：
 
@@ -1121,11 +1153,11 @@ uv run python main.py
 uv run --python 3.12 python main.py
 ```
 
-## 测试说明
+### 测试说明
 
 本项目按服务拆分测试代码，各服务的测试入口和运行方式如下。
 
-### 使用 mix 快速运行
+#### 使用 mix 快速运行
 
 根目录提供统一的单元测试命令。默认运行 Spring、GoZero、NestJS 和 FastAPI 的全部测试：
 
@@ -1142,7 +1174,7 @@ uv run --python 3.12 python main.py
 
 NestJS 优先使用 Bun 测试运行器；FastAPI 优先使用 uv，未安装时回退到本地 pytest。FastAPI 测试命令会自动设置 `PYTHONPATH`，无需手动配置模块路径。
 
-### 测试运行方式
+#### 测试运行方式
 
 1. Spring
 
@@ -1200,7 +1232,7 @@ cd fastapi
 pytest tests/core/auth/test_internal_token.py
 ```
 
-### 测试代码规范
+#### 测试代码规范
 
 1. **Spring**：测试文件放在 `spring/src/test/java` 下，命名建议使用 `*Test.java`。
 2. **GoZero**：测试文件放在同包目录下，命名使用 `_test.go`，测试函数使用 `TestXxx`。
@@ -1208,13 +1240,13 @@ pytest tests/core/auth/test_internal_token.py
 4. **FastAPI**：测试文件放在 `fastapi/tests` 下，命名使用 `test_*.py`，默认使用 pytest。
 5. **其他说明**：生成测试参数可以写死在代码中，但是敏感信息的参数建议使用环境变量提供。
 
-## 运行脚本配置
+### 运行脚本配置
 
 所有运行脚本已按用途组织到 `scripts/` 的各子目录中，便于项目管理和维护。
 
-### 快速启动（推荐）
+#### 快速启动（推荐）
 
-#### Linux/macOS
+##### Linux/macOS
 
 ```bash
 # 查看帮助信息
@@ -1441,7 +1473,7 @@ pytest tests/core/auth/test_internal_token.py
 
 - `-i`/`--interactive`：交互式模式，让用户选择每个服务的工具
 
-#### Windows（Git Bash）
+##### Windows（Git Bash）
 
 在 Git Bash 中执行，命令与 Linux/macOS 完全一致（仓库不再提供 PowerShell 脚本）：
 
@@ -1453,11 +1485,11 @@ pytest tests/core/auth/test_internal_token.py
 ./mix dev seq --java-build gradle
 ```
 
-### 直接调用脚本
+#### 直接调用脚本
 
 如果需要直接调用 `scripts/` 子目录中的脚本：
 
-#### Linux/macOS
+##### Linux/macOS
 
 ```bash
 # 启动服务（多窗格布局） - 使用 Gradle 构建
@@ -1538,14 +1570,14 @@ pytest tests/core/auth/test_internal_token.py
 ./scripts/dev/run.sh --interactive
 ```
 
-#### Windows（Git Bash）
+##### Windows（Git Bash）
 
 ```bash
 # 启动所有服务
 ./scripts/dev/run.sh
 ```
 
-### 脚本说明
+#### 脚本说明
 
 Windows 统一使用 Git Bash 执行下列 bash 脚本，仓库不再提供 PowerShell 版本。
 
@@ -1580,9 +1612,9 @@ Windows 统一使用 Git Bash 执行下列 bash 脚本，仓库不再提供 Powe
 | `test.sh`                   | scripts/quality/       | 运行四个服务的单元测试（支持指定服务）                                                            | Linux/macOS         |
 | `compile.sh`                | scripts/quality/       | 验证四个服务能否编译通过（只编译，不产出打包目录）                                                | Linux/macOS         |
 | `hooks-init.sh`             | scripts/tools/         | 启用/停用/查看仓库的版本化 Git 提交钩子（`.githooks/`）                                           | Linux/macOS/Windows |
-| `skills-sync.sh`            | scripts/tools/         | 把 skills/ 下所有 mix-* 技能镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）   | Linux/macOS/Windows |
+| `skills-sync.sh`            | scripts/tools/         | 把 skills/ 下所有 mix-\* 技能镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）  | Linux/macOS/Windows |
 
-### 服务名称
+#### 服务名称
 
 dist-control.sh 和 mix 支持以下服务名称：
 
@@ -1594,7 +1626,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 
 如不指定服务名称，则对所有服务进行操作。
 
-### 注意事项
+#### 注意事项
 
 1. **tmux 依赖**：Linux/macOS 脚本依赖 `tmux`，请确保已安装
 2. **执行权限**：Linux/macOS 脚本需要执行权限，可以通过 `chmod +x scripts/*/*.sh` 来设置
@@ -1602,7 +1634,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 4. **服务依赖**：启动前请确保 MySQL、PostgreSQL（含 pgvector）、Redis、MongoDB、ElasticSearch、RabbitMQ、Nacos、ClickHouse、Neo4j 等基础服务已运行
 5. **logs 命令**：仅支持查看单个服务的日志，如需查看多个服务请依次调用
 
-## 生产环境部署
+### 生产环境部署
 
 本项目提供了统一的打包和部署脚本，可以一键打包所有微服务并统一管理。
 
@@ -1646,7 +1678,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 
 打包后的文件统一位于 `dist/` 目录，每个服务都包含配置文件、启动/停止脚本和日志文件。
 
-### 脚本说明
+#### 脚本说明
 
 - **mix**（项目根目录）
   - 便捷启动器，用于快速调用 `scripts/` 下的脚本
@@ -1664,11 +1696,11 @@ dist-control.sh 和 mix 支持以下服务名称：
   - 管理打包后的分布式服务
   - 支持的操作：`start`、`stop`、`status`、`restart`、`logs`
 
-## Docker 容器部署
+### Docker 容器部署
 
 项目提供了完整的 Docker 支持，可以为每个微服务构建镜像并创建容器。
 
-### 微服务 Docker 快速开始
+#### 微服务 Docker 快速开始
 
 ```bash
 # 1. 构建并启动所有微服务容器
@@ -1705,7 +1737,7 @@ Docker 启动时会把所有应用容器接入同一个 `hcsy` 网络，容器�
 - `pgvector-db`
 - `clickhouse`
 
-### 微服务容器说明
+#### 微服务容器说明
 
 | 服务        | 端口 | 镜像名称                      | 容器名称（docker / compose）            | 技术栈           |
 | ----------- | ---- | ----------------------------- | --------------------------------------- | ---------------- |
@@ -1715,7 +1747,7 @@ Docker 启动时会把所有应用容器接入同一个 `hcsy` 网络，容器�
 | **NestJS**  | 8083 | `mix-nestjs:latest`           | `mix-nestjs-container` / `mix-nestjs`   | Node 20 + Alpine |
 | **FastAPI** | 8084 | `mix-fastapi:latest`          | `mix-fastapi-container` / `mix-fastapi` | Python 3.12      |
 
-### 高级用法
+#### 高级用法
 
 ```bash
 # 仅构建特定服务的镜像
@@ -1741,7 +1773,7 @@ docker exec -it mix-spring-container bash
 docker restart mix-spring-container
 ```
 
-## Docker Compose 部署
+### Docker Compose 部署
 
 根目录 `docker-compose.yml` 编排 5 个应用服务和可观测性组件：
 
@@ -1794,12 +1826,12 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 
 通常直接执行 `./mix compose up` 即可；若要预先构建镜像，可使用 `./mix docker build`。
 
-### 前置要求
+#### 前置要求
 
 - **Docker**：>= 20.10
 - **docker-compose**：或使用 `docker compose` (Docker CLI 集成)
 
-### 启动服务
+#### 启动服务
 
 ```bash
 # 启动依赖服务（如果尚未启动）
@@ -1809,7 +1841,7 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 ./mix compose up
 ```
 
-### 停止服务
+#### 停止服务
 
 ```bash
 # 停止并删除容器，保留 Loki/Tempo/Prometheus/Grafana 数据卷
@@ -1819,19 +1851,19 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 ./mix compose down --volumes
 ```
 
-### 状态查看
+#### 状态查看
 
 ```bash
 ./mix compose status
 ```
 
-### 查看日志
+#### 查看日志
 
 ```bash
 ./mix compose logs <service>
 ```
 
-### 手动命令（可选）
+#### 手动命令（可选）
 
 ```bash
 ./mix docker build spring gozero nestjs fastapi
@@ -1840,7 +1872,7 @@ docker compose down          # 保留 loki-data / tempo-data / prometheus-data /
 docker compose down -v       # 需要彻底重置观测历史时才用
 ```
 
-### 文件说明
+#### 文件说明
 
 - `docker-compose.yml`：应用、网关和 OTel Collector/Tempo/Loki/Promtail/Prometheus/Grafana 编排；数据库、缓存与消息队列由基础服务脚本管理
 - `scripts/docker/docker-compose-up.sh`：快速启动脚本
@@ -1848,7 +1880,7 @@ docker compose down -v       # 需要彻底重置观测历史时才用
 - `scripts/docker/docker-services.sh`：创建和管理基础中间件容器，账号密码读取根目录 `.env`，并在 ES 启动前自动安装 IK 分词器
 - `scripts/docker/build_and_run_services.sh`：构建并运行服务容器
 
-### 访问服务
+#### 访问服务
 
 Compose 部署只把网关与部分观测组件映射到宿主机，业务服务不暴露端口：
 
@@ -1868,7 +1900,7 @@ Spring（8081）、GoZero（8082）、NestJS（8083）、FastAPI（8084）在 Co
 
 需要在宿主机直连业务服务时，使用 `./mix dev` 本地开发模式启动（各服务直接监听 8081-8084），或进入容器内调试。
 
-### 高级用法
+#### 高级用法
 
 ```bash
 # 查看某个服务实时日志
@@ -1887,9 +1919,9 @@ sudo docker exec -it mix-spring /bin/bash
 docker system prune -af
 ```
 
-## 基础服务组件初始化
+### 基础服务组件初始化
 
-### 确保已安装并启动以下数据库服务：
+#### 确保已安装并启动以下数据库服务：
 
 - MySQL
 - PostgreSQL
@@ -1901,7 +1933,7 @@ docker system prune -af
 - Nacos
 - Neo4j
 
-### SQL 初始化脚本说明
+#### SQL 初始化脚本说明
 
 项目的 SQL 初始化脚本已经统一迁移到根目录的 `db/` 目录下，按数据库类型拆分管理。
 
@@ -1919,33 +1951,33 @@ docker system prune -af
 如果后续新增数据库初始化内容，也请继续放到 `db/` 下对应的数据库目录中，便于统一维护和查找。
 `db/` 下只放表、扩展、索引、集合级别的脚本，`CREATE DATABASE` 与 `USE` 一律由使用方按需自行执行，不在脚本中写死库名，库名统一以各服务的数据库配置项为准。
 
-### MySQL 表创建
+#### MySQL 表创建
 
 系统服务会自动创建，也可以先执行 `db/mysql/` 下的 SQL 脚本创建基础表结构。这些脚本不包含库前缀，`CREATE DATABASE` 由使用方按需自行执行（容器初始化目录 `~/mysql/init` 在仓库之外），库名以各服务的数据库配置项为准（Spring 为 `DB_NAME`、GoZero 为 `DB_MYSQL_DBNAME`、NestJS 为 `DB_DATABASE`、FastAPI 为 `DB_MYSQL_DATABASE`）
 
-### PostgreSQL 表创建
+#### PostgreSQL 表创建
 
 LangChain 会自动创建，但需要先在目标库里执行 `db/postgresql/extensions.sql` 启用 `pgvector` 扩展。库本身由 `scripts/docker/docker-services.sh` 创建 `pgvector-db` 容器时按根目录 `.env` 的 `POSTGRES_DB`（默认 `demo`）初始化，需要与 FastAPI 的 `DB_POSTGRES_DATABASE` 保持一致，否则会因目标库不存在而连接失败；已有 `~/pgdata` 数据卷时初始库不会重建，需手动执行 `CREATE DATABASE`
 
-### MongoDB 表创建
+#### MongoDB 表创建
 
 集合为 `articlelogs`、`apilogs` 和 `logdeletions`，系统会自动创建，库名以 `DB_MONGODB_DATABASE` 配置项为准（默认 `demo`）；如需手动初始化索引，可执行 `db/mongodb/articlelogs.js`、`db/mongodb/apilogs.js` 与 `db/mongodb/logdeletions.js`
 
 `logdeletions` 是日志删除墓碑：`apilogs` / `articlelogs` 的删除动作先写一条 `{logType, eventId, logCreatedAt}` 再真正删除，供数仓按游标拉取后清除 ClickHouse 中已删除的日志；`eventId + logType` 唯一索引保证重复删除幂等，`createdAt` 的 90 天 TTL 索引自动回收已同步的墓碑
 
-### ElasticSearch 索引创建
+#### ElasticSearch 索引创建
 
 索引名为 `articles`，系统同步数据时会自动创建；如需手动初始化，可执行 `db/es/init.es`
 
 索引映射使用 `ik_smart` 分词器，必须先装好 IK 分词器插件，否则索引创建会失败（`docker-services up` 已自动安装并验证，详见"Docker 基础中间件容器部署 - ElasticSearch IK 分词器"）。
 
-### ClickHouse 创建
+#### ClickHouse 创建
 
 需要先在 `db/clickhouse/` 下按数仓分层目录（`ods`、`dwd`、`dws`、`dim`、`ads`）依次执行单表建表脚本，脚本中不包含库前缀，执行前先切换到目标数据库（`CREATE DATABASE` 与 `USE` 由使用方按需自行执行）
 
 数仓事实表（`dwd_*`、`dws_*`、`ads_user_day`）按月分区（`PARTITION BY toYYYYMM(...)`），ODS 贴源表、维度表与其余 ADS 表不分区。
 
-### Neo4j 初始化
+#### Neo4j 初始化
 
 Neo4j 用于知识图谱，默认数据库无需额外指定
 
@@ -1953,7 +1985,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 
 可在 Neo4j Browser 中手动执行初始化脚本 `init.cypher`，也可以在首次执行同步任务时自动创建约束
 
-## 环境变量配置文件
+### 环境变量配置文件
 
 本项目按环境拆分配置文件：
 
@@ -1966,7 +1998,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 
 `DOCKER_IMAGE_TAG` 由 `docker-compose.yml` 从根目录 `.env` 读取（shell 环境变量优先），但 `./mix docker push` 不读 `.env`，只认 `--tag` 参数或 shell 环境变量，未指定时固定推 `latest`。推送非默认 tag 可用 `./mix docker push --tag v1.0.0` 或 `DOCKER_IMAGE_TAG=v1.0.0 ./mix docker push`。
 
-### 各服务配置说明
+#### 各服务配置说明
 
 各服务的具体环境变量请直接参考对应的 `.env.example`，这里不再重复列出完整配置。
 
@@ -1991,7 +2023,7 @@ Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关
 
 > `.env.docker` 不会被脚本自动创建，需要从对应的 `.env.example` 复制后按容器环境填写（容器内主机名与本地不同，如 `mysql`、`redis`、`nacos`、`pgvector-db`）。
 
-#### NestJS 文件目录解析（`FILES_WORD_PATH`）
+##### NestJS 文件目录解析（`FILES_WORD_PATH`）
 
 NestJS 的文章导出（Word / Markdown / PDF）以 `FILES_WORD_PATH` 作为 Word 模板目录，路径解析规则：
 
@@ -2001,7 +2033,7 @@ NestJS 的文章导出（Word / Markdown / PDF）以 `FILES_WORD_PATH` 作为 Wo
 - **导出产物不落静态目录**：Word / Markdown / PDF 的中间文件统一写到系统临时目录（`os.tmpdir()/mix-web-demo/export`），上传 OSS 后立即删除，因此静态目录没有写权限也不影响下载
 - **Docker 场景**在 `nestjs/.env.docker` 中设置 `FILES_WORD_PATH=/app/static/word` 并挂载宿主 `static/word`；该目录默认留空，导出走内置模板。要替换模板，把 `template.docx` 放进宿主机 `static/word` 或把 `FILES_WORD_PATH` 指向自己的目录，改内置模板则需重新构建镜像
 
-#### 导出文档内容
+##### 导出文档内容
 
 三种格式通过 `ExportTemplate` 的 `ArticleExportMeta` 统一取值，同一篇文章导出后信息一致：
 
@@ -2024,7 +2056,7 @@ PDF 导出依赖 Chromium：运行镜像已安装 `chromium` + `font-noto-cjk`�
 2. 再按实际环境填写真实值
 3. Docker 场景单独维护 `.env.docker`
 
-### 环境变量使用说明
+#### 环境变量使用说明
 
 1. **密钥管理**: 所有密钥信息（数据库密码、API KEY、JWT Secret 等）不应该提交到版本控制系统，应该在本地 `.env` 文件中配置
 2. **示例文件**: 新克隆项目后，先复制对应服务的 `.env.example` 为 `.env`，再填写真实值（基础中间件账号密码对应根目录的 `.env.example`）
@@ -2044,11 +2076,13 @@ PDF 导出依赖 Chromium：运行镜像已安装 `chromium` + `font-noto-cjk`�
 6. **加载顺序**: 本地启动时会自动从 `.env` 文件加载环境变量，Docker 启动时会读取 `.env.docker`，然后再解析 YAML 配置文件
 7. **JWT 密钥说明**: 系统环境变量设置的 JWT 密钥至少为 32 位字符串
 
-## Swagger 说明
+## 接口文档
+
+### Swagger 说明
 
 四个服务都对外提供 OpenAPI 文档，有两条获取途径：服务运行后经网关聚合访问，或离线生成静态产物。
 
-### 运行期访问（网关聚合）
+#### 运行期访问（网关聚合）
 
 > 启动时会显示对应的 swagger 地址
 
@@ -2064,7 +2098,7 @@ PDF 导出依赖 Chromium：运行镜像已安装 `chromium` + `font-noto-cjk`�
 
 在 Swagger UI 的地址栏填入上表中的地址即可查看对应服务的接口文档。
 
-### 静态产物生成（./mix swag）
+#### 静态产物生成（./mix swag）
 
 不需要启动任何服务即可生成四个服务的 OpenAPI 文档，产物落在各自服务的 `docs/` 目录并随仓库提交，便于 diff 审阅：
 
@@ -2110,14 +2144,14 @@ PDF 导出依赖 Chromium：运行镜像已安装 `chromium` + `font-noto-cjk`�
 6. 对应工具未安装时该服务会跳过并提示，其余服务继续生成；`gateway` 为 APISIX 配置，无 OpenAPI 产物，会被忽略
 7. 允许为 null 的字段必须写成 OpenAPI 3.1 的类型数组（`type: ["integer","null"]`），`nullable: true` 是 3.0 写法、3.1 下会被忽略。Spring 由 `SwaggerConfig#markNullableProperties` 统一补（未列入 `required` 的属性），非空字段用 `@NotNull` / `@Schema(requiredMode = REQUIRED)` 声明；NestJS 由 `app/swagger.ts#markNullableProperties` 按 `@ApiProperty({ required: false })` 补；GoZero 由 `script/swagger/fix.py#mark_nullable_properties` 按 `.api` 的 `json:",optional"` 与切片字段补。不补的表现是 Apifox「校验响应」报 `$.data.xxx 不允许为 null`
 
-### Spring 部分
+#### Spring 部分
 
 1. 在 config 包下的 `SwaggerConfig.java`中修改对应 Swagger 信息
 2. 使用 `@Operation(summary = "spring自己的测试", description = "输出欢迎信息")`设置对应接口
 3. 在 `http://[ip和端口]/swagger-ui/index.html`访问 Swagger 接口
 4. 离线生成静态产物由 `spring/src/test/java/com/hcsy/spring/openapi/OpenApiDocGenerator.java` 负责，执行 `./mix swag spring` 后输出到 `spring/docs/`；该生成器只装配 Controller 与 springdoc 配置，其余依赖通过 `BeanFactoryPostProcessor` 自动注册为 Mockito 桩，因此不会连接 MySQL、Redis、RabbitMQ，也不读取 Nacos
 
-### GoZero 部分
+#### GoZero 部分
 
 本项目已采用 **API-First** 方式管理 Swagger 文档，所有 API 定义统一存放在 `.api` 文件中，使用 goctl 的内置 Swagger 生成工具自动生成文档。
 
@@ -2149,14 +2183,14 @@ PDF 导出依赖 Chromium：运行镜像已安装 `chromium` + `font-noto-cjk`�
 4. 生成的 Swagger 文件位于 `gozero/app/docs/`（`openapi.json` 与 `openapi.yaml`），其中 `openapi.json` 被 `gozero/app/docs/embed.go` 嵌入二进制，不要改名
 5. 生成链路为 `goctl api swagger` → `swagger2openapi` → `fix.py` 归一化：`fix.py` 负责补全描述、作者、版本信息和中文分组，并移除 `servers`、per-operation `schemes` 以及 `x-date`、`x-goctl-version` 等易变字段，使同一份 `.api` 的生成结果稳定可复现，如有需要可修改 `fix.py` 脚本中的相关内容
 
-### NestJS
+#### NestJS 部分
 
 1. Swagger 信息定义在 `nestjs/src/common/constants/swagger.constants.ts` 的 `SwaggerConfig`，文档构建抽到 `nestjs/src/app/swagger.ts` 的 `buildSwaggerDocument`，由 `createApp` 与离线脚本共用
 2. 使用 `@ApiOperation({ summary: '获取用户信息', description: '获取用户信息列表' })`设置对应接口
 3. 在 `http://[ip和端口]/api-docs`访问 Swagger 接口
 4. 离线生成静态产物由 `nestjs/src/script/generateOpenapi.ts` 负责，执行 `./mix swag nestjs` 后输出到 `nestjs/docs/`；它以上面的 `buildSwaggerDocument` 保证与运行时文档一致。该脚本必须以 Bun 运行（`npm run bun:openapi`），因为项目依赖的 `uuid@14` 为纯 ESM，Node 20 的 CJS 加载器无法加载
 
-### FastAPI 部分
+#### FastAPI 部分
 
 1. 在 `main.py` 中通过 `FastAPI` 的参数自定义全局 Swagger 信息，例如：
 
@@ -2186,11 +2220,11 @@ PDF 导出依赖 Chromium：运行镜像已安装 `chromium` + `font-noto-cjk`�
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
 4. 离线生成静态产物由 `fastapi/script/genOpenapi.py` 负责，执行 `./mix swag fastapi` 后输出到 `fastapi/docs/`；脚本直接导入 `create_app()` 并读取 `app.openapi()`，不执行 lifespan，因此不会连接 MySQL、ClickHouse、PostgreSQL、Neo4j、Redis 等组件
 
-## Apifox 文档同步
+### Apifox 文档同步
 
 `./mix apifox` 把各服务 `docs/` 下的静态 OpenAPI 文档通过 [Apifox 开放 API](https://apifox-openapi.apifox.cn/) 导入到指定项目，并在最后把根目录 `README.md` 同步到指定 Markdown 文档（这一步走 Apifox CLI），同样不启动任何服务，也不访问本地中间件。
 
-### 前置配置
+#### 前置配置
 
 先在根目录 `.env` 中填写两个必填项（从 `.env.example` 复制生成）。README 同步这一步还会用到 Apifox CLI 与目标文档 ID，前置说明见本节末尾「README 同步到指定文档」：
 
@@ -2240,7 +2274,7 @@ APIFOX_PROJECT_ID=你的项目ID
 | `KEEP_EXISTING`      | 已有接口一律不动，只新增文档里有而 Apifox 里没有的接口                                          |
 | `CREATE_NEW`         | 新旧接口同时保留                                                                                |
 
-### 使用方式
+#### 使用方式
 
 ```bash
 # 先确认静态产物是最新的
@@ -2270,7 +2304,7 @@ APIFOX_PROJECT_ID=你的项目ID
 
 执行时按服务逐个串行导入，并打印各服务的「新增 / 更新 / 忽略 / 失败」计数；任一服务产物缺失或导入失败都会以非零状态码退出。
 
-### GitHub Actions 自动同步（OpenAPI 产物与 README 变更触发）
+#### GitHub Actions 自动同步（OpenAPI 产物与 README 变更触发）
 
 `.github/workflows/apifox-sync.yml` 在 `openapi.json` / `openapi.yaml` 提交后自动把接口推送到 Apifox，README.md 变更时单独同步 README 文档；两条通道分别判断、互不牵连，判据与本地 `./mix apifox` 一致。
 
@@ -2340,7 +2374,7 @@ gh workflow run apifox-sync.yml -f sync_readme=true -f dry_run=true
 gh run watch
 ```
 
-### 注意事项
+#### 注意事项
 
 1. 只读取仓库内的静态产物，产物缺失时提示先执行 `./mix swag <service>`
 2. 导入选项固定 `prependBasePath: false`，各服务产物也已移除 `servers`，BasePath 与 Base URL 统一由 Apifox 环境面板维护，避免导入后带上网关之外的 host
@@ -2352,7 +2386,7 @@ gh run watch
    - 直接编辑：Apifox 客户端 2.8.31+ 打开「项目设置 → 功能设置 → AI 功能设置 → 外部 AI 编辑权限」，开启「主分支直接编辑权限」后重试
    - AI 分支：`apifox branch create --project <项目ID> --type ai --name "ai/年月日-from-main-readme" --from main`（命名需符合 `ai/年月日-from-来源分支-模块名`），再 `apifox branch pick-to --project <项目ID> --type ai --from main --to <AI分支名> --doc-ids <文档ID>` 把已有文档带进去（AI 分支初始为空），然后 `APIFOX_README_BRANCH=<AI分支名> ./mix apifox` 写入，确认无误后再 `apifox branch merge` 合并
 
-### 引用完整性检查（./mix apifox-check）
+#### 引用完整性检查（./mix apifox-check）
 
 接口的请求体/响应体在 Apifox 里以 JSON Schema 存储，模型通过 `$ref: #/definitions/<模型ID>` 引用。模型被删除或重建后引用不会自动回滚，Apifox「校验响应」会报 `can't resolve reference #/definitions/<数字ID> from id http://json-schema.org/draft-04/schema#`——此时仓库里的 `openapi.json` 本身引用链完好，问题只存在于 Apifox 侧，本地任何产物检查都发现不了。
 
@@ -2376,7 +2410,7 @@ gh run watch
 - `./mix apifox` 结束时会自动跑同一项检查（底层为 `scripts/docs/apifox-schema-refs.py`），命中断链即按覆盖模式重导修复；单独执行本命令适合「不改代码、只确认远端状态」或排障前后对比
 - 断链的根治手段是按服务隔离数据模型目录（`APIFOX_SCHEMA_FOLDER_*`），否则任一服务的全量对齐都会删掉其它服务刚同步的模型
 
-### README 同步到指定文档
+#### README 同步到指定文档
 
 `./mix apifox` 的接口导入走 Apifox 开放 API，该通道只公开了导入 OpenAPI / Postman 与导出 OpenAPI 三类能力，写不了 Markdown 文档。因此 README 这一步由 `./mix apifox` 在接口同步结束后自动调用 `./mix apifox-readme` 完成，底层是 Apifox CLI 的 `doc create` / `doc update`，写入的是 API 管理树里的项目 Markdown 文档（不是 `shared-doc` 共享发布文档）。也可以用 `--no-readme` 关掉这一步，或单独执行 `./mix apifox-readme`。
 
@@ -2440,11 +2474,11 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 5. README 的「## 目录」章节只在 Apifox 文档内被剔除，仓库里的 `README.md` 不做任何改写
 6. Apifox CLI 会在仓库根目录生成 `.apifox/` 本地状态目录（记录分支与守卫错误等），这部分已加入 `.gitignore`，不要提交；`.apifox/*.schemas.sha256` 是共享的指纹基线，需要随仓库提交
 
-## CI/CD 工作流
+### CI/CD 工作流
 
 全部流水线都在 `.github/workflows/` 下，固定用 GitHub 托管 runner 构建、自托管 runner（WSL）部署。
 
-### 分支与触发
+#### 分支与触发
 
 | 事件                     | 触发的工作流                          | 说明                                                                                         |
 | ------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -2454,17 +2488,17 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 | tag `vX.Y.Z`             | `Release Images`、`Deploy`            | 追加 `X.Y.Z` 版本号镜像，并按 tag 部署                                                       |
 | 手动 `workflow_dispatch` | 全部                                  | 单服务门禁、补建镜像、手工部署/回滚、Apifox 干跑                                             |
 
-### 工作流清单
+#### 工作流清单
 
-| 文件              | 作用                                                                                                                                                                                                                                                             |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 文件              | 作用                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/quality/lint.sh` / `scripts/quality/compile.sh` / `scripts/quality/test.sh`；filter 覆盖生产源码与测试代码，测试代码变更照常触发对应服务门禁，`gozero` 的 `.api`/模板/脚本也保留以校验格式与生成一致性；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿；另设 `docs-consistency` job 调 `./mix swag-check` 校验静态 OpenAPI 产物与代码一致，防止改了接口未重新生成文档 |
-| `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；filter 与 Dockerfile 的 COPY 范围对齐，测试代码与不进镜像的源文件（`gozero` 的 `.api`/模板/脚本等）变更不触发构建，并由 `paths-ignore` 让这类 push 连流水线都不启动；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                                  |
-| `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`observability/` 有变更时按文件重启命中的容器（不重建业务服务）                                                       |
-| `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                                                          |
-| `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)                                                                                                                                   |
+| `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；filter 与 Dockerfile 的 COPY 范围对齐，测试代码与不进镜像的源文件（`gozero` 的 `.api`/模板/脚本等）变更不触发构建，并由 `paths-ignore` 让这类 push 连流水线都不启动；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                                                                                                                                      |
+| `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`observability/` 有变更时按文件重启命中的容器（不重建业务服务）                                                                                                                                                                                                                                                                                                 |
+| `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)                                                                                                                                                                                                                                                                                                                                                                             |
 
-### 需要的仓库配置
+#### 需要的仓库配置
 
 | 名称                               | 类型              | 用途                                                                                    |
 | ---------------------------------- | ----------------- | --------------------------------------------------------------------------------------- |
@@ -2474,7 +2508,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 | `APIFOX_ACCESS_TOKEN` / `APIFOX_*` | Secret / Variable | 仅 `apifox-sync.yml` 需要，见 Apifox 章节                                               |
 | `GITHUB_TOKEN`                     | 内置              | 推拉 GHCR 镜像、上传 SARIF、回写基线，无需自建                                          |
 
-### 常用操作
+#### 常用操作
 
 ```bash
 # 只跑某个服务的门禁
@@ -2491,7 +2525,7 @@ gh workflow run deploy.yml -f image_tag="v0.36.0"     # tag 形式
 gh workflow run smoke.yml
 ```
 
-### 注意事项
+#### 注意事项
 
 1. 只改 `**.md`、`docs/**`、`db/**`、`scripts/**`、`skills/**`、`static/**`、`.github/**`、测试代码（`**/*_test.go` / `**/*.spec.ts` / `**/*-spec.ts` / `fastapi/tests/**`）或不进镜像的源文件（`gozero/api/**`、`gozero/template/**`、`gozero/script/**`）时不触发流水线；改 `observability/`（或根 `docker-compose.yml`）会触发一次 `Release Images`，但变更检测为 0、不构建任何镜像，部署侧走 `CONFIG_ONLY` 同步代码与配置，并按目录重启命中的容器（Grafana / Loki / Promtail / Prometheus / otel-collector / tempo / gateway），业务容器不重建
    - 变更检测分两套口径：`ci.yml` 覆盖生产源码与测试代码，测试代码变更照常触发对应服务门禁，`gozero` 的 `.api`/模板/脚本也保留以校验格式与生成代码一致性（4 个 required check 恒定产出）；`release.yml` 与 Dockerfile 的 COPY 范围对齐，只列真正进镜像的文件，测试与非构建文件一律不触发构建，并由 `paths-ignore` 让这类 push 连流水线都不启动
@@ -2501,26 +2535,28 @@ gh workflow run smoke.yml
 5. 任意服务缺少部署记录且不在本次变更内会直接失败，避免误用 `latest` 掩盖版本漂移（先做一次全量部署即可补齐）
 6. 本地等价命令：`./mix lint|compile|test <service>`、`./mix docker build <service>`、`./scripts/docker/docker-push-images.sh`、`./mix docker up`
 
-## 项目规范说明
+## CI/CD 与工程规范
+
+### 项目规范说明
 
 > 完整规范以 [skills/](https://github.com/hongch666/mix-web-demo/tree/main/skills) 下的 `mix-*` 技能包为准：`mix-web-demo` 是总入口（通用规则与任务路由），按主题拆出的专项技能覆盖四个服务、网关、数据库、容器与交付流程。修改约定时改仓库内对应技能包，再执行 `./mix skills` 同步到本机 Agent 工具（见下文）。以下仅保留便于阅读的概要。
 
-### 架构与目录概要
+#### 架构与目录概要
 
 - Spring：`web` 负责 HTTP 入口与横切，`application/service` 放业务接口与实现，`infra` 放远程调用和响应式数据访问；构造器注入，基础设施 Bean 在 `config` 装配
 - GoZero：`.api` 优先并用 goctl 生成，`handler` / `logic` / `model` 分层，`svc` 作组合根，禁止包级运行态单例
 - NestJS：`module/system` 放业务模块、`module/common` 放公共能力、`framework` 放全局横切；外部客户端由 Module Provider 注入
 - FastAPI：`internal/` 下分 `api` / `services` / `crud` / `clients` / `cache` / `tasks` / `agents`，依赖在 `app/dependencies/` 集中装配，非请求任务显式传依赖
 
-### 返回与字段命名
+#### 返回与字段命名
 
 所有接口返回 `{code, msg, data}`：`code` 等于 HTTP 状态码，成功为 200 且 `msg` 为 `success`，失败时 `data` 为 `null`，不再有 `error` / `timestamp` / `trace` 等额外字段。对外 HTTP 字段统一 `snake_case`，后端内部保留各语言习惯的驼峰并在序列化时转换；RabbitMQ 消息体优先内部驼峰，消费者兼容历史下划线字段。各服务常量集中在 `common/constants/` 或 `core/constants/`，消息字符串统一进 `Messages` 类。
 
-### 定时任务
+#### 定时任务
 
 统一使用 Cron 表达式，复杂逻辑放 `logic`，需要分布式锁时 Key 用 `lock:task:<业务>:<动作>`。同步类任务走「AOP 精确触发 + 定时全量兜底」两条路径，共用同一套下游接口，按入参是否携带变更事件分流。
 
-### Agent 技能包（skills/mix-*）
+#### Agent 技能包（skills/mix-\*）
 
 仓库根目录的 `skills/` 存放本项目的专属 Agent 技能包，供 AI 编码助手在本仓库内工作时加载，随仓库一起版本管理。按主题拆分为多个技能，每个技能目录名与 `SKILL.md` frontmatter 的 `name` 一致：
 
@@ -2551,7 +2587,7 @@ skills/
 
 项目根目录的 `.codebuddy/rules/代码规范.mdc`、`.github/copilot-instructions.md`、`CLAUDE.md`、`AGENTS.md`（Codex）四处规则文件统一指向这套技能与路由表，新增 Agent 工具时按同样方式补一份入口即可。
 
-### 同步到本机 Agent 工具（./mix skills）
+#### 同步到本机 Agent 工具（./mix skills）
 
 `./mix skills` 把仓库 `skills/mix-web-demo/` 镜像同步到本机各 Agent 工具的用户级技能目录，目标清单集中在 `scripts/tools/skills-targets.conf`：
 
@@ -2576,7 +2612,7 @@ skills/
 
 > **本目录是项目专属技能的备份，实际生效的是对应 Agent 工具自己维护的 skills**。各工具的技能目录不同（`.codebuddy`、`.claude`、`.codex`、`.trae` 等已被 `.gitignore` 忽略，不随仓库分发），这里只保留一份可版本管理的副本，便于审阅、比对与迁移；修改约定时改本目录的文件，再执行 `./mix skills` 同步到实际使用的工具技能目录。
 
-## 代码规范与格式化工具
+### 代码规范与格式化工具
 
 各服务使用统一的代码规范与格式化工具，配置文件随服务源码一起维护，本地开发与构建使用同一套规则。
 
@@ -2613,7 +2649,7 @@ skills/
 
 > `gateway` 为 APISIX 配置，不参与代码检查与格式化；对应工具未安装时该服务会自动跳过并提示。
 
-### 编译校验（./mix compile）
+#### 编译校验（./mix compile）
 
 `./mix compile` 只验证四个服务能否编译通过，**不产出打包目录、不清理 dist**；需要真正的可运行产物时用 `./mix dist build`。两者职责分开，前者适合放在提交门禁里。
 
@@ -2645,7 +2681,7 @@ FastAPI 侧不使用 Pyright 作为门禁：仓库既有类型检查基线存在
 
 根目录 `.gitattributes` 统一声明文本文件换行符为 LF，避免不同操作系统下格式化结果不一致。
 
-### Spring
+#### Spring
 
 Spotless 负责 Spring 的格式化与校验，格式化参数由服务根目录的 `spring/eclipse-formatter.xml` 提供，Maven、Gradle 与 VSCode 共用同一份配置（VSCode 侧由 `.vscode/settings.json` 的 `java.format.settings.url` 指向该文件）：
 
@@ -2665,7 +2701,7 @@ gradle spotlessCheck
 
 `./mix lint spring` 除 Spotless 外还会执行 `scripts/quality/controller-vo.py`，检查控制器是否直接返回匿名 `Map<String, Object>`：接口响应统一用具名 VO（字段加 `@Schema`）承载，便于 Swagger 展示字段说明；确实只能使用 Map 的动态结构（如列由运行时决定的查询结果）需在方法或其注解上方写 `// vo-exempt: 原因` 显式豁免，整个控制器可用 `// vo-exempt-class: 原因`。
 
-### GoZero
+#### GoZero
 
 GoZero 使用 golangci-lint v2，配置文件为 `gozero/app/.golangci.yml`：
 
@@ -2683,7 +2719,7 @@ golangci-lint fmt   # 格式化
 1. `.api` 文件格式检查：`goctl api format` 没有只读校验模式，脚本把 `gozero/api/` 复制到临时目录执行格式化后与仓库文件 diff，不一致即失败并打印 diff（仓库文件全程只读，goctl 未安装时跳过并提示）
 2. 调用 `gozero/script/goctl/checkGenerated.sh` 校验 goctl 生成产物是否被人工改动，规则见「其他说明 → GoZero 代码生成 → 生成产物校验」
 
-### NestJS
+#### NestJS
 
 NestJS 使用 ESLint 做静态检查、Prettier 做格式化，命令定义在 `nestjs/package.json`：
 
@@ -2696,7 +2732,7 @@ npm run format         # 格式化
 npm run format:check   # 格式校验
 ```
 
-### FastAPI
+#### FastAPI
 
 FastAPI 使用 Ruff 做检查与格式化，Python 版本与工具配置都在 `fastapi/pyproject.toml` 中声明，开发依赖通过 `[dependency-groups] dev` 安装：
 
@@ -2708,7 +2744,7 @@ ruff check --fix .   # 自动修复
 ruff format .        # 格式化
 ```
 
-## Git 提交钩子
+### Git 提交钩子
 
 仓库内置版本化钩子（`.githooks/`），启用后每次提交会自动执行「格式化 → 检查 → 编译校验 → 单元测试」，任一步失败即阻止提交：
 
@@ -2735,7 +2771,7 @@ git commit --no-verify             # Git 原生跳过方式
 
 平台说明：钩子是 bash 脚本，由 Git 自带的 `sh` 执行。Linux/macOS 直接可用；Windows 需通过 **Git for Windows 自带的 Git Bash** 提交（仓库已不提供 PowerShell 版本）。换行符由根目录 `.gitattributes` 的 `* text=auto eol=lf` 统一为 LF，避免 CRLF 导致脚本执行失败。仓库克隆后需执行一次 `./mix hooks` 才会生效。
 
-### 日志注解/中间件
+#### 日志注解/中间件
 
 1. Spring 项目使用 `@ApiLog` 注解 + `ApiLogAspect` 进行请求日志记录，并将日志发送到 RabbitMQ
 
@@ -2753,7 +2789,7 @@ git commit --no-verify             # Git 原生跳过方式
 
 - 机制: 装饰器从 `Request` 提取方法/路径/参数，统计耗时，必要时包装流式响应并投递日志
 
-### 权限校验注解/中间件
+#### 权限校验注解/中间件
 
 1. Spring 项目使用 `@RequirePermission` 注解 + `PermissionValidationAspect`，支持角色校验、allowSelf、自定义业务类型与参数来源
 
@@ -2771,7 +2807,7 @@ git commit --no-verify             # Git 原生跳过方式
 
 - 机制: 装饰器读取当前用户 ID 并查询用户角色，不满足条件抛出业务异常
 
-### 内部服务令牌注解/中间件
+#### 内部服务令牌注解/中间件
 
 1. Spring 项目使用 `@RequireInternalToken` 注解 + `InternalTokenAspect` 校验 `X-Internal-Token`，并通过 `ServiceWebClient` 自动注入内部令牌
 
@@ -2789,7 +2825,7 @@ git commit --no-verify             # Git 原生跳过方式
 
 - 机制: 装饰器读取 `X-Internal-Token`，校验并将 claims 写入 `request.state`
 
-### 内部服务令牌的获取方式（接口测试用）
+#### 内部服务令牌的获取方式（接口测试用）
 
 四个服务的内部接口只校验令牌的签名与有效期，密钥在各服务 `.env` 的 `INTERNAL_TOKEN_SECRET` 中且取值一致，因此一枚令牌对四个服务通用，不需要启动服务，也不需要跑单测打印令牌。发送时请求头必须带 `Bearer` 前缀（服务端会剥掉前缀再校验）：`X-Internal-Token: Bearer <token>`
 
@@ -2814,7 +2850,7 @@ git commit --no-verify             # Git 原生跳过方式
   - `--variable-scope environment`: 改为写环境变量，先导出目标环境已有变量再增量合并，不会动手工维护的其它变量（`environment get` 不返回 `variables`，只有 `apifox export` 带该字段）
 - 生效范围: 四个服务的内部接口，网关的 `block-internal` 仍会拦截外部访问，该令牌只在直连服务端口或 Apifox 调试时使用
 
-### 服务间调用工具
+#### 服务间调用工具
 
 1. Spring 项目使用 WebClient 客户端 `FastAPIClient`/`GoZeroClient`/`NestjsClient` 调用其他服务，`ServiceWebClient` 自动注入用户信息与内部令牌
 
@@ -2832,7 +2868,7 @@ git commit --no-verify             # Git 原生跳过方式
 
 - 机制: 从 Nacos 获取服务实例，合并默认请求头后用 httpx 发起调用，失败按 tenacity 策略重试
 
-### 内部调用客户端（Client）规范
+#### 内部调用客户端（Client）规范
 
 内部调用统一放到独立 client 层，client **按目标服务拆分**，不按业务调用方拆分。底层通用 transport 与目标服务 client 分开存放。
 
@@ -3185,7 +3221,40 @@ token 估算不使用各家分词器，按字符类别保守折算（`app/core/c
 - 摘要读写：`fastapi/app/internal/crud/aiUserSummary.py`、模型 `fastapi/app/internal/models/mysql/aiUserSummary.py`
 - 压缩提示词与思考文案：`fastapi/app/core/constants/prompts.py`、`fastapi/app/core/constants/messages.py`
 
-### Github 登录前置条件
+### 登录相关
+
+#### GitHub OAuth 登录流程
+
+```mermaid
+sequenceDiagram
+    participant 前端 as 前端
+    participant NestJS as NestJS
+    participant GitHub as GitHub
+    participant Spring as Spring
+    participant Redis as Redis
+
+    前端->>NestJS: GET /github/authorize?redirect=/profile
+    NestJS-->>前端: 302 跳转 GitHub 授权页
+    前端->>GitHub: 用户授权
+    GitHub-->>NestJS: GET /github/callback（回调）
+    NestJS->>NestJS: 获取 GitHub 用户信息，创建或关联本地用户
+    NestJS->>Spring: POST /users/github/token-ticket（通过 Nacos）
+    Spring->>Redis: 存储 ticket（TTL 60 秒）
+    Redis-->>Spring: 确认
+    Spring-->>NestJS: 返回 ticket
+    NestJS-->>前端: 302 /oauth/github/success?ticket=xxx
+    前端->>Spring: POST /users/github/token
+    Spring->>Spring: 验证 ticket
+    Spring-->>前端: 返回 JWT（access + refresh token）
+    前端->>前端: 保存 token，登录完成
+```
+
+网关负责路由：
+
+- `/github/**` -> NestJS（GitHub OAuth 流程）
+- `/users/github/token` -> Spring（token 换取）
+
+#### 前置条件
 
 1. 需要通过[Github官方OAuth Apps](https://github.com/settings/developers)注册对应OAuth Apps
 2. 配置回调地址和前端地址为当前项目的地址(可使用localhost作为开发环境的地址)
@@ -3252,11 +3321,11 @@ token 估算不使用各家分词器，按字符类别保守折算（`app/core/c
 
 当前分表策略：
 
-| 服务    | 归属表（共 15 张）                                                                                      | 说明                     |
-| ------- | ------------------------------------------------------------------------------------------------------- | ------------------------ |
-| Spring  | user、articles、category、sub_category、category_reference、comments、likes、collects、focus（共 9 张） | 核心业务数据             |
-| GoZero  | chat_messages（共 1 张）                                                                                | 聊天消息存储             |
-| NestJS  | user_table_settings、oss_object（共 2 张）                                                              | 用户表格列设置与 OSS 账本 |
+| 服务    | 归属表（共 15 张）                                                                                      | 说明                         |
+| ------- | ------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Spring  | user、articles、category、sub_category、category_reference、comments、likes、collects、focus（共 9 张） | 核心业务数据                 |
+| GoZero  | chat_messages（共 1 张）                                                                                | 聊天消息存储                 |
+| NestJS  | user_table_settings、oss_object（共 2 张）                                                              | 用户表格列设置与 OSS 账本    |
 | FastAPI | ai_history、ai_user_summary、mcp_server_config（共 3 张）                                               | AI 对话、记忆摘要与 MCP 配置 |
 
 > 各服务通过独立的数据库连接配置指向各自的库，DDL 脚本已按服务划分到 `db/mysql/<service>/` 子目录，拆分后只需修改各服务的数据库连接配置即可。
