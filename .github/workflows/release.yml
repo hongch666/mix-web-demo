@@ -23,6 +23,14 @@ on:
       - 'skills/**'
       - 'static/**'
       - '.github/**'
+      # 测试代码与仅宿主机使用的源文件不进镜像，单独变更时无需触发构建与部署链路
+      - '**/*_test.go'
+      - '**/*.spec.ts'
+      - '**/*-spec.ts'
+      - 'fastapi/tests/**'
+      - 'gozero/api/**'
+      - 'gozero/template/**'
+      - 'gozero/script/**'
   workflow_dispatch:
 
 permissions:
@@ -51,14 +59,30 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
+            # 与 Dockerfile 的 COPY 范围对齐：只列真正进入镜像的文件，测试与非构建文件不触发构建
             spring:
-              - 'spring/**'
+              - 'spring/pom.xml'
+              - 'spring/eclipse-formatter.xml'
+              - 'spring/settings-docker.xml'
+              - 'spring/src/main/**'
+              - 'spring/Dockerfile'
             gozero:
-              - 'gozero/**'
+              - 'gozero/app/**'
+              - '!gozero/app/**/*_test.go'
+              - 'gozero/Dockerfile'
             nestjs:
-              - 'nestjs/**'
+              - 'nestjs/package*.json'
+              - 'nestjs/tsconfig*.json'
+              - 'nestjs/nest-cli.json'
+              - 'nestjs/src/**'
+              - '!nestjs/src/**/*.spec.ts'
+              - '!nestjs/src/**/*-spec.ts'
+              - 'nestjs/Dockerfile'
             fastapi:
-              - 'fastapi/**'
+              - 'fastapi/requirements.txt'
+              - 'fastapi/main.py'
+              - 'fastapi/app/**'
+              - 'fastapi/Dockerfile'
 
       - id: plan
         name: 计算本次需要构建的服务

@@ -50,20 +50,38 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
+            # 与质量门禁的输入对齐：测试代码变更照常触发对应服务的 lint/compile/test
+            # 与 release.yml 的区别：CD 跳过测试与非构建文件，CI 仍校验 .api 格式与生成一致性
             spring:
-              - 'spring/**'
+              - 'spring/pom.xml'
+              - 'spring/eclipse-formatter.xml'
+              - 'spring/src/**'
               - 'scripts/**'
               - '.github/workflows/ci.yml'
             gozero:
-              - 'gozero/**'
+              - 'gozero/app/**'
+              - 'gozero/app/.golangci.yml'
+              - 'gozero/api/**'
+              - 'gozero/template/**'
+              - 'gozero/script/**'
               - 'scripts/**'
               - '.github/workflows/ci.yml'
             nestjs:
-              - 'nestjs/**'
+              - 'nestjs/package*.json'
+              - 'nestjs/tsconfig*.json'
+              - 'nestjs/eslint.config.mjs'
+              - 'nestjs/.prettierrc'
+              - 'nestjs/nest-cli.json'
+              - 'nestjs/src/**'
               - 'scripts/**'
               - '.github/workflows/ci.yml'
             fastapi:
-              - 'fastapi/**'
+              - 'fastapi/requirements.txt'
+              - 'fastapi/pyproject.toml'
+              - 'fastapi/uv.lock'
+              - 'fastapi/main.py'
+              - 'fastapi/app/**'
+              - 'fastapi/tests/**'
               - 'scripts/**'
               - '.github/workflows/ci.yml'
 
