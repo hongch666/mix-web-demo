@@ -340,5 +340,47 @@ jobs:
           SERVICES: ${{ steps.gate.outputs.services }}
         run: |
           set -euo pipefail
+          # 诊断：记录 PATH 与各解释器解析结果，便于定位 venv 污染与 PyYAML 归属
+          echo "::group::解释器诊断"
+          echo "PATH=$PATH"
+          echo "VIRTUAL_ENV=${VIRTUAL_ENV:-<unset>}"
+          for c in python python3; do
+            resolved="$(command -v "$c" 2>/dev/null || echo MISSING)"
+            echo "$c -> $resolved"
+            if [ "$resolved" != "MISSING" ]; then
+              "$resolved" -c 'import sys; print("  version:", sys.version.split()[0]); import yaml; print("  PyYAML:", yaml.__version__)' 2>/dev/null \
+                || echo "  PyYAML: NOT INSTALLED"
+            fi
+          done
+          echo "::endgroup::"
+          # setup-uv 会把根目录 .venv/bin 注入 PATH 并设 VIRTUAL_ENV，该环境没有 PyYAML，
+          # genSwagger.sh 的自动探测会误选它。这里显式解析出装了 PyYAML 的解释器传给下游
+          SWAGGER_PYTHON=""
+          for candidate in python python3; do
+            resolved="$(command -v "$candidate" 2>/dev/null || true)"
+            case "$resolved" in
+              */.venv/bin/*|*/site-packages/*) continue ;;
+            esac
+            if [ -n "$resolved" ] && "$resolved" -c 'import yaml' >/dev/null 2>&1; then
+              SWAGGER_PYTHON="$resolved"
+              break
+            fi
+          done
+          if [ -z "$SWAGGER_PYTHON" ]; then
+            # 兜底：setup-python 的解释器（PATH 里非 venv 的那个）当场补装 PyYAML
+            for candidate in python python3; do
+              resolved="$(command -v "$candidate" 2>/dev/null || true)"
+              case "$resolved" in
+                */.venv/bin/*) continue ;;
+              esac
+              if [ -n "$resolved" ]; then
+                "$resolved" -m pip install pyyaml
+                SWAGGER_PYTHON="$resolved"
+                break
+              fi
+            done
+          fi
+          echo "SWAGGER_PYTHON=$SWAGGER_PYTHON"
+          export SWAGGER_PYTHON
           echo "执行: ./mix swag-check $SERVICES"
           bash scripts/docs/swag-check.sh $SERVICES
