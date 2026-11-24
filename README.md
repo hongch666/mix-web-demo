@@ -1259,6 +1259,12 @@ pytest tests/core/auth/test_internal_token.py
 # 只生成指定服务
 ./mix swag spring gozero
 
+# 只读校验静态产物与 Apifox 基线是否与当前代码一致（重新生成后比对再恢复，不修改仓库文件）
+./mix swag-check
+
+# 只校验指定服务
+./mix swag-check spring gozero
+
 # 将接口文档与 README 一并同步到 Apifox（需先在根目录 .env 配置令牌与项目 ID）
 ./mix apifox
 
@@ -1574,7 +1580,7 @@ Windows 统一使用 Git Bash 执行下列 bash 脚本，仓库不再提供 Powe
 | `test.sh`                   | scripts/quality/       | 运行四个服务的单元测试（支持指定服务）                                                            | Linux/macOS         |
 | `compile.sh`                | scripts/quality/       | 验证四个服务能否编译通过（只编译，不产出打包目录）                                                | Linux/macOS         |
 | `hooks-init.sh`             | scripts/tools/         | 启用/停用/查看仓库的版本化 Git 提交钩子（`.githooks/`）                                           | Linux/macOS/Windows |
-| `skills-sync.sh`            | scripts/tools/         | 把 skills/mix-web-demo 镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）        | Linux/macOS/Windows |
+| `skills-sync.sh`            | scripts/tools/         | 把 skills/ 下所有 mix-* 技能镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）   | Linux/macOS/Windows |
 
 ### 服务名称
 
@@ -2073,6 +2079,18 @@ PDF 导出依赖 Chromium：运行镜像已安装 `chromium` + `font-noto-cjk`�
 ./scripts/docs/swag-init.sh
 ```
 
+改了接口却忘了重新生成、或改了模型却没同步 Apifox 基线时，可用只读检测脚本发现（重新生成后比对再恢复，执行完不修改仓库）：
+
+```bash
+# 校验四个服务的产物与 Apifox 基线是否与当前代码一致
+./mix swag-check
+
+# 只校验指定服务
+./mix swag-check spring gozero
+```
+
+它做两项校验：一是用 `swag-init.sh` 重新生成产物与仓库产物逐文件比对；二是用新生成文档算 `components.schemas` 的 digest（算法与 `apifox-sync.sh` 一致），与 `.apifox/<service>.schemas.sha256` 比对。返回码 `0` 表示一致，`1` 表示产物或基线未同步（需重跑 `./mix swag` 与 `./mix apifox` 后提交），`2` 表示工具缺失无法完成检测。CI 的 `docs-consistency` job 会调用它拦截未同步的提交，工具缺失在 CI 同样按失败处理；`apifox-sync.yml` 的同步只作为 prod 上的兜底。
+
 | 服务    | 生成方式                                                        | 静态产物                       | 前置工具  |
 | ------- | --------------------------------------------------------------- | ------------------------------ | --------- |
 | Spring  | `OpenApiDocGenerator` 只装配 Web 层上下文，其余依赖自动 mock    | `spring/docs/openapi.json`     | Maven     |
@@ -2440,8 +2458,8 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 
 | 文件              | 作用                                                                                                                                                                                                                                                             |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/quality/lint.sh` / `scripts/quality/compile.sh` / `scripts/quality/test.sh`；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿 |
-| `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                                                                 |
+| `ci.yml`          | 按 `dorny/paths-filter` 计算受影响服务，复用本地 `scripts/quality/lint.sh` / `scripts/quality/compile.sh` / `scripts/quality/test.sh`；filter 覆盖生产源码与测试代码，测试代码变更照常触发对应服务门禁，`gozero` 的 `.api`/模板/脚本也保留以校验格式与生成一致性；未变更的服务秒级快速通过（保证 4 个 required check 恒定产出）；`CI_STRICT=1` 把「工具缺失就跳过」升级为失败，避免门禁假绿；另设 `docs-consistency` job 调 `./mix swag-check` 校验静态 OpenAPI 产物与代码一致，防止改了接口未重新生成文档 |
+| `release.yml`     | 构建并推送 `mix-<service>` 镜像到 GHCR（短 sha / `latest` / semver），用 registry 缓存跨 run 复用；filter 与 Dockerfile 的 COPY 范围对齐，测试代码与不进镜像的源文件（`gozero` 的 `.api`/模板/脚本等）变更不触发构建，并由 `paths-ignore` 让这类 push 连流水线都不启动；导出 `deploy-plan.txt` 供部署侧按服务精准更新；Trivy 扫描结果上传 Security 页（只报告不阻断）                                  |
 | `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`observability/` 有变更时按文件重启命中的容器（不重建业务服务）                                                       |
 | `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                                                          |
 | `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)                                                                                                                                   |
@@ -2475,7 +2493,8 @@ gh workflow run smoke.yml
 
 ### 注意事项
 
-1. 只改 `**.md`、`docs/**`、`db/**`、`scripts/**`、`skills/**`、`static/**`、`.github/**` 时不触发流水线；改 `observability/`（或根 `docker-compose.yml`）会触发一次 `Release Images`，但变更检测为 0、不构建任何镜像，部署侧走 `CONFIG_ONLY` 同步代码与配置，并按目录重启命中的容器（Grafana / Loki / Promtail / Prometheus / otel-collector / tempo / gateway），业务容器不重建
+1. 只改 `**.md`、`docs/**`、`db/**`、`scripts/**`、`skills/**`、`static/**`、`.github/**`、测试代码（`**/*_test.go` / `**/*.spec.ts` / `**/*-spec.ts` / `fastapi/tests/**`）或不进镜像的源文件（`gozero/api/**`、`gozero/template/**`、`gozero/script/**`）时不触发流水线；改 `observability/`（或根 `docker-compose.yml`）会触发一次 `Release Images`，但变更检测为 0、不构建任何镜像，部署侧走 `CONFIG_ONLY` 同步代码与配置，并按目录重启命中的容器（Grafana / Loki / Promtail / Prometheus / otel-collector / tempo / gateway），业务容器不重建
+   - 变更检测分两套口径：`ci.yml` 覆盖生产源码与测试代码，测试代码变更照常触发对应服务门禁，`gozero` 的 `.api`/模板/脚本也保留以校验格式与生成代码一致性（4 个 required check 恒定产出）；`release.yml` 与 Dockerfile 的 COPY 范围对齐，只列真正进镜像的文件，测试与非构建文件一律不触发构建，并由 `paths-ignore` 让这类 push 连流水线都不启动
 2. 部署机是「一次配置、长期复用」：runner 以 systemd 服务注册，仓库目录里的 `.env`、四个 `.env.docker` 都不随 `checkout` 重置；`docker compose` 需要 runner 用户具备 docker 权限
 3. 部署失败会自动按服务回滚到上一版本（状态记录在 `${RUNNER_WORKSPACE}/mix-deploy-state/last-deploy.txt`）；若回滚也失败会打出 `::warning::` 并要求人工介入
 4. 部署目录用 `git checkout -f -B prod <commit>` 而不是 detached HEAD，运维仍可直接在该目录 `git pull` 排查
@@ -2484,7 +2503,7 @@ gh workflow run smoke.yml
 
 ## 项目规范说明
 
-> 完整规范以 [skills/mix-web-demo/SKILL.md](https://github.com/hongch666/mix-web-demo/blob/main/skills/mix-web-demo/SKILL.md) 为准，覆盖四个服务与网关的目录组织、依赖注入、参数校验、日志、测试、数据库与索引、接口文档收尾和验证命令。修改约定时改仓库内技能包，再执行 `./mix skills` 同步到本机 Agent 工具（见下文）。以下仅保留便于阅读的概要。
+> 完整规范以 [skills/](https://github.com/hongch666/mix-web-demo/tree/main/skills) 下的 `mix-*` 技能包为准：`mix-web-demo` 是总入口（通用规则与任务路由），按主题拆出的专项技能覆盖四个服务、网关、数据库、容器与交付流程。修改约定时改仓库内对应技能包，再执行 `./mix skills` 同步到本机 Agent 工具（见下文）。以下仅保留便于阅读的概要。
 
 ### 架构与目录概要
 
@@ -2501,27 +2520,36 @@ gh workflow run smoke.yml
 
 统一使用 Cron 表达式，复杂逻辑放 `logic`，需要分布式锁时 Key 用 `lock:task:<业务>:<动作>`。同步类任务走「AOP 精确触发 + 定时全量兜底」两条路径，共用同一套下游接口，按入参是否携带变更事件分流。
 
-### Agent 技能包（skills/mix-web-demo/）
+### Agent 技能包（skills/mix-*）
 
-仓库根目录的 `skills/mix-web-demo/` 存放本项目的专属 Agent 技能包，供 AI 编码助手在本仓库内工作时加载，随仓库一起版本管理；技能包目录名与 `SKILL.md` frontmatter 的 `name` 保持一致：
+仓库根目录的 `skills/` 存放本项目的专属 Agent 技能包，供 AI 编码助手在本仓库内工作时加载，随仓库一起版本管理。按主题拆分为多个技能，每个技能目录名与 `SKILL.md` frontmatter 的 `name` 一致：
 
 ```
 skills/
-  mix-web-demo/
-    SKILL.md                   项目专属编码规范（技能主体）
+  mix-web-demo/      总入口：适用范围、技能索引、任务路由与四服务通用规则
+  mix-db/            数据库与索引设计
+  mix-spring/        Spring WebFlux + R2DBC 服务规范
+  mix-gozero/        go-zero API-First、实时链路与搜索规范
+  mix-nestjs/        NestJS + Fastify 服务规范
+  mix-fastapi/       FastAPI + LangChain 服务规范
+  mix-gateway/       APISIX 网关配置规范
+  mix-engineering/   仓库工程约束与工具链
+  mix-docker/        容器镜像与分发规范
+  mix-workflow/      内部接口清理、文档收尾、验证与交付流程
     references/
-      unit-testing.md          测试规范（按需加载的参考文件）
+      unit-testing.md  测试规范（按需加载的参考文件）
 ```
 
-`SKILL.md` 通过 frontmatter 声明技能名 `mix-web-demo` 与适用场景，正文覆盖：
+`mix-web-demo` 是必须首先加载的总入口，正文只保留跨服务通用规则（格式化与 lint 门禁、常量抽取、接口响应具名结构、参数校验、并行化、SQL 参数化、远程调用与连接池释放、日志脱敏、注释与行尾规范）和"任务 → 专项技能"路由表；具体细节按任务加载对应专项技能，避免一次性把全部规范塞进上下文。各专项技能覆盖：
 
-- **通用规则**：格式化与 lint 门禁、常量抽取、接口响应具名结构（禁止匿名 Map）、参数校验、并行化、SQL 参数化、远程调用与连接池释放、日志脱敏、注释与行尾规范
-- **各服务专项约定**：Spring 响应式切面写法与 WebFlux 校验异常陷阱、GoZero 的 API-First 生成流程与 `httpc` 远程调用、NestJS 模块边界与 CLS 未登录语义、FastAPI 依赖注入三层结构与 Agent 工具权限
-- **数据库与索引设计**：新增表与查询必须同时给出索引方案；手写 DDL（Spring/GoZero/ClickHouse 脚本）的索引内联在建表语句，框架建表（SQLAlchemy/LangChain/Mongoose/ES）的索引集中登记；MySQL、MongoDB、ClickHouse、ES 与 pgvector 的设计约束与验证方式
-- **接口文档收尾流程**：新增、修改或删除接口后重新生成静态 OpenAPI 文档并同步 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)与 [Swagger 说明](#swagger-说明)
-- **仓库工程约束与验证命令**：行尾约定、goctl 生成流程、`mix` 子命令清单、各服务的验证与格式检查命令
+- **服务专项**：Spring 响应式切面与 WebFlux 校验陷阱、GoZero 的 API-First 生成与 `httpc` 远程调用、NestJS 模块边界与 CLS 语义、FastAPI 依赖注入三层与 Agent 工具权限
+- **数据库与索引**：手写 DDL 索引内联、框架建表索引登记、各存储设计约束与验证方式，详见 [索引优化执行手册.md](索引优化执行手册.md)
+- **接口文档**：新增/修改/删除接口后的静态文档生成与 Apifox 同步收尾，详见 [Apifox 文档同步](#apifox-文档同步)与 [Swagger 说明](#swagger-说明)
+- **工程与交付**：行尾约定、goctl 生成流程、`mix` 子命令清单、Dockerfile/镜像约定、验证命令与交付顺序
 
-`references/` 下放置供按需加载的参考文件，`SKILL.md` 会指明在哪些任务下必须完整读取（例如创建、修改或评审测试时必须读 `references/unit-testing.md`）。
+`references/` 下放置供按需加载的参考文件，`mix-workflow/SKILL.md` 会指明在哪些任务下必须完整读取（例如创建、修改或评审测试时必须读 `references/unit-testing.md`）。
+
+项目根目录的 `.codebuddy/rules/代码规范.mdc`、`.github/copilot-instructions.md`、`CLAUDE.md`、`AGENTS.md`（Codex）四处规则文件统一指向这套技能与路由表，新增 Agent 工具时按同样方式补一份入口即可。
 
 ### 同步到本机 Agent 工具（./mix skills）
 
@@ -2543,7 +2571,7 @@ skills/
 1. 清单每行一个用户级技能根目录，`<home>` 表示用户主目录（Linux/macOS 为 `HOME`，Windows 为 `USERPROFILE`），已覆盖 `.codebuddy`、`.workbuddy`、`.claude`、`.codex`、`.agents`、`agents`、`.gemini`、`.qwen`、`.cursor`、`.trae`、`.opencode`、`.github` 等工具的技能目录；需要同步到清单外的工具时，在清单里追加一行即可；仓库内的项目级技能目录不在同步范围内
 2. **只同步技能根目录已存在的目标**，不存在的目录不创建也不迁移，未安装或未使用的工具不会被凭空写入
 3. 同步为镜像覆盖：先删除目标下的同名技能目录再整体复制，源目录删除或改名过的文件不会在目标里残留；内容完全一致时跳过复制，只打印状态
-4. 技能源目录为 `skills/mix-web-demo`，目录名需与 `SKILL.md` frontmatter 的 `name` 字段一致（当前为 `mix-web-demo`）
+4. 技能源目录为 `skills/` 下所有 `mix-*` 子目录，每个目录名需与自身 `SKILL.md` frontmatter 的 `name` 字段一致；同步脚本会遍历全部技能并逐个校验、逐个镜像覆盖
 5. 脚本为 `scripts/tools/skills-sync.sh`，只使用 bash 内建与 `cp`、`diff`，Linux/macOS 与 Windows（Git Bash）行为一致，可直接调用：`bash scripts/tools/skills-sync.sh --list`
 
 > **本目录是项目专属技能的备份，实际生效的是对应 Agent 工具自己维护的 skills**。各工具的技能目录不同（`.codebuddy`、`.claude`、`.codex`、`.trae` 等已被 `.gitignore` 忽略，不随仓库分发），这里只保留一份可版本管理的副本，便于审阅、比对与迁移；修改约定时改本目录的文件，再执行 `./mix skills` 同步到实际使用的工具技能目录。

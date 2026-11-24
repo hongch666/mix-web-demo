@@ -1,20 +1,16 @@
 #!/bin/bash
 
 # 脚本说明：
-# 把仓库 skills/mix-web-demo/ 下的项目技能包同步到本机各 Agent 工具的用户级技能目录
+# 把仓库 skills/ 下的所有 mix-* 技能包同步到本机各 Agent 工具的用户级技能目录
 #   - 技能包目录名即技能名，需与 SKILL.md frontmatter 的 name 字段一致
 #   - 目标清单见 scripts/tools/skills-targets.conf，<home> 为用户主目录
 #   - 只同步「技能根目录已存在」的目标，不存在的目录不创建也不迁移
 #   - 同步为镜像覆盖：先删除目标下的同名技能目录再从源目录复制，源目录删掉的文件不会残留
 #   - 脚本只使用 bash 内建与 cp、diff，Linux、macOS、Windows（Git Bash）行为一致
 # 用法：./scripts/tools/skills-sync.sh [--dry-run] [--list]
-#   --dry-run  只打印将要执行的动作，不写任何文件
-#   --list     只列出目标清单与检测结果，不同步
 
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SKILLS_DIR="$WORKDIR/skills"
-SKILL_NAME="mix-web-demo"
-SOURCE_DIR="$SKILLS_DIR/$SKILL_NAME"
 TARGETS_FILE="$WORKDIR/scripts/tools/skills-targets.conf"
 
 # 颜色输出
@@ -42,7 +38,7 @@ show_help() {
     echo ""
     echo "用法: ./scripts/tools/skills-sync.sh [--dry-run] [--list]"
     echo ""
-    echo "  不带参数    把 skills/mix-web-demo 同步到本机已存在的用户级 Agent 技能目录"
+    echo "  不带参数    把 skills/ 下所有 mix-* 技能同步到本机已存在的用户级 Agent 技能目录"
     echo "  --dry-run   只打印将要执行的动作，不写任何文件"
     echo "  --list      只列出目标清单与检测结果，不同步"
     echo ""
@@ -83,8 +79,8 @@ done
 
 # ==================== 前置检查 ====================
 
-if [ ! -f "$SOURCE_DIR/SKILL.md" ]; then
-    print_error "未找到技能源文件: $SOURCE_DIR/SKILL.md"
+if [ ! -d "$SKILLS_DIR" ]; then
+    print_error "未找到技能根目录: $SKILLS_DIR"
     exit 1
 fi
 
@@ -101,42 +97,63 @@ if [ -z "$HOME_DIR" ]; then
 fi
 HOME_DIR="${HOME_DIR//\\//}"
 
-# 技能包目录名必须与 SKILL.md frontmatter 的 name 一致，Agent 工具按目录名识别技能
-FRONTMATTER_NAME=""
-IN_FRONTMATTER=0
-while IFS= read -r LINE || [ -n "$LINE" ]; do
-    LINE="${LINE%$'\r'}"
-    if [ "$LINE" = "---" ]; then
-        if [ "$IN_FRONTMATTER" -eq 1 ]; then
-            break
-        fi
-        IN_FRONTMATTER=1
-        continue
-    fi
-    if [ "$IN_FRONTMATTER" -eq 1 ]; then
-        case "$LINE" in
-            name:*)
-                VALUE="${LINE#name:}"
-                # 去掉首尾空白
-                VALUE="${VALUE#"${VALUE%%[![:space:]]*}"}"
-                VALUE="${VALUE%"${VALUE##*[![:space:]]}"}"
-                if [ -n "$VALUE" ]; then
-                    FRONTMATTER_NAME="$VALUE"
-                fi
-                break
-                ;;
-        esac
-    fi
-done < "$SOURCE_DIR/SKILL.md"
+# 收集所有 mix-* 技能源目录：目录名必须与 SKILL.md frontmatter 的 name 一致
+SOURCES=()
+for dir in "$SKILLS_DIR"/mix-*; do
+    [ -d "$dir" ] || continue
+    [ -f "$dir/SKILL.md" ] || {
+        print_error "技能目录缺少 SKILL.md: $dir"
+        exit 1
+    }
+    SOURCES+=("$dir")
+done
 
-if [ -n "$FRONTMATTER_NAME" ] && [ "$FRONTMATTER_NAME" != "$SKILL_NAME" ]; then
-    print_error "技能目录名与 SKILL.md 的 name 不一致: $SKILL_NAME != $FRONTMATTER_NAME"
+if [ "${#SOURCES[@]}" -eq 0 ]; then
+    print_error "未在 $SKILLS_DIR 下找到任何 mix-* 技能目录"
     exit 1
 fi
 
+# 校验目录名与 frontmatter name 一致
+for SOURCE_DIR in "${SOURCES[@]}"; do
+    SKILL_NAME="$(basename "$SOURCE_DIR")"
+    FRONTMATTER_NAME=""
+    IN_FRONTMATTER=0
+    while IFS= read -r LINE || [ -n "$LINE" ]; do
+        LINE="${LINE%$'\r'}"
+        if [ "$LINE" = "---" ]; then
+            if [ "$IN_FRONTMATTER" -eq 1 ]; then
+                break
+            fi
+            IN_FRONTMATTER=1
+            continue
+        fi
+        if [ "$IN_FRONTMATTER" -eq 1 ]; then
+            case "$LINE" in
+                name:*)
+                    VALUE="${LINE#name:}"
+                    VALUE="${VALUE#"${VALUE%%[![:space:]]*}"}"
+                    VALUE="${VALUE%"${VALUE##*[![:space:]]}"}"
+                    if [ -n "$VALUE" ]; then
+                        FRONTMATTER_NAME="$VALUE"
+                    fi
+                    break
+                    ;;
+            esac
+        fi
+    done < "$SOURCE_DIR/SKILL.md"
+
+    if [ -z "$FRONTMATTER_NAME" ]; then
+        print_error "SKILL.md 缺少 frontmatter name: $SOURCE_DIR/SKILL.md"
+        exit 1
+    fi
+    if [ "$FRONTMATTER_NAME" != "$SKILL_NAME" ]; then
+        print_error "技能目录名与 SKILL.md 的 name 不一致: $SKILL_NAME != $FRONTMATTER_NAME"
+        exit 1
+    fi
+done
+
 # ==================== 工具函数 ====================
 
-# 展开清单中的占位符，参数为原始路径，输出展开后的绝对路径
 expand_target() {
     case "$1" in
         "<home>/"*) printf '%s' "$HOME_DIR/${1#<home>/}" ;;
@@ -144,7 +161,6 @@ expand_target() {
     esac
 }
 
-# 比较源目录与目标目录内容是否一致，diff 不可用时按不一致处理（走覆盖）
 dirs_identical() {
     if ! command -v diff >/dev/null 2>&1; then
         return 1
@@ -152,55 +168,57 @@ dirs_identical() {
     diff -r -q "$1" "$2" >/dev/null 2>&1
 }
 
-# 同步单个技能根目录，参数为技能根目录，返回 0 表示成功
+# 同步单个技能到单个目标根目录，参数：技能源目录、目标根目录
 sync_target() {
-    ROOT="$1"
-    TARGET="$ROOT/$SKILL_NAME"
+    local source="$1" root="$2"
+    local name target
+    name="$(basename "$source")"
+    target="$root/$name"
 
-    case "$TARGET" in
+    case "$target" in
         ""|"/"|*"//"*)
-            print_error "非法目标路径: $TARGET"
+            print_error "非法目标路径: $target"
             return 1
             ;;
     esac
-    if [ "$TARGET" = "$ROOT" ]; then
-        print_error "非法目标路径: $TARGET"
+    if [ "$target" = "$root" ]; then
+        print_error "非法目标路径: $target"
         return 1
     fi
 
     if [ "$DRY_RUN" -eq 1 ]; then
-        if [ -d "$TARGET" ]; then
-            print_warn "[DRY-RUN] 将覆盖: $TARGET"
+        if [ -d "$target" ]; then
+            print_warn "[DRY-RUN] 将覆盖: $target"
         else
-            print_warn "[DRY-RUN] 将新建: $TARGET"
+            print_warn "[DRY-RUN] 将新建: $target"
         fi
         return 0
     fi
 
-    if [ -d "$TARGET" ] && dirs_identical "$SOURCE_DIR" "$TARGET"; then
-        print_info "内容一致，跳过: $TARGET"
+    if [ -d "$target" ] && dirs_identical "$source" "$target"; then
+        print_info "内容一致，跳过: $target"
         UNCHANGED_COUNT=$((UNCHANGED_COUNT + 1))
         return 0
     fi
 
-    if [ -d "$TARGET" ]; then
-        rm -rf "$TARGET" || {
-            print_error "清理旧技能目录失败: $TARGET"
+    if [ -d "$target" ]; then
+        rm -rf "$target" || {
+            print_error "清理旧技能目录失败: $target"
             return 1
         }
     fi
 
-    mkdir -p "$ROOT" || {
-        print_error "创建技能根目录失败: $ROOT"
+    mkdir -p "$root" || {
+        print_error "创建技能根目录失败: $root"
         return 1
     }
 
-    cp -R "$SOURCE_DIR" "$TARGET" || {
-        print_error "复制技能失败: $TARGET"
+    cp -R "$source" "$target" || {
+        print_error "复制技能失败: $target"
         return 1
     }
 
-    print_info "已同步: $TARGET"
+    print_info "已同步: $target"
     SYNCED_COUNT=$((SYNCED_COUNT + 1))
     return 0
 }
@@ -213,8 +231,11 @@ SYNCED_COUNT=0
 UNCHANGED_COUNT=0
 FAILED_COUNT=0
 
-print_info "技能源目录: $SOURCE_DIR"
-print_info "技能名称: $SKILL_NAME"
+print_info "技能根目录: $SKILLS_DIR"
+print_info "检测到 ${#SOURCES[@]} 个技能:"
+for SOURCE_DIR in "${SOURCES[@]}"; do
+    print_info "  - $(basename "$SOURCE_DIR")"
+done
 if [ "$DRY_RUN" -eq 1 ]; then
     print_warn "DRY-RUN 模式：只打印动作，不写文件"
 fi
@@ -222,18 +243,14 @@ echo ""
 
 while IFS= read -r LINE || [ -n "$LINE" ]; do
     LINE="${LINE%$'\r'}"
-    # 去掉行首空白
     LINE="${LINE#"${LINE%%[![:space:]]*}"}"
     if [ -z "$LINE" ]; then
         continue
     fi
     case "$LINE" in
-        \#*)
-            continue
-            ;;
+        \#*) continue ;;
     esac
 
-    # 第一个空白之前是路径，之后是注释
     RAW="${LINE%%[[:space:]]*}"
     ROOT="$(expand_target "$RAW")"
     if [ ! -d "$ROOT" ]; then
@@ -247,20 +264,25 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
     DETECTED_COUNT=$((DETECTED_COUNT + 1))
 
     if [ "$LIST_ONLY" -eq 1 ]; then
-        if [ ! -d "$ROOT/$SKILL_NAME" ]; then
-            print_warn "未安装: $ROOT/$SKILL_NAME"
-        elif dirs_identical "$SOURCE_DIR" "$ROOT/$SKILL_NAME"; then
-            print_info "已同步: $ROOT/$SKILL_NAME"
-        else
-            print_warn "存在差异: $ROOT/$SKILL_NAME"
-        fi
+        for SOURCE_DIR in "${SOURCES[@]}"; do
+            name="$(basename "$SOURCE_DIR")"
+            if [ ! -d "$ROOT/$name" ]; then
+                print_warn "未安装: $ROOT/$name"
+            elif dirs_identical "$SOURCE_DIR" "$ROOT/$name"; then
+                print_info "已同步: $ROOT/$name"
+            else
+                print_warn "存在差异: $ROOT/$name"
+            fi
+        done
         continue
     fi
 
     print_info "同步目标: $ROOT"
-    if ! sync_target "$ROOT"; then
-        FAILED_COUNT=$((FAILED_COUNT + 1))
-    fi
+    for SOURCE_DIR in "${SOURCES[@]}"; do
+        if ! sync_target "$SOURCE_DIR" "$ROOT"; then
+            FAILED_COUNT=$((FAILED_COUNT + 1))
+        fi
+    done
 done < "$TARGETS_FILE"
 
 echo ""
@@ -282,4 +304,4 @@ if [ "$DRY_RUN" -eq 1 ]; then
     exit 0
 fi
 
-print_info "同步完成：覆盖 $SYNCED_COUNT 个，内容一致跳过 $UNCHANGED_COUNT 个"
+print_info "同步完成：${#SOURCES[@]} 个技能，覆盖 $SYNCED_COUNT 份，内容一致跳过 $UNCHANGED_COUNT 份"

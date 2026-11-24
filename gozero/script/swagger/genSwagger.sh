@@ -85,8 +85,13 @@ echo "已转换为 OpenAPI 3 格式：$JSON_FILE"
 python_script="$SCRIPT_DIR/fix.py"
 python_cmd=""
 if [ -f "$python_script" ]; then
+    # CI 显式指定的解释器优先：setup-uv 会把无依赖的 .venv/bin 放进 PATH，自动探测可能选中它
+    if [ -n "${SWAGGER_PYTHON:-}" ] && [ -x "$SWAGGER_PYTHON" ]; then
+        python_cmd="$SWAGGER_PYTHON"
+    fi
     # 优先使用 Windows 原生 Python（避免 Git Bash 中误用 WSL 的 python3）
-    for candidate in python python3; do
+    if [ -z "$python_cmd" ]; then
+      for candidate in python python3; do
         if command -v "$candidate" &> /dev/null; then
             # 验证该 Python 能否访问项目文件
             candidate_path="$(command -v "$candidate")"
@@ -96,7 +101,8 @@ if [ -f "$python_script" ]; then
             python_cmd="$candidate"
             break
         fi
-    done
+      done
+    fi
     # 如果没找到 Windows 原生 Python，回退到任意可用的 python3
     if [ -z "$python_cmd" ] && command -v python3 &> /dev/null; then
         python_cmd="python3"
