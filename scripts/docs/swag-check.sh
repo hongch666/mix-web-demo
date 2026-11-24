@@ -31,7 +31,8 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 每个服务需要检测的产物，外加网关黑名单共享产物（由 swag-init.sh 每次重新抽取）
+# 每个服务需要检测的产物；网关黑名单 scripts/generated/gateway-blocklist.json 是每次从
+# apisix.yaml 抽取的中间输入（被 .gitignore 忽略、不提交），不属于校验产物，不在此列
 artifacts_for() {
     case "$1" in
         spring)
@@ -77,7 +78,6 @@ for SERVICE in $SERVICES; do
     esac
     artifacts_for "$SERVICE" >> "$ARTIFACT_LIST"
 done
-echo "scripts/generated/gateway-blocklist.json" >> "$ARTIFACT_LIST"
 sort -u "$ARTIFACT_LIST" -o "$ARTIFACT_LIST"
 
 # 备份：记录每个产物是否存在，存在则复制到临时目录
