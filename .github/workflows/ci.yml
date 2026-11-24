@@ -218,3 +218,119 @@ jobs:
           bash scripts/quality/lint.sh "$SVC"
           bash scripts/quality/compile.sh "$SVC"
           bash scripts/quality/test.sh "$SVC"
+
+  # ---------------------------------------------------------------------------
+  # 文档一致性：重新生成静态 OpenAPI 产物并与仓库产物比对，发现「改了接口没跑 ./mix swag」
+  # 固定产出单个 check（docs-consistency），未变更时快速通过，满足分支保护 required check
+  # ---------------------------------------------------------------------------
+  docs-consistency:
+    name: Docs Consistency
+    needs: changes
+    if: always() && needs.changes.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # 文档产物或网关黑名单单独变更时也要全量检测：网关黑名单会注入各服务 403 响应说明
+      - id: artifacts
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            changed:
+              - 'spring/docs/**'
+              - 'gozero/app/docs/**'
+              - 'nestjs/docs/**'
+              - 'fastapi/docs/**'
+              - 'scripts/generated/**'
+              - 'gateway/**'
+
+      - id: gate
+        name: 计算需要校验文档的服务
+        env:
+          AFFECTED: ${{ needs.changes.outputs.affected }}
+          ARTIFACTS_CHANGED: ${{ steps.artifacts.outputs.changed }}
+        run: |
+          set -euo pipefail
+          services=""
+          if [ "$ARTIFACTS_CHANGED" = "true" ]; then
+            services="spring gozero nestjs fastapi"
+          else
+            for svc in spring gozero nestjs fastapi; do
+              if [ "$(echo "$AFFECTED" | jq -r ".$svc")" = "true" ]; then
+                services="$services $svc"
+              fi
+            done
+          fi
+          services="$(echo $services | xargs)"
+          echo "services=$services" >> "$GITHUB_OUTPUT"
+          if [ -n "$services" ]; then
+            echo "::notice::本次文档一致性检测服务: $services"
+          else
+            echo "::notice::无服务与产物变更，文档检测快速通过"
+          fi
+
+      # ---------- spring：JDK 17 + Maven（生成器走 mvn test -Dtest=OpenApiDocGenerator）----------
+      - if: contains(steps.gate.outputs.services, 'spring')
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: spring/pom.xml
+
+      # ---------- gozero：Go + goctl + swagger2openapi + PyYAML ----------
+      - if: contains(steps.gate.outputs.services, 'gozero')
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: gozero/app/go.mod
+          cache-dependency-path: gozero/app/go.sum
+
+      - if: contains(steps.gate.outputs.services, 'gozero')
+        name: 安装 goctl 与文档后处理依赖
+        run: |
+          set -euo pipefail
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          GOWORK=off go install "github.com/zeromicro/go-zero/tools/goctl@${GOCTL_VERSION}" \
+            || GOWORK=off go install github.com/zeromicro/go-zero/tools/goctl@latest
+          goctl --version
+          npm install -g swagger2openapi
+          python3 -m pip install --user pyyaml
+
+      # ---------- nestjs：Node 20 + npm ci + Bun（生成器必须用 Bun 加载 ESM 依赖）----------
+      - if: contains(steps.gate.outputs.services, 'nestjs')
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: nestjs/package-lock.json
+
+      - if: contains(steps.gate.outputs.services, 'nestjs')
+        name: 安装依赖与 Bun
+        run: |
+          set -euo pipefail
+          (cd nestjs && npm ci --no-audit --no-fund)
+          npm install -g bun
+          bun --version
+
+      # ---------- fastapi：Python 3.12 + uv ----------
+      - if: contains(steps.gate.outputs.services, 'fastapi')
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.12'
+          enable-cache: true
+          cache-dependency-glob: fastapi/uv.lock
+
+      - if: contains(steps.gate.outputs.services, 'fastapi')
+        name: 安装依赖（uv sync --frozen）
+        working-directory: fastapi
+        run: uv sync --frozen
+
+      - name: 校验 OpenAPI 产物一致性
+        if: steps.gate.outputs.services != ''
+        env:
+          SERVICES: ${{ steps.gate.outputs.services }}
+        run: |
+          set -euo pipefail
+          echo "执行: ./mix swag-check $SERVICES"
+          bash scripts/docs/swag-check.sh $SERVICES

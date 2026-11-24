@@ -92,6 +92,7 @@ show_help() {
     echo "Setup Commands (初始化):"
     echo "  setup                    - Initialize environment and install dependencies"
     echo "  swag [services...]       - Generate static OpenAPI docs into each service docs/ (offline)"
+    echo "  swag-check [services...] - Verify generated OpenAPI docs match source (read-only, no file changes)"
     echo "  check-error-codes [services...] - Report source error codes missing from OpenAPI docs"
     echo "  apifox [services...]     - Sync service docs + README to Apifox (offline, needs .env)"
     echo "  apifox-check             - Check Apifox endpoint/model reference integrity (read-only, needs .env)"
@@ -332,6 +333,10 @@ case $COMMAND in
         echo "Generating Swagger API documentation..."
         bash "$SCRIPTS_DIR/docs/swag-init.sh" "${@:2}"
         bash "$SCRIPTS_DIR/quality/check-error-codes.sh" "${@:2}"
+        ;;
+    swag-check)
+        echo "Checking generated OpenAPI docs are in sync with source..."
+        bash "$SCRIPTS_DIR/docs/swag-check.sh" "${@:2}"
         ;;
     check-error-codes)
         echo "Checking OpenAPI error status codes against source..."
