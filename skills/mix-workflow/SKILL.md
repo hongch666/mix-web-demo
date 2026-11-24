@@ -76,7 +76,7 @@ description: mix-web-demo 跨服务协作与交付流程专项规范，覆盖内
 | 服务    | 产物                           | 生成方式                                                | 前置工具  |
 | ------- | ------------------------------ | ------------------------------------------------------- | --------- |
 | Spring  | `spring/docs/openapi.json`     | `OpenApiDocGenerator` 隔离 Web 层上下文 + 依赖自动 Mock | Maven     |
-| GoZero  | `gozero/app/docs/openapi.json` | `goctl api swagger` → `swagger2openapi` → `fix.py`      | goctl     |
+| GoZero  | `gozero/app/docs/openapi.json` | `goctl api swagger` → `swagger2openapi` → `fix.py`      | goctl、PyYAML（`fix.py` 派生 YAML 必需）；CI 里 `setup-uv` 会把根目录 `.venv/bin` 注入 PATH 且该环境无 PyYAML，`genSwagger.sh` 的自动探测会误选它，故支持 `SWAGGER_PYTHON` 环境变量显式指定解释器，CI 校验步骤会解析装了 PyYAML 的解释器传入 |
 | NestJS  | `nestjs/docs/openapi.json`     | `NestFactory.create(..., { preview: true })`            | Bun       |
 | FastAPI | `fastapi/docs/openapi.json`    | 导入`create_app()` 后取 `app.openapi()`                 | uv/Python |
 
