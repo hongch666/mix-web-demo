@@ -87,7 +87,7 @@ class UserServiceImplTest {
     @BeforeEach
     void setUp() {
         userService = new UserServiceImpl(userRepository, redisUtil, tokenService, passwordEncryptor,
-            new UserPasswordProperties("Default123", "Reset1234"), emailVerificationService,
+            new UserPasswordProperties("Default123"), emailVerificationService,
             imageCaptchaService, objectMapper, transactionalOperator, cacheUtil, metricsRecorder);
         lenient().when(passwordEncryptor.requireSha256Digest(anyString()))
             .thenAnswer(invocation -> invocation.getArgument(0));

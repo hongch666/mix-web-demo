@@ -758,7 +758,7 @@ public class UserServiceImpl implements UserService {
     private Mono<String> resolveResetPassword(String passwordDigest) {
         return hasText(passwordDigest)
             ? encryptRequestPassword(passwordDigest)
-            : encryptServerPassword(userPasswordProperties.resetPassword());
+            : encryptServerPassword(userPasswordProperties.defaultPassword());
     }
 
     /**
