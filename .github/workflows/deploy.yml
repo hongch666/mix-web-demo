@@ -160,10 +160,33 @@ jobs:
 
       - name: 登录镜像仓库（GHCR）
         if: steps.sync.outputs.tag
+        env:
+          COMMIT: ${{ steps.sync.outputs.commit }}
+          DEPLOY_DIR: ${{ steps.sync.outputs.deploy_dir }}
         run: |
+          set -euo pipefail
+          cd "$DEPLOY_DIR"
           # GHCR 用 GITHUB_TOKEN 登录，无需自定义 Secret（job 已声明 packages: read）
-          echo "${{ secrets.GITHUB_TOKEN }}" \
-            | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          # 纯配置变更不产生新镜像，无需登录：部署机出站网络不通时登录失败会连带跳过后续所有部署步骤
+          state_file="${RUNNER_WORKSPACE}/mix-deploy-state/last-deploy.txt"
+          last_commit="$(grep -E '^__commit__=' "$state_file" 2>/dev/null | head -1 | cut -d= -f2 || true)"
+          need_login=true
+          if [ -n "$last_commit" ] && git cat-file -e "${last_commit}^{commit}" 2>/dev/null; then
+            # 路径对齐 release.yml 的 changes job：只列真正进镜像的文件，测试与文档变更不触发登录
+            if ! git diff --name-only "$last_commit" "$COMMIT" -- \
+              spring/pom.xml spring/eclipse-formatter.xml spring/settings-docker.xml spring/src/main spring/Dockerfile \
+              gozero/app gozero/Dockerfile \
+              nestjs/package.json nestjs/package-lock.json nestjs/tsconfig.json nestjs/tsconfig.build.json nestjs/nest-cli.json nestjs/src nestjs/Dockerfile \
+              fastapi/requirements.txt fastapi/main.py fastapi/app fastapi/Dockerfile | grep -q .; then
+              need_login=false
+            fi
+          fi
+          if [ "$need_login" = false ]; then
+            echo "::notice::本次相对上次部署无业务代码变更，跳过 GHCR 登录"
+          else
+            echo "${{ secrets.GITHUB_TOKEN }}" \
+              | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          fi
 
       - name: 拉取镜像并启动（失败自动回滚）
         if: steps.sync.outputs.tag
