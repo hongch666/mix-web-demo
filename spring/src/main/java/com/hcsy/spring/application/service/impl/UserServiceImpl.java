@@ -323,7 +323,7 @@ public class UserServiceImpl implements UserService {
                 User user = BeanUtil.copyProperties(dto, User.class);
                 user.setRole("user");
                 user.setAuthProvider("local");
-                return encryptPassword(user.getPassword()).flatMap(password -> {
+                return encryptRequestPassword(user.getPassword()).flatMap(password -> {
                     user.setPassword(password);
                     return saveUserAndStatus(user);
                 });
@@ -381,7 +381,7 @@ public class UserServiceImpl implements UserService {
         }
         Mono<String> password = isEncoded(user.getPassword())
             ? Mono.justOrEmpty(user.getPassword())
-            : encryptPassword(user.getPassword());
+            : encryptServerPassword(user.getPassword());
         return password.defaultIfEmpty("")
             .flatMap(encoded -> {
                 if (!encoded.isEmpty()) {
@@ -418,11 +418,11 @@ public class UserServiceImpl implements UserService {
         User user = BeanUtil.copyProperties(dto, User.class);
         user.setRole("user");
         user.setAuthProvider("local");
-        String rawPassword = hasText(user.getPassword())
-            ? user.getPassword()
-            : userPasswordProperties.defaultPassword();
+        Mono<String> encoded = hasText(user.getPassword())
+            ? encryptRequestPassword(user.getPassword())
+            : encryptServerPassword(userPasswordProperties.defaultPassword());
         // 返回保存后的用户，便于上层把新增主键用于精确同步
-        return encryptPassword(rawPassword)
+        return encoded
             .flatMap(password -> {
                 user.setPassword(password);
                 return saveUserAndStatus(user);
@@ -446,7 +446,7 @@ public class UserServiceImpl implements UserService {
                 user.setCreateAt(existing.getCreateAt());
                 user.setUpdateAt(LocalDateTime.now());
                 Mono<String> password = hasText(dto.getPassword())
-                    ? encryptPassword(dto.getPassword())
+                    ? encryptRequestPassword(dto.getPassword())
                     : Mono.just(existing.getPassword());
                 return password.flatMap(encoded -> {
                     user.setPassword(encoded);
@@ -466,7 +466,7 @@ public class UserServiceImpl implements UserService {
             .filter(Boolean.TRUE::equals)
             .switchIfEmpty(Mono.error(unauthorized(Messages.VERIFY_CODE)))
             .then(findByEmail(dto.getEmail()).switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER))))
-            .flatMap(user -> encryptPassword(dto.getNewPassword()).flatMap(password -> {
+            .flatMap(user -> encryptRequestPassword(dto.getNewPassword()).flatMap(password -> {
                 user.setPassword(password);
                 return transactionalOperator.transactional(userRepository.save(user));
             }))
@@ -475,15 +475,15 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 存在用户时将全部用户密码批量更新为配置的重置密码，并使全部用户的旧会话失效
+     * 存在用户时将全部用户密码批量更新为指定摘要或配置的重置密码，并使全部用户的旧会话失效
      */
     @Override
-    public Mono<Void> resetAllPasswords(Long currentUserId, String currentToken) {
+    public Mono<Void> resetAllPasswords(Long currentUserId, String currentToken, String passwordDigest) {
         return userRepository.count()
             .filter(count -> count > 0)
             .switchIfEmpty(Mono.error(BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY)
                 .errorMessage(Messages.PASSWORD_NO_USER).build()))
-            .then(encryptPassword(userPasswordProperties.resetPassword()))
+            .then(resolveResetPassword(passwordDigest))
             .flatMap(userRepository::updateAllPasswords)
             .then(userRepository.findAllIdAndName()
                 .map(User::getId)
@@ -494,13 +494,13 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 定位指定用户后将密码重置为配置的重置密码并事务保存，成功后使该用户旧会话失效
+     * 定位指定用户后将密码重置为指定摘要或配置的重置密码并事务保存，成功后使该用户旧会话失效
      */
     @Override
-    public Mono<Void> resetUserPassword(Long userId, Long currentUserId, String currentToken) {
+    public Mono<Void> resetUserPassword(Long userId, Long currentUserId, String currentToken, String passwordDigest) {
         return userRepository.findById(userId)
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
-            .flatMap(user -> encryptPassword(userPasswordProperties.resetPassword()).flatMap(password -> {
+            .flatMap(user -> resolveResetPassword(passwordDigest).flatMap(password -> {
                 user.setPassword(password);
                 return transactionalOperator.transactional(userRepository.save(user));
             }))
@@ -540,7 +540,7 @@ public class UserServiceImpl implements UserService {
                 newUser.setRole("user");
                 newUser.setAuthProvider("github");
                 newUser.setLastLoginAt(LocalDateTime.now());
-                return encryptPassword(userPasswordProperties.defaultPassword())
+                return encryptServerPassword(userPasswordProperties.defaultPassword())
                     .flatMap(password -> {
                         newUser.setPassword(password);
                         return saveUserAndStatus(newUser);
@@ -716,13 +716,14 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 校验登录密码匹配，GitHub账号禁止密码登录，校验失败时抛出未授权业务异常
+     * 校验登录密码摘要匹配，GitHub账号禁止密码登录，校验失败时抛出未授权业务异常
      */
-    private Mono<Void> validatePassword(String rawPassword, User user) {
+    private Mono<Void> validatePassword(String digest, User user) {
         if ("github".equalsIgnoreCase(user.getAuthProvider()) && Defaults.HIDE_PASSWORD.equals(user.getPassword())) {
             return Mono.error(unauthorized(Messages.GITHUB_ACCOUNT_PASSWORD_LOGIN_BLOCKED));
         }
-        return Mono.fromCallable(() -> passwordEncryptor.matchPassword(rawPassword, user.getPassword()))
+        return Mono.fromCallable(() -> passwordEncryptor.matchPassword(
+            passwordEncryptor.requireSha256Digest(digest), user.getPassword()))
             .subscribeOn(Schedulers.boundedElastic())
             .filter(Boolean.TRUE::equals)
             .switchIfEmpty(Mono.error(unauthorized(Messages.LOGIN)))
@@ -730,11 +731,34 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 在弹性调度器上异步加密明文密码并返回Mono结果
+     * 在弹性调度器上异步BCrypt加密并返回Mono结果
      */
-    private Mono<String> encryptPassword(String rawPassword) {
-        return Mono.fromCallable(() -> passwordEncryptor.encryptPassword(rawPassword))
+    private Mono<String> encryptPassword(String value) {
+        return Mono.fromCallable(() -> passwordEncryptor.encryptPassword(value))
             .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    /**
+     * 校验前端密码摘要后异步BCrypt加密并返回Mono结果
+     */
+    private Mono<String> encryptRequestPassword(String digest) {
+        return encryptPassword(passwordEncryptor.requireSha256Digest(digest));
+    }
+
+    /**
+     * 将服务端明文密码计算摘要后异步BCrypt加密并返回Mono结果
+     */
+    private Mono<String> encryptServerPassword(String rawPassword) {
+        return encryptPassword(passwordEncryptor.hashPassword(rawPassword));
+    }
+
+    /**
+     * 按管理员是否指定摘要选择重置密码：指定时直接用摘要加密，否则用配置的重置密码
+     */
+    private Mono<String> resolveResetPassword(String passwordDigest) {
+        return hasText(passwordDigest)
+            ? encryptRequestPassword(passwordDigest)
+            : encryptServerPassword(userPasswordProperties.resetPassword());
     }
 
     /**

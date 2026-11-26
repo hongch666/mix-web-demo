@@ -1,19 +1,26 @@
 package com.hcsy.spring.common.utils;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.common.constants.Defaults;
+import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.exceptions.BusinessException;
 
 import lombok.RequiredArgsConstructor;
 
 /**
- * 密码加密工具类
+ * 密码加密工具类，负责校验前端密码摘要、计算摘要与 BCrypt 加盐哈希
  */
 @Component
 @RequiredArgsConstructor
 public class PasswordEncryptor {
-
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     /**
@@ -25,6 +32,28 @@ public class PasswordEncryptor {
      */
     public String encryptPassword(String rawPassword) {
         return bCryptPasswordEncoder.encode(rawPassword);
+    }
+
+    /**
+     * 校验前端提交的密码必须是 64 位十六进制 SHA256 摘要，格式不符时抛出 400 业务异常
+     */
+    public String requireSha256Digest(String password) {
+        if (password == null || !password.matches(Defaults.SHA256_PATTERN)) {
+            throw new BusinessException(HttpCode.BAD_REQUEST, Messages.PASSWORD_DIGEST_INVALID);
+        }
+        return password;
+    }
+
+    /**
+     * 计算服务端配置的明文密码的 SHA256 十六进制摘要
+     */
+    public String hashPassword(String rawPassword) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(rawPassword.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException error) {
+            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Messages.PASSWORD_HASH_FAILED, error);
+        }
     }
 
     /**

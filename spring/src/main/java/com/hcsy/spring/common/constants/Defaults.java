@@ -77,6 +77,11 @@ public class Defaults {
     /** 日志与响应中隐藏密码时使用的掩码 */
     public static final String HIDE_PASSWORD = "******";
 
+    // ===== 密码规则 =====
+
+    /** 前端提交的 SHA256 摘要格式，64 位十六进制字符串 */
+    public static final String SHA256_PATTERN = "^[a-fA-F0-9]{64}$";
+
     // ===== 认证协议 =====
 
     /** Authorization 与内部令牌请求头里令牌值的前缀 */
