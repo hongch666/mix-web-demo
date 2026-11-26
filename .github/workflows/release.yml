@@ -56,8 +56,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
+          # 排除规则只在 some-with-excludes 下按“正向命中且不命中排除”计算
+          predicate-quantifier: some-with-excludes
           filters: |
             # 与 Dockerfile 的 COPY 范围对齐：只列真正进入镜像的文件，测试与非构建文件不触发构建
             spring:
