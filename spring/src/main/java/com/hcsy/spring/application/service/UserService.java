@@ -162,17 +162,19 @@ public interface UserService {
     Mono<Void> resetPassword(ResetPasswordDTO resetPasswordDTO, Long currentUserId, String currentToken);
 
     /**
-     * 将全库用户密码批量重置为配置的默认重置密码，并使全部用户的旧会话失效
+     * 将全库用户密码批量重置为指定摘要或配置的重置密码，并使全部用户的旧会话失效
      *
      * @param currentUserId
      *                             当前操作者用户ID，命中该用户时保留当前令牌
      * @param currentToken
      *                             当前操作者的访问令牌
+     * @param passwordDigest
+     *                             管理员指定的SHA256摘要，留空则使用配置的重置密码
      */
-    Mono<Void> resetAllPasswords(Long currentUserId, String currentToken);
+    Mono<Void> resetAllPasswords(Long currentUserId, String currentToken, String passwordDigest);
 
     /**
-     * 将指定用户的密码重置为配置的默认重置密码，并使其旧会话失效
+     * 将指定用户的密码重置为指定摘要或配置的重置密码，并使其旧会话失效
      *
      * @param userId
      *                             被重置密码的用户ID
@@ -180,8 +182,10 @@ public interface UserService {
      *                             当前操作者用户ID，目标用户与其一致时保留当前令牌
      * @param currentToken
      *                             当前操作者的访问令牌
+     * @param passwordDigest
+     *                             管理员指定的SHA256摘要，留空则使用配置的重置密码
      */
-    Mono<Void> resetUserPassword(Long userId, Long currentUserId, String currentToken);
+    Mono<Void> resetUserPassword(Long userId, Long currentUserId, String currentToken, String passwordDigest);
 
     /**
      * 查询用户登录状态，返回1在线0离线的Mono结果

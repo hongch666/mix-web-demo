@@ -498,7 +498,7 @@ class UserServiceImplTest {
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(tokenService.removeOtherSessions(USER_ID, "current-token")).thenReturn(Mono.just(1));
 
-        StepVerifier.create(userService.resetUserPassword(USER_ID, USER_ID, "current-token"))
+        StepVerifier.create(userService.resetUserPassword(USER_ID, USER_ID, "current-token", null))
             .verifyComplete();
 
         verify(tokenService).removeOtherSessions(USER_ID, "current-token");
@@ -514,11 +514,27 @@ class UserServiceImplTest {
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(tokenService.forceLogoutUser(USER_ID)).thenReturn(Mono.empty());
 
-        StepVerifier.create(userService.resetUserPassword(USER_ID, 99L, "current-token"))
+        StepVerifier.create(userService.resetUserPassword(USER_ID, 99L, "current-token", null))
             .verifyComplete();
 
         verify(tokenService).forceLogoutUser(USER_ID);
         verify(tokenService, never()).removeOtherSessions(anyLong(), anyString());
+    }
+
+    @Test
+    @DisplayName("管理员指定摘要重置密码时按摘要加密而不使用配置密码")
+    void resetUserPasswordUsesSpecifiedDigest() {
+        when(userRepository.findById(USER_ID)).thenReturn(Mono.just(user(USERNAME)));
+        when(passwordEncryptor.encryptPassword(anyString())).thenReturn(ENCODED_PASSWORD);
+        stubTransactional();
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(tokenService.forceLogoutUser(USER_ID)).thenReturn(Mono.empty());
+
+        StepVerifier.create(userService.resetUserPassword(USER_ID, 99L, "current-token", PASSWORD_DIGEST))
+            .verifyComplete();
+
+        verify(passwordEncryptor).requireSha256Digest(PASSWORD_DIGEST);
+        verify(passwordEncryptor, never()).hashPassword(anyString());
     }
 
     @Test
@@ -533,7 +549,7 @@ class UserServiceImplTest {
         when(tokenService.removeOtherSessions(USER_ID, "current-token")).thenReturn(Mono.just(1));
         when(tokenService.forceLogoutUser(99L)).thenReturn(Mono.empty());
 
-        StepVerifier.create(userService.resetAllPasswords(USER_ID, "current-token"))
+        StepVerifier.create(userService.resetAllPasswords(USER_ID, "current-token", null))
             .verifyComplete();
 
         verify(tokenService).removeOtherSessions(USER_ID, "current-token");

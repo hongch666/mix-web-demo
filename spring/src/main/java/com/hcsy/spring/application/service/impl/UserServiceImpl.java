@@ -475,15 +475,15 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 存在用户时将全部用户密码批量更新为配置的重置密码，并使全部用户的旧会话失效
+     * 存在用户时将全部用户密码批量更新为指定摘要或配置的重置密码，并使全部用户的旧会话失效
      */
     @Override
-    public Mono<Void> resetAllPasswords(Long currentUserId, String currentToken) {
+    public Mono<Void> resetAllPasswords(Long currentUserId, String currentToken, String passwordDigest) {
         return userRepository.count()
             .filter(count -> count > 0)
             .switchIfEmpty(Mono.error(BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY)
                 .errorMessage(Messages.PASSWORD_NO_USER).build()))
-            .then(encryptServerPassword(userPasswordProperties.resetPassword()))
+            .then(resolveResetPassword(passwordDigest))
             .flatMap(userRepository::updateAllPasswords)
             .then(userRepository.findAllIdAndName()
                 .map(User::getId)
@@ -494,13 +494,13 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 定位指定用户后将密码重置为配置的重置密码并事务保存，成功后使该用户旧会话失效
+     * 定位指定用户后将密码重置为指定摘要或配置的重置密码并事务保存，成功后使该用户旧会话失效
      */
     @Override
-    public Mono<Void> resetUserPassword(Long userId, Long currentUserId, String currentToken) {
+    public Mono<Void> resetUserPassword(Long userId, Long currentUserId, String currentToken, String passwordDigest) {
         return userRepository.findById(userId)
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
-            .flatMap(user -> encryptServerPassword(userPasswordProperties.resetPassword()).flatMap(password -> {
+            .flatMap(user -> resolveResetPassword(passwordDigest).flatMap(password -> {
                 user.setPassword(password);
                 return transactionalOperator.transactional(userRepository.save(user));
             }))
@@ -750,6 +750,15 @@ public class UserServiceImpl implements UserService {
      */
     private Mono<String> encryptServerPassword(String rawPassword) {
         return encryptPassword(passwordEncryptor.hashPassword(rawPassword));
+    }
+
+    /**
+     * 按管理员是否指定摘要选择重置密码：指定时直接用摘要加密，否则用配置的重置密码
+     */
+    private Mono<String> resolveResetPassword(String passwordDigest) {
+        return hasText(passwordDigest)
+            ? encryptRequestPassword(passwordDigest)
+            : encryptServerPassword(userPasswordProperties.resetPassword());
     }
 
     /**
