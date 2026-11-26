@@ -1,15 +1,8 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { Defaults, Messages, RedisKeys } from "src/common/constants";
+import type { CacheAccessor, CacheWriteOptions } from "src/framework/explorer";
 import { LoggerService } from "src/module/common/logger";
 import { RedisService, RedisSubscription } from "src/module/common/redis";
-
-/** 多级缓存的写入选项，缺省沿用 Defaults 中的全局 TTL */
-export interface CacheWriteOptions {
-  /** L1 本地缓存有效期（秒） */
-  localTtl?: number;
-  /** L2 Redis 缓存有效期（秒） */
-  redisTtl?: number;
-}
 
 /** L1 本地缓存条目，createdAt 与 expiresAt 均为毫秒级时间戳 */
 interface LocalCacheEntry {
@@ -29,7 +22,9 @@ interface CachePayload {
  * Redis 命令全部经 RedisService 封装，失效时通过 Pub/Sub 广播被删除的 key，其它实例据此清理自己的 L1
  */
 @Injectable()
-export class CacheService implements OnModuleInit, OnModuleDestroy {
+export class CacheService
+  implements CacheAccessor, OnModuleInit, OnModuleDestroy
+{
   private readonly local = new Map<string, LocalCacheEntry>();
   private readonly localTtl: number = Defaults.CACHE_LOCAL_TTL_SECONDS;
   private readonly redisTtl: number = Defaults.CACHE_REDIS_TTL_SECONDS;
