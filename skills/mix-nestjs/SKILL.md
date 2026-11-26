@@ -19,6 +19,14 @@ module/common/    公共服务模块（nacos、logger、oss、redis、mail、git
 module/system/    系统业务模块（apiLog、articleLog、sqlTools、task 等）
 ```
 
+### 包导出与 import 约定
+
+- 聚合目录必须通过 `index.ts` 具名导出公开成员：`common/{exceptions,interfaces,utils}`、`framework/{decorators,explorer,filters,guards,interceptors,middleware}`、`module/common/{cache,client,github,logger,mail,nacos,oss,redis,telemetry,word}`、`module/system/{apiLog,articleLog,download,logDeletion,mongoTools,ossObject,sqlTools,tableSettings,task,test,upload}`。新增实现文件时同步更新所属目录的 `index.ts`，禁止无意义地建空入口或用 `export *` 模糊公开边界
+- 跨目录引用一律从目录入口导入（`import { LoggerService } from "src/module/common/logger"`），禁止指向具体文件（`import { LoggerService } from "src/module/common/logger/logger.service"`）；同目录实现互引保留 `./xxx` 相对路径，`index.ts` 自身直接引用实现文件属于必要写法
+- 例外：`module/common/common.module.ts` 与 `module/system/system.module.ts` 是 Nest 模块聚合点，不再套 `index.ts`；`app/index.ts` 是带遥测副作用的应用工厂，`config/index.ts` 是配置加载入口，两者都不是 barrel；`module/common/telemetry/instrumentation.ts` 必须保持直接副作用导入；导入方位于目标 `index.ts` 的导入链上时允许保留具体文件引用以避开循环依赖，例如 `framework/explorer/cache.explorer.ts` 直接引用 `cache.service`
+- 副作用导入（`import "xxx"`）、动态 `import()` 与 `.d.ts` 的三斜线引用不受上述约束
+- 该约定由 `./mix lint nestjs` 里的 `scripts/quality/ts-package-imports.py` 检查；`./mix format nestjs` 会把深层导入改为目录入口、合并同一目标的重复具名 import，名字按首次出现顺序保留
+
 ### 模块内组织与约定
 
 - 每个业务模块：`xxx.module.ts` + `xxx.controller.ts` + `xxx.service.ts`，辅以 `dto/` 与 `schema/`（Mongoose）或 `entities/`（TypeORM）
