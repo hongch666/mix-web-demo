@@ -27,8 +27,8 @@ public class ResetPasswordDTO {
     @Size(min = 4, max = 6, message = "验证码长度必须在4到6个字符之间")
     private String verificationCode;
 
-    @Schema(description = "新密码")
+    @Schema(description = "新密码，前端SHA256摘要（64位十六进制）")
     @NotBlank(message = "新密码不能为空")
-    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,20}$", message = "密码必须为8到20位且包含字母和数字")
+    @Pattern(regexp = "^[a-fA-F0-9]{64}$", message = "密码必须为64位SHA256摘要")
     private String newPassword;
 }

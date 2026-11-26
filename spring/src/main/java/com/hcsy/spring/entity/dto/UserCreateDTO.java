@@ -20,8 +20,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Schema(description = "创建用户请求")
 public class UserCreateDTO {
-    @Schema(description = "登录密码，留空表示不修改")
-    @Pattern(regexp = "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$", message = "密码必须为8到20位且包含字母和数字")
+    @Schema(description = "登录密码，前端SHA256摘要（64位十六进制），留空表示使用默认密码")
+    @Pattern(regexp = "^$|^[a-fA-F0-9]{64}$", message = "密码必须为64位SHA256摘要")
     private String password;
 
     @Schema(description = "用户名")

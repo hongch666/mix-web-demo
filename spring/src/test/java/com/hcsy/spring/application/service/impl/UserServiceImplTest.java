@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,7 +57,7 @@ class UserServiceImplTest {
     private static final String EMAIL = "alice@example.com";
     private static final String CAPTCHA_ID = "captcha-1";
     private static final String CAPTCHA_TEXT = "abcd";
-    private static final String RAW_PASSWORD = "Passw0rd1";
+    private static final String PASSWORD_DIGEST = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
     private static final String ENCODED_PASSWORD = "$2a$10$encoded";
     private static final String VERIFICATION_CODE = "123456";
 
@@ -88,6 +89,10 @@ class UserServiceImplTest {
         userService = new UserServiceImpl(userRepository, redisUtil, tokenService, passwordEncryptor,
             new UserPasswordProperties("Default123", "Reset1234"), emailVerificationService,
             imageCaptchaService, objectMapper, transactionalOperator, cacheUtil, metricsRecorder);
+        lenient().when(passwordEncryptor.requireSha256Digest(anyString()))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(passwordEncryptor.hashPassword(anyString()))
+            .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -246,7 +251,7 @@ class UserServiceImplTest {
         UserLoginVO login = UserLoginVO.builder().accessToken("access-token").userId(USER_ID).build();
         when(imageCaptchaService.verifyCaptcha(CAPTCHA_ID, CAPTCHA_TEXT)).thenReturn(Mono.just(true));
         when(userRepository.findByName(USERNAME)).thenReturn(Mono.just(user));
-        when(passwordEncryptor.matchPassword(RAW_PASSWORD, ENCODED_PASSWORD)).thenReturn(true);
+        when(passwordEncryptor.matchPassword(PASSWORD_DIGEST, ENCODED_PASSWORD)).thenReturn(true);
         when(tokenService.createLoginSession(USER_ID, USERNAME)).thenReturn(Mono.just(login));
         stubTransactional();
         when(userRepository.save(any(User.class))).thenReturn(Mono.just(user));
@@ -269,14 +274,14 @@ class UserServiceImplTest {
         user.setPassword(ENCODED_PASSWORD);
         when(imageCaptchaService.verifyCaptcha(CAPTCHA_ID, CAPTCHA_TEXT)).thenReturn(Mono.just(true));
         when(userRepository.findByName(USERNAME)).thenReturn(Mono.just(user));
-        when(passwordEncryptor.matchPassword(RAW_PASSWORD, ENCODED_PASSWORD)).thenReturn(false);
+        when(passwordEncryptor.matchPassword(PASSWORD_DIGEST, ENCODED_PASSWORD)).thenReturn(false);
         when(tokenService.createLoginSession(USER_ID, USERNAME)).thenReturn(Mono.empty());
 
         StepVerifier.create(userService.login(loginDTO()))
             .expectErrorMatches(error -> isBusinessError(error, HttpCode.UNAUTHORIZED, Messages.LOGIN))
             .verify();
 
-        verify(passwordEncryptor).matchPassword(RAW_PASSWORD, ENCODED_PASSWORD);
+        verify(passwordEncryptor).matchPassword(PASSWORD_DIGEST, ENCODED_PASSWORD);
     }
 
     @Test
@@ -357,7 +362,7 @@ class UserServiceImplTest {
             })
             .verifyComplete();
 
-        verify(passwordEncryptor).encryptPassword(RAW_PASSWORD);
+        verify(passwordEncryptor).encryptPassword(PASSWORD_DIGEST);
         verify(emailVerificationService).markEmailAsVerified(EMAIL);
     }
 
@@ -545,11 +550,11 @@ class UserServiceImplTest {
     }
 
     private LoginDTO loginDTO() {
-        return new LoginDTO(RAW_PASSWORD, USERNAME, CAPTCHA_ID, CAPTCHA_TEXT);
+        return new LoginDTO(PASSWORD_DIGEST, USERNAME, CAPTCHA_ID, CAPTCHA_TEXT);
     }
 
     private ResetPasswordDTO resetPasswordDTO() {
-        return new ResetPasswordDTO(EMAIL, VERIFICATION_CODE, RAW_PASSWORD);
+        return new ResetPasswordDTO(EMAIL, VERIFICATION_CODE, PASSWORD_DIGEST);
     }
 
     private EmailLoginDTO emailLoginDTO() {
@@ -559,7 +564,7 @@ class UserServiceImplTest {
     private UserRegisterDTO registerDTO() {
         UserRegisterDTO dto = new UserRegisterDTO();
         dto.setName(USERNAME);
-        dto.setPassword(RAW_PASSWORD);
+        dto.setPassword(PASSWORD_DIGEST);
         dto.setEmail(EMAIL);
         dto.setAge(20);
         dto.setVerificationCode(VERIFICATION_CODE);

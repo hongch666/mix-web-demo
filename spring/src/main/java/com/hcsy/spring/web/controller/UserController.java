@@ -179,7 +179,7 @@ public class UserController {
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = BusinessType.USER, paramSource = ParamSource.BODY, paramName = "id")
     @DataSync(resource = SyncResource.USER, changeType = SyncChangeType.UPDATE, description = "修改用户后同步图谱与数仓")
-    @ApiLog("修改用户")
+    @ApiLog(value = "修改用户", excludeFields = { "password" })
     public Mono<Result<Void>> updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
         return userService.updateUserInfo(userDto).thenReturn(Result.<Void>success());
     }

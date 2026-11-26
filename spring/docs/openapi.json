@@ -8950,8 +8950,8 @@
               "string",
               "null"
             ],
-            "description" : "登录密码，留空表示不修改",
-            "pattern" : "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
+            "description" : "登录密码，前端SHA256摘要（64位十六进制），留空表示使用默认密码",
+            "pattern" : "^$|^[a-fA-F0-9]{64}$"
           },
           "name" : {
             "type" : "string",
@@ -9217,8 +9217,8 @@
               "string",
               "null"
             ],
-            "description" : "登录密码，留空表示不修改",
-            "pattern" : "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
+            "description" : "登录密码，前端SHA256摘要（64位十六进制），留空表示使用默认密码",
+            "pattern" : "^$|^[a-fA-F0-9]{64}$"
           },
           "name" : {
             "type" : "string",
@@ -9399,8 +9399,8 @@
           },
           "new_password" : {
             "type" : "string",
-            "description" : "新密码",
-            "pattern" : "^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
+            "description" : "新密码，前端SHA256摘要（64位十六进制）",
+            "pattern" : "^[a-fA-F0-9]{64}$"
           }
         },
         "required" : [
@@ -9418,8 +9418,8 @@
           },
           "password" : {
             "type" : "string",
-            "description" : "登录密码",
-            "pattern" : "^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
+            "description" : "登录密码，前端SHA256摘要（64位十六进制）",
+            "pattern" : "^[a-fA-F0-9]{64}$"
           },
           "email" : {
             "type" : "string",
@@ -9468,9 +9468,8 @@
         "properties" : {
           "password" : {
             "type" : "string",
-            "description" : "登录密码",
-            "maxLength" : 20,
-            "minLength" : 3
+            "description" : "登录密码，前端SHA256摘要（64位十六进制）",
+            "pattern" : "^[a-fA-F0-9]{64}$"
           },
           "name" : {
             "type" : "string",

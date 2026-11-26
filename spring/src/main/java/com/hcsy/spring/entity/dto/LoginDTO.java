@@ -2,6 +2,7 @@ package com.hcsy.spring.entity.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,9 +16,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Schema(description = "用户名密码登录请求")
 public class LoginDTO {
-    @Schema(description = "登录密码")
+    @Schema(description = "登录密码，前端SHA256摘要（64位十六进制）")
     @NotBlank(message = "密码不能为空")
-    @Size(min = 3, max = 20, message = "密码长度必须在3到20个字符之间")
+    @Pattern(regexp = "^[a-fA-F0-9]{64}$", message = "密码必须为64位SHA256摘要")
     private String password;
 
     @Schema(description = "用户名")

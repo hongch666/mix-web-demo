@@ -20,9 +20,9 @@ public class UserRegisterDTO {
     @NotBlank(message = "用户名不能为空")
     private String name;
 
-    @Schema(description = "登录密码")
+    @Schema(description = "登录密码，前端SHA256摘要（64位十六进制）")
     @NotBlank(message = "密码不能为空")
-    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,20}$", message = "密码必须为8到20位且包含字母和数字")
+    @Pattern(regexp = "^[a-fA-F0-9]{64}$", message = "密码必须为64位SHA256摘要")
     private String password;
 
     @Schema(description = "邮箱")

@@ -77,6 +77,10 @@ public class Messages {
     public static final String USER_DEFAULT_PASSWORD_NOT_BLANK = "默认密码不能为空";
     /** 重置密码不能为空的提示 */
     public static final String USER_RESET_PASSWORD_NOT_BLANK = "重置密码不能为空";
+    /** 密码摘要计算失败的提示 */
+    public static final String PASSWORD_HASH_FAILED = "密码摘要计算失败";
+    /** 密码摘要格式不符合要求的提示 */
+    public static final String PASSWORD_DIGEST_INVALID = "密码必须为64位SHA256摘要";
 
     // ===== GitHub 登录 =====
 
