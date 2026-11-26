@@ -1,4 +1,9 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import {
+  Inject,
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+} from "@nestjs/common";
 import { DiscoveryService, MetadataScanner, Reflector } from "@nestjs/core";
 import { Messages } from "src/common/constants";
 import {
@@ -8,12 +13,12 @@ import {
   CacheKey,
   CacheableOptions,
 } from "src/framework/decorators";
-// 直接引用实现以避开 CacheModule -> CacheExplorer -> CacheService 的循环依赖
-import {
-  CacheService,
-  CacheWriteOptions,
-} from "src/module/common/cache/cache.service";
 import { LoggerService } from "src/module/common/logger";
+import {
+  CACHE_ACCESSOR,
+  CacheAccessor,
+  CacheWriteOptions,
+} from "./cacheAccessor";
 
 /** 可被织入缓存逻辑的异步方法签名 */
 type CacheableMethod = (...args: unknown[]) => Promise<unknown>;
@@ -38,7 +43,7 @@ export class CacheExplorer implements OnModuleInit, OnModuleDestroy {
     private readonly discoveryService: DiscoveryService,
     private readonly metadataScanner: MetadataScanner,
     private readonly reflector: Reflector,
-    private readonly cacheService: CacheService,
+    @Inject(CACHE_ACCESSOR) private readonly cacheAccessor: CacheAccessor,
     private readonly logger: LoggerService,
   ) {}
 
@@ -196,7 +201,7 @@ export class CacheExplorer implements OnModuleInit, OnModuleDestroy {
    */
   private async readCache(key: string): Promise<unknown> {
     try {
-      return await this.cacheService.get<unknown>(key);
+      return await this.cacheAccessor.get<unknown>(key);
     } catch (error) {
       this.logger.warning(
         Messages.CACHE_EXPLORER_READ_FAILED(key, String(error)),
@@ -214,7 +219,7 @@ export class CacheExplorer implements OnModuleInit, OnModuleDestroy {
     options: CacheWriteOptions,
   ): Promise<void> {
     try {
-      await this.cacheService.set(key, value, options);
+      await this.cacheAccessor.set(key, value, options);
     } catch (error) {
       this.logger.warning(
         Messages.CACHE_EXPLORER_WRITE_FAILED(key, String(error)),
@@ -231,7 +236,7 @@ export class CacheExplorer implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      await this.cacheService.deleteMany(keys);
+      await this.cacheAccessor.deleteMany(keys);
     } catch (error) {
       this.logger.warning(
         Messages.CACHE_EXPLORER_EVICT_FAILED(keys.join(","), String(error)),
