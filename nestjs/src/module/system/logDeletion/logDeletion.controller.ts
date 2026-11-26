@@ -1,11 +1,12 @@
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import { ApiResponse, success } from "src/common/utils/response";
 import {
+  ApiResponse,
   ApiResponseModel,
   SwaggerLogDeletionSyncData,
-} from "src/common/utils/swaggerResponse";
-import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
+  success,
+} from "src/common/utils";
+import { RequireInternalToken } from "src/framework/decorators";
 import { LogDeletionService } from "./logDeletion.service";
 
 /**

@@ -1,8 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-
 import { ConfigService } from "@nestjs/config";
-import { BusinessException } from "src/common/exceptions/business.exception";
+import { BusinessException } from "src/common/exceptions";
 import { InternalTokenUtil } from "./internalToken.util";
 
 const SECRET = "unit-test-internal-token-secret-32-bytes";

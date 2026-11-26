@@ -10,7 +10,7 @@ import {
   TraceIdRatioBasedSampler,
 } from "@opentelemetry/sdk-trace-base";
 import { Messages, TelemetryConstants } from "src/common/constants";
-import type { TelemetryConfig } from "src/common/interfaces/telemetryConfig.interface";
+import type { TelemetryConfig } from "src/common/interfaces";
 import config from "src/config";
 import { startMetricsServer } from "./metrics.server";
 

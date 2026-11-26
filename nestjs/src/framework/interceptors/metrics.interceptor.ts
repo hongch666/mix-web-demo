@@ -7,10 +7,7 @@ import {
 } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { Observable, finalize, tap } from "rxjs";
-import {
-  httpDuration,
-  httpRequests,
-} from "src/module/common/telemetry/metrics";
+import { httpDuration, httpRequests } from "src/module/common/telemetry";
 
 /**
  * HTTP 监控指标拦截器，在 createApp 中全局注册，采集各路由的请求计数与响应耗时

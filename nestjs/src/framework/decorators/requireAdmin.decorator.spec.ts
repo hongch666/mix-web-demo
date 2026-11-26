@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-
 import "reflect-metadata";
 import { RequireAdmin, REQUIRE_ADMIN_KEY } from "./requireAdmin.decorator";
 

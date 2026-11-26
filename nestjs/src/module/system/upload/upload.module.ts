@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { OssModule } from "src/module/common/oss/oss.module";
-import { OssObjectModule } from "src/module/system/ossObject/ossObject.module";
+import { OssModule } from "src/module/common/oss";
+import { OssObjectModule } from "src/module/system/ossObject";
 import { UploadController } from "./upload.controller";
 import { UploadService } from "./upload.service";
 

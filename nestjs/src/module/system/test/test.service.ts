@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Messages } from "src/common/constants";
-import { ApiResponse, success } from "src/common/utils/response";
+import { ApiResponse, success } from "src/common/utils";
 
 /**
  * 测试服务

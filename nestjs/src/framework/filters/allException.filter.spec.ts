@@ -1,5 +1,5 @@
 import { ArgumentsHost } from "@nestjs/common";
-import { BusinessException } from "src/common/exceptions/business.exception";
+import { BusinessException } from "src/common/exceptions";
 import { AllExceptionsFilter } from "./allException.filter";
 
 describe("AllExceptionsFilter异常过滤器", () => {

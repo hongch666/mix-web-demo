@@ -1,7 +1,6 @@
 jest.mock("./instrumentation", () => ({
   shutdownTelemetry: jest.fn().mockResolvedValue(undefined),
 }));
-
 import { shutdownTelemetry } from "./instrumentation";
 import { TelemetryLifecycleService } from "./telemetry.lifecycle.service";
 

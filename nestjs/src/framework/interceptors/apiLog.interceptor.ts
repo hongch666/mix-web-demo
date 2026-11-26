@@ -10,8 +10,8 @@ import { ClsService } from "nestjs-cls";
 import { Observable } from "rxjs";
 import { finalize } from "rxjs/operators";
 import { Defaults, Messages } from "src/common/constants";
-import { LoggerService } from "src/module/common/logger/logger.service";
-import { API_LOG_KEY, ApiLogOptions } from "../decorators/apiLog.decorator";
+import { LoggerService } from "src/module/common/logger";
+import { API_LOG_KEY, ApiLogOptions } from "src/framework/decorators";
 
 /**
  * API 日志拦截器，通过 APP_INTERCEPTOR 全局注册，为标注 @ApiLog 的接口记录操作日志与耗时并投递到 RabbitMQ

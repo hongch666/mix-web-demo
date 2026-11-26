@@ -3,14 +3,14 @@ import { Reflector } from "@nestjs/core";
 import type { FastifyRequest } from "fastify";
 import { ClsService } from "nestjs-cls";
 import { ErrorIds, Messages } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import { SpringClientService } from "src/module/common/client/springClient.service";
-import { LoggerService } from "src/module/common/logger/logger.service";
+import { BusinessException } from "src/common/exceptions";
+import { SpringClientService } from "src/module/common/client";
+import { LoggerService } from "src/module/common/logger";
 import {
   REQUIRE_SELF_KEY,
   REQUIRE_SELF_OPTIONS_KEY,
   type RequireSelfOptions,
-} from "../decorators/requireSelf.decorator";
+} from "src/framework/decorators";
 
 /**
  * 本人或管理员访问守卫，通过 APP_GUARD 全局注册

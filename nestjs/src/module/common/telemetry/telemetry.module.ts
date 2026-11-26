@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-
 import { TelemetryLifecycleService } from "./telemetry.lifecycle.service";
 
 /**

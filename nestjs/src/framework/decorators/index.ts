@@ -1,0 +1,21 @@
+// framework/decorators 目录的公开出口，跨目录引用统一从此处导入
+export { API_LOG_KEY } from "./apiLog.decorator";
+export { ApiLog } from "./apiLog.decorator";
+export type { ApiLogOptions } from "./apiLog.decorator";
+export { CACHEABLE_KEY } from "./cache.decorator";
+export { CACHE_EVICT_KEY } from "./cache.decorator";
+export { Cacheable } from "./cache.decorator";
+export { CacheEvict } from "./cache.decorator";
+export type { CacheKey } from "./cache.decorator";
+export type { CacheableOptions } from "./cache.decorator";
+export type { CacheEvictOptions } from "./cache.decorator";
+export { REQUIRE_ADMIN_KEY } from "./requireAdmin.decorator";
+export { RequireAdmin } from "./requireAdmin.decorator";
+export { REQUIRE_INTERNAL_TOKEN_KEY } from "./requireInternalToken.decorator";
+export { REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY } from "./requireInternalToken.decorator";
+export { RequireInternalToken } from "./requireInternalToken.decorator";
+export { REQUIRE_SELF_KEY } from "./requireSelf.decorator";
+export { REQUIRE_SELF_OPTIONS_KEY } from "./requireSelf.decorator";
+export { RequireSelf } from "./requireSelf.decorator";
+export type { RequireSelfSource } from "./requireSelf.decorator";
+export type { RequireSelfOptions } from "./requireSelf.decorator";

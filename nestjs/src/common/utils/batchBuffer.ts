@@ -1,5 +1,5 @@
 import { Messages } from "src/common/constants";
-import { LoggerService } from "src/module/common/logger/logger.service";
+import { LoggerService } from "src/module/common/logger";
 
 /**
  * 攒批配置选项

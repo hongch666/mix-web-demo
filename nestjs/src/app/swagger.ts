@@ -1,11 +1,10 @@
 import { readFileSync } from "node:fs";
-
 import type { INestApplication } from "@nestjs/common";
 import type { OpenAPIObject } from "@nestjs/swagger";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import type { OperationObject } from "@nestjs/swagger/dist/interfaces/open-api-spec.interface";
 import { SwaggerConfig } from "src/common/constants";
-import { applySwaggerSnakeCase } from "src/common/utils/swaggerSnakeCase";
+import { applySwaggerSnakeCase } from "src/common/utils";
 
 /**
  * 为所有接口补全局通用错误响应（400、401、500）

@@ -2,17 +2,18 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { DiscoveryService, MetadataScanner, Reflector } from "@nestjs/core";
 import { Messages } from "src/common/constants";
 import {
-  CACHE_EVICT_KEY,
   CACHEABLE_KEY,
+  CACHE_EVICT_KEY,
   CacheEvictOptions,
-  CacheableOptions,
   CacheKey,
-} from "src/framework/decorators/cache.decorator";
+  CacheableOptions,
+} from "src/framework/decorators";
+// 直接引用实现以避开 CacheModule -> CacheExplorer -> CacheService 的循环依赖
 import {
   CacheService,
   CacheWriteOptions,
 } from "src/module/common/cache/cache.service";
-import { LoggerService } from "src/module/common/logger/logger.service";
+import { LoggerService } from "src/module/common/logger";
 
 /** 可被织入缓存逻辑的异步方法签名 */
 type CacheableMethod = (...args: unknown[]) => Promise<unknown>;

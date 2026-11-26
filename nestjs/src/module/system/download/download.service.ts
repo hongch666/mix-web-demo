@@ -7,12 +7,12 @@ import * as os from "os";
 import * as path from "path";
 import { Browser, launch, Page } from "puppeteer";
 import { ErrorIds, ExportTemplate, Messages } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import type { ArticleExportMeta } from "src/common/interfaces/articleExportMeta.interface";
-import { SpringClientService } from "src/module/common/client/springClient.service";
-import { LoggerService } from "src/module/common/logger/logger.service";
-import { OssService } from "src/module/common/oss/oss.service";
-import { WordService } from "src/module/common/word/word.service";
+import { BusinessException } from "src/common/exceptions";
+import type { ArticleExportMeta } from "src/common/interfaces";
+import { SpringClientService } from "src/module/common/client";
+import { LoggerService } from "src/module/common/logger";
+import { OssService } from "src/module/common/oss";
+import { WordService } from "src/module/common/word";
 
 /**
  * 远程返回的文章数据结构

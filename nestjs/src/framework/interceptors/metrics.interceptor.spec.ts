@@ -4,10 +4,7 @@ import {
   ExecutionContext,
 } from "@nestjs/common";
 import { firstValueFrom, of, throwError } from "rxjs";
-import {
-  httpDuration,
-  httpRequests,
-} from "src/module/common/telemetry/metrics";
+import { httpDuration, httpRequests } from "src/module/common/telemetry";
 import { MetricsInterceptor } from "./metrics.interceptor";
 
 describe("MetricsInterceptor接口指标拦截器", () => {

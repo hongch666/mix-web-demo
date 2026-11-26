@@ -15,17 +15,20 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import {
+  ApiResponse,
   ApiResponseModel,
   SwaggerStringData,
   SwaggerUploadResultData,
-} from "src/common/utils/swaggerResponse";
+  success,
+} from "src/common/utils";
 import type { FastifyRequest } from "fastify";
 import { HttpCode, Messages } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import { ApiResponse, success } from "src/common/utils/response";
-import { ApiLog } from "src/framework/decorators/apiLog.decorator";
-import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
-import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
+import { BusinessException } from "src/common/exceptions";
+import {
+  ApiLog,
+  RequireAdmin,
+  RequireInternalToken,
+} from "src/framework/decorators";
 import { UploadDto, UploadResult } from "./dto/upload.dto";
 import { MultipartUploadFile, UploadService } from "./upload.service";
 

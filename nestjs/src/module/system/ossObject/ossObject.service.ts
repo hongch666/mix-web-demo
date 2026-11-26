@@ -2,10 +2,10 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Defaults, Messages } from "src/common/constants";
-import { SpringClientService } from "src/module/common/client/springClient.service";
-import { LoggerService } from "src/module/common/logger/logger.service";
-import { NacosService } from "src/module/common/nacos/nacos.service";
-import { OssObjectInfo, OssService } from "src/module/common/oss/oss.service";
+import { SpringClientService } from "src/module/common/client";
+import { LoggerService } from "src/module/common/logger";
+import { NacosService } from "src/module/common/nacos";
+import { OssObjectInfo, OssService } from "src/module/common/oss";
 import { OssObject } from "./entities/ossObject.entity";
 
 /**

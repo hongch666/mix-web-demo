@@ -2,7 +2,7 @@ import { Inject, Injectable, Optional } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type * as nodemailer from "nodemailer";
 import { Messages } from "src/common/constants";
-import { LoggerService } from "../logger/logger.service";
+import { LoggerService } from "src/module/common/logger";
 import { InternalEmailCodeSendDto } from "./dto/mail.dto";
 import { MAIL_TRANSPORTER } from "./mail.tokens";
 import { buildEmailContent } from "./templates/mail.template";

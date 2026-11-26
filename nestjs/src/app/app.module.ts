@@ -10,22 +10,23 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import mongoose from "mongoose";
 import { ClsModule } from "nestjs-cls";
 import { Defaults } from "src/common/constants";
-import type {
-  DatabaseConfig,
-  MongoDbConfig,
-} from "src/common/interfaces/databaseConfig.interface";
+import type { DatabaseConfig, MongoDbConfig } from "src/common/interfaces";
 import config, { isTaskEnabled } from "src/config";
-import { AllExceptionsFilter } from "src/framework/filters/allException.filter";
-import { InternalTokenGuard } from "src/framework/guards/internalToken.guard";
-import { RequireAdminGuard } from "src/framework/guards/requireAdmin.guard";
-import { RequireSelfGuard } from "src/framework/guards/requireSelf.guard";
-import { ApiLogInterceptor } from "src/framework/interceptors/apiLog.interceptor";
+import { AllExceptionsFilter } from "src/framework/filters";
+import {
+  InternalTokenGuard,
+  RequireAdminGuard,
+  RequireSelfGuard,
+} from "src/framework/guards";
+import { ApiLogInterceptor } from "src/framework/interceptors";
 import { CommonModule } from "src/module/common/common.module";
-import { LoggerModule } from "src/module/common/logger/logger.module";
-import { LoggerService } from "src/module/common/logger/logger.service";
-import { createMongooseDebugLogger } from "src/module/common/logger/mongooseDebugLogger";
+import {
+  LoggerModule,
+  LoggerService,
+  createMongooseDebugLogger,
+} from "src/module/common/logger";
 import { SystemModule } from "src/module/system/system.module";
-import { ClsMiddleware } from "../framework/middleware/cls.middleware";
+import { ClsMiddleware } from "src/framework/middleware";
 
 /**
  * NestJS 根模块，聚合 TypeORM、Mongoose、Redis、RabbitMQ、CLS 等基础设施配置，并注册全局过滤器、拦截器与守卫

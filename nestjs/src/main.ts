@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { createApp } from "./app";
-import { Messages } from "./common/constants";
+import { Messages } from "src/common/constants";
 
 /**
  * 应用启动入口，创建 Nest 应用并按配置监听服务端口，启动失败时记录错误并以非零状态码退出

@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document } from "mongoose";
-import { CREATED_AT_CURSOR_INDEX } from "src/common/utils/createdAtCursor.util";
+import { CREATED_AT_CURSOR_INDEX } from "src/common/utils";
 
 export type ArticleLogDocument = ArticleLog & Document;
 

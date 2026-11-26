@@ -1,9 +1,9 @@
 import { ExecutionContext } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { ClsService } from "nestjs-cls";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import { SpringClientService } from "src/module/common/client/springClient.service";
-import { REQUIRE_ADMIN_KEY } from "../decorators/requireAdmin.decorator";
+import { BusinessException } from "src/common/exceptions";
+import { SpringClientService } from "src/module/common/client";
+import { REQUIRE_ADMIN_KEY } from "src/framework/decorators";
 import { RequireAdminGuard } from "./requireAdmin.guard";
 
 describe("RequireAdminGuard", () => {

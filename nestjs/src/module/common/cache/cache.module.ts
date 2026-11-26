@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { DiscoveryModule } from "@nestjs/core";
-import { CacheExplorer } from "src/framework/explorer/cache.explorer";
-import { RedisModule } from "src/module/common/redis/redis.module";
+import { CacheExplorer } from "src/framework/explorer";
+import { RedisModule } from "src/module/common/redis";
 import { CacheService } from "./cache.service";
 
 /**

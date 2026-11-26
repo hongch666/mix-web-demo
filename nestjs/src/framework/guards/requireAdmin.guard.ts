@@ -2,9 +2,9 @@ import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { ClsService } from "nestjs-cls";
 import { ErrorIds, HttpCode, Messages } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import { SpringClientService } from "src/module/common/client/springClient.service";
-import { REQUIRE_ADMIN_KEY } from "../decorators/requireAdmin.decorator";
+import { BusinessException } from "src/common/exceptions";
+import { SpringClientService } from "src/module/common/client";
+import { REQUIRE_ADMIN_KEY } from "src/framework/decorators";
 
 /**
  * 管理员权限守卫，通过 APP_GUARD 全局注册，对标注 @RequireAdmin 的接口校验当前用户是否具备管理员权限

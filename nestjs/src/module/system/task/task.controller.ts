@@ -5,13 +5,13 @@ import {
 } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { HttpCode } from "src/common/constants";
-import { ApiResponse, success } from "src/common/utils/response";
 import {
+  ApiResponse,
   ApiResponseModel,
   SwaggerNullData,
-} from "src/common/utils/swaggerResponse";
-import { ApiLog } from "src/framework/decorators/apiLog.decorator";
-import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
+  success,
+} from "src/common/utils";
+import { ApiLog, RequireInternalToken } from "src/framework/decorators";
 import { TaskService } from "./task.service";
 
 /**

@@ -1,5 +1,5 @@
-import { HttpCode } from "../constants";
-import type { ApiResponse } from "../interfaces/apiResponse.interface";
+import { HttpCode } from "src/common/constants";
+import type { ApiResponse } from "src/common/interfaces";
 
 // 类型定义在 common/interfaces 下，这里保留转发入口，调用方仍可从响应工具导入
 export type { ApiResponse };
