@@ -250,16 +250,26 @@ jobs:
 
           # 拉取变更服务的镜像，并二次确认已在本地：
           # compose 在 up 阶段才发现缺镜像时，会先把旧容器停掉再失败，造成「服务全停但没人拉起」
-          if [ -n "$CHANGED" ]; then
-            dc pull $CHANGED
-            for svc in $CHANGED; do
-              [ "$svc" = "gateway" ] && continue
-              if ! docker image inspect "${PREFIX}mix-${svc}:${TAG}" >/dev/null 2>&1; then
-                echo "::error::本地缺少镜像 ${PREFIX}mix-${svc}:${TAG}，已中止部署（容器未改动）"
-                exit 1
-              fi
-            done
+          # gateway 用固定的官方镜像 apache/apisix，不随部署 tag 变化，配置变更由最后一步 restart 应用；
+          # 部署机无法直连 Docker Hub 时 docker compose pull 会强制回源而超时，故从拉取列表排除
+          PULL_SVCS=""
+          for svc in $CHANGED; do
+            [ "$svc" = "gateway" ] && continue
+            PULL_SVCS="$PULL_SVCS $svc"
+          done
+          PULL_SVCS="$(echo $PULL_SVCS)"
+          if [ -n "$PULL_SVCS" ]; then
+            dc pull $PULL_SVCS
+          else
+            echo "::notice::本次没有可部署的业务镜像，按已部署版本重建以应用配置变更"
           fi
+          for svc in $CHANGED; do
+            [ "$svc" = "gateway" ] && continue
+            if ! docker image inspect "${PREFIX}mix-${svc}:${TAG}" >/dev/null 2>&1; then
+              echo "::error::本地缺少镜像 ${PREFIX}mix-${svc}:${TAG}，已中止部署（容器未改动）"
+              exit 1
+            fi
+          done
 
           # 统一走「全栈 up」：compose 只会重建 tag 发生变化的容器（已实测），
           # 未变更的服务保持 Running，缺失的服务（如被误删的可观测组件）会被重新创建。
