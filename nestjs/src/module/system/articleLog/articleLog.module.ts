@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
-import { ClientModule } from "src/module/common/client/client.module";
-import { NacosModule } from "src/module/common/nacos/nacos.module";
-import { LogDeletionModule } from "src/module/system/logDeletion/logDeletion.module";
+import { ClientModule } from "src/module/common/client";
+import { NacosModule } from "src/module/common/nacos";
+import { LogDeletionModule } from "src/module/system/logDeletion";
 import { LogConsumerService } from "./articleLog.consume.service";
 import { ArticleLogController } from "./articleLog.controller";
 import { ArticleLogService } from "./articleLog.service";

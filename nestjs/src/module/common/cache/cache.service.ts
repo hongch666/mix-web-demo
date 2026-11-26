@@ -1,10 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { Defaults, Messages, RedisKeys } from "src/common/constants";
-import { LoggerService } from "src/module/common/logger/logger.service";
-import {
-  RedisService,
-  RedisSubscription,
-} from "src/module/common/redis/redis.service";
+import { LoggerService } from "src/module/common/logger";
+import { RedisService, RedisSubscription } from "src/module/common/redis";
 
 /** 多级缓存的写入选项，缺省沿用 Defaults 中的全局 TTL */
 export interface CacheWriteOptions {

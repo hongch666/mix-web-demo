@@ -1,11 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Messages, RedisKeys } from "src/common/constants";
-import {
-  Cacheable,
-  CacheEvict,
-} from "src/framework/decorators/cache.decorator";
-import { LoggerService } from "src/module/common/logger/logger.service";
+import { CacheEvict, Cacheable } from "src/framework/decorators";
+import { LoggerService } from "src/module/common/logger";
 import { Repository } from "typeorm";
 import { TableSettings } from "./entities/tableSettings.entity";
 

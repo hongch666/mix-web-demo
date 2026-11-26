@@ -2,11 +2,10 @@
 
 // uuid 为 ESM-only 包，jest-runtime 的 CJS require 无法加载，本测试只关心缓存逻辑，按单测规范在工厂中提供被用到的成员
 jest.mock("uuid", () => ({ v4: () => "mocked-uuid" }));
-
 import Redis from "ioredis";
 import { Defaults, RedisKeys } from "src/common/constants";
-import { LoggerService } from "src/module/common/logger/logger.service";
-import { RedisService } from "src/module/common/redis/redis.service";
+import { LoggerService } from "src/module/common/logger";
+import { RedisService } from "src/module/common/redis";
 import { CacheService } from "./cache.service";
 
 describe("CacheService", () => {

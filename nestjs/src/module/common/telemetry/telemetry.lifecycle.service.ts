@@ -1,5 +1,4 @@
 import { Injectable, OnApplicationShutdown } from "@nestjs/common";
-
 import { shutdownTelemetry } from "./instrumentation";
 
 /**

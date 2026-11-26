@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
-import { toSnakeCase } from "src/common/utils/snakeCase";
+import { toSnakeCase } from "src/common/utils";
 
 type JsonValue =
   | string

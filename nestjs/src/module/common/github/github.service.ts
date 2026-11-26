@@ -3,11 +3,11 @@ import { ConfigService } from "@nestjs/config";
 import axios, { AxiosResponse } from "axios";
 import { randomUUID } from "crypto";
 import { Defaults, ErrorIds, Messages, RedisKeys } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import type { GithubOAuthConfig } from "src/common/interfaces/githubConfig.interface";
-import { LoggerService } from "src/module/common/logger/logger.service";
-import { SpringClientService } from "src/module/common/client/springClient.service";
-import { RedisService } from "src/module/common/redis/redis.service";
+import { BusinessException } from "src/common/exceptions";
+import type { GithubOAuthConfig } from "src/common/interfaces";
+import { LoggerService } from "src/module/common/logger";
+import { SpringClientService } from "src/module/common/client";
+import { RedisService } from "src/module/common/redis";
 import {
   GithubAuthorizeQueryDto,
   GithubCallbackQueryDto,

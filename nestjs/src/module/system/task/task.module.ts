@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { RedisModule } from "src/module/common/redis/redis.module";
-import { ApiLogModule } from "src/module/system/apiLog/apiLog.module";
-import { OssObjectModule } from "src/module/system/ossObject/ossObject.module";
+import { RedisModule } from "src/module/common/redis";
+import { ApiLogModule } from "src/module/system/apiLog";
+import { OssObjectModule } from "src/module/system/ossObject";
 import { TaskController } from "./task.controller";
 import { TaskService } from "./task.service";
 

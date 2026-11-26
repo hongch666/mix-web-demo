@@ -198,8 +198,8 @@ FastAPI 的编译校验刻意不用 Pyright：仓库既有类型基线存在大�
 ./mix lint gozero        # 常量规范检查 + golangci-lint run + .api 格式检查（临时目录格式化后 diff）
 
 # NestJS：配置在 nestjs/.prettierrc 与 nestjs/eslint.config.mjs
-./mix format nestjs      # npm run format + npm run lint:fix
-./mix lint nestjs        # npm run lint + npm run format:check + 常量规范检查
+./mix format nestjs      # npm run format + npm run lint:fix + 包导入整理（index.ts 入口、重复导入合并）
+./mix lint nestjs        # npm run lint + npm run format:check + 常量规范检查 + 包导入规范检查
 
 # FastAPI：配置在 fastapi/pyproject.toml；lint 额外执行 scripts/quality/constants.py（常量注释与分类）、
 # scripts/quality/package-imports.py（包导入规范）、scripts/quality/local-imports.py（import 写在文件顶部）

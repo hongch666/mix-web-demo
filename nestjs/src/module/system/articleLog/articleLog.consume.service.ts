@@ -3,8 +3,8 @@ import { Injectable, OnApplicationShutdown } from "@nestjs/common";
 import { Interval } from "@nestjs/schedule";
 import { trace } from "@opentelemetry/api";
 import { Defaults, Messages } from "src/common/constants";
-import { BatchBuffer } from "src/common/utils/batchBuffer";
-import { LoggerService } from "src/module/common/logger/logger.service";
+import { BatchBuffer } from "src/common/utils";
+import { LoggerService } from "src/module/common/logger";
 import { ArticleLogService } from "./articleLog.service";
 import {
   ArticleAction,

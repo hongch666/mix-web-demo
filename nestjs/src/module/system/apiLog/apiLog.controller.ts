@@ -4,18 +4,21 @@ import {
   ApiResponse as ApiErrorResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { ApiResponse, success } from "src/common/utils/response";
 import {
+  ApiResponse,
+  ApiResponseModel,
   SwaggerApiLogAverageData,
   SwaggerApiLogCalledCountData,
   SwaggerApiLogPageData,
   SwaggerApiLogSyncData,
-  ApiResponseModel,
   SwaggerNullData,
-} from "src/common/utils/swaggerResponse";
-import { ApiLog } from "src/framework/decorators/apiLog.decorator";
-import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
-import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
+  success,
+} from "src/common/utils";
+import {
+  ApiLog,
+  RequireAdmin,
+  RequireInternalToken,
+} from "src/framework/decorators";
 import { ApiLogService } from "./apiLog.service";
 import { QueryApiLogDto } from "./dto/apiLog.dto";
 

@@ -6,13 +6,14 @@ import {
 } from "@nestjs/swagger";
 import type { FastifyReply } from "fastify";
 import { HttpCode } from "src/common/constants";
-import { ApiResponse, success } from "src/common/utils/response";
 import {
   ApiRedirectResponse,
+  ApiResponse,
   ApiResponseModel,
   SwaggerGithubAuthorizeData,
-} from "src/common/utils/swaggerResponse";
-import { ApiLog } from "src/framework/decorators/apiLog.decorator";
+  success,
+} from "src/common/utils";
+import { ApiLog } from "src/framework/decorators";
 import {
   GithubAuthorizeQueryDto,
   GithubCallbackQueryDto,

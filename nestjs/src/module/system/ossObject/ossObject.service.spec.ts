@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { OssObjectRecord, OssObjectService } from "./ossObject.service";
 
 const PREFIX = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/";

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Defaults, HeaderNames } from "src/common/constants";
-import { NacosService } from "../nacos/nacos.service";
+import { NacosService } from "src/module/common/nacos";
 
 /**
  * Spring 服务远程调用客户端

@@ -1,5 +1,4 @@
 import "src/module/common/telemetry/instrumentation";
-
 import multipart from "@fastify/multipart";
 import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -16,12 +15,13 @@ import {
   Messages,
   SwaggerConfig,
 } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import { AllExceptionsFilter } from "src/framework/filters/allException.filter";
-import { FieldNamingInterceptor } from "src/framework/interceptors/fieldNaming.interceptor";
-import { MetricsInterceptor } from "src/framework/interceptors/metrics.interceptor";
-import { LoggerService } from "src/module/common/logger/logger.service";
-
+import { BusinessException } from "src/common/exceptions";
+import { AllExceptionsFilter } from "src/framework/filters";
+import {
+  FieldNamingInterceptor,
+  MetricsInterceptor,
+} from "src/framework/interceptors";
+import { LoggerService } from "src/module/common/logger";
 import { AppModule } from "./app.module";
 import { buildSwaggerDocument } from "./swagger";
 

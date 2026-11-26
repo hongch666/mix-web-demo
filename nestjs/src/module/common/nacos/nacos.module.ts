@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { InternalTokenUtil } from "src/common/utils/internalToken.util";
+import { InternalTokenUtil } from "src/common/utils";
 import { NacosService } from "./nacos.service";
 
 /**

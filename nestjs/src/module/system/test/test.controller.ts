@@ -1,11 +1,11 @@
 import { Controller, Get } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import { ApiResponse } from "src/common/utils/response";
 import {
+  ApiResponse,
   ApiResponseModel,
   SwaggerStringData,
-} from "src/common/utils/swaggerResponse";
-import { ApiLog } from "src/framework/decorators/apiLog.decorator";
+} from "src/common/utils";
+import { ApiLog } from "src/framework/decorators";
 import { TestService } from "./test.service";
 
 /**

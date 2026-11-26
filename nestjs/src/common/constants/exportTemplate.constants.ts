@@ -7,7 +7,7 @@
  * - Markdown 对换行与缩进敏感，模板体顶格书写
  * - 三种格式共用 ArticleExportMeta，避免各写一套取值逻辑导致导出内容不一致
  */
-import type { ArticleExportMeta } from "src/common/interfaces/articleExportMeta.interface";
+import type { ArticleExportMeta } from "src/common/interfaces";
 
 /**
  * HTML 转义映射，避免标题、作者、分类等外部文本破坏模板结构

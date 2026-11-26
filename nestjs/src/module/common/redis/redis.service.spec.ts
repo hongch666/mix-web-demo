@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 jest.mock("uuid", () => ({ v4: () => "unit-test-lock" }));
-
 import { RedisService } from "./redis.service";
 
 describe("RedisService", () => {

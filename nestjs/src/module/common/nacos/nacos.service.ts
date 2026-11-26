@@ -17,11 +17,11 @@ import {
   HttpCode,
   Messages,
 } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import type { RemoteCallConfig } from "src/common/interfaces/remoteCallConfig.interface";
-import { InternalTokenUtil } from "src/common/utils/internalToken.util";
-import { LoggerService } from "src/module/common/logger/logger.service";
-import { clientDuration, clientRequests } from "../telemetry/metrics";
+import { BusinessException } from "src/common/exceptions";
+import type { RemoteCallConfig } from "src/common/interfaces";
+import { InternalTokenUtil } from "src/common/utils";
+import { LoggerService } from "src/module/common/logger";
+import { clientDuration, clientRequests } from "src/module/common/telemetry";
 
 /**
  * 服务间调用的请求参数，包含目标服务名、HTTP 方法、路径及路径、查询、请求体与自定义请求头

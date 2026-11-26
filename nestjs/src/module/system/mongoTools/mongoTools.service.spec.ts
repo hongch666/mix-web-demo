@@ -1,4 +1,4 @@
-import { MongoTools, Messages } from "src/common/constants";
+import { Messages, MongoTools } from "src/common/constants";
 import { MongoToolsService } from "./mongoTools.service";
 
 interface FakeMongoConnection {

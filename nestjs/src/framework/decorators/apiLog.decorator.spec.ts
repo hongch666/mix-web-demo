@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-
 import "reflect-metadata";
 import { ApiLog, API_LOG_KEY } from "./apiLog.decorator";
 

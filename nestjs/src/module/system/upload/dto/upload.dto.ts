@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty, IsString } from "class-validator";
 import { Messages } from "src/common/constants";
-import { ExposeName } from "src/common/utils/snakeCase";
+import { ExposeName } from "src/common/utils";
 
 /**
  * 文件上传结果结构，包含原始文件名、OSS 文件名与访问链接

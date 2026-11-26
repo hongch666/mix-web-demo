@@ -1,10 +1,9 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-
 import { ConfigService } from "@nestjs/config";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import { LoggerService } from "src/module/common/logger/logger.service";
+import { BusinessException } from "src/common/exceptions";
+import { LoggerService } from "src/module/common/logger";
 import { OssService } from "./oss.service";
 import type { OssRuntime } from "./oss.tokens";
 

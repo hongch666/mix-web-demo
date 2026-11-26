@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { NacosModule } from "../nacos/nacos.module";
+import { NacosModule } from "src/module/common/nacos";
 import { SpringClientService } from "./springClient.service";
 
 /**

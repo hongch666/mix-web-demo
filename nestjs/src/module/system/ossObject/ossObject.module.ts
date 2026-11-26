@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { ClientModule } from "src/module/common/client/client.module";
-import { NacosModule } from "src/module/common/nacos/nacos.module";
-import { OssModule } from "src/module/common/oss/oss.module";
+import { ClientModule } from "src/module/common/client";
+import { NacosModule } from "src/module/common/nacos";
+import { OssModule } from "src/module/common/oss";
 import { OssObject } from "./entities/ossObject.entity";
 import { OssObjectService } from "./ossObject.service";
 

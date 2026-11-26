@@ -5,12 +5,12 @@ import * as fs from "fs";
 import * as path from "path";
 import { ClsService } from "nestjs-cls";
 import { Defaults, Messages } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import { LoggerService } from "src/module/common/logger/logger.service";
-import { OssService } from "src/module/common/oss/oss.service";
+import { BusinessException } from "src/common/exceptions";
+import { LoggerService } from "src/module/common/logger";
+import { OssService } from "src/module/common/oss";
 import { pipeline, Readable } from "stream";
 import { promisify } from "util";
-import { OssObjectService } from "src/module/system/ossObject/ossObject.service";
+import { OssObjectService } from "src/module/system/ossObject";
 import { UploadResult } from "./dto/upload.dto";
 
 const pump = promisify(pipeline);

@@ -13,7 +13,7 @@ import {
   Min,
 } from "class-validator";
 import { Messages, MongoTools } from "src/common/constants";
-import { ExposeName } from "src/common/utils/snakeCase";
+import { ExposeName } from "src/common/utils";
 
 /**
  * MongoDB 查询 DTO

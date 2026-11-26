@@ -7,9 +7,9 @@ import {
 } from "@nestjs/common";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { ErrorIds, HttpCode, Messages } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import { error } from "src/common/utils/response";
-import { LoggerService } from "src/module/common/logger/logger.service";
+import { BusinessException } from "src/common/exceptions";
+import { error } from "src/common/utils";
+import { LoggerService } from "src/module/common/logger";
 
 /**
  * HttpException 响应体中 message 字段的结构描述，兼容字符串与字符串数组两种形态

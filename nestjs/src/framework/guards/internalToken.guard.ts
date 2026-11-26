@@ -2,13 +2,13 @@ import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { ClsService } from "nestjs-cls";
 import { ErrorIds, HttpCode, Messages } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import { InternalTokenUtil } from "src/common/utils/internalToken.util";
-import { LoggerService } from "src/module/common/logger/logger.service";
+import { BusinessException } from "src/common/exceptions";
+import { InternalTokenUtil } from "src/common/utils";
+import { LoggerService } from "src/module/common/logger";
 import {
   REQUIRE_INTERNAL_TOKEN_KEY,
   REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY,
-} from "../decorators/requireInternalToken.decorator";
+} from "src/framework/decorators";
 
 /**
  * 内部服务令牌验证守卫

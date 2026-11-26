@@ -1,5 +1,4 @@
 jest.mock("uuid", () => ({ v4: () => "unit-test-lock" }));
-
 import { GithubService } from "./github.service";
 
 describe("GithubService", () => {

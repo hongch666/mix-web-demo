@@ -6,11 +6,12 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import {
+  ApiResponse,
   ApiResponseModel,
   SwaggerStringData,
-} from "src/common/utils/swaggerResponse";
-import { ApiResponse, success } from "src/common/utils/response";
-import { ApiLog } from "src/framework/decorators/apiLog.decorator";
+  success,
+} from "src/common/utils";
+import { ApiLog } from "src/framework/decorators";
 import { DownloadService } from "./download.service";
 
 /**

@@ -3,8 +3,8 @@ import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import { Defaults, Messages } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
-import { LoggerService } from "src/module/common/logger/logger.service";
+import { BusinessException } from "src/common/exceptions";
+import { LoggerService } from "src/module/common/logger";
 import { OSS_CLIENT, OSS_RUNTIME } from "./oss.tokens";
 import type { OssRuntime } from "./oss.tokens";
 

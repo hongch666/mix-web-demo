@@ -16,16 +16,16 @@ import {
 } from "@nestjs/swagger";
 import { ClsService } from "nestjs-cls";
 import { ErrorIds, Messages } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
+import { BusinessException } from "src/common/exceptions";
 import {
+  ApiResponse,
   ApiResponseModel,
   SwaggerNullData,
   SwaggerTableSettingsData,
   SwaggerTableSettingsListData,
-} from "src/common/utils/swaggerResponse";
-import { ApiResponse, success } from "src/common/utils/response";
-import { ApiLog } from "src/framework/decorators/apiLog.decorator";
-import { RequireSelf } from "src/framework/decorators/requireSelf.decorator";
+  success,
+} from "src/common/utils";
+import { ApiLog, RequireSelf } from "src/framework/decorators";
 import {
   SaveTableSettingsDto,
   TableKeyParamDto,

@@ -5,7 +5,7 @@ import type {
   ReferenceObject,
   SchemaObject,
 } from "@nestjs/swagger/dist/interfaces/open-api-spec.interface";
-import { toSnakeCase } from "src/common/utils/snakeCase";
+import { toSnakeCase } from "./snakeCase";
 
 /**
  * 判断值是否为 OpenAPI 的 $ref 引用对象

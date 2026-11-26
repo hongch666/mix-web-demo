@@ -5,8 +5,8 @@ import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import { Model, Types } from "mongoose";
 import { Defaults, Messages } from "src/common/constants";
-import type { MongoIndexInfo } from "src/common/interfaces/mongoIndexInfo.interface";
-import { LoggerService } from "src/module/common/logger/logger.service";
+import type { MongoIndexInfo } from "src/common/interfaces";
+import { LoggerService } from "src/module/common/logger";
 import { LogDeletion, LogDeletionDocument } from "./schema/logDeletion.schema";
 
 dayjs.extend(utc);

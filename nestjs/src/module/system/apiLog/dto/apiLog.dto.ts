@@ -8,7 +8,7 @@ import {
   IsString,
 } from "class-validator";
 import { Messages } from "src/common/constants";
-import { ExposeName } from "src/common/utils/snakeCase";
+import { ExposeName } from "src/common/utils";
 
 export enum ApiMethod {
   GET = "GET",

@@ -1,4 +1,4 @@
-import { HttpCode } from "../constants";
+import { HttpCode } from "src/common/constants";
 import { error, success } from "./response";
 
 describe("response helpers", () => {

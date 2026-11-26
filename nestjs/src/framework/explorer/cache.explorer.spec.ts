@@ -1,14 +1,10 @@
 // uuid 为 ESM-only 包，缓存服务经 RedisService 间接引入，本测试用不到其实现，按单测规范在工厂中提供被用到的成员
 jest.mock("uuid", () => ({ v4: () => "mocked-uuid" }));
-
 import { DiscoveryService, MetadataScanner, Reflector } from "@nestjs/core";
-import {
-  Cacheable,
-  CacheEvict,
-} from "src/framework/decorators/cache.decorator";
-import { LoggerService } from "src/module/common/logger/logger.service";
+import { CacheEvict, Cacheable } from "src/framework/decorators";
+import { LoggerService } from "src/module/common/logger";
 import { CacheExplorer } from "./cache.explorer";
-import { CacheService } from "src/module/common/cache/cache.service";
+import { CacheService } from "src/module/common/cache";
 
 describe("CacheExplorer", () => {
   const cache = {

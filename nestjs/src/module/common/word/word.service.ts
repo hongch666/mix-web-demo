@@ -4,7 +4,7 @@ import * as fs from "fs";
 import { htmlToText } from "html-to-text";
 import * as path from "path";
 import { ErrorIds, Messages } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
+import { BusinessException } from "src/common/exceptions";
 
 /** 模板文件名，调用方只传目录时自动补齐 */
 const TEMPLATE_FILE_NAME = "template.docx";

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { ErrorIds, HttpCode, Messages, SqlTools } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
+import { BusinessException } from "src/common/exceptions";
 import { DataSource } from "typeorm";
 
 const TABLE_WHITELIST = new Set<string>(SqlTools.TABLE_WHITELIST);

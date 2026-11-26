@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectConnection } from "@nestjs/mongoose";
 import type { Connection } from "mongoose";
 import { ErrorIds, HttpCode, Messages, MongoTools } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
+import { BusinessException } from "src/common/exceptions";
 
 /**
  * 白名单日志集合基本信息，含集合名、文档数量与采样字段列表

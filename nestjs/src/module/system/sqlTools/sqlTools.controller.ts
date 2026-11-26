@@ -8,14 +8,13 @@ import {
 } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { HttpCode } from "src/common/constants";
-import { success } from "src/common/utils/response";
 import {
+  ApiResponseModel,
   SwaggerSqlQueryData,
   SwaggerSqlTablesData,
-  ApiResponseModel,
-} from "src/common/utils/swaggerResponse";
-import { ApiLog } from "src/framework/decorators/apiLog.decorator";
-import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
+  success,
+} from "src/common/utils";
+import { ApiLog, RequireInternalToken } from "src/framework/decorators";
 import { SqlQueryDto } from "./dto/sqlQuery.dto";
 import { SqlToolsService } from "./sqlTools.service";
 
