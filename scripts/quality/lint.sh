@@ -81,6 +81,20 @@ lint_package_imports() {
     return 0
 }
 
+# 包导入规范检查（nestjs）：目标目录有 index.ts 导出时须从目录入口导入，python 缺失时跳过
+lint_ts_package_imports() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/quality/ts-package-imports.py" --check "$1"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/quality/ts-package-imports.py" --check "$1"
+        return
+    fi
+    print_warn "未检测到 python，跳过 NestJS 包导入规范检查"
+    return 0
+}
+
 # 模块级导入检查（fastapi）：import 必须在文件顶部，延迟导入须带 lazy-import 标记，python 缺失时跳过
 lint_local_imports() {
     if command -v python >/dev/null 2>&1; then
@@ -197,6 +211,9 @@ lint_nestjs() {
     # TypeScript 编译类型检查（含 spec，ts-jest 走单文件转译后不再做类型检查）
     print_info "检查 NestJS 类型（tsc --noEmit）..."
     (cd "$WORKDIR/nestjs" && ./node_modules/.bin/tsc --noEmit -p tsconfig.json) || return 1
+
+    print_info "检查 NestJS 包导入规范（index.ts 目录入口）..."
+    lint_ts_package_imports "$WORKDIR/nestjs" || return 1
 
     print_info "检查 NestJS 常量文件规范（成员注释、分类注释、函数成员在前）..."
     lint_constants "$WORKDIR/nestjs/src/common/constants"

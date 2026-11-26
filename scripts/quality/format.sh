@@ -39,6 +39,20 @@ format_package_imports() {
     return 0
 }
 
+# 包导入整理（nestjs）：把具体文件导入改为 index.ts 入口并合并重复导入，python 缺失时跳过
+format_ts_package_imports() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/quality/ts-package-imports.py" --fix "$1"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/quality/ts-package-imports.py" --fix "$1"
+        return
+    fi
+    print_warn "未检测到 python，跳过 NestJS 包导入整理"
+    return 0
+}
+
 # 模块级导入整理（fastapi）：把函数体或类体里的导入提升到文件顶部，python 缺失时跳过
 format_local_imports() {
     if command -v python >/dev/null 2>&1; then
@@ -122,6 +136,8 @@ format_nestjs() {
     print_info "格式化 NestJS 代码（Prettier + ESLint --fix）..."
     # 先由 Prettier 统一排版，再用 ESLint --fix 修复可自动处理的问题
     (cd "$WORKDIR/nestjs" && npm run format && npm run lint:fix) || return 1
+    print_info "整理 NestJS 包导入（index.ts 入口与重复导入合并）..."
+    format_ts_package_imports "$WORKDIR/nestjs" || return 1
 }
 
 format_fastapi() {
