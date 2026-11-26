@@ -162,6 +162,7 @@
     - [5.配置项](#5配置项)
     - [6.相关代码](#6相关代码)
   - [登录相关](#登录相关)
+    - [密码摘要处理](#密码摘要处理)
     - [GitHub OAuth 登录流程](#github-oauth-登录流程)
     - [前置条件](#前置条件)
   - [词云图说明](#词云图说明)
@@ -3221,6 +3222,35 @@ token 估算不使用各家分词器，按字符类别保守折算（`app/core/c
 - 压缩提示词与思考文案：`fastapi/app/core/constants/prompts.py`、`fastapi/app/core/constants/messages.py`
 
 ### 登录相关
+
+#### 密码摘要处理
+
+用户密码采用「前端 SHA256 摘要 + 服务端 BCrypt 加盐」的方案，明文不会以原文形式经过接口，服务端也拿不到原文。前端提交前先把密码计算成 SHA256，取 64 位十六进制摘要，放进 `password` 或 `new_password` 字段：
+
+```js
+async function sha256Hex(password) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+```
+
+明文仍需前端自行校验：8 到 20 位且包含字母和数字。服务端只见摘要，只校验 64 位十六进制格式，不符返回 400「密码必须为64位SHA256摘要」，无法校验明文强度。摘要大小写都接受。
+
+需要传摘要的接口：
+
+| 方法   | 路径                        | 字段         | 是否必填                     |
+| ------ | --------------------------- | ------------ | ---------------------------- |
+| POST   | `/users/login`              | `password`   | 必填                         |
+| POST   | `/users/register`           | `password`   | 必填                         |
+| POST   | `/users/reset-password`     | `new_password` | 必填                       |
+| POST   | `/users`                    | `password`   | 可选，不传用配置中的默认密码 |
+| PUT    | `/users`                    | `password`   | 可选，不传则不修改密码       |
+
+管理员重置接口 `POST /users/admin/reset-password/{user_id}` 与 `POST /users/admin/reset-all-passwords` 的请求体支持可选 `password` 摘要：传了就重置为该摘要对应的密码，不传或空请求体则用 `USER_DEFAULT_PASSWORD` 配置的默认密码。
+
+服务端自身产生的密码（创建用户未传密码、GitHub 首次注册建号、管理员重置未指定密码）同样先做 SHA256 再 BCrypt，与前端链路的存储格式一致。因此用默认密码登录时，前端也要传该默认密码的 SHA256 摘要。
+
+历史账号此前按 `BCrypt(明文)` 存储，改造后不能再用摘要登录，需要先通过管理员重置接口重置密码。
 
 #### GitHub OAuth 登录流程
 

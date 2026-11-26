@@ -24,7 +24,6 @@ import com.hcsy.spring.infra.client.ServiceWebClient;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {
     "management.server.port=0", // 避免与运行中的 9101 监控端口冲突
     "user.default-password=smoke-test", // UserPasswordProperties 的 @NotBlank 必填项
-    "user.reset-password=smoke-test",
     // R2DBC 连接池在启动时实例化，凭据为空会直接失败；占位值即可，不会真实建连
     "spring.r2dbc.username=smoke-test",
     "spring.r2dbc.password=smoke-test",

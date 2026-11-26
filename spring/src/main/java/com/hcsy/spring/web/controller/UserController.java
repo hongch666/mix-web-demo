@@ -390,10 +390,11 @@ public class UserController {
     }
 
     /**
-     * POST /users/admin/reset-all-passwords 接口，管理员将所有用户密码批量重置为指定摘要或配置密码，并使全部旧会话失效
+     * POST /users/admin/reset-all-passwords 接口，管理员将所有用户密码批量重置为指定摘要或默认密码，并使全部旧会话失效
      */
     @PostMapping("/admin/reset-all-passwords")
-    @Operation(summary = "管理员重置所有用户密码", description = "管理员操作：将所有用户密码重置为请求体指定的SHA256摘要，不传则使用配置的重置密码")
+    @Operation(summary = "管理员重置所有用户密码",
+        description = "管理员操作：将所有用户密码重置为请求体指定的SHA256摘要，不传则使用USER_DEFAULT_PASSWORD配置的默认密码")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.USER, paramSource = ParamSource.BODY,
         paramName = "id")
     @ApiLog(value = "重置所有用户密码", excludeFields = { "password" })
@@ -405,10 +406,11 @@ public class UserController {
     }
 
     /**
-     * POST /users/admin/reset-password/{user_id} 接口，管理员将指定用户密码重置为指定摘要或配置密码，并使其旧会话失效
+     * POST /users/admin/reset-password/{user_id} 接口，管理员将指定用户密码重置为指定摘要或默认密码，并使其旧会话失效
      */
     @PostMapping("/admin/reset-password/{user_id}")
-    @Operation(summary = "管理员重置指定用户密码", description = "管理员操作：将指定用户密码重置为请求体指定的SHA256摘要，不传则使用配置的重置密码")
+    @Operation(summary = "管理员重置指定用户密码",
+        description = "管理员操作：将指定用户密码重置为请求体指定的SHA256摘要，不传则使用USER_DEFAULT_PASSWORD配置的默认密码")
     @RequirePermission(roles = { "admin" }, businessType = BusinessType.USER, paramSource = ParamSource.PATH_SINGLE,
         paramName = "user_id")
     @ApiLog(value = "重置指定用户密码", excludeFields = { "password" })

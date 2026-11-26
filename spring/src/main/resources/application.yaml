@@ -98,7 +98,6 @@ service-client:
 
 user:
   default-password: ${USER_DEFAULT_PASSWORD:}
-  reset-password: ${USER_RESET_PASSWORD:}
 
 resilience4j:
   circuitbreaker:

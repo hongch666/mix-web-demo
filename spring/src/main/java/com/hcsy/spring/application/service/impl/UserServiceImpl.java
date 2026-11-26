@@ -475,7 +475,7 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 存在用户时将全部用户密码批量更新为指定摘要或配置的重置密码，并使全部用户的旧会话失效
+     * 存在用户时将全部用户密码批量更新为指定摘要或配置的默认密码，并使全部用户的旧会话失效
      */
     @Override
     public Mono<Void> resetAllPasswords(Long currentUserId, String currentToken, String passwordDigest) {
@@ -494,7 +494,7 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 定位指定用户后将密码重置为指定摘要或配置的重置密码并事务保存，成功后使该用户旧会话失效
+     * 定位指定用户后将密码重置为指定摘要或配置的默认密码并事务保存，成功后使该用户旧会话失效
      */
     @Override
     public Mono<Void> resetUserPassword(Long userId, Long currentUserId, String currentToken, String passwordDigest) {
@@ -753,12 +753,12 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 按管理员是否指定摘要选择重置密码：指定时直接用摘要加密，否则用配置的重置密码
+     * 按管理员是否指定摘要选择重置密码：指定时直接用摘要加密，否则用配置的默认密码
      */
     private Mono<String> resolveResetPassword(String passwordDigest) {
         return hasText(passwordDigest)
             ? encryptRequestPassword(passwordDigest)
-            : encryptServerPassword(userPasswordProperties.resetPassword());
+            : encryptServerPassword(userPasswordProperties.defaultPassword());
     }
 
     /**

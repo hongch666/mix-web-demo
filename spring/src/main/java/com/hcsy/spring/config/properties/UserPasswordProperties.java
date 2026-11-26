@@ -10,12 +10,10 @@ import jakarta.validation.constraints.NotBlank;
 /**
  * 用户密码配置属性（构造器绑定，不可变）
  *
- * @param defaultPassword 默认密码
- * @param resetPassword   重置密码
+ * @param defaultPassword 默认密码，同时用于创建用户未指定密码与管理员重置未指定密码的场景
  */
 @ConfigurationProperties(prefix = "user")
 @Validated
 public record UserPasswordProperties(
-    @NotBlank(message = Messages.USER_DEFAULT_PASSWORD_NOT_BLANK) String defaultPassword,
-    @NotBlank(message = Messages.USER_RESET_PASSWORD_NOT_BLANK) String resetPassword) {
+    @NotBlank(message = Messages.USER_DEFAULT_PASSWORD_NOT_BLANK) String defaultPassword) {
 }
