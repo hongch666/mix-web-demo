@@ -14,11 +14,8 @@ import {
   CacheableOptions,
 } from "src/framework/decorators";
 import { LoggerService } from "src/module/common/logger";
-import {
-  CACHE_ACCESSOR,
-  CacheAccessor,
-  CacheWriteOptions,
-} from "./cacheAccessor";
+import { CACHE_ACCESSOR } from "./cacheAccessor";
+import type { CacheAccessor, CacheWriteOptions } from "./cacheAccessor";
 
 /** 可被织入缓存逻辑的异步方法签名 */
 type CacheableMethod = (...args: unknown[]) => Promise<unknown>;
