@@ -53,4 +53,45 @@ describe("ApiLogInterceptor接口日志拦截器", () => {
       }),
     );
   });
+
+  // 验证装饰器声明 skipMq 时不发布接口日志且业务结果照常返回
+  it("验证跳过 MQ 时只保留本地日志", async () => {
+    const request = {
+      method: "POST",
+      url: "/task/apilog",
+      body: { name: "alice" },
+      params: {},
+      headers: {},
+    };
+    const reflector = {
+      get: jest.fn().mockReturnValue({
+        message: "内部清理任务",
+        includeParams: true,
+        skipMq: true,
+      }),
+    } as unknown as Reflector;
+    const cls = {
+      get: jest.fn((key: string) => ({ userId: 0, username: "internal" })[key]),
+    };
+    const amqp = { publish: jest.fn().mockResolvedValue(undefined) };
+    const logger = { info: jest.fn(), error: jest.fn() };
+    const context = {
+      getHandler: () => function cleanupApiLog(): void {},
+      switchToHttp: () => ({ getRequest: () => request }),
+    } as unknown as ExecutionContext;
+    const next: CallHandler = { handle: () => of("done") };
+
+    const value = await firstValueFrom(
+      new ApiLogInterceptor(
+        reflector,
+        cls as any,
+        amqp as any,
+        logger as any,
+      ).intercept(context, next),
+    );
+    await Promise.resolve();
+
+    expect(value).toBe("done");
+    expect(amqp.publish).not.toHaveBeenCalled();
+  });
 });

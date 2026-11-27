@@ -15,4 +15,20 @@ describe("ApiLog装饰器", () => {
       logLevel: "info",
     });
   });
+
+  // 验证对象参数中的 skipMq 原样保留在日志配置中
+  it("验证skipMq原样保留", () => {
+    class Fixture {
+      @ApiLog({ message: "内部接口", skipMq: true })
+      internal(): void {}
+    }
+    expect(
+      Reflect.getMetadata(API_LOG_KEY, Fixture.prototype.internal),
+    ).toEqual({
+      message: "内部接口",
+      includeParams: true,
+      logLevel: "info",
+      skipMq: true,
+    });
+  });
 });

@@ -32,7 +32,7 @@ export class TaskController {
     description: "手动触发清理超过3个月的API日志任务",
   })
   @RequireInternalToken()
-  @ApiLog("手动执行清理API日志任务")
+  @ApiLog({ message: "手动执行清理API日志任务", skipMq: true })
   @ApiResponseModel({ data: SwaggerNullData })
   async executeCleanupOldApiLogsTask(): Promise<ApiResponse<null>> {
     // 交给服务层在后台异步执行，不阻塞接口响应
@@ -50,7 +50,7 @@ export class TaskController {
     description: "手动触发无引用 OSS 对象清理任务",
   })
   @RequireInternalToken()
-  @ApiLog("手动执行 OSS 对象清理任务")
+  @ApiLog({ message: "手动执行 OSS 对象清理任务", skipMq: true })
   @ApiResponseModel({ data: SwaggerNullData })
   async executeOssCleanupTask(): Promise<ApiResponse<null>> {
     void this.taskService.cleanupOssObjects().catch(() => undefined);

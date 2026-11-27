@@ -50,7 +50,7 @@ export class UploadController {
     description: "通过本地文件路径上传文件到 OSS",
   })
   @RequireInternalToken()
-  @ApiLog("上传文件到 OSS")
+  @ApiLog({ message: "上传文件到 OSS", skipMq: true })
   @ApiResponseModel({ data: SwaggerStringData })
   async uploadFile(@Body() dto: UploadDto): Promise<ApiResponse<string>> {
     const url: string = await this.uploadService.uploadFile(
