@@ -41,7 +41,7 @@ export class SqlToolsController {
     description: "表名，为空则返回所有白名单表",
   })
   @RequireInternalToken()
-  @ApiLog("获取SQL工具表结构信息")
+  @ApiLog({ message: "获取SQL工具表结构信息", skipMq: true })
   @ApiResponseModel({ data: SwaggerSqlTablesData })
   async getTables(@Query("table") table?: string) {
     const data = await this.sqlToolsService.getTables(table);
@@ -59,7 +59,7 @@ export class SqlToolsController {
       "在白名单表范围内执行参数化只读 SQL 查询并返回结果，供内部服务远程调用",
   })
   @RequireInternalToken()
-  @ApiLog("执行SQL工具只读查询")
+  @ApiLog({ message: "执行SQL工具只读查询", skipMq: true })
   @ApiResponseModel({ data: SwaggerSqlQueryData })
   async executeQuery(@Body() dto: SqlQueryDto) {
     const data = await this.sqlToolsService.executeQuery(

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, ListResponse, success
-from app.core.constants import Messages, SwaggerConfig
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireAdmin, requireInternalToken
 from app.dependencies import AnalyzeServiceDep, DbSession
 from app.internal.schemas import (
@@ -24,7 +24,7 @@ router: APIRouter = APIRouter(
     response_model=ApiResponse[ListResponse[ArticleTop10Response]],
     responses=SwaggerConfig.REMOTE_FAILURE_RESPONSES,
 )
-@log(Messages.API_LOG_DESC_TOP10_ARTICLES)
+@log("获取前10篇文章")
 async def get_top10_articles(
     request: Request,
     db: DbSession,
@@ -46,7 +46,7 @@ async def get_top10_articles(
     response_model=ApiResponse[str],
     responses=SwaggerConfig.REMOTE_FAILURE_RESPONSES,
 )
-@log(Messages.API_LOG_DESC_WORDCLOUD)
+@log("生成词云图")
 async def get_wordcloud(
     request: Request, analyzeService: AnalyzeServiceDep
 ) -> ApiResponse:
@@ -81,7 +81,7 @@ async def get_current_wordcloud_url(
     },
 )
 @requireAdmin
-@log(Messages.API_LOG_DESC_ARTICLE_EXCEL)
+@log("获取文章数据Excel")
 async def get_excel(
     request: Request,
     db: DbSession,
@@ -100,7 +100,7 @@ async def get_excel(
     response_model=ApiResponse[ArticleStatisticsResponse],
     responses=SwaggerConfig.REMOTE_FAILURE_RESPONSES,
 )
-@log(Messages.API_LOG_DESC_ARTICLE_STATISTICS)
+@log("获取文章统计信息")
 async def get_article_statistics(
     request: Request,
     db: DbSession,
@@ -121,7 +121,7 @@ async def get_article_statistics(
     response_model=ApiResponse[ListResponse[CategoryArticleCountResponse]],
     responses=SwaggerConfig.REMOTE_FAILURE_RESPONSES,
 )
-@log(Messages.API_LOG_DESC_ARTICLE_CATEGORY_COUNT)
+@log("按分类统计文章数量")
 async def get_article_count_by_category(
     request: Request,
     db: DbSession,
@@ -143,7 +143,7 @@ async def get_article_count_by_category(
     response_model=ApiResponse[ListResponse[MonthlyPublishCountResponse]],
     responses=SwaggerConfig.REMOTE_FAILURE_RESPONSES,
 )
-@log(Messages.API_LOG_DESC_MONTHLY_PUBLISH_COUNT)
+@log("获取月度文章发布统计")
 async def get_monthly_publish_count(
     request: Request,
     db: DbSession,

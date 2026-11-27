@@ -265,6 +265,44 @@ def test_streaming_response_is_tracked_until_stream_finishes(
     assert message["apiPath"] == "/ai/stream"
 
 
+# skip_mq 为 True 时只保留本地日志，不写入日志队列
+def test_skip_mq_keeps_local_log_without_queue_send(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    queue_send = _patch_dependencies(monkeypatch)
+
+    @log("内部接口", skip_mq=True)
+    async def internal_api(request: Request) -> str:
+        return "ok"
+
+    assert asyncio.run(internal_api(request=_make_request())) == "ok"
+    queue_send.assert_not_awaited()
+
+
+# 流式响应在 skip_mq 下同样只保留本地日志
+def test_skip_mq_streaming_keeps_local_log_without_queue_send(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    queue_send = _patch_dependencies(monkeypatch)
+    request = _make_request(method="GET", path="/task/stream")
+
+    async def chunks() -> AsyncGenerator[bytes, None]:
+        yield b"first"
+
+    @logWithConfig("内部流式接口", skip_mq=True)
+    async def stream(request: Request) -> StreamingResponse:
+        return StreamingResponse(chunks(), media_type="text/plain")
+
+    response = asyncio.run(stream(request=request))
+    body_iterator = cast(AsyncIterator[bytes], response.body_iterator)
+
+    async def consume() -> list[bytes]:
+        return [chunk async for chunk in body_iterator]
+
+    assert asyncio.run(consume()) == [b"first"]
+    queue_send.assert_not_awaited()
+
+
 # 依赖注入参数被排除仅序列化请求体字段
 def test_dependency_injections_are_excluded_from_queue_body() -> None:
     class _ArticleService:

@@ -30,7 +30,7 @@ public class TaskController {
     @PostMapping("/clean")
     @Operation(summary = "手动执行清理过期Token", description = "手动触发清理过期Token任务")
     @RequireInternalToken
-    @ApiLog("手动执行清理过期Token任务")
+    @ApiLog(value = "手动执行清理过期Token任务", skipMq = true)
     public Mono<Result<Void>> executeTokenCleanup() {
         return taskService.triggerTokenCleanup().thenReturn(Result.success());
     }

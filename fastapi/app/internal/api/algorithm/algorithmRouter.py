@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, success
-from app.core.constants import Messages, SwaggerConfig
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireInternalToken
 from app.dependencies import AlgorithmServiceDep
 from app.internal.schemas import (
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/algorithm", tags=["算法模块"])
     response_model=ApiResponse[SearchWeightsResponse],
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
-@log(Messages.API_LOG_DESC_SEARCH_WEIGHTS)
+@log("获取搜索权重", skip_mq=True)
 @requireInternalToken
 async def get_search_weights(
     request: Request,
@@ -40,7 +40,7 @@ async def get_search_weights(
     response_model=ApiResponse[SearchScriptResponse],
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
-@log(Messages.API_LOG_DESC_SEARCH_SCRIPT)
+@log("获取ES搜索脚本", skip_mq=True)
 @requireInternalToken
 async def get_search_script(
     request: Request,
@@ -60,7 +60,7 @@ async def get_search_script(
     response_model=ApiResponse[ScriptParamsResponse],
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
-@log(Messages.API_LOG_DESC_SEARCH_SCRIPT_PARAMS)
+@log("获取脚本参数名映射", skip_mq=True)
 @requireInternalToken
 async def get_search_script_params(
     request: Request,

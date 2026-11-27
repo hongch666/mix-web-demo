@@ -116,6 +116,11 @@ export class ApiLogInterceptor implements NestInterceptor {
           )(timeMessage);
         }
 
+        // 装饰器声明 skipMq 时只保留本地日志，不向消息队列投递
+        if (logConfig.skipMq) {
+          return;
+        }
+
         // 向消息队列发送 API 日志
         this.sendApiLogToQueue(
           request,

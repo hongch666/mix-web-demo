@@ -29,12 +29,14 @@ class ApiLogConfig:
         include_params: bool = True,
         log_level: str = "info",
         exclude_fields: Optional[list[str]] = None,
+        skip_mq: bool = False,
     ) -> None:
-        """初始化 API 日志配置：日志消息、是否记录业务参数、日志级别与排除字段列表"""
+        """初始化 API 日志配置：日志消息、是否记录业务参数、日志级别、排除字段列表与是否跳过 MQ 投递"""
         self.message: str = message
         self.include_params: bool = include_params
         self.log_level: str = log_level
         self.exclude_fields: list[str] = exclude_fields or []
+        self.skip_mq: bool = skip_mq
 
 
 def apiLog(
@@ -162,19 +164,20 @@ def apiLog(
                             )
                             logger_method(time_message)
 
-                            # 发送 API 日志到 RabbitMQ（使用捕获的上下文）
-                            await _send_api_log_to_queue_async(
-                                user_id,
-                                username,
-                                method,
-                                path,
-                                captured_log_config.message,
-                                request,
-                                duration_ms,
-                                captured_log_config,
-                                captured_func,
-                                captured_kwargs,
-                            )
+                            # 发送 API 日志到 RabbitMQ（使用捕获的上下文），声明 skip_mq 时只保留本地日志
+                            if not captured_log_config.skip_mq:
+                                await _send_api_log_to_queue_async(
+                                    user_id,
+                                    username,
+                                    method,
+                                    path,
+                                    captured_log_config.message,
+                                    request,
+                                    duration_ms,
+                                    captured_log_config,
+                                    captured_func,
+                                    captured_kwargs,
+                                )
 
                     result.body_iterator = tracked_generator()
                     return cast(R, result)
@@ -186,19 +189,20 @@ def apiLog(
                     )
                     logger_method(time_message)
 
-                    # 发送 API 日志到 RabbitMQ
-                    await _send_api_log_to_queue_async(
-                        user_id,
-                        username,
-                        method,
-                        path,
-                        log_config.message,
-                        request,
-                        duration_ms,
-                        log_config,
-                        func,
-                        kwargs,
-                    )
+                    # 发送 API 日志到 RabbitMQ，声明 skip_mq 时只保留本地日志
+                    if not log_config.skip_mq:
+                        await _send_api_log_to_queue_async(
+                            user_id,
+                            username,
+                            method,
+                            path,
+                            log_config.message,
+                            request,
+                            duration_ms,
+                            log_config,
+                            func,
+                            kwargs,
+                        )
                     return result
             except BusinessException:
                 # 业务异常直接重新抛出，不记录耗时
@@ -635,19 +639,24 @@ async def _send_api_log_to_queue_async(
 
 
 # 简化版装饰器，直接传入消息
-def log(message: str) -> Callable:
+def log(message: str, skip_mq: bool = False) -> Callable:
     """
     简化版日志装饰器
 
     Args:
         message: 日志消息
+        skip_mq: 是否跳过 MQ 投递，只保留本地日志，用于测试接口与内部令牌接口
 
     Example:
         @log("获取前10篇文章")
         async def get_top10_articles():
             pass
+
+        @log("内部接口", skip_mq=True)
+        async def internal_api():
+            pass
     """
-    return apiLog(message)
+    return apiLog(ApiLogConfig(message, skip_mq=skip_mq))
 
 
 # 高级配置装饰器
@@ -656,6 +665,7 @@ def logWithConfig(
     include_params: bool = True,
     log_level: str = "info",
     exclude_fields: Optional[list[str]] = None,
+    skip_mq: bool = False,
 ) -> Callable:
     """
     带配置的日志装饰器
@@ -665,10 +675,13 @@ def logWithConfig(
         include_params: 是否包含参数
         log_level: 日志级别
         exclude_fields: 排除的字段
+        skip_mq: 是否跳过 MQ 投递，只保留本地日志
 
     Example:
         @logWithConfig("敏感操作", include_params=False, log_level="warn")
         async def sensitive_operation():
             pass
     """
-    return apiLog(ApiLogConfig(message, include_params, log_level, exclude_fields))
+    return apiLog(
+        ApiLogConfig(message, include_params, log_level, exclude_fields, skip_mq)
+    )

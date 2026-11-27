@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Body, Query, Request
 
 from app.core.base import ApiResponse, success
-from app.core.constants import Messages, SwaggerConfig
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireInternalToken
 from app.dependencies import TaskServiceDep
 from app.internal.schemas import Neo4jSyncDTO, VectorSyncDTO, WarehouseSyncDTO
@@ -21,7 +21,7 @@ router: APIRouter = APIRouter(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireInternalToken
-@log(Messages.API_LOG_DESC_TRIGGER_ANALYZE_CACHE)
+@log("手动触发更新分析接口缓存任务", skip_mq=True)
 async def task_update_analyze_caches(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -42,7 +42,7 @@ async def task_update_analyze_caches(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireInternalToken
-@log(Messages.API_LOG_DESC_TRIGGER_VECTOR_SYNC)
+@log("手动触发向量数据库同步任务", skip_mq=True)
 async def task_export_vector(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -71,7 +71,7 @@ async def task_export_vector(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireInternalToken
-@log(Messages.API_LOG_DESC_INIT_ARTICLE_HASH_CACHE)
+@log("初始化文章内容 hash 缓存", skip_mq=True)
 async def task_init_hash_cache(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -92,7 +92,7 @@ async def task_init_hash_cache(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireInternalToken
-@log(Messages.API_LOG_DESC_CLEAR_ANALYZE_CACHES)
+@log("清除分析相关缓存", skip_mq=True)
 async def task_clear_analyze_caches(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -113,7 +113,7 @@ async def task_clear_analyze_caches(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireInternalToken
-@log(Messages.API_LOG_DESC_TRIGGER_NEO4J_SYNC)
+@log("手动触发同步 MySQL 到 Neo4j 知识图谱任务", skip_mq=True)
 async def task_sync_neo4j(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -143,7 +143,7 @@ async def task_sync_neo4j(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireInternalToken
-@log(Messages.API_LOG_DESC_TRIGGER_WAREHOUSE_SYNC)
+@log("手动触发 ClickHouse 数仓同步任务", skip_mq=True)
 async def task_sync_warehouse(
     request: Request,
     background_tasks: BackgroundTasks,

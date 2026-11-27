@@ -210,7 +210,7 @@ public class CommentsController {
     @PostMapping("/batch")
     @Operation(summary = "批量查询评论（内部）", description = "根据ID列表批量查询评论关联关系，供内部服务精确同步 Neo4j 使用")
     @RequireInternalToken
-    @ApiLog("内部批量查询评论")
+    @ApiLog(value = "内部批量查询评论", skipMq = true)
     public Mono<Result<List<CommentSyncVO>>> getCommentsByIds(@Valid @RequestBody BatchIdsDTO dto) {
         return commentsService.getCommentSyncByIds(dto.getIds()).map(Result::success);
     }
@@ -221,7 +221,7 @@ public class CommentsController {
     @GetMapping("/neo4j-sync")
     @Operation(summary = "获取评论表数据用于Neo4j同步（内部）", description = "获取评论表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
-    @ApiLog("内部获取Neo4j同步评论数据")
+    @ApiLog(value = "内部获取Neo4j同步评论数据", skipMq = true)
     public Mono<Result<List<CommentSyncVO>>> getNeo4jSyncComments(
         @RequestParam(required = false) String updatedAfter) {
         return commentsService.getNeo4jSyncComments(updatedAfter).map(Result::success);
@@ -233,7 +233,7 @@ public class CommentsController {
     @PostMapping("/internal/create")
     @Operation(summary = "创建评论（内部）", description = "创建评论，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部创建评论")
+    @ApiLog(value = "内部创建评论", skipMq = true)
     public Mono<Result<Void>> createCommentInternal(@RequestBody Comments comments) {
         return commentsService.save(comments).thenReturn(Result.<Void>success());
     }
@@ -244,7 +244,7 @@ public class CommentsController {
     @GetMapping("/statistics/ai-count/{articleId}")
     @Operation(summary = "获取文章AI评论数（内部）", description = "获取文章的AI评论数，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取文章AI评论数")
+    @ApiLog(value = "内部获取文章AI评论数", skipMq = true)
     public Mono<Result<Long>> getAiCommentsNumByArticleId(@PathVariable Long articleId) {
         return commentsService.getAiCommentsNumByArticleId(articleId).map(Result::success);
     }
@@ -255,7 +255,7 @@ public class CommentsController {
     @PostMapping("/statistics/delete-ai/{articleId}")
     @Operation(summary = "删除文章AI评论（内部）", description = "删除文章的AI评论，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部删除文章AI评论")
+    @ApiLog(value = "内部删除文章AI评论", skipMq = true)
     public Mono<Result<Void>> deleteAiCommentsByArticleId(@PathVariable Long articleId) {
         return commentsService.deleteAiCommentsByArticleId(articleId).then(Mono.just(Result.success()));
     }
@@ -266,7 +266,7 @@ public class CommentsController {
     @GetMapping("/statistics/monthly-trend/{userId}")
     @Operation(summary = "获取用户月度评论趋势（内部）", description = "获取用户本月评论的趋势，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取用户月度评论趋势")
+    @ApiLog(value = "内部获取用户月度评论趋势", skipMq = true)
     public Mono<Result<MapDataVO>> getMonthlyCommentTrend(@PathVariable Long userId) {
         return commentsService.getMonthlyCommentTrend(userId).map(Result::success);
     }

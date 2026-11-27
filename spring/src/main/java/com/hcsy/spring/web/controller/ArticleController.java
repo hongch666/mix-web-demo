@@ -77,7 +77,7 @@ public class ArticleController {
     @GetMapping("/list")
     @Operation(summary = "获取文章列表", description = "返回所有已发布的文章")
     @RequireInternalToken
-    @ApiLog("获取已发布文章列表")
+    @ApiLog(value = "获取已发布文章列表", skipMq = true)
     public Mono<Result<PageVO<Article>>> getPublishedArticles(
         @RequestParam(defaultValue = "1") int page,
         @RequestParam(defaultValue = "10") int size) {
@@ -206,7 +206,7 @@ public class ArticleController {
     @PostMapping("/batch")
     @Operation(summary = "批量查询文章（内部）", description = "根据ID列表批量查询文章，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部批量查询文章")
+    @ApiLog(value = "内部批量查询文章", skipMq = true)
     public Mono<Result<List<ArticleWithCategoryVO>>> getArticleByIds(@Valid @RequestBody BatchIdsDTO dto) {
         return articleService.getArticleDetailsByIds(dto.getIds()).map(Result::success);
     }
@@ -217,7 +217,7 @@ public class ArticleController {
     @GetMapping("/by-title")
     @Operation(summary = "根据标题模糊搜索文章（内部）", description = "根据标题模糊搜索，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部搜索文章")
+    @ApiLog(value = "内部搜索文章", skipMq = true)
     public Mono<Result<List<ArticleWithCategoryVO>>> getArticlesByTitle(@RequestParam String title) {
         return articleService.getArticleDetailsByTitle(title).map(Result::success);
     }
@@ -225,7 +225,7 @@ public class ArticleController {
     @PostMapping("/stats/batch")
     @Operation(summary = "批量查询文章统计数据（内部）", description = "一次返回阅读量、点赞、收藏、粉丝与评论评分，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部批量查询文章统计")
+    @ApiLog(value = "内部批量查询文章统计", skipMq = true)
     public Mono<Result<ArticleStatsBatchVO>> getArticleStatsBatch(
         @Valid @RequestBody ArticleStatsBatchDTO dto) {
         return articleStatsService.getStatsBatch(dto.getIds(), dto.getAuthorIds())
@@ -237,7 +237,7 @@ public class ArticleController {
     @GetMapping("/statistics/total-views")
     @Operation(summary = "获取文章总阅读量（内部）", description = "获取所有文章的总阅读量，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取文章总阅读量")
+    @ApiLog(value = "内部获取文章总阅读量", skipMq = true)
     public Mono<Result<Integer>> getTotalViews() {
         return articleService.getTotalViews().map(Result::success);
     }
@@ -248,7 +248,7 @@ public class ArticleController {
     @GetMapping("/statistics/total")
     @Operation(summary = "获取文章总数（内部）", description = "获取文章总数，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取文章总数")
+    @ApiLog(value = "内部获取文章总数", skipMq = true)
     public Mono<Result<Long>> getTotalArticles() {
         return articleService.getTotalArticles().map(Result::success);
     }
@@ -259,7 +259,7 @@ public class ArticleController {
     @GetMapping("/statistics/active-authors")
     @Operation(summary = "获取活跃作者数（内部）", description = "获取活跃作者数，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取活跃作者数")
+    @ApiLog(value = "内部获取活跃作者数", skipMq = true)
     public Mono<Result<Long>> getActiveAuthors() {
         return articleService.getActiveAuthors().map(Result::success);
     }
@@ -270,7 +270,7 @@ public class ArticleController {
     @GetMapping("/statistics/average-views")
     @Operation(summary = "获取平均阅读量（内部）", description = "获取平均阅读量，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取平均阅读量")
+    @ApiLog(value = "内部获取平均阅读量", skipMq = true)
     public Mono<Result<Double>> getAverageViews() {
         return articleService.getAverageViews().map(Result::success);
     }
@@ -281,7 +281,7 @@ public class ArticleController {
     @GetMapping("/statistics/excel-export")
     @Operation(summary = "获取导出Excel所需文章数据（内部）", description = "获取导出Excel所需文章数据，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取导出Excel数据")
+    @ApiLog(value = "内部获取导出Excel数据", skipMq = true)
     public Mono<Result<List<ArticleExportVO>>> getArticlesForExcelExport() {
         return articleService.getArticlesForExcelExport().map(Result::success);
     }
@@ -292,7 +292,7 @@ public class ArticleController {
     @GetMapping("/statistics/top10")
     @Operation(summary = "获取Top10文章（内部）", description = "获取Top10文章（按阅读量降序），供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取Top10文章")
+    @ApiLog(value = "内部获取Top10文章", skipMq = true)
     public Mono<Result<List<ArticleSyncVO>>> getTop10Articles() {
         return articleService.getTop10Articles().map(Result::success);
     }
@@ -303,7 +303,7 @@ public class ArticleController {
     @GetMapping("/statistics/category-count")
     @Operation(summary = "获取按子分类统计的文章数量（内部）", description = "获取按子分类统计的文章数量，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取分类文章数量统计")
+    @ApiLog(value = "内部获取分类文章数量统计", skipMq = true)
     public Mono<Result<List<CategoryArticleCountVO>>> getCategoryArticleCount() {
         return articleService.getCategoryArticleCount().map(Result::success);
     }
@@ -314,7 +314,7 @@ public class ArticleController {
     @GetMapping("/statistics/monthly-publish-count")
     @Operation(summary = "获取全部月份文章发布数量统计（内部）", description = "获取全部月份文章发布数量统计，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取月度发布数量统计")
+    @ApiLog(value = "内部获取月度发布数量统计", skipMq = true)
     public Mono<Result<List<MonthlyPublishCountVO>>> getMonthlyPublishCount() {
         return articleService.getMonthlyPublishCount().map(Result::success);
     }
@@ -325,7 +325,7 @@ public class ArticleController {
     @GetMapping("/neo4j-sync")
     @Operation(summary = "获取文章表数据用于Neo4j同步（内部）", description = "获取文章表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
-    @ApiLog("内部获取Neo4j同步文章数据")
+    @ApiLog(value = "内部获取Neo4j同步文章数据", skipMq = true)
     public Mono<Result<List<ArticleSyncVO>>> getNeo4jSyncArticles(
         @RequestParam(required = false) String updatedAfter) {
         return articleService.getNeo4jSyncArticles(updatedAfter).map(Result::success);

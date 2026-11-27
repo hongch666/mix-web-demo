@@ -3,6 +3,7 @@ package com.hcsy.spring.web.logging.aspect;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -90,6 +91,22 @@ class ApiLogAspectTest {
         verify(service).sendAsync(any(ApiLogEvent.class));
     }
 
+    // 注解声明 skipMq 时只保留本地日志，不再投递接口日志队列
+    @Test
+    @DisplayName("skipMq 为 true 时不投递接口日志队列")
+    void skipsQueueWhenSkipMqEnabled() throws Throwable {
+        AsyncApiLogService service = mock(AsyncApiLogService.class);
+        ApiLogAspect aspect = new ApiLogAspect(mock(SimpleLogger.class), new ObjectMapper(), service);
+        Method method = Fixture.class.getDeclaredMethod("skipped", Long.class);
+
+        Mono<?> result = (Mono<?>) aspect.logAround(mockJoinPoint(method, Mono.just("ok")),
+            method.getAnnotation(ApiLog.class));
+
+        StepVerifier.create(result.contextWrite(Context.empty()))
+            .expectNextMatches("ok"::equals).verifyComplete();
+        verify(service, never()).sendAsync(any(ApiLogEvent.class));
+    }
+
     private ProceedingJoinPoint mockJoinPoint(Method method, Mono<?> upstream) throws Throwable {
         ProceedingJoinPoint point = mock(ProceedingJoinPoint.class);
         MethodSignature signature = mock(MethodSignature.class);
@@ -112,6 +129,12 @@ class ApiLogAspectTest {
         @GetMapping("list/{id}")
         @ApiLog("读取列表")
         Mono<String> list(Long id) {
+            return Mono.just("ok");
+        }
+
+        @GetMapping("skipped/{id}")
+        @ApiLog(value = "内部读取项目", skipMq = true)
+        Mono<String> skipped(Long id) {
             return Mono.just("ok");
         }
     }

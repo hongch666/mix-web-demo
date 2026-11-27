@@ -24,7 +24,7 @@ export class TestController {
     summary: "测试NestJS服务",
     description: "输出欢迎信息",
   })
-  @ApiLog("测试NestJS服务")
+  @ApiLog({ message: "测试NestJS服务", skipMq: true })
   @ApiResponseModel({ data: SwaggerStringData })
   async getNestjs(): Promise<ApiResponse<string>> {
     return this.testService.getWelcomeMessage();

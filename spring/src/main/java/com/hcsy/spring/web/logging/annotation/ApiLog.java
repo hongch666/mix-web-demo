@@ -44,6 +44,13 @@ public @interface ApiLog {
     String[] excludeFields() default {};
 
     /**
+     * 是否跳过接口日志的 MQ 投递，只保留本地日志，用于测试接口与内部令牌接口
+     *
+     * @return true-不投递 MQ，false-投递 MQ
+     */
+    boolean skipMq() default false;
+
+    /**
      * 日志级别枚举
      */
     enum LogLevel {

@@ -3,14 +3,14 @@ from functools import lru_cache
 from typing import Any, Optional
 
 from langchain_core.tools import StructuredTool
-from pydantic import BaseModel, Field
 
-from app.core.base import JsonObjectArgument, Logger
+from app.core.base import Logger
 from app.core.constants import Messages, Prompts
 from app.internal.agents.permissions.toolScope import (
     enforce_sql_row_scope,
     log_scope_denial,
 )
+from app.internal.agents.tools.toolSchemas import SqlQueryInput, TableSchemaInput
 from app.internal.clients import SpringClient
 
 
@@ -57,35 +57,18 @@ class SpringSqlTool:
     def get_langchain_tools(self) -> list[StructuredTool]:
         """获取 LangChain Tool 对象列表"""
 
-        class GetSpringTableSchemaInput(BaseModel):
-            """获取 Spring 表结构工具的参数模型，table_name 指定要查询的表名"""
-
-            table_name: str = Field(
-                default="",
-                description=Messages.SQL_TOOL_TABLE_SCHEMA_INPUT_DESC,
-            )
-
-        class ExecuteSpringSqlQueryInput(BaseModel):
-            """执行 Spring SQL 查询工具的参数模型，包含 SQL 语句与可选参数字典"""
-
-            query: str = Field(description=Messages.SQL_TOOL_QUERY_INPUT_DESC)
-            params: JsonObjectArgument = Field(
-                default_factory=dict,
-                description=Messages.SQL_TOOL_PARAMS_INPUT_DESC,
-            )
-
         return [
             StructuredTool(
                 name=Messages.SQL_TOOL_SPRING_TABLE_TOOL_NAME,
                 description=Prompts.SPRING_SQL_TABLE_TOOL_DESC,
                 coroutine=self.get_tables,
-                args_schema=GetSpringTableSchemaInput,
+                args_schema=TableSchemaInput,
             ),
             StructuredTool(
                 name=Messages.SQL_TOOL_SPRING_QUERY_TOOL_NAME,
                 description=Prompts.SPRING_SQL_QUERY_TOOL_DESC,
                 coroutine=self.execute_query,
-                args_schema=ExecuteSpringSqlQueryInput,
+                args_schema=SqlQueryInput,
             ),
         ]
 

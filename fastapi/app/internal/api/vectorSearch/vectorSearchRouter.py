@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, success
-from app.core.constants import Messages, SwaggerConfig
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireInternalToken
 from app.dependencies import VectorSearchServiceDep
 from app.internal.schemas import VectorSearchEnhanceReq, VectorSearchEnhanceResp
@@ -22,7 +22,7 @@ router: APIRouter = APIRouter(
         503: {"description": "Embedding 配置缺失或模型初始化失败"},
     },
 )
-@log(Messages.API_LOG_DESC_VECTOR_SEARCH_ENHANCE)
+@log("向量搜索增强", skip_mq=True)
 @requireInternalToken
 async def vector_search_enhance(
     request: Request,

@@ -33,7 +33,7 @@ public class OssReferenceController {
     @GetMapping("/internal/references")
     @Operation(summary = "查询 OSS 在用引用 key", description = "返回数据库中在用的 OSS 对象 key 列表，供清理任务排除")
     @RequireInternalToken
-    @ApiLog("查询 OSS 在用引用 key")
+    @ApiLog(value = "查询 OSS 在用引用 key", skipMq = true)
     public Mono<Result<List<String>>> listOssReferenceUrls() {
         return ossReferenceService.listOssReferenceUrls().map(Result::success);
     }

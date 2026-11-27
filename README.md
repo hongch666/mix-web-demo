@@ -2776,18 +2776,27 @@ git commit --no-verify             # Git 原生跳过方式
 1. Spring 项目使用 `@ApiLog` 注解 + `ApiLogAspect` 进行请求日志记录，并将日志发送到 RabbitMQ
 
 - 机制: AOP 环绕切面获取请求方法/路径/参数，记录耗时并组装日志消息，最终写入日志并投递队列
+- 可选参数: `includeParams`（是否记录参数）、`level`（日志级别）、`excludeFields`（脱敏字段）、`skipMq`（为 `true` 时只保留本地日志、不投递 MQ）
 
 2. GoZero 项目使用 `apiLogMiddleware` 中间件记录请求参数、路径、耗时，并发送 API 日志到 RabbitMQ，在 `handler`中使用 `ApplyApiLog` 函数启用日志记录
 
 - 机制: 中间件读取请求上下文与请求体，计算耗时并发送日志消息到队列
+- 可选能力: 描述后的可变参传入需要脱敏的字段名；`ApplyApiLogSkipMq` 包装的接口只本地记录、不投递 MQ
 
 3. NestJS 项目使用 `@ApiLog` 装饰器 + `ApiLogInterceptor` 记录日志并发送到消息队列
 
 - 机制: 通过 Reflector 读取装饰器元数据，拦截请求提取参数与耗时，调用 MQ 服务发送日志
+- 可选参数: `includeParams`、`logLevel`、`excludeFields`、`skipMq`
 
 4. FastAPI 项目使用 `@log` 装饰器（支持 `ApiLogConfig`）记录请求日志，耗时统计并发送到 RabbitMQ
 
 - 机制: 装饰器从 `Request` 提取方法/路径/参数，统计耗时，必要时包装流式响应并投递日志
+- 可选参数: `@log` 支持 `skip_mq`，`logWithConfig` / `ApiLogConfig` 支持 `include_params`、`log_level`、`exclude_fields`、`skip_mq`
+
+四个服务的共同约定:
+
+- 接口描述（`@ApiLog` / `ApplyApiLog` / `@log` 的参数、`Field(description=...)`）直接写中文字面量，不抽常量
+- `/test` 前缀的测试接口与内部令牌保护的接口一律 skipMq / skip_mq / `ApplyApiLogSkipMq`，只本地记录，避免探活与服务间调用淹没接口日志
 
 #### 权限校验注解/中间件
 

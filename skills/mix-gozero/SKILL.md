@@ -22,7 +22,7 @@ description: mix-web-demo 的 go-zero API-First 服务专项编码规范，覆�
    - 校验失败时不要手工改生成文件，改用 `./mix goctl-api` / `./mix goctl-orm` 重新生成；goctl 或 go 未安装时该步骤跳过并提示
    - goctl 生成路由分组的顺序存在小概率抖动，脚本会在比对不一致时重新生成最多 3 次再判定，避免把工具抖动误判为人工改动
 7. 仍需人工确认的事项：
-   - 已存在的 handler / logic 会被跳过（`exists, ignored generation`），**模板改动不会回灌到已有文件**：`template/api/handler.tpl` 的 `ApplyApiLog` 描述参数如今是 `constants.API_LOG_PENDING_DESCRIPTION` 占位（存量 handler 都换成了具体的 `constants.API_LOG_*`），所以「重新生成」只对**缺失**文件安全，改了 `handler.tpl` 必须手工同步存量 handler
+   - 已存在的 handler / logic 会被跳过（`exists, ignored generation`），**模板改动不会回灌到已有文件**：`template/api/handler.tpl` 与 `sse_handler.tpl` 的 `ApplyApiLog` 描述参数是字面量占位 `"待补充接口描述"`（存量 handler 都写成了具体的接口描述字面量），所以「重新生成」只对**缺失**文件安全，改了模板必须手工同步存量 handler
    - `goctl model mysql ddl` 会**覆盖**已存在的 `<table>.go` 自定义文件，手工写在其中的业务方法会丢失（如 `app/model/chatMessages/chatMessagesModel.go` 的 6 个业务方法），执行 `genOrm.sh -s` 前先备份
    - 生成后跑 `cd gozero/app && GOTOOLCHAIN=local go build ./... && go vet ./... && go test ./... -count=1` 确认模板不变量未被破坏
 
@@ -62,7 +62,8 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - context：一切可能阻塞的函数第一个参数接收 `context.Context`，嵌套调用透传同一 ctx；logic 用 `l.ctx`
 - 中间件：`.api` 文件 `@server middleware:` 声明 + `routes.go` 的 `rest.WithMiddlewares`；内部服务接口必须挂 `InternalServiceMiddleware`（校验 `X-Internal-Token`）
 - 远程调用：统一走 `common/client` 的 `ServiceDiscovery.CallService(ctx, serviceName, path, RequestOptions)`，按目标服务在 `internal/client/` 封装 Client 结构体，logic 里禁止直接发 HTTP。发送层是 go-zero 的 `rest/httpc`，服务发现/负载均衡/重试/响应解析仍由自己实现，详见本技能「远程调用（httpc）」小节
-- 常量：消息进 `app/common/constants/messages.go`，动态部分 `fmt.Sprintf(constants.XXX+": %v", err)` 拼接
+- 常量：消息进 `app/common/constants/messages.go`，动态部分 `fmt.Sprintf(constants.XXX+": %v", err)` 拼接；**例外是 `ApplyApiLog` / `ApplyApiLogSkipMq` 的接口描述参数**，它属于「只在声明处使用一次」的标注文本，直接写中文字面量，不新增 `API_LOG_*` 描述常量
+- 接口日志中间件：普通接口用 `middleware.ApplyApiLog(rabbitPublisher, logger, handler, "操作描述")`（描述后可按需追加脱敏字段名），测试接口（`/test` 前缀）与挂在 `InternalServiceMiddleware` 路由组上的内部令牌接口用 `middleware.ApplyApiLogSkipMq(...)`，后者只本地打印日志与耗时、不投递 `api-log-queue`；SSE/WebSocket 连接类接口历史上用 `ApplyApiLog` + 各自的连接描述，不要在 hub 内部另行投递
 - **顶层 type 与 func（含方法）必须带单行中文前置注释**（风格参考 `internal/hub/chatHub.go` 的 `// WebSocket客户端` 与 `// ConfigureReadMarker 在服务装配阶段注入消息已读操作`）：函数/方法以函数名开头（如 `// NewChatHub 创建聊天 Hub 并初始化空队列`），类型/接口直接描述职责；单行书写、结尾不加中文句号；`type (...)` 分组块内的成员同样要求；goctl 生成文件（`types.go`、`routes.go`、`*_gen.go`）不加注释，`_test.go` 不要求。新增声明遗漏注释视同未完成
 - 构建校验：`cd gozero/app && GOTOOLCHAIN=local go build ./... && go vet ./... && go test ./... -count=1` 必须通过；**必须带 `GOTOOLCHAIN=local`**（对齐 Docker 的构建约束，避免 toolchain 自动升级掩盖版本漂移）；检查未使用导包与变量；产物命名与入口一致；格式与静态检查统一走 `./mix lint gozero`，不要用裸 `gofmt -l`（对行尾差异会报大量假阳性），也不要直接 `gofmt -w` 做全量重排
 

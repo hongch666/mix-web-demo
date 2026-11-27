@@ -32,5 +32,5 @@ func SqlToolsQueryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		utils.Success(w, resp)
 	}
-	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_SQL_TOOLS_EXECUTE_QUERY)
+	return middleware.ApplyApiLogSkipMq(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "执行SQL工具只读查询")
 }

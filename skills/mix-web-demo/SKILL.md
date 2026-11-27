@@ -105,10 +105,10 @@ description: mix-web-demo 多语言微服务仓库的编码规范总入口，含
      - 注释内容说明该常量的用途、取值来源或与其它服务的对齐关系（如「需与 GoZero 侧 `SEARCH_GRAPH_CANDIDATE_LIMIT` 保持一致」），不复述常量名与字面值；结尾不加中文句号（见通用规则 13）
      - 该约定由 `./mix lint` 里的 `scripts/quality/constants.py` 检查：缺少成员注释、成员未归入任何分类都会报错并打印文件与行号
    - 注解 / 装饰器的字符串参数**不抽常量**，直接写字面量：这类字符串只在声明处使用一次，抽到常量类后需跳转查看，反而降低可读性
-     - Spring：`@Operation(summary, description)`、`@Tag`
-     - NestJS：`@ApiOperation({ summary, description })`、`@ApiTags`
-     - FastAPI：`@router.get/post(..., summary=, description=)`
-     - GoZero 无注解机制，不适用本条
+     - Spring：`@Operation(summary, description)`、`@Tag`、`@ApiLog("操作描述")`
+     - NestJS：`@ApiOperation({ summary, description })`、`@ApiTags`、`@ApiLog("操作描述")`
+     - FastAPI：`@router.get/post(..., summary=, description=)`、`@log("操作描述")`、`logWithConfig("操作描述")`、Pydantic `Field(description="...")`（含 Agent 工具参数模型与结构化输出模型），动态部分用 f-string / 字符串拼接把字面量与变量组合（如 `f"聚合结果返回条数上限，最大 {Defaults.MONGODB_AGGREGATE_MAX_DOCS}，服务端会强制收敛"`）
+     - GoZero：`ApplyApiLog(rabbitPublisher, logger, handler, "操作描述")` 与 `ApplyApiLogSkipMq` 的描述参数同样直接写字面量，**不再新增 `API_LOG_*` 描述常量**；handler 模板生成时留下 `"待补充接口描述"` 占位，必须替换为具体文案
 7. 相互独立的 IO 调用（RPC/HTTP/DB/Redis/ES/MQ）必须并行化，禁止串行等待；各服务并行原语见对应章节
 8. 日志遵循各服务现有封装（见各服务章节），禁止绕过封装直接 print/console/logx 散用
 9. 远程调用统一走各服务封装的客户端，自动透传用户上下文头：`X-User-Id`、`X-Username`、`X-Session-Id`、`Authorization`、`X-Internal-Token`；无登录用户时内部令牌 `userId=-1` 表示系统调用。禁止在新代码里裸用 httpx/axios/WebClient/http.Client 直连其他服务。各服务的唯一入口与底层 HTTP 客户端：
@@ -138,6 +138,8 @@ description: mix-web-demo 多语言微服务仓库的编码规范总入口，含
   - 交付前自查：`grep -rnE '(//|#|\*).*。\s*(\*/)?\s*$|。"""' spring gozero nestjs fastapi --include='*.java' --include='*.go' --include='*.ts' --include='*.py' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=target --exclude-dir=__pycache__`，命中行末句号删除后重跑 `./mix format <service>`
 
 14. **日志采集必须排除敏感字段**：请求体进入日志后会被投递到 `api-log-queue`，最终落在 MongoDB `apilogs` 与 ClickHouse `ods_api_log`，因此凡是携带密码、验证码、令牌、授权码的接口都要显式排除。各服务能力：Spring `@ApiLog(excludeFields = {...})`、NestJS `@ApiLog({ excludeFields: [...] })`、FastAPI `@logWithConfig(exclude_fields = [...])`（`@log` 不支持）；GoZero 通过可变参传入——`ApplyApiLog(rabbitPublisher, logger, handler, "操作描述", "password", "captcha")`，中间件内部用 `sanitizeBody` / `sanitizeQueryParams` 递归把命中字段（字段名大小写不敏感）替换为 `******`
+    - **测试接口与内部令牌接口不投递 MQ**：`/test` 前缀的测试接口，以及用内部令牌保护的接口（Spring `@RequireInternalToken`、NestJS `@RequireInternalToken()`、FastAPI `@requireInternalToken`、GoZero 挂在 `InternalServiceMiddleware` 路由组上的 handler），一律只保留本地日志与耗时记录，不写入 `api-log-queue`，避免运维探活与服务间调用淹没接口日志
+    - 开关写法：Spring `@ApiLog(value = "操作描述", skipMq = true)`、NestJS `@ApiLog({ message: "操作描述", skipMq: true })`、FastAPI `@log("操作描述", skip_mq=True)` 或 `logWithConfig(..., skip_mq=True)`、GoZero `ApplyApiLogSkipMq(rabbitPublisher, logger, handler, "操作描述")`；默认值均为「投递 MQ」，新增普通接口不需要显式声明
 15. **新增接口必须带参数校验**，任何接收请求参数的接口都要声明校验规则，不得只靠业务层兜底。各服务写法见对应章节；**GoZero 的校验标签写在 `.api` 文件里**（随 goctl 生成进 `types.go`），漏写标签等于该参数没有校验，不会报错也不会告警
 16. **新增、修改或删除对外接口后，必须重新生成静态 OpenAPI 文档并同步 Apifox**：先 `./mix swag <service>`，产物（`openapi.json` + `openapi.yaml`）与服务代码同一次提交；再 `./mix apifox <service>` 同步到 Apifox 并把更新后的 `.apifox/<service>.schemas.sha256` 一并提交，未配置令牌时跳过并说明。交付前用 `./mix swag-check <service>` 自校验产物与 Apifox 基线是否同步，CI 的 `docs-consistency` job 会拦截未同步的提交（`apifox-sync.yml` 在 prod 的同步只作兜底）。完整流程见 `mix-workflow` 的接口文档收尾流程
 17. **业务配置统一经 YAML 导入环境变量**：服务配置值在对应 `application.yaml` 中声明 `${ENV_NAME:default}`，业务代码通过项目配置加载器或框架配置服务读取；禁止在业务模块直接调用 `os.getenv`、`process.env`、`System.getenv`、`os.LookupEnv` 等绕过 YAML。环境变量直接读取仅保留在配置加载器/启动引导，以及第三方库必须从标准进程环境读取且 YAML 无法替代的场景（如 HTTP 代理变量），新增例外需说明原因。可选变量当前不启用时，在 `.env`、`.env.example`、`.env.docker` 中注释变量行，并注明未配置时的默认行为；不要用空值赋值伪装成已配置

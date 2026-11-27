@@ -41,7 +41,7 @@ public class SqlToolsController {
     @GetMapping("/tables")
     @Operation(summary = "获取表结构信息（内部）", description = "获取白名单内MySQL表的结构信息，供FastAPI Agent远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取表结构信息")
+    @ApiLog(value = "内部获取表结构信息", skipMq = true)
     public Mono<Result<List<SqlTableSchemaVO>>> getTables(
         @RequestParam(required = false) String table) {
         return sqlToolsService.getTables(table).map(Result::success);
@@ -53,7 +53,7 @@ public class SqlToolsController {
     @PostMapping("/query")
     @Operation(summary = "执行只读SQL查询（内部）", description = "执行受限的只读参数化SQL查询，供FastAPI Agent远程调用")
     @RequireInternalToken
-    @ApiLog("内部执行SQL查询")
+    @ApiLog(value = "内部执行SQL查询", skipMq = true)
     public Mono<Result<SqlQueryResultVO>> executeQuery(
         @Valid @RequestBody SqlQueryDTO dto) {
         return sqlToolsService.executeQuery(dto.getQuery(), dto.getParams())

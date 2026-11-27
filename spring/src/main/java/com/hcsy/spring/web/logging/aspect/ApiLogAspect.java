@@ -110,11 +110,15 @@ public class ApiLogAspect {
 
     /**
      * 记录耗时并异步投递接口日志，投递失败不影响主流程
+     * 注解声明 skipMq 时只保留本地日志，不向接口日志队列投递
      */
     private void report(ContextView ctx, ProceedingJoinPoint pjp, ApiLog apiLog, String httpMethod,
         String requestPath, long start) {
         long duration = System.currentTimeMillis() - start;
         logger.info(String.format(Messages.API_LOG_DURATION, httpMethod, requestPath, duration));
+        if (apiLog.skipMq()) {
+            return;
+        }
         sendApiLogToQueue(ctx, pjp, apiLog, httpMethod, requestPath, duration).subscribe();
     }
 

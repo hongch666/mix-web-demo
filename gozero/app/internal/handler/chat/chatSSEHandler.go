@@ -36,5 +36,5 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		// 委托给 SSEHub 处理连接的完整生命周期
 		svcCtx.SSEHub.HandleConnection(w, r, userID)
-	}, constants.API_LOG_SSE_CONNECTION)
+	}, "SSE连接")
 }

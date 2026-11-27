@@ -48,5 +48,5 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		l.Info(constants.WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE)
 
 		svcCtx.ChatHub.HandleWebSocketConnection(r.Context(), conn, userID)
-	}, constants.API_LOG_WEBSOCKET_CONNECTION)
+	}, "WebSocket连接")
 }

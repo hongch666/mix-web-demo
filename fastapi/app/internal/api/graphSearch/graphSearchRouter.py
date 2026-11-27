@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 
 from app.core.base import ApiResponse, success
-from app.core.constants import Messages, SwaggerConfig
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireInternalToken
 from app.dependencies import GraphSearchServiceDep
 from app.internal.schemas import GraphSearchEnhanceReq, GraphSearchEnhanceResp
@@ -19,7 +19,7 @@ router: APIRouter = APIRouter(
     response_model=ApiResponse[GraphSearchEnhanceResp],
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
-@log(Messages.API_LOG_DESC_GRAPH_SEARCH_ENHANCE)
+@log("知识图谱搜索增强", skip_mq=True)
 @requireInternalToken
 async def graph_search_enhance(
     request: Request,

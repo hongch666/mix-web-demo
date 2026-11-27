@@ -256,7 +256,7 @@ public class UserController {
     @PostMapping("/github/token-ticket")
     @Operation(summary = "生成 GitHub 登录票据", description = "在 GitHub 回调成功后生成本站登录票据")
     @RequireInternalToken
-    @ApiLog("生成 GitHub 登录票据")
+    @ApiLog(value = "生成 GitHub 登录票据", skipMq = true)
     public Mono<Result<GithubTokenTicketVO>> createGithubTokenTicket(
         @Valid @RequestBody GithubTokenTicketCreateDTO dto) {
         return userService.createGithubTokenTicket(dto).map(Result::success);
@@ -428,7 +428,7 @@ public class UserController {
     @PostMapping("/batch")
     @Operation(summary = "批量查询用户（内部）", description = "根据ID列表批量查询用户，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部批量查询用户")
+    @ApiLog(value = "内部批量查询用户", skipMq = true)
     public Mono<Result<List<UserVO>>> getUserByIds(@Valid @RequestBody BatchIdsDTO dto) {
         return userService.listByIds(dto.getIds())
             .collectList()
@@ -444,7 +444,7 @@ public class UserController {
     @GetMapping("/by-name")
     @Operation(summary = "根据用户名模糊搜索用户（内部）", description = "根据用户名或GitHub登录名模糊搜索，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部搜索用户")
+    @ApiLog(value = "内部搜索用户", skipMq = true)
     public Mono<Result<List<UserVO>>> getUsersByName(@RequestParam String name) {
         return userService.listAllUserByUsername(name)
             .collectList()
@@ -461,7 +461,7 @@ public class UserController {
     @Operation(summary = "创建或更新GitHub用户（内部）", description = "GitHub OAuth登录后创建或更新用户，供内部服务远程调用")
     @RequireInternalToken
     @DataSync(resource = SyncResource.USER, changeType = SyncChangeType.INSERT, description = "创建或更新GitHub用户后同步图谱与数仓")
-    @ApiLog("内部创建或更新GitHub用户")
+    @ApiLog(value = "内部创建或更新GitHub用户", skipMq = true)
     public Mono<Result<UserVO>> findOrCreateGithubUser(@Valid @RequestBody GithubUserInternalDTO dto) {
         return userService.findOrCreateGithubUser(dto)
             .map(user -> {
@@ -476,7 +476,7 @@ public class UserController {
     @GetMapping("/is-admin/{id}")
     @Operation(summary = "判断用户是否为管理员（内部）", description = "根据用户ID判断是否为管理员，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部判断管理员")
+    @ApiLog(value = "内部判断管理员", skipMq = true)
     public Mono<Result<Boolean>> isAdminUser(@PathVariable Long id) {
         return userService.isAdminUser(id)
             .map(Result::success);
@@ -488,7 +488,7 @@ public class UserController {
     @GetMapping("/neo4j-sync")
     @Operation(summary = "获取用户表数据用于Neo4j同步（内部）", description = "获取用户表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
-    @ApiLog("内部获取Neo4j同步用户数据")
+    @ApiLog(value = "内部获取Neo4j同步用户数据", skipMq = true)
     public Mono<Result<List<UserSyncVO>>> getNeo4jSyncUsers(
         @RequestParam(required = false) String updatedAfter) {
         return userService.getNeo4jSyncUsers(updatedAfter).map(Result::success);

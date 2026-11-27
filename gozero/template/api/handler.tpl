@@ -5,8 +5,8 @@ package {{.PkgName}}
 import (
 	"net/http"
 
-	"app/common/constants"
-	"app/common/utils"
+	{{if .HasRequest}}"app/common/constants"
+	{{end}}"app/common/utils"
 	"app/internal/middleware"
 	{{if .HasRequest}}"app/internal/types"{{end}}
 	{{.ImportPackages}}
@@ -31,6 +31,7 @@ func {{.HandlerName}}(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		{{if .HasResp}}utils.Success(w, resp){{else}}utils.Success(w, nil){{end}}
 	}
-	// TODO: 若接口涉及敏感字段，请在下面数组添加字段名（如 "password", "captcha", "token"）
-	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_PENDING_DESCRIPTION)
+	// TODO: 把下面的接口描述替换为具体文案，测试接口与内部令牌接口改用 middleware.ApplyApiLogSkipMq
+	// TODO: 若接口涉及敏感字段，请在末尾追加字段名（如 "password", "captcha", "token"）
+	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "待补充接口描述")
 }

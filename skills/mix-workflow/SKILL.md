@@ -142,13 +142,14 @@ description: mix-web-demo 跨服务协作与交付流程专项规范，覆盖内
 
 ### 接口描述写在代码声明处
 
-产物内容由代码里的注解 / 装饰器决定，新增接口时同步补上，否则文档里只有路径没有说明（注解字符串一律写字面量，按通用规则 5 不抽常量）：
+产物内容由代码里的注解 / 装饰器决定，新增接口时同步补上，否则文档里只有路径没有说明（注解字符串一律写字面量，按通用规则 6 不抽常量）：
 
 - 响应结构也必须在代码声明中保持可发现：NestJS 控制器为统一响应补充 `ApiResponseModel` 或重定向响应装饰器，FastAPI 路由为统一响应补充 `ApiResponse[T]` 泛型参数。修改后重新生成对应服务的 `docs/openapi.json` 与 `docs/openapi.yaml`，检查响应的 `data` schema 与实际返回值一致。
 - Spring：`@Operation(summary, description)`、`@Tag`
 - NestJS：`@ApiOperation({ summary, description })`、`@ApiTags`
-- FastAPI：`@router.get/post(..., summary=, description=)`
-- GoZero：`.api` 中的 `@doc(summary, description)`；handler 的 `ApplyApiLog` 描述不能留 `constants.API_LOG_PENDING_DESCRIPTION` 占位，必须换成 `app/common/constants/messages.go` 里具体的 `API_LOG_*` 文案
+- FastAPI：`@router.get/post(..., summary=, description=)`、`@log("操作描述")`、`Field(description="...")`
+- GoZero：`.api` 中的 `@doc(summary, description)`；handler 的 `ApplyApiLog` 描述不能留模板占位 `"待补充接口描述"`，必须换成具体的接口描述字面量（不再新增 `API_LOG_*` 描述常量）
+- 接口日志的 MQ 投递开关与文档无关，但新增接口时要一并判断：测试接口与内部令牌接口用 `skipMq` / `skip_mq` / `ApplyApiLogSkipMq` 只本地记录（写法见 `mix-web-demo` 通用规则 14）
 
 ## 验证命令
 

@@ -70,11 +70,3 @@ class IntentConstants:
         ),
     )
     """意图关键词表，按优先级排列，键为意图类型，文本降级链路用它把模型输出映射为意图并补充多领域信号"""
-
-    STRUCTURED_TYPES_DESCRIPTION: str = (
-        "识别出的用户意图类型列表，可同时包含多个领域，"
-        "只有纯闲聊且不需要调用任何工具（含 mcp_ 前缀的外部扩展工具）时才给出 general_chat"
-    )
-    """结构化输出中意图类型列表字段的说明文案"""
-    STRUCTURED_CONFIDENCE_DESCRIPTION: str = "意图识别的置信度"
-    """结构化输出中置信度字段的说明文案"""

@@ -355,10 +355,6 @@ const (
 	API_LOG_REQUEST_BODY_PREFIX = "请求体: "
 	// 日志内容被截断时追加的后缀
 	LOG_TRUNCATED_SUFFIX = "...[截断]"
-	// WebSocket 连接场景的日志描述
-	API_LOG_WEBSOCKET_CONNECTION = "WebSocket连接"
-	// SSE 连接场景的日志描述
-	API_LOG_SSE_CONNECTION = "SSE连接"
 
 	// ===== ES同步 =====
 
@@ -487,35 +483,6 @@ const (
 	// Redis 实时消息格式无效的错误消息
 	REDIS_REALTIME_INVALID_MESSAGE_FORMAT_ERROR = "处理 Redis 实时消息失败: 消息格式无效"
 	// 批量标记消息已读失败的日志消息
-
-	// API日志操作描述（ApplyApiLog 的接口描述参数）
-	// 测试 GoZero 服务接口的日志描述
-	API_LOG_TEST_GOZERO_SERVICE = "测试GoZero服务"
-	// 手动同步 ES 任务的日志描述
-	API_LOG_MANUAL_SYNC_ES_TASK = "手动触发同步ES任务"
-	// 获取搜索历史接口的日志描述
-	API_LOG_GET_SEARCH_HISTORY = "获取搜索历史"
-	// 搜索文章接口的日志描述
-	API_LOG_SEARCH_ARTICLES = "搜索文章"
-	// 获取未读消息数接口的日志描述
-	API_LOG_GET_UNREAD_MESSAGE_COUNT = "获取未读消息数"
-	// 获取全部未读消息数接口的日志描述
-	API_LOG_GET_ALL_UNREAD_COUNTS = "获取所有未读消息数"
-	// 获取队列状态接口的日志描述
-	API_LOG_GET_QUEUE_STATUS = "获取队列状态"
-	// 离开队列接口的日志描述
-	API_LOG_LEAVE_QUEUE = "离开队列"
-	// 获取聊天历史接口的日志描述
-	API_LOG_GET_CHAT_HISTORY = "获取聊天历史"
-	// 发送消息接口的日志描述
-	API_LOG_SEND_MESSAGE = "发送消息"
-	// 加入队列接口的日志描述
-	API_LOG_JOIN_QUEUE = "加入队列"
-	// 获取 SQL 工具表结构接口的日志描述
-	API_LOG_SQL_TOOLS_GET_TABLES = "获取SQL工具表结构信息"
-	// 执行 SQL 工具只读查询接口的日志描述
-	API_LOG_SQL_TOOLS_EXECUTE_QUERY = "执行SQL工具只读查询"
-	// API_LOG_PENDING_DESCRIPTION 是 handler.tpl 的占位描述，生成后必须替换为具体文案
 
 	// Swagger
 	// 获取 Swagger 页面失败的日志消息

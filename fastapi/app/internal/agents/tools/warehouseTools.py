@@ -4,13 +4,15 @@ from functools import lru_cache
 from typing import Any, Optional
 
 from langchain_core.tools import StructuredTool
-from pydantic import BaseModel, Field
 
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts, WarehouseScripts
 from app.core.db import execute_clickhouse_query
-
-WarehouseDataset = str
+from app.internal.agents.tools.toolSchemas import (
+    EmptyInput,
+    WarehouseDataset,
+    build_warehouse_query_input,
+)
 
 
 class ClickHouseWarehouseTools:
@@ -84,37 +86,6 @@ class ClickHouseWarehouseTools:
     def get_langchain_tools(self) -> list[StructuredTool]:
         """获取 LangChain 数仓工具对象列表"""
 
-        class EmptyInput(BaseModel):
-            """列出数仓数据集工具的无参数输入模型"""
-
-            pass
-
-        class WarehouseQueryInput(BaseModel):
-            """数仓查询工具的参数模型，包含数据集名、用户 ID、日期区间与返回条数"""
-
-            dataset: WarehouseDataset = Field(
-                description=(
-                    Messages.WAREHOUSE_DATASET_INPUT_DESC
-                    + "；可选值: "
-                    + ", ".join(WarehouseScripts.WAREHOUSE_AGENT_DATASETS)
-                )
-            )
-            user_id: Optional[int] = Field(
-                default=None, description=Messages.WAREHOUSE_USER_ID_INPUT_DESC
-            )
-            start_date: Optional[str] = Field(
-                default=None, description=Messages.WAREHOUSE_DATE_INPUT_DESC
-            )
-            end_date: Optional[str] = Field(
-                default=None, description=Messages.WAREHOUSE_DATE_INPUT_DESC
-            )
-            limit: int = Field(
-                default=20,
-                ge=1,
-                le=100,
-                description=Messages.WAREHOUSE_LIMIT_INPUT_DESC,
-            )
-
         return [
             StructuredTool(
                 name=Messages.WAREHOUSE_LIST_DATASETS_TOOL_NAME,
@@ -126,7 +97,7 @@ class ClickHouseWarehouseTools:
                 name=Messages.WAREHOUSE_QUERY_TOOL_NAME,
                 description=Prompts.CLICKHOUSE_WAREHOUSE_QUERY_TOOL_DESC,
                 coroutine=self.query_warehouse,
-                args_schema=WarehouseQueryInput,
+                args_schema=build_warehouse_query_input(),
             ),
         ]
 
