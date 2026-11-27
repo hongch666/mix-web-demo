@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"app/common/constants"
-	"app/common/utils"
+	{{if .HasRequest}}"app/common/constants"
+	{{end}}"app/common/utils"
 	"app/internal/middleware"
 	"app/internal/svc"
 	{{if .HasRequest}}"app/internal/types"{{end}}
@@ -75,5 +75,5 @@ func {{.HandlerName}}(svcCtx *svc.ServiceContext) http.HandlerFunc {
 				return
 			}
 		}
-	}, constants.API_LOG_PENDING_DESCRIPTION)
+	}, "待补充接口描述")
 }

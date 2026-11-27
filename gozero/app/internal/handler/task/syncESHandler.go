@@ -32,5 +32,5 @@ func SyncESHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		utils.Success(w, resp)
 	}
-	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_MANUAL_SYNC_ES_TASK)
+	return middleware.ApplyApiLogSkipMq(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "手动触发同步ES任务")
 }

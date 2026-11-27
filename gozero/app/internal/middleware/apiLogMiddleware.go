@@ -21,15 +21,17 @@ import (
 type ApiLogMiddleware struct {
 	description     string
 	excludeFields   []string
+	skipMq          bool
 	rabbitPublisher *mq.Publisher
 	*utils.ZeroLogger
 }
 
-// NewApiLogMiddleware 创建 API 日志中间件，可指定接口描述与敏感字段排除列表
-func NewApiLogMiddleware(description string, rabbitPublisher *mq.Publisher, log *utils.ZeroLogger, excludeFields ...string) *ApiLogMiddleware {
+// NewApiLogMiddleware 创建 API 日志中间件，skipMq 为 true 时只本地记录日志、不投递 MQ，excludeFields 声明需要脱敏的字段
+func NewApiLogMiddleware(description string, rabbitPublisher *mq.Publisher, log *utils.ZeroLogger, skipMq bool, excludeFields ...string) *ApiLogMiddleware {
 	return &ApiLogMiddleware{
 		description:     description,
 		excludeFields:   excludeFields,
+		skipMq:          skipMq,
 		rabbitPublisher: rabbitPublisher,
 		ZeroLogger:      log,
 	}
@@ -110,8 +112,8 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 			requestLogger.Info(timeMessage)
 		}
 
-		// 发送 API 日志到队列（异步，不阻塞主流程）
-		if asyncLogger != nil {
+		// 发送 API 日志到队列（异步，不阻塞主流程），skipMq 的测试与内部令牌接口只本地记录
+		if asyncLogger != nil && !m.skipMq {
 			// 队列投递前再次排除敏感字段（防御性，防止中间被篡改）
 			sanitizedRequestBody := sanitizeBody(requestBody, m.excludeFields)
 			sanitizedQueryParams := sanitizeQueryParams(queryParams, m.excludeFields)
@@ -321,12 +323,27 @@ func sanitizeQueryParams(params map[string]any, excludeFields []string) map[stri
 
 // WithApiLog 为 handler 添加 API 日志中间件，WithApiLog 中间件工厂函数
 func WithApiLog(rabbitPublisher *mq.Publisher, log *utils.ZeroLogger, description string, excludeFields ...string) func(http.HandlerFunc) http.HandlerFunc {
+	return withApiLogMq(rabbitPublisher, log, description, false, excludeFields...)
+}
+
+// WithApiLogSkipMq 与 WithApiLog 相同，但只本地记录日志、不投递 MQ，用于测试接口与内部令牌接口
+func WithApiLogSkipMq(rabbitPublisher *mq.Publisher, log *utils.ZeroLogger, description string, excludeFields ...string) func(http.HandlerFunc) http.HandlerFunc {
+	return withApiLogMq(rabbitPublisher, log, description, true, excludeFields...)
+}
+
+// withApiLogMq 按 skipMq 开关构造 API 日志中间件的包装函数
+func withApiLogMq(rabbitPublisher *mq.Publisher, log *utils.ZeroLogger, description string, skipMq bool, excludeFields ...string) func(http.HandlerFunc) http.HandlerFunc {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
-		return NewApiLogMiddleware(description, rabbitPublisher, log, excludeFields...).Handle(handler)
+		return NewApiLogMiddleware(description, rabbitPublisher, log, skipMq, excludeFields...).Handle(handler)
 	}
 }
 
 // ApplyApiLog 直接应用 API 日志中间件到 handler，用法: return middleware.ApplyApiLog(rabbitPublisher, logger, handler, "操作描述", "password", "captcha")
 func ApplyApiLog(rabbitPublisher *mq.Publisher, log *utils.ZeroLogger, handler http.HandlerFunc, description string, excludeFields ...string) http.HandlerFunc {
 	return WithApiLog(rabbitPublisher, log, description, excludeFields...)(handler)
+}
+
+// ApplyApiLogSkipMq 直接应用只本地记录、不投递 MQ 的 API 日志中间件，用法: return middleware.ApplyApiLogSkipMq(rabbitPublisher, logger, handler, "操作描述")
+func ApplyApiLogSkipMq(rabbitPublisher *mq.Publisher, log *utils.ZeroLogger, handler http.HandlerFunc, description string, excludeFields ...string) http.HandlerFunc {
+	return WithApiLogSkipMq(rabbitPublisher, log, description, excludeFields...)(handler)
 }

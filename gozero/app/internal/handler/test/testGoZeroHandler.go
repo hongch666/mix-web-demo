@@ -5,7 +5,6 @@ package test
 import (
 	"net/http"
 
-	"app/common/constants"
 	"app/common/utils"
 	"app/internal/logic/test"
 	"app/internal/middleware"
@@ -23,5 +22,5 @@ func TestGoZeroHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			utils.Success(w, resp)
 		}
 	}
-	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_TEST_GOZERO_SERVICE)
+	return middleware.ApplyApiLogSkipMq(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "测试GoZero服务")
 }

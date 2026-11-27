@@ -32,5 +32,5 @@ func ChatJoinQueueHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		utils.Success(w, resp)
 	}
-	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_JOIN_QUEUE)
+	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "加入队列")
 }

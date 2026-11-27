@@ -18,7 +18,7 @@ func TestApiLogMiddlewarePassesRequestBodyToHandler(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/items?page=1", strings.NewReader(body))
 	recorder := httptest.NewRecorder()
 
-	handler := NewApiLogMiddleware("测试接口", nil, nil).Handle(func(w http.ResponseWriter, r *http.Request) {
+	handler := NewApiLogMiddleware("测试接口", nil, nil, false).Handle(func(w http.ResponseWriter, r *http.Request) {
 		restored, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatalf("读取请求体失败: %v", err)
@@ -32,6 +32,36 @@ func TestApiLogMiddlewarePassesRequestBodyToHandler(t *testing.T) {
 	if recorder.Code != http.StatusCreated {
 		t.Fatalf("状态码 = %d, want %d", recorder.Code, http.StatusCreated)
 	}
+}
+
+// 验证 skipMq 为 true 时中间件仍正常放行请求，只是不再投递 MQ
+
+func TestApiLogMiddlewareSkipMqStillPassesRequest(t *testing.T) {
+	middleware := NewApiLogMiddleware("内部接口", nil, nil, true)
+	assert.True(t, middleware.skipMq)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/internal", strings.NewReader(`{"name":"test"}`))
+
+	middleware.Handle(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})(recorder, request)
+
+	assert.Equal(t, http.StatusOK, recorder.Code)
+}
+
+// 验证 ApplyApiLogSkipMq 包装后的 handler 仍按原样处理并输出响应
+
+func TestApplyApiLogSkipMqKeepsHandlerResponse(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/test/gozero", nil)
+
+	handler := ApplyApiLogSkipMq(nil, nil, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}, "测试接口")
+	handler(recorder, request)
+
+	assert.Equal(t, http.StatusNoContent, recorder.Code)
 }
 
 // 验证该测试场景的预期行为
