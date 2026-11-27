@@ -27,7 +27,7 @@ public class TestController {
      */
     @GetMapping("/spring")
     @Operation(summary = "测试Spring服务", description = "输出欢迎信息")
-    @ApiLog("测试Spring服务")
+    @ApiLog(value = "测试Spring服务", skipMq = true)
     public Mono<Result<String>> getHello() {
         return Mono.just(Result.success(Defaults.TEST));
     }

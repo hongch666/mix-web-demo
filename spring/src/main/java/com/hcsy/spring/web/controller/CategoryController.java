@@ -204,7 +204,7 @@ public class CategoryController {
     @PostMapping("/batch")
     @Operation(summary = "批量查询分类（内部）", description = "根据ID列表批量查询分类，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部批量查询分类")
+    @ApiLog(value = "内部批量查询分类", skipMq = true)
     public Mono<Result<List<CategoryVO>>> getCategoryByIds(@Valid @RequestBody BatchIdsDTO dto) {
         return categoryService.listByIds(dto.getIds())
             .map(category -> {
@@ -222,7 +222,7 @@ public class CategoryController {
     @PostMapping("/sub/batch")
     @Operation(summary = "批量查询子分类（内部）", description = "根据ID列表批量查询子分类，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部批量查询子分类")
+    @ApiLog(value = "内部批量查询子分类", skipMq = true)
     public Mono<Result<List<SubCategoryVO>>> getSubCategoryByIds(@Valid @RequestBody BatchIdsDTO dto) {
         return categoryService.listSubCategoriesByIds(dto.getIds())
             .map(sub -> {
@@ -240,7 +240,7 @@ public class CategoryController {
     @GetMapping("/internal/all")
     @Operation(summary = "获取所有分类（内部）", description = "获取所有分类列表，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取所有分类")
+    @ApiLog(value = "内部获取所有分类", skipMq = true)
     public Mono<Result<List<CategoryVO>>> getAllCategories() {
         return categoryService.listAllCategories()
             .map(category -> {
@@ -258,7 +258,7 @@ public class CategoryController {
     @GetMapping("/internal/sub/with-parent")
     @Operation(summary = "获取子分类及其父分类信息（内部）", description = "获取所有子分类及对应的父分类名称，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取子分类及父分类信息")
+    @ApiLog(value = "内部获取子分类及父分类信息", skipMq = true)
     public Mono<Result<List<SubCategoryWithParentVO>>> getSubcategoriesWithParent() {
         return categoryService.listAllSubCategoriesWithParent()
             .collectList()
@@ -271,7 +271,7 @@ public class CategoryController {
     @GetMapping("/internal/neo4j-sync")
     @Operation(summary = "获取分类表数据用于Neo4j同步（内部）", description = "获取分类表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
-    @ApiLog("内部获取Neo4j同步分类数据")
+    @ApiLog(value = "内部获取Neo4j同步分类数据", skipMq = true)
     public Mono<Result<List<CategorySyncVO>>> getNeo4jSyncCategories(
         @RequestParam(required = false) String updatedAfter) {
         return categoryService.getNeo4jSyncCategories(updatedAfter).map(Result::success);
@@ -283,7 +283,7 @@ public class CategoryController {
     @GetMapping("/internal/sub/neo4j-sync")
     @Operation(summary = "获取子分类表数据用于Neo4j同步（内部）", description = "获取子分类表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
-    @ApiLog("内部获取Neo4j同步子分类数据")
+    @ApiLog(value = "内部获取Neo4j同步子分类数据", skipMq = true)
     public Mono<Result<List<SubCategorySyncVO>>> getNeo4jSyncSubCategories(
         @RequestParam(required = false) String updatedAfter) {
         return categoryService.getNeo4jSyncSubCategories(updatedAfter).map(Result::success);

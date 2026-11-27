@@ -144,7 +144,7 @@ public class ArticleLikeController {
     @GetMapping("/statistics/total")
     @Operation(summary = "获取总点赞数（内部）", description = "获取所有文章的总点赞数，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取总点赞数")
+    @ApiLog(value = "内部获取总点赞数", skipMq = true)
     public Mono<Result<Long>> getTotalLikes() {
         return articleLikeService.getTotalLikes().map(Result::success);
     }
@@ -155,7 +155,7 @@ public class ArticleLikeController {
     @GetMapping("/statistics/average")
     @Operation(summary = "获取平均点赞数（内部）", description = "获取每篇文章的平均点赞数，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取平均点赞数")
+    @ApiLog(value = "内部获取平均点赞数", skipMq = true)
     public Mono<Result<Double>> getAverageLikes() {
         return articleLikeService.getAverageLikes().map(Result::success);
     }
@@ -166,7 +166,7 @@ public class ArticleLikeController {
     @GetMapping("/statistics/monthly-trend/{userId}")
     @Operation(summary = "获取用户月度点赞趋势（内部）", description = "获取用户本月点赞的趋势，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取用户月度点赞趋势")
+    @ApiLog(value = "内部获取用户月度点赞趋势", skipMq = true)
     public Mono<Result<MapDataVO>> getMonthlyLikeTrend(@PathVariable Long userId) {
         return articleLikeService.getMonthlyLikeTrend(userId).map(Result::success);
     }
@@ -177,7 +177,7 @@ public class ArticleLikeController {
     @GetMapping("/neo4j-sync")
     @Operation(summary = "获取点赞表数据用于Neo4j同步（内部）", description = "获取点赞表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
-    @ApiLog("内部获取Neo4j同步点赞数据")
+    @ApiLog(value = "内部获取Neo4j同步点赞数据", skipMq = true)
     public Mono<Result<List<ArticleRelationSyncVO>>> getNeo4jSyncLikes(
         @RequestParam(required = false) String updatedAfter) {
         return articleLikeService.getNeo4jSyncLikes(updatedAfter).map(Result::success);

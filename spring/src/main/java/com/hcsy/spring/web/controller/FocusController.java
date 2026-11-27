@@ -165,7 +165,7 @@ public class FocusController {
     @GetMapping("/statistics/followers-in-period/{userId}")
     @Operation(summary = "获取时间段内粉丝数（内部）", description = "获取指定时间段内的新增粉丝数，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取时间段内粉丝数")
+    @ApiLog(value = "内部获取时间段内粉丝数", skipMq = true)
     public Mono<Result<Long>> getFollowersInPeriod(
         @PathVariable Long userId,
         @RequestParam @org.springframework.format.annotation.DateTimeFormat(
@@ -181,7 +181,7 @@ public class FocusController {
     @GetMapping("/statistics/daily-follows/{userId}")
     @Operation(summary = "获取每日关注数（内部）", description = "获取指定时间段内每天的关注数，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取每日关注数")
+    @ApiLog(value = "内部获取每日关注数", skipMq = true)
     public Mono<Result<MapDataVO>> getDailyFollows(
         @PathVariable Long userId,
         @RequestParam @org.springframework.format.annotation.DateTimeFormat(
@@ -197,7 +197,7 @@ public class FocusController {
     @GetMapping("/statistics/total-follows/{userId}")
     @Operation(summary = "获取总关注数（内部）", description = "获取用户的总关注数，供内部服务远程调用")
     @RequireInternalToken
-    @ApiLog("内部获取总关注数")
+    @ApiLog(value = "内部获取总关注数", skipMq = true)
     public Mono<Result<Long>> getTotalFollows(@PathVariable Long userId) {
         return focusService.getTotalFollows(userId).map(Result::success);
     }
@@ -208,7 +208,7 @@ public class FocusController {
     @GetMapping("/neo4j-sync")
     @Operation(summary = "获取关注表数据用于Neo4j同步（内部）", description = "获取关注表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
-    @ApiLog("内部获取Neo4j同步关注数据")
+    @ApiLog(value = "内部获取Neo4j同步关注数据", skipMq = true)
     public Mono<Result<List<FocusSyncVO>>> getNeo4jSyncFocus(
         @RequestParam(required = false) String updatedAfter) {
         return focusService.getNeo4jSyncFocus(updatedAfter).map(Result::success);
