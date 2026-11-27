@@ -113,13 +113,16 @@ class StructuredIntent(BaseModel):
 
     types: list[IntentType] = Field(
         default_factory=list,
-        description=IntentConstants.STRUCTURED_TYPES_DESCRIPTION,
+        description=(
+            "识别出的用户意图类型列表，可同时包含多个领域，"
+            "只有纯闲聊且不需要调用任何工具（含 mcp_ 前缀的外部扩展工具）时才给出 general_chat"
+        ),
     )
     confidence: float = Field(
         default=1.0,
         ge=0.0,
         le=1.0,
-        description=IntentConstants.STRUCTURED_CONFIDENCE_DESCRIPTION,
+        description="意图识别的置信度",
     )
 
 

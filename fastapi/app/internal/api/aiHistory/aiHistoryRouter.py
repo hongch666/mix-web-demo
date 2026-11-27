@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Path, Query, Request
 
 from app.core.base import ApiResponse, success
-from app.core.constants import Messages, SwaggerConfig
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireSelf
 from app.dependencies import AiHistoryServiceDep, DbSession
 from app.internal.schemas import AiHistoryResponse
@@ -20,7 +20,7 @@ router: APIRouter = APIRouter(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireSelf
-@log(Messages.API_LOG_DESC_AI_HISTORY_LIST)
+@log("获取所有AI历史记录")
 async def get_all_ai_history(
     request: Request,
     db: DbSession,
@@ -47,7 +47,7 @@ async def get_all_ai_history(
     },
 )
 @requireSelf
-@log(Messages.API_LOG_DESC_AI_HISTORY_DELETE)
+@log("删除用户所有AI历史记录")
 async def delete_ai_history(
     request: Request,
     db: DbSession,

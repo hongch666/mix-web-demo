@@ -3,13 +3,17 @@ from functools import lru_cache
 from typing import Any, Optional
 
 from langchain_core.tools import StructuredTool
-from pydantic import BaseModel, Field
 
-from app.core.base import JsonArrayArgument, JsonObjectArgument, Logger
+from app.core.base import Logger
 from app.core.constants import Defaults, Messages, Prompts
 from app.internal.agents.permissions.toolScope import (
     enforce_mongodb_row_scope,
     log_scope_denial,
+)
+from app.internal.agents.tools.toolSchemas import (
+    EmptyInput,
+    MongoAggregateInput,
+    MongoQueryInput,
 )
 from app.internal.clients import NestjsClient
 
@@ -142,49 +146,6 @@ class MongoDBTools:
     def get_langchain_tools(self) -> list[StructuredTool]:
         """获取 LangChain Tool 对象列表"""
 
-        class EmptyInput(BaseModel):
-            """列出 MongoDB 集合工具的无参数输入模型"""
-
-            pass
-
-        class AggregateMongoInput(BaseModel):
-            """聚合查询工具的参数模型，包含集合名、聚合管道与返回条数上限"""
-
-            collection_name: str = Field(
-                description=Messages.MONGODB_COLLECTION_NAME_INPUT_DESC
-            )
-            # 管道形态由工具内部校验：pydantic 的英文报错不如本地中文提示便于模型自纠
-            pipeline: JsonArrayArgument = Field(
-                description=Messages.MONGODB_PIPELINE_INPUT_DESC
-            )
-            limit: int = Field(
-                default=20,
-                ge=1,
-                le=Defaults.MONGODB_AGGREGATE_MAX_DOCS,
-                description=Messages.MONGODB_AGGREGATE_LIMIT_INPUT_DESC(
-                    Defaults.MONGODB_AGGREGATE_MAX_DOCS
-                ),
-            )
-
-        class QueryMongoInput(BaseModel):
-            """普通查询工具的参数模型，包含集合名、过滤条件与返回条数上限"""
-
-            collection_name: str = Field(
-                description=Messages.MONGODB_COLLECTION_NAME_INPUT_DESC
-            )
-            filter_dict: JsonObjectArgument = Field(
-                default_factory=dict,
-                description=Messages.MONGODB_FILTER_INPUT_DESC,
-            )
-            limit: int = Field(
-                default=10,
-                ge=1,
-                le=Defaults.MONGODB_QUERY_MAX_LIMIT,
-                description=Messages.MONGODB_LIMIT_INPUT_DESC(
-                    Defaults.MONGODB_QUERY_MAX_LIMIT
-                ),
-            )
-
         return [
             StructuredTool(
                 name=Messages.MONGODB_LIST_COLLECTIONS_TOOL_NAME,
@@ -196,13 +157,13 @@ class MongoDBTools:
                 name=Messages.MONGODB_QUERY_TOOL_NAME,
                 description=Prompts.MONGODB_QUERY_TOOL_DESC,
                 coroutine=self.query_mongodb,
-                args_schema=QueryMongoInput,
+                args_schema=MongoQueryInput,
             ),
             StructuredTool(
                 name=Messages.MONGODB_AGGREGATE_TOOL_NAME,
                 description=Prompts.MONGODB_AGGREGATE_TOOL_DESC,
                 coroutine=self.aggregate_mongodb,
-                args_schema=AggregateMongoInput,
+                args_schema=MongoAggregateInput,
             ),
         ]
 

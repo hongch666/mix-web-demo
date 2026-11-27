@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Request
 
 from app.core.base import ApiResponse, success
-from app.core.constants import Messages, SwaggerConfig
+from app.core.constants import SwaggerConfig
 from app.core.decorators import log, requireSelf
 from app.dependencies import UserServiceDep
 from app.internal.schemas import (
@@ -26,7 +26,7 @@ router: APIRouter = APIRouter(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireSelf
-@log(Messages.API_LOG_DESC_NEW_FOLLOWERS)
+@log("获取新增粉丝数统计")
 async def get_new_followers(
     request: Request,
     userService: UserServiceDep,
@@ -49,7 +49,7 @@ async def get_new_followers(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireSelf
-@log(Messages.API_LOG_DESC_ARTICLE_VIEW_DISTRIBUTION)
+@log("获取文章浏览分布")
 async def get_article_view_distribution(
     request: Request,
     userService: UserServiceDep,
@@ -73,7 +73,7 @@ async def get_article_view_distribution(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireSelf
-@log(Messages.API_LOG_DESC_AUTHOR_FOLLOW_STATISTICS)
+@log("获取关注作者统计")
 async def get_author_follow_statistics(
     request: Request,
     userService: UserServiceDep,
@@ -97,7 +97,7 @@ async def get_author_follow_statistics(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireSelf
-@log(Messages.API_LOG_DESC_MONTHLY_COMMENT_TREND)
+@log("获取本月评论趋势")
 async def get_monthly_comment_trend(
     request: Request,
     userService: UserServiceDep,
@@ -119,7 +119,7 @@ async def get_monthly_comment_trend(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireSelf
-@log(Messages.API_LOG_DESC_MONTHLY_LIKE_TREND)
+@log("获取本月点赞趋势")
 async def get_monthly_like_trend(
     request: Request,
     userService: UserServiceDep,
@@ -141,7 +141,7 @@ async def get_monthly_like_trend(
     responses=SwaggerConfig.FORBIDDEN_RESPONSE,
 )
 @requireSelf
-@log(Messages.API_LOG_DESC_MONTHLY_COLLECT_TREND)
+@log("获取本月收藏趋势")
 async def get_monthly_collect_trend(
     request: Request,
     userService: UserServiceDep,
@@ -166,7 +166,7 @@ async def get_monthly_collect_trend(
     },
 )
 @requireSelf
-@log(Messages.API_LOG_DESC_USER_PROFILE)
+@log("获取用户画像总览")
 async def get_user_profile(
     request: Request,
     userService: UserServiceDep,

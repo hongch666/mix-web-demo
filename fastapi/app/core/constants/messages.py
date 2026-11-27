@@ -914,19 +914,9 @@ class Messages:
         return f"MongoDB 查询失败: {error}"
 
     @staticmethod
-    def MONGODB_LIMIT_INPUT_DESC(limit_max: int) -> str:
-        """构造 MongoDB 查询工具 limit 参数的输入描述"""
-        return f"返回结果数量上限，最大 {limit_max}，阈值条件请写入 filter_dict"
-
-    @staticmethod
     def MONGODB_AGGREGATE_FAILED(error: Exception) -> str:
         """构造 MongoDB 聚合查询失败的错误消息"""
         return f"MongoDB 聚合查询失败: {error}"
-
-    @staticmethod
-    def MONGODB_AGGREGATE_LIMIT_INPUT_DESC(limit_max: int) -> str:
-        """构造聚合工具 limit 参数的输入描述"""
-        return f"聚合结果返回条数上限，最大 {limit_max}，服务端会强制收敛"
 
     @staticmethod
     def MONGODB_PIPELINE_STAGE_INVALID_ERROR(position: int, stage: Any) -> str:
@@ -2878,22 +2868,11 @@ class Messages:
     MONGODB_AGGREGATE_TOOL_NAME: str = "aggregate_mongodb"
     """MongoDB 聚合工具对外的工具名"""
 
-    MONGODB_COLLECTION_NAME_INPUT_DESC: str = "collection 的名称"
-    """MongoDB 工具 collection_name 参数的说明"""
-
-    MONGODB_FILTER_INPUT_DESC: str = "MongoDB 查询条件"
-    """MongoDB 工具查询条件参数的说明"""
-
     MONGODB_LIST_COLLECTIONS_TOOL_NAME: str = "list_mongodb_collections"
     """列出 MongoDB 集合的工具名"""
 
     MONGODB_PIPELINE_EMPTY_ERROR: str = "聚合管道不能为空，请至少提供一个聚合阶段"
     """聚合管道为空的错误消息"""
-
-    MONGODB_PIPELINE_INPUT_DESC: str = (
-        "聚合管道，按顺序执行的阶段数组，每项只包含一个阶段操作符"
-    )
-    """MongoDB 聚合管道参数的说明"""
 
     MONGODB_QUERY_TOOL_NAME: str = "query_mongodb"
     """MongoDB 查询工具对外的工具名"""
@@ -2954,9 +2933,6 @@ class Messages:
 
     NEO4J_CLEANUP_LABEL_USER: str = "失效用户节点"
     """清理统计标签：失效用户节点"""
-
-    NEO4J_CUSTOM_CYPHER_INPUT_DESC: str = "只读 Cypher 查询语句"
-    """自定义 Cypher 工具查询语句参数的说明"""
 
     NEO4J_CUSTOM_CYPHER_TOOL_NAME: str = "execute_custom_cypher_query"
     """自定义 Cypher 查询的工具名"""
@@ -3026,14 +3002,6 @@ class Messages:
 
     NEO4J_PREDEFINED_QUERY_TOOL_NAME: str = "execute_knowledge_graph_query"
     """预定义图谱查询的工具名"""
-
-    NEO4J_QUERY_NAME_INPUT_DESC: str = "预定义查询名称，可选值: "
-    """预定义查询名称参数的说明"""
-
-    NEO4J_QUERY_PARAMS_INPUT_DESC: str = (
-        '查询参数（对象），例如 {"id": 1, "name": "人工智能", "limit": 10}'
-    )
-    """预定义查询参数对象的说明"""
 
     NEO4J_SQL_SELECT_ARTICLES: str = (
         "SELECT id, title, tags, status, views, user_id, sub_category_id, "
@@ -3276,15 +3244,6 @@ class Messages:
 
     # ===== SQL 代理工具输入参数描述 =====
 
-    SQL_TOOL_TABLE_SCHEMA_INPUT_DESC: str = "表名，留空则返回所有白名单表"
-    """表结构工具表名参数的说明"""
-
-    SQL_TOOL_QUERY_INPUT_DESC: str = "完整的只读 SQL 查询语句"
-    """查询工具查询语句参数的说明"""
-
-    SQL_TOOL_PARAMS_INPUT_DESC: str = "参数化查询参数，对象形式的键值对，不要写成字符串"
-    """查询工具命名参数的说明"""
-
     # ===== SQL 代理工具名 =====
 
     SQL_TOOL_FASTAPI_TABLE_TOOL_NAME: str = "get_fastapi_table_schema"
@@ -3308,20 +3267,6 @@ class Messages:
     """列出数仓数据集工具的对外工具名"""
     WAREHOUSE_QUERY_TOOL_NAME: str = "query_clickhouse_warehouse"
     """数仓查询工具的对外工具名"""
-    WAREHOUSE_DATASET_INPUT_DESC: str = (
-        "ADS 数据集名称，例如 platform_stats、top_articles、user_profile"
-    )
-    """数仓工具数据集名称参数的说明"""
-    WAREHOUSE_USER_ID_INPUT_DESC: str = (
-        "用户 ID；查询 user_profile、user_daily_actions、user_view_articles 时必填"
-    )
-    """数仓工具用户 ID 参数的说明"""
-    WAREHOUSE_DATE_INPUT_DESC: str = (
-        "用户日行为查询的日期范围，格式 YYYY-MM-DD（左闭右开）"
-    )
-    """数仓工具日期参数的说明"""
-    WAREHOUSE_LIMIT_INPUT_DESC: str = "最多返回的记录数，范围 1-100"
-    """数仓工具记录数上限参数的说明"""
     WAREHOUSE_QUERY_FAILED: str = "ClickHouse 数仓查询失败: {error}"
     """数仓查询失败的错误消息"""
     WAREHOUSE_DATASET_UNSUPPORTED: str = "不支持的数仓数据集: {dataset}"
@@ -3582,114 +3527,7 @@ class Messages:
     GENERATE_TEXT_EMPTY: LiteralString = "需要生成标签的文本内容不能为空"
     """标签生成请求的文本内容为空时的校验提示"""
 
-    # ===== API 日志描述 =====
-
-    API_LOG_DESC_TOP10_ARTICLES: str = "获取前10篇文章"
-    """前十文章分析接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_WORDCLOUD: str = "生成词云图"
-    """词云图分析接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_ARTICLE_EXCEL: str = "获取文章数据Excel"
-    """文章数据 Excel 导出接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_ARTICLE_STATISTICS: str = "获取文章统计信息"
-    """文章统计信息接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_ARTICLE_CATEGORY_COUNT: str = "按分类统计文章数量"
-    """分类文章数量统计接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_MONTHLY_PUBLISH_COUNT: str = "获取月度文章发布统计"
-    """月度文章发布统计接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_NEW_FOLLOWERS: str = "获取新增粉丝数统计"
-    """新增粉丝数统计接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_ARTICLE_VIEW_DISTRIBUTION: str = "获取文章浏览分布"
-    """文章浏览分布接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_AUTHOR_FOLLOW_STATISTICS: str = "获取关注作者统计"
-    """关注作者统计接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_MONTHLY_COMMENT_TREND: str = "获取本月评论趋势"
-    """本月评论趋势接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_MONTHLY_LIKE_TREND: str = "获取本月点赞趋势"
-    """本月点赞趋势接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_MONTHLY_COLLECT_TREND: str = "获取本月收藏趋势"
-    """本月收藏趋势接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_USER_PROFILE: str = "获取用户画像总览"
-    """用户画像总览接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_TRIGGER_ANALYZE_CACHE: str = "手动触发更新分析接口缓存任务"
-    """手动刷新分析缓存接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_TRIGGER_VECTOR_SYNC: str = "手动触发向量数据库同步任务"
-    """手动触发向量同步接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_INIT_ARTICLE_HASH_CACHE: str = "初始化文章内容 hash 缓存"
-    """初始化文章内容 hash 缓存接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_CLEAR_ANALYZE_CACHES: str = "清除分析相关缓存"
-    """清除分析缓存接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_TRIGGER_NEO4J_SYNC: str = "手动触发同步 MySQL 到 Neo4j 知识图谱任务"
-    """手动触发 Neo4j 同步接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_TRIGGER_WAREHOUSE_SYNC: str = "手动触发 ClickHouse 数仓同步任务"
-    """手动触发数仓同步接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_CHAT_MODELS: str = "获取聊天模型列表"
-    """聊天模型列表接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_CHAT_SEND: str = "普通聊天"
-    """普通聊天接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_CHAT_STREAM: str = "流式聊天"
-    """流式聊天接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_AI_HISTORY_LIST: str = "获取所有AI历史记录"
-    """AI 历史列表接口写入 api-log-queue 的接口描述"""
+    # ===== AI 历史记录 =====
 
     AI_HISTORY_REQUIRED_ID_MISSING: str = "AI历史记录缺少主键或用户 ID"
     """序列化 AI 历史记录时缺少必需主键或用户 ID 的错误消息"""
-
-    API_LOG_DESC_AI_HISTORY_DELETE: str = "删除用户所有AI历史记录"
-    """删除全部 AI 历史接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_GENERATE_TAGS: str = "生成tags"
-    """标签生成接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_ARTICLE_AI_COMMENT: str = "文章创建AI评论"
-    """文章 AI 评论创建接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_ARTICLE_AI_COMMENT_WITH_REFERENCE: str = (
-        "文章创建基于权威参考文本的AI评论"
-    )
-    """基于权威参考文本的文章 AI 评论创建接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_API_AVERAGE_SPEED: str = "获取所有接口的平均响应速度"
-    """接口平均响应速度接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_API_CALLED_COUNT: str = "获取接口调用次数"
-    """接口调用次数接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_VECTOR_SEARCH_ENHANCE: str = "向量搜索增强"
-    """向量搜索增强接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_SEARCH_WEIGHTS: str = "获取搜索权重"
-    """搜索权重接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_SEARCH_SCRIPT: str = "获取ES搜索脚本"
-    """ES 搜索脚本接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_SEARCH_SCRIPT_PARAMS: str = "获取脚本参数名映射"
-    """ES 脚本参数名映射接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_GRAPH_SEARCH_ENHANCE: str = "知识图谱搜索增强"
-    """知识图谱搜索增强接口写入 api-log-queue 的接口描述"""
-
-    API_LOG_DESC_TEST_FASTAPI: str = "测试FastAPI服务"
-    """服务连通性测试接口写入 api-log-queue 的接口描述"""

@@ -5,11 +5,14 @@ from functools import lru_cache
 from typing import Any, Optional
 
 from langchain_core.tools import StructuredTool
-from pydantic import BaseModel, Field
 
-from app.core.base import JsonObjectArgument, Logger
+from app.core.base import Logger
 from app.core.constants import Messages, Prompts, Scripts
 from app.core.db import get_neo4j_client
+from app.internal.agents.tools.toolSchemas import (
+    CustomCypherInput,
+    build_predefined_query_input,
+)
 from app.internal.models import Article, User
 
 
@@ -317,31 +320,12 @@ class Neo4jQueryTools:
     def get_langchain_tools(self) -> list[StructuredTool]:
         """获取 LangChain 工具对象"""
 
-        class PredefinedQueryInput(BaseModel):
-            """预定义图谱查询工具的参数模型，包含查询名与查询参数"""
-
-            query_name: str = Field(
-                description=Messages.NEO4J_QUERY_NAME_INPUT_DESC
-                + ", ".join(self.available_query_names)
-            )
-            params: JsonObjectArgument = Field(
-                default_factory=dict,
-                description=Messages.NEO4J_QUERY_PARAMS_INPUT_DESC,
-            )
-
-        class CustomCypherInput(BaseModel):
-            """自定义 Cypher 查询工具的参数模型，cypher_query 为要执行的语句"""
-
-            cypher_query: str = Field(
-                description=Messages.NEO4J_CUSTOM_CYPHER_INPUT_DESC
-            )
-
         return [
             StructuredTool(
                 name=Messages.NEO4J_PREDEFINED_QUERY_TOOL_NAME,
                 description=Prompts.NEO4J_PREDEFINED_QUERY_TOOL_DESC,
                 coroutine=self.execute_predefined_query,
-                args_schema=PredefinedQueryInput,
+                args_schema=build_predefined_query_input(self.available_query_names),
             ),
             StructuredTool(
                 name=Messages.NEO4J_CUSTOM_CYPHER_TOOL_NAME,
