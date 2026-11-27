@@ -1,12 +1,15 @@
 upstreams:
+  # 普通业务接口统一 30s，流式与长连接接口走单独的 3600s upstream
   - id: spring
     discovery_type: nacos
     service_name: spring
     type: roundrobin
+    timeout: { connect: 5, send: 30, read: 30 }
   - id: gozero
     discovery_type: nacos
     service_name: gozero
     type: roundrobin
+    timeout: { connect: 5, send: 30, read: 30 }
   - id: gozero-long
     discovery_type: nacos
     service_name: gozero
@@ -16,12 +19,12 @@ upstreams:
     discovery_type: nacos
     service_name: nestjs
     type: roundrobin
-    timeout: { connect: 5, send: 120, read: 120 }
+    timeout: { connect: 5, send: 30, read: 30 }
   - id: fastapi
     discovery_type: nacos
     service_name: fastapi
     type: roundrobin
-    timeout: { connect: 5, send: 300, read: 300 }
+    timeout: { connect: 5, send: 30, read: 30 }
   - id: fastapi-stream
     discovery_type: nacos
     service_name: fastapi

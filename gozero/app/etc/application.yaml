@@ -74,7 +74,7 @@ internal-token:
 
 # 远程调用配置
 remote-call:
-  timeout: 10000 # 请求超时时间（毫秒）
+  timeout: 30000 # 统一请求超时时间（毫秒，30 秒）
   maxRetries: 3 # 最大重试次数
   initialBackoff: 200 # 初始退避时间（毫秒）
   maxBackoff: 2000 # 最大退避时间（毫秒）
