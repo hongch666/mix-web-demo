@@ -233,3 +233,26 @@ jobs:
         with:
           sarif_file: trivy-${{ matrix.service }}.sarif
           category: trivy-${{ matrix.service }}
+
+  # ---------------------------------------------------------------------------
+  # 失败通知：变更检测 / 镜像构建 / 漏洞扫描任一失败时发自定义邮件
+  # 构建失败意味着本次不会产出新镜像，deploy.yml 的上游守卫会跳过部署
+  # ---------------------------------------------------------------------------
+  notify:
+    name: 失败通知
+    needs: [changes, build, scan]
+    if: always() && (needs.changes.result == 'failure' || needs.build.result == 'failure' || needs.scan.result == 'failure')
+    uses: ./.github/workflows/notify.yml
+    secrets: inherit
+    with:
+      title: Release Images 镜像构建
+      status: failure
+      summary: 镜像构建未通过，本次不会产出新镜像，也不会触发自动部署
+      details: |
+        变更检测=${{ needs.changes.result }}
+        镜像构建=${{ needs.build.result }}
+        漏洞扫描=${{ needs.scan.result }}
+        本次构建服务=${{ join(fromJson(needs.changes.outputs.services || '[]'), '、') || '未算出' }}
+      note: |
+        构建失败先看 Build 矩阵里失败的那个服务，本地等价命令：./mix docker build <service>
+        漏洞扫描只报告不阻断，扫描 job 失败通常是镜像拉取或上传 SARIF 出错，可按运行日志重跑该 job
