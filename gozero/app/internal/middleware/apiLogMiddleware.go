@@ -15,6 +15,8 @@ import (
 	"app/common/keys"
 	"app/common/mq"
 	"app/common/utils"
+
+	"github.com/zeromicro/go-zero/rest/pathvar"
 )
 
 // 记录 API 请求日志并将日志异步投递到 RabbitMQ 的中间件
@@ -69,6 +71,9 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 			path = r.RequestURI
 		}
 
+		// 投递 MQ 的路径把路径参数回填为参数名，本地日志仍保留实际路径便于排查
+		apiPath, pathParams := normalizeApiLogPath(path, r)
+
 		// 构建基础日志信息
 		logInfo := map[string]any{
 			constants.API_LOG_USER_ID_FIELD:        userID,
@@ -118,7 +123,7 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 			sanitizedRequestBody := sanitizeBody(requestBody, m.excludeFields)
 			sanitizedQueryParams := sanitizeQueryParams(queryParams, m.excludeFields)
 			utils.SafeGo(asyncLogger, "sendApiLogToQueue", func() {
-				sendApiLogToQueue(asyncLogger, m.rabbitPublisher, userID, username, method, path, m.description, sanitizedQueryParams, sanitizedRequestBody, durationMs)
+				sendApiLogToQueue(asyncLogger, m.rabbitPublisher, userID, username, method, apiPath, pathParams, m.description, sanitizedQueryParams, sanitizedRequestBody, durationMs)
 			})
 		}
 	}
@@ -233,8 +238,32 @@ func formatLogMessage(method, path, description string, userID int64, username s
 	return message
 }
 
+// normalizeApiLogPath 把路径参数的实际取值回填为参数名占位，并返回路径参数用于日志留痕
+func normalizeApiLogPath(path string, r *http.Request) (string, map[string]any) {
+	vars := pathvar.Vars(r)
+	if len(vars) == 0 {
+		return path, nil
+	}
+
+	pathParams := make(map[string]any, len(vars))
+	normalized := path
+	for name, value := range vars {
+		if value == "" {
+			continue
+		}
+		pathParams[name] = value
+		normalized = strings.Replace(normalized, "/"+value, "/:"+name, 1)
+	}
+	if len(pathParams) == 0 {
+		return path, nil
+	}
+
+	return normalized, pathParams
+}
+
 // sendApiLogToQueue 发送 API 日志到队列（异步处理），发布器未初始化或投递失败只记录日志，不影响业务响应
-func sendApiLogToQueue(lgr *utils.ZeroLogger, publisher *mq.Publisher, userID int64, username, method, path, description string,
+func sendApiLogToQueue(lgr *utils.ZeroLogger, publisher *mq.Publisher, userID int64, username, method, path string,
+	pathParams map[string]any, description string,
 	queryParams map[string]any, requestBody any, responseTimeMs int64,
 ) {
 	// 构建 API 日志消息（统一格式：camelCase）
@@ -245,6 +274,7 @@ func sendApiLogToQueue(lgr *utils.ZeroLogger, publisher *mq.Publisher, userID in
 		"apiPath":        path,
 		"apiMethod":      method,
 		"queryParams":    queryParams,
+		"pathParams":     pathParams,
 		"requestBody":    requestBody,
 		"responseTime":   responseTimeMs,
 	}
