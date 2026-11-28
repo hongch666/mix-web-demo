@@ -41,23 +41,7 @@ export class ApiLogInterceptor implements NestInterceptor {
       .switchToHttp()
       .getRequest();
     const method: string = (request.method as string) || "UNKNOWN";
-    const url: string = (() => {
-      if (
-        request.route &&
-        typeof request.route === "object" &&
-        "path" in request.route
-      ) {
-        const path = (request.route as Record<string, unknown>).path;
-        if (typeof path === "string" && path) {
-          return path;
-        }
-      }
-      if (typeof request.url === "string") {
-        const splitUrl = request.url.split("?")[0];
-        return splitUrl || "UNKNOWN";
-      }
-      return "UNKNOWN";
-    })();
+    const url: string = this.resolveRequestPath(request);
 
     // 获取用户信息
     const userId: number = this.cls.get<number>("userId") || 0;
@@ -138,6 +122,34 @@ export class ApiLogInterceptor implements NestInterceptor {
         });
       }),
     );
+  }
+
+  /**
+   * 解析用于日志与统计的请求路径，优先取路由模板，让路径参数保留为 :name 占位而不是实际取值
+   */
+  private resolveRequestPath(request: Record<string, unknown>): string {
+    // Fastify 把路由模板放在 routeOptions.url，例如 /download/markdown/:id
+    const routeOptions = request.routeOptions as
+      | Record<string, unknown>
+      | undefined;
+    if (
+      routeOptions &&
+      typeof routeOptions.url === "string" &&
+      routeOptions.url
+    ) {
+      return routeOptions.url;
+    }
+    // Express 适配器下路由模板放在 route.path
+    const route = request.route as Record<string, unknown> | undefined;
+    if (route && typeof route.path === "string" && route.path) {
+      return route.path;
+    }
+    // 未命中路由时退回不含查询串的原始路径
+    if (typeof request.url === "string") {
+      const splitUrl: string | undefined = request.url.split("?")[0];
+      return splitUrl || "UNKNOWN";
+    }
+    return "UNKNOWN";
   }
 
   /**

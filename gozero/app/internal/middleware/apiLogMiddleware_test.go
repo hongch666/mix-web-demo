@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/zeromicro/go-zero/rest/pathvar"
 )
 
 // 验证该测试场景的预期行为
@@ -62,6 +63,29 @@ func TestApplyApiLogSkipMqKeepsHandlerResponse(t *testing.T) {
 	handler(recorder, request)
 
 	assert.Equal(t, http.StatusNoContent, recorder.Code)
+}
+
+// 验证路径参数被回填为参数名占位，避免同一接口按实际参数值拆成多条日志
+
+func TestNormalizeApiLogPath(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/search/history/3003", nil)
+	request = pathvar.WithVars(request, map[string]string{"user_id": "3003"})
+
+	path, pathParams := normalizeApiLogPath(request.URL.Path, request)
+
+	assert.Equal(t, "/search/history/:user_id", path)
+	assert.Equal(t, map[string]any{"user_id": "3003"}, pathParams)
+}
+
+// 验证没有路径参数时原样返回且不产生路径参数记录
+
+func TestNormalizeApiLogPathWithoutVars(t *testing.T) {
+	request := httptest.NewRequest(http.MethodGet, "/search", nil)
+
+	path, pathParams := normalizeApiLogPath(request.URL.Path, request)
+
+	assert.Equal(t, "/search", path)
+	assert.Nil(t, pathParams)
 }
 
 // 验证该测试场景的预期行为
