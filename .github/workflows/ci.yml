@@ -375,3 +375,28 @@ jobs:
           export SWAGGER_PYTHON
           echo "执行: ./mix swag-check $SERVICES"
           bash scripts/docs/swag-check.sh $SERVICES
+
+  # ---------------------------------------------------------------------------
+  # 失败通知：门禁或文档一致性任一失败时发自定义邮件（替代 GitHub 自带的失败邮件）
+  # 通知走独立 job，不影响上面各 job 的结论与分支保护的 required checks
+  # ---------------------------------------------------------------------------
+  notify:
+    name: 失败通知
+    needs: [changes, quality, docs-consistency]
+    if: always() && (needs.changes.result == 'failure' || needs.quality.result == 'failure' || needs.docs-consistency.result == 'failure')
+    uses: ./.github/workflows/notify.yml
+    # 邮件凭据统一走仓库 Secret，调用方只做透传
+    secrets: inherit
+    with:
+      title: CI 质量门禁
+      status: failure
+      summary: CI 未通过，请按下方明细定位失败的服务与步骤
+      details: |
+        变更检测=${{ needs.changes.result }}
+        质量门禁=${{ needs.quality.result }}（spring / gozero / nestjs / fastapi 矩阵）
+        文档一致性=${{ needs.docs-consistency.result }}
+        PR=${{ github.event.pull_request.number && format('#{0}', github.event.pull_request.number) || '非 PR 触发' }}
+      note: |
+        常见原因：lint / 编译 / 单测未通过，或改了接口没重新生成 OpenAPI 产物
+        本地复现：./mix lint <service>、./mix compile <service>、./mix test <service>
+        文档类失败：./mix swag <service> 后把产物与服务代码一起提交

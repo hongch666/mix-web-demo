@@ -321,3 +321,25 @@ jobs:
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # 失败通知：变更检测或同步失败时发自定义邮件（替代 GitHub 自带的失败邮件）
+  # ---------------------------------------------------------------------------
+  notify:
+    name: 失败通知
+    needs: [changes, sync]
+    if: always() && (needs.changes.result == 'failure' || needs.sync.result == 'failure')
+    uses: ./.github/workflows/notify.yml
+    secrets: inherit
+    with:
+      title: Apifox 文档同步
+      status: failure
+      summary: 接口或 README 同步到 Apifox 失败，文档可能与仓库产物不一致
+      details: |
+        变更检测=${{ needs.changes.result }}
+        同步结果=${{ needs.sync.result }}
+        接口服务=${{ needs.changes.outputs.services || '无' }}
+        README 同步=${{ needs.changes.outputs.readme || 'false' }}
+      note: |
+        常见原因：APIFOX_ACCESS_TOKEN 过期、目录配置缺失、产物与 .apifox 指纹基线不一致
+        本地复现：./mix apifox <service>，或先 ./mix apifox-check <service> 只校验不写入

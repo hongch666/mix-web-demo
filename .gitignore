@@ -210,6 +210,11 @@ dist/
 # CI/CD 工作流必须提交到仓库，GitHub Actions 才能生效；其余 .github 工具目录保持忽略
 !.github/workflows/
 !.github/workflows/**
+# 流水线通知的邮件模板与发送脚本，由 notify.yml 在工作流里调用，必须随仓库提交
+!.github/notify/
+!.github/notify/**
+# 上面的白名单会把 notify 目录下的字节码一起放行，这里再挡回去
+.github/notify/__pycache__/
 
 .codebuddy/*
 !.codebuddy/rules

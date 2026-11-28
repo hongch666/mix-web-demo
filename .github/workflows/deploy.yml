@@ -48,6 +48,11 @@ jobs:
     runs-on: [self-hosted, linux, x64, deploy]
     environment: production
     timeout-minutes: 30
+    # 供邮件通知使用：成功邮件要带出本次部署的版本与服务范围
+    outputs:
+      tag: ${{ steps.sync.outputs.tag }}
+      commit: ${{ steps.sync.outputs.commit }}
+      services: ${{ steps.plan.outputs.services }}
     steps:
       - name: 上游结果检查
         id: guard
@@ -365,3 +370,31 @@ jobs:
           restart_svc prometheus     observability/prometheus/
           restart_svc otel-collector observability/otel-collector/
           restart_svc tempo          observability/tempo/
+
+  # ---------------------------------------------------------------------------
+  # 邮件通知：部署成功或失败都发（GitHub 自带邮件只有失败通知，成功通知靠这一条补）
+  # 上游 Release Images 失败时部署 job 会被守卫跳过、结论仍是 success，
+  # 这种情况由 release.yml 的失败邮件覆盖，这里不再重复发「部署成功」
+  # ---------------------------------------------------------------------------
+  notify:
+    name: 部署通知
+    needs: deploy
+    if: |
+      always() && !cancelled() && (
+        needs.deploy.result == 'failure' ||
+        (needs.deploy.result == 'success' &&
+         (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'))
+      )
+    uses: ./.github/workflows/notify.yml
+    secrets: inherit
+    with:
+      title: Deploy 生产部署
+      status: ${{ needs.deploy.result == 'success' && 'success' || 'failure' }}
+      summary: ${{ needs.deploy.result == 'success' && format('生产环境部署完成，镜像 tag {0}', needs.deploy.outputs.tag || '未确定') || '生产环境部署失败，已按服务尝试回滚到上一版本' }}
+      details: |
+        环境=production
+        目标版本=${{ needs.deploy.outputs.tag || '未确定' }}
+        部署服务=${{ needs.deploy.outputs.services || '未确定' }}
+        目标提交=${{ needs.deploy.outputs.commit || '未确定' }}
+        触发方式=${{ github.event_name }}
+      note: ${{ needs.deploy.result == 'success' && '部署已由 docker compose up --wait 确认容器就绪，可到部署机执行 docker compose ps 复核实际运行版本' || '部署失败时脚本已按服务回滚到上一版本，请到部署机确认容器状态；若回滚也失败需人工介入（docker compose ps / docker compose logs <service>）' }}

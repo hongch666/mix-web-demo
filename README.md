@@ -2497,6 +2497,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 | `deploy.yml`      | 自托管 runner（`[self-hosted, linux, x64, deploy]`）把部署目录切到目标 commit，只重建本次变更的服务，失败按服务回滚到上一版本；`gateway/`、`observability/` 有变更时按文件重启命中的容器（不重建业务服务）                                                                                                                                                                                                                                                                                                 |
 | `smoke.yml`       | 手动冒烟：验证 runner 连通、docker/compose 可用、部署目录与 `.env` 就绪                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `apifox-sync.yml` | `openapi.json` / `openapi.yaml` 与 `README.md` 变更后分别同步接口与 README 到 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)                                                                                                                                                                                                                                                                                                                                                                             |
+| `notify.yml`      | 可重用工作流：把流水线结果渲染成自定义邮件（模板见 `.github/notify/templates/`，渲染与发送见 `.github/notify/send.py`）。`ci.yml` / `release.yml` / `apifox-sync.yml` 失败时发失败邮件，`deploy.yml` 成功与失败各发一封；未配置 `MAIL_SERVER` / `MAIL_TO` 时自动跳过，发送失败也不会改写流水线结论                                                                                                                            |
 
 #### 需要的仓库配置
 
@@ -2507,6 +2508,11 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 | `production`                       | Environment       | `deploy.yml` 的部署环境，可在此配置审批人与保护规则                                     |
 | `APIFOX_ACCESS_TOKEN` / `APIFOX_*` | Secret / Variable | 仅 `apifox-sync.yml` 需要，见 Apifox 章节                                               |
 | `GITHUB_TOKEN`                     | 内置              | 推拉 GHCR 镜像、上传 SARIF、回写基线，无需自建                                          |
+| `MAIL_HOST` / `MAIL_PORT`          | Variable          | 流水线通知邮件的 SMTP 服务器与端口，变量名与 NestJS 的 `mail.*` 配置一致，端口默认 465  |
+| `MAIL_SECURE`                      | Variable          | 是否隐式 SSL，465 填 `true`；留空时按端口自动判断（465 走 SSL，其它端口走 STARTTLS）    |
+| `MAIL_FROM` / `MAIL_FROM_NAME`     | Variable          | 发件地址与发件人显示名；多数邮箱要求发件地址与登录账号一致                              |
+| `MAIL_TO`                          | Variable          | 收件地址，多个用逗号分隔；留空即关闭全部邮件通知                                        |
+| `MAIL_USERNAME` / `MAIL_PASSWORD`  | Secret            | SMTP 登录账号与授权码（授权码不是登录密码），仅 `notify.yml` 使用                      |
 
 #### 常用操作
 
@@ -2534,6 +2540,7 @@ gh workflow run smoke.yml
 4. 部署目录用 `git checkout -f -B prod <commit>` 而不是 detached HEAD，运维仍可直接在该目录 `git pull` 排查
 5. 任意服务缺少部署记录且不在本次变更内会直接失败，避免误用 `latest` 掩盖版本漂移（先做一次全量部署即可补齐）
 6. 本地等价命令：`./mix lint|compile|test <service>`、`./mix docker build <service>`、`./scripts/docker/docker-push-images.sh`、`./mix docker up`
+7. 邮件通知由 `notify.yml` 统一发送，文案与配色改 `.github/notify/templates/{failure,success}.html`，渲染逻辑改 `.github/notify/send.py`；GitHub 自带的 Actions 失败邮件在**个人** Settings → Notifications → System → Actions 里关掉（默认「Only failed workflows」），它按账号生效、不随仓库配置走
 
 ## CI/CD 与工程规范
 

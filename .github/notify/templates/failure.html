@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{TITLE}}</title>
+  </head>
+  <!-- 失败 / 取消邮件模板：占位符由 .github/notify/send.py 替换，可直接改文案与配色 -->
+  <body style="margin:0;padding:24px 12px;background:#f6f8fa;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;color:#1f2328;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #d0d7de;border-radius:12px;overflow:hidden;">
+      <tr>
+        <td style="background:{{STATUS_COLOR}};padding:20px 24px;color:#ffffff;">
+          <div style="font-size:12px;letter-spacing:2px;opacity:0.85;">GITHUB ACTIONS · {{STATUS_LABEL}}</div>
+          <div style="font-size:20px;font-weight:600;margin-top:6px;">{{TITLE}}</div>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:22px 24px 8px;">
+          <p style="margin:0 0 18px;font-size:15px;line-height:1.7;">{{SUMMARY}}</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;border-collapse:collapse;">
+            {{DETAIL_ROWS}}
+          </table>
+        </td>
+      </tr>
+      {{NOTE_BLOCK}}
+      <tr>
+        <td style="padding:8px 24px 24px;">
+          <a href="{{RUN_URL}}" style="display:inline-block;padding:10px 20px;background:#1f2328;color:#ffffff;text-decoration:none;border-radius:8px;font-size:13px;">{{RUN_TEXT}}</a>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:16px 24px;background:#f6f8fa;border-top:1px solid #d0d7de;font-size:12px;color:#656d76;line-height:1.7;">
+          {{FOOTER}}<br />{{TIMESTAMP}}
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

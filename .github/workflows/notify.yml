@@ -1,0 +1,90 @@
+name: Notify
+
+# 可重用工作流：把流水线结果渲染成自定义邮件发出（替代 GitHub 自带的失败通知邮件）
+#
+# 调用方（ci.yml / release.yml / deploy.yml / apifox-sync.yml）以 job 级 uses 引用，
+# 并用 secrets: inherit 传入邮件凭据；模板与渲染脚本在 .github/notify/ 下
+#
+# 配置（仓库 Settings → Secrets and variables → Actions），变量名与 NestJS 的 mail 配置保持一致：
+#   Variable  MAIL_HOST      SMTP 服务器，如 smtp.qq.com
+#   Variable  MAIL_PORT      端口，默认 465
+#   Variable  MAIL_SECURE    是否隐式 SSL（465 用 true）；留空时按端口自动判断
+#   Variable  MAIL_FROM      发件地址，多数邮箱要求与登录账号一致
+#   Variable  MAIL_TO        收件地址，多个用逗号分隔（可与 MAIL_FROM 相同，即发给自己）
+#   Variable  MAIL_FROM_NAME 发件人显示名，默认 mix-web-demo CI
+#   Secret    MAIL_USERNAME  SMTP 登录账号
+#   Secret    MAIL_PASSWORD  SMTP 授权码（不是登录密码）
+#
+# 未配置 MAIL_HOST 或 MAIL_TO 时只打 notice 跳过，不影响流水线结论；
+# 邮件发送失败也不会把原本成功的流水线染红（步骤标红但 job 通过）
+on:
+  workflow_call:
+    inputs:
+      title:
+        description: 邮件标题主体，如 CI 质量门禁
+        required: true
+        type: string
+      status:
+        description: 流水线结论：success / failure / cancelled
+        required: true
+        type: string
+      summary:
+        description: 一句话结论，展示在明细表格上方
+        required: false
+        default: ''
+        type: string
+      details:
+        description: 明细，每行「键=值」，渲染成邮件表格（调用方按流程补充）
+        required: false
+        default: ''
+        type: string
+      note:
+        description: 附加提示，如失败时的排查建议
+        required: false
+        default: ''
+        type: string
+      template:
+        description: 模板名（.github/notify/templates/ 下的文件名，不含扩展名），留空按状态自动选择
+        required: false
+        default: ''
+        type: string
+    secrets:
+      MAIL_USERNAME:
+        required: false
+      MAIL_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  mail:
+    name: 发送邮件通知
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 渲染模板并发送
+        # 通知是旁路动作：发送失败只标红本步骤，不改写流水线结论
+        continue-on-error: true
+        env:
+          MAIL_HOST: ${{ vars.MAIL_HOST }}
+          MAIL_PORT: ${{ vars.MAIL_PORT }}
+          MAIL_SECURE: ${{ vars.MAIL_SECURE }}
+          MAIL_FROM: ${{ vars.MAIL_FROM }}
+          MAIL_FROM_NAME: ${{ vars.MAIL_FROM_NAME }}
+          MAIL_TO: ${{ vars.MAIL_TO }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          NOTIFY_TITLE: ${{ inputs.title }}
+          NOTIFY_STATUS: ${{ inputs.status }}
+          NOTIFY_SUMMARY: ${{ inputs.summary }}
+          NOTIFY_DETAILS: ${{ inputs.details }}
+          NOTIFY_NOTE: ${{ inputs.note }}
+          NOTIFY_TEMPLATE: ${{ inputs.template }}
+          # workflow_run 事件的 GITHUB_SHA 是默认分支头，真实提交要从上游运行里取
+          COMMIT_MSG: ${{ github.event.head_commit.message || github.event.workflow_run.head_commit.message || '' }}
+        run: python3 .github/notify/send.py
